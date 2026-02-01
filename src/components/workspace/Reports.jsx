@@ -9,10 +9,12 @@ import {
   FileSpreadsheet,
   PieChart,
   Package,
-  ExternalLink
+  ExternalLink,
+  Lock
 } from 'lucide-react';
+import { hasFeature, PLAN_NAMES } from '../../data/plans';
 
-const Reports = () => {
+const Reports = ({ user, onUpgrade }) => {
   const [activeReport, setActiveReport] = useState(null); // null, 'boq', 'summary', 'materials'
 
   const reports = [
@@ -102,24 +104,32 @@ const Reports = () => {
       </div>
 
       <div className="selection-grid">
-        {reports.map((report) => (
-          <div
-            key={report.id}
-            className="report-selection-card enterprise-card"
-            onClick={() => setActiveReport(report.id)}
-          >
-            <div className="card-top">
-              <div className="icon-box"><report.icon size={24} /></div>
-              <span className="type-badge">{report.tag}</span>
+        {reports.map((report) => {
+          const isRestricted = (report.id === 'summary' || report.id === 'materials') && !hasFeature(user?.plan, 'advanced-analysis');
+
+          return (
+            <div
+              key={report.id}
+              className={`report-selection-card enterprise-card ${isRestricted ? 'restricted' : ''}`}
+              onClick={isRestricted ? onUpgrade : () => setActiveReport(report.id)}
+            >
+              <div className="card-top">
+                <div className="icon-box"><report.icon size={24} /></div>
+                {isRestricted ? (
+                  <span className="type-badge premium">Premium</span>
+                ) : (
+                  <span className="type-badge">{report.tag}</span>
+                )}
+              </div>
+              <h3>{report.title} {isRestricted && <Lock size={16} className="text-subtle ml-2" />}</h3>
+              <p>{report.description}</p>
+              <div className="card-footer">
+                <span>{isRestricted ? 'Upgrade to Unlock' : 'View Preview'}</span>
+                <ChevronRight size={16} />
+              </div>
             </div>
-            <h3>{report.title}</h3>
-            <p>{report.description}</p>
-            <div className="card-footer">
-              <span>View Preview</span>
-              <ChevronRight size={16} />
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -380,6 +390,20 @@ const Reports = () => {
           font-weight: 700;
           color: var(--accent-600);
         }
+
+        .report-selection-card.restricted {
+          opacity: 0.8;
+          cursor: pointer;
+        }
+        .report-selection-card.restricted:hover {
+          border-color: var(--accent-500);
+        }
+        .type-badge.premium {
+          background: var(--accent-600);
+          color: white;
+          border: none;
+        }
+        .ml-2 { margin-left: 0.5rem; }
 
         /* Preview Area */
         .report-preview-container {

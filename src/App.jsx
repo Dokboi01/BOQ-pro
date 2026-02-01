@@ -12,6 +12,7 @@ import Reports from './components/workspace/Reports';
 import Settings from './components/dashboard/Settings';
 import StructureSelector from './components/dashboard/StructureSelector';
 import { STRUCTURE_DATA } from './data/structures';
+import { PLAN_LIMITS, PLAN_NAMES } from './data/plans';
 import {
   BarChart3,
   MapPin,
@@ -58,7 +59,7 @@ function App() {
     const newUser = {
       name: data.fullName,
       email: data.email,
-      plan: selectedPlan || 'Free',
+      plan: selectedPlan || PLAN_NAMES.FREE,
       isOnboarded: false
     };
     setUser(newUser);
@@ -122,7 +123,20 @@ function App() {
   };
 
   if (view === 'landing') return <Hero onGetStarted={() => setView('pricing')} />;
-  if (view === 'pricing') return <PricingPage onSelectPlan={(plan) => { setSelectedPlan(plan); setView('signup'); }} onBack={() => setView('landing')} />;
+  if (view === 'pricing') return <PricingPage
+    onSelectPlan={(plan) => {
+      if (user) {
+        const updatedUser = { ...user, plan };
+        setUser(updatedUser);
+        localStorage.setItem('boq_pro_user', JSON.stringify(updatedUser));
+        setView('app');
+      } else {
+        setSelectedPlan(plan);
+        setView('signup');
+      }
+    }}
+    onBack={() => setView(user ? 'app' : 'landing')}
+  />;
   if (view === 'login') return <Login onLogin={handleLogin} onSwitchToSignUp={() => setView('signup')} />;
   if (view === 'signup') return <SignUp selectedPlan={selectedPlan} onSignUp={handleSignUp} onSwitchToLogin={(target) => setView(target)} />;
   if (view === 'onboarding') return <Onboarding onComplete={handleOnboardingComplete} />;
@@ -137,13 +151,14 @@ function App() {
           projects={projects}
           onCreateProject={handleCreateProject}
           onSelectProject={(id) => { setActiveProjectId(id); setActiveTab('workspace'); }}
+          onUpgrade={() => { setView('pricing'); }}
         />;
       case 'workspace':
         return <div className="view-fade-in"><BOQWorkspace key={activeProject?.id} project={activeProject} onUpdate={handleUpdateProject} /></div>;
       case 'library':
-        return <div className="view-fade-in"><MaterialLibrary /></div>;
+        return <div className="view-fade-in"><MaterialLibrary user={user} onUpgrade={() => { setView('pricing'); }} /></div>;
       case 'reports':
-        return <div className="view-fade-in"><Reports /></div>;
+        return <div className="view-fade-in"><Reports user={user} onUpgrade={() => { setView('pricing'); }} /></div>;
       case 'settings':
         return <div className="view-fade-in"><Settings user={user} /></div>;
       default:

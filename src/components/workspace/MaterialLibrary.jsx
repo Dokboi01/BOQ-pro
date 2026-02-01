@@ -15,10 +15,12 @@ import {
   AlertCircle,
   ChevronRight,
   Activity,
-  ShieldCheck
+  ShieldCheck,
+  Lock
 } from 'lucide-react';
+import { hasFeature, PLAN_NAMES } from '../../data/plans';
 
-const MaterialLibrary = () => {
+const MaterialLibrary = ({ user, onUpgrade }) => {
   const [selectedMaterial, setSelectedMaterial] = useState(null);
 
   const materials = [
@@ -87,60 +89,72 @@ const MaterialLibrary = () => {
     { label: 'Aggregates', val: 115.4, delta: '+0.2%', trend: 'up' },
   ];
 
-  const renderIntelligenceDashboard = () => (
-    <div className="intelligence-dashboard">
-      <div className="dashboard-grid-mini">
-        <div className="enterprise-card intel-metric">
-          <div className="metric-header">
-            <span className="label">Monthly CMCI Movement</span>
-            <Activity size={16} className="text-accent" />
-          </div>
-          <div className="metric-val text-danger">+4.8%</div>
-          <div className="metric-footer">Across 12 major categories</div>
-        </div>
-        <div className="enterprise-card intel-metric">
-          <div className="metric-header">
-            <span className="label">Highest Exposure Category</span>
-            <AlertCircle size={16} className="text-warning" />
-          </div>
-          <div className="metric-val">Bitumen & Oils</div>
-          <div className="metric-footer">Avg. ₦185,000 per drum</div>
-        </div>
-        <div className="enterprise-card intel-metric">
-          <div className="metric-header">
-            <span className="label">Market Trust Score</span>
-            <ShieldCheck size={16} className="text-success" />
-          </div>
-          <div className="metric-val">98.2%</div>
-          <div className="metric-footer">Based on 1.4k regional inputs</div>
-        </div>
-      </div>
+  const renderIntelligenceDashboard = () => {
+    const isLocked = !hasFeature(user?.plan, 'material-intelligence');
 
-      <div className="market-index-section enterprise-card">
-        <div className="index-header">
-          <div className="title-box">
-            <h3>Construction Material Cost Index (CMCI)</h3>
-            <p>Industry-standard tracking of cost movements in West Africa</p>
+    return (
+      <div className={`intelligence-dashboard ${isLocked ? 'locked-view' : ''}`}>
+        {isLocked && (
+          <div className="locked-overlay">
+            <Lock size={40} className="mb-4" />
+            <h3>Premium Feature</h3>
+            <p>Upgrade to Practitioner to unlock real-time market intelligence and cost indices.</p>
+            <button className="btn-primary-action mt-4" onClick={onUpgrade}>View Plans</button>
           </div>
-          <button className="btn-secondary small">View Full Index History</button>
-        </div>
-        <div className="index-grid">
-          {marketIndices.map((idx, i) => (
-            <div key={i} className="index-item">
-              <span className="idx-label">{idx.label}</span>
-              <div className="idx-data">
-                <span className="idx-val">{idx.val}</span>
-                <span className={`idx-delta ${idx.trend}`}>
-                  {idx.trend === 'up' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                  {idx.delta}
-                </span>
-              </div>
+        )}
+        <div className="dashboard-grid-mini">
+          <div className="enterprise-card intel-metric">
+            <div className="metric-header">
+              <span className="label">Monthly CMCI Movement</span>
+              <Activity size={16} className="text-accent" />
             </div>
-          ))}
+            <div className="metric-val text-danger">+4.8%</div>
+            <div className="metric-footer">Across 12 major categories</div>
+          </div>
+          <div className="enterprise-card intel-metric">
+            <div className="metric-header">
+              <span className="label">Highest Exposure Category</span>
+              <AlertCircle size={16} className="text-warning" />
+            </div>
+            <div className="metric-val">Bitumen & Oils</div>
+            <div className="metric-footer">Avg. ₦185,000 per drum</div>
+          </div>
+          <div className="enterprise-card intel-metric">
+            <div className="metric-header">
+              <span className="label">Market Trust Score</span>
+              <ShieldCheck size={16} className="text-success" />
+            </div>
+            <div className="metric-val">98.2%</div>
+            <div className="metric-footer">Based on 1.4k regional inputs</div>
+          </div>
+        </div>
+
+        <div className="market-index-section enterprise-card">
+          <div className="index-header">
+            <div className="title-box">
+              <h3>Construction Material Cost Index (CMCI)</h3>
+              <p>Industry-standard tracking of cost movements in West Africa</p>
+            </div>
+            <button className="btn-secondary small">View Full Index History</button>
+          </div>
+          <div className="index-grid">
+            {marketIndices.map((idx, i) => (
+              <div key={i} className="index-item">
+                <span className="idx-label">{idx.label}</span>
+                <div className="idx-data">
+                  <span className="idx-val">{idx.val}</span>
+                  <span className={`idx-delta ${idx.trend}`}>
+                    {idx.trend === 'up' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                    {idx.delta}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderDetailModal = (mat) => (
     <div className="detail-modal-overlay" onClick={() => setSelectedMaterial(null)}>
@@ -216,8 +230,11 @@ const MaterialLibrary = () => {
             <Calendar size={14} />
             <span>Next Index Refresh: 14 Feb 2026</span>
           </div>
-          <button className="btn-primary-action">
-            <SearchCheck size={18} /> Run Price Audit
+          <button
+            className="btn-primary-action"
+            onClick={!hasFeature(user?.plan, 'material-intelligence') ? onUpgrade : undefined}
+          >
+            <SearchCheck size={18} /> {!hasFeature(user?.plan, 'material-intelligence') ? 'Upgrade to Audit' : 'Run Price Audit'}
           </button>
         </div>
       </div>
@@ -308,7 +325,26 @@ const MaterialLibrary = () => {
                     display: grid;
                     grid-template-columns: 1fr 2fr;
                     gap: 1.5rem;
+                    position: relative;
                 }
+
+                .locked-view { filter: blur(4px); pointer-events: none; opacity: 0.6; }
+                .locked-overlay {
+                    position: absolute;
+                    top: 0; left: 0; right: 0; bottom: 0;
+                    z-index: 10;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    background: rgba(255, 255, 255, 0.4);
+                    text-align: center;
+                    backdrop-filter: blur(2px);
+                }
+                .locked-overlay h3 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+                .locked-overlay p { font-size: 0.875rem; color: var(--primary-600); max-width: 300px; }
+                .mt-4 { margin-top: 1rem; }
+                .mb-4 { margin-bottom: 1rem; }
 
                 .dashboard-grid-mini {
                     display: flex;

@@ -16,8 +16,9 @@ import {
   Info,
   Lock
 } from 'lucide-react';
+import { PLAN_LIMITS, PLAN_NAMES } from '../../data/plans';
 
-const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProject }) => {
+const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProject, onUpgrade }) => {
   const [budget, setBudget] = useState(250000000); // ₦250M
 
   const calculateTotal = (proj) => {
@@ -34,6 +35,9 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
   const status = currentTotal === 0 ? 'No Data' :
     currentTotal > budget ? 'Over Budget' :
       currentTotal > budget * 0.95 ? 'At Risk' : 'On Budget';
+
+  const limits = PLAN_LIMITS[user?.plan] || PLAN_LIMITS[PLAN_NAMES.FREE];
+  const isLimitReached = projects.length >= limits.maxProjects;
 
   const costBreakdown = projects.length > 0 ? [
     { label: 'Material Costs', amount: 161525000, color: 'var(--primary-900)', percent: 65, trend: 'up' },
@@ -56,16 +60,16 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
           <h2>Good Afternoon, {user?.name || 'Practitioner'}</h2>
           <p>You have <strong>{projects.length} active projects</strong> this month.</p>
         </div>
-        {user?.plan === 'Free' && (
+        {user?.plan === PLAN_NAMES.FREE && (
           <div className="usage-card enterprise-card">
             <div className="usage-info">
               <span>Project Limit</span>
-              <span>{projects.length} / 3</span>
+              <span>{projects.length} / {limits.maxProjects}</span>
             </div>
             <div className="usage-bar">
-              <div className="usage-fill" style={{ width: `${(projects.length / 3) * 100}%`, background: projects.length >= 3 ? 'var(--warning-600)' : 'var(--accent-600)' }}></div>
+              <div className="usage-fill" style={{ width: `${(projects.length / limits.maxProjects) * 100}%`, background: isLimitReached ? 'var(--warning-600)' : 'var(--accent-600)' }}></div>
             </div>
-            <button className="text-upgrade-link">Upgrade to unlock more projects</button>
+            <button className="text-upgrade-link" onClick={onUpgrade}>Upgrade to unlock more projects</button>
           </div>
         )}
       </header>
@@ -74,7 +78,7 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
       <section className="projects-section">
         <div className="section-header">
           <h3>My Projects</h3>
-          {projects.length > 0 && <button className="btn-primary-sm">+ New Project</button>}
+          {projects.length > 0 && <button className="btn-primary-sm" onClick={onCreateProject} disabled={isLimitReached}>{isLimitReached ? 'Limit Reached' : '+ New Project'}</button>}
         </div>
 
         {projects.length === 0 ? (
@@ -111,7 +115,7 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
                 </div>
               </div>
             ))}
-            {user?.plan === 'Free' && projects.length < 3 && (
+            {user?.plan === PLAN_NAMES.FREE && projects.length < limits.maxProjects && (
               <div className="project-card locked enterprise-card" onClick={onCreateProject}>
                 <Lock size={24} className="text-subtle" />
                 <p>Available project slot</p>
