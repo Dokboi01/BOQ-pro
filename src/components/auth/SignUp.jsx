@@ -2,105 +2,115 @@ import React, { useState } from 'react';
 import { Shield, Mail, Lock, User, ArrowRight, Check } from 'lucide-react';
 
 const SignUp = ({ selectedPlan, onSignUp, onSwitchToLogin }) => {
-    const [formData, setFormData] = useState({
-        fullName: '',
-        email: '',
-        password: '',
-        agreeToTerms: false
-    });
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    agreeToTerms: false
+  });
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        onSignUp(formData);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Generate a 6-digit confirmation code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    const signupData = {
+      ...formData,
+      verificationCode: code,
+      isVerified: false
     };
 
-    return (
-        <div className="auth-container view-fade-in">
-            <div className="auth-card glass-card">
-                <div className="auth-header">
-                    <div className="logo">
-                        <Shield size={32} className="text-accent-600" />
-                        <span>BOQ <strong>PRO</strong></span>
-                    </div>
-                    <h1>Create your account</h1>
-                    <p>Start your professional journey with BOQ Pro</p>
-                </div>
+    onSignUp(signupData);
+  };
 
-                {selectedPlan && (
-                    <div className="selected-plan-summary">
-                        <div className="plan-info">
-                            <span className="label">Selected Plan</span>
-                            <span className="plan-name">{selectedPlan}</span>
-                        </div>
-                        <button className="change-link" onClick={() => onSwitchToLogin('pricing')}>Change</button>
-                    </div>
-                )}
+  return (
+    <div className="auth-container view-fade-in">
+      <div className="auth-card glass-card">
+        <div className="auth-header">
+          <div className="logo">
+            <Shield size={32} className="text-accent-600" />
+            <span>BOQ <strong>PRO</strong></span>
+          </div>
+          <h1>Create your account</h1>
+          <p>Start your professional journey with BOQ Pro</p>
+        </div>
 
-                <form onSubmit={handleSubmit} className="auth-form">
-                    <div className="form-group">
-                        <label className="form-label">Full Name</label>
-                        <div className="input-with-icon">
-                            <User size={18} className="input-icon" />
-                            <input
-                                type="text"
-                                className="form-input"
-                                placeholder="John Doe"
-                                required
-                                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Work Email</label>
-                        <div className="input-with-icon">
-                            <Mail size={18} className="input-icon" />
-                            <input
-                                type="email"
-                                className="form-input"
-                                placeholder="name@company.com"
-                                required
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Password</label>
-                        <div className="input-with-icon">
-                            <Lock size={18} className="input-icon" />
-                            <input
-                                type="password"
-                                className="form-input"
-                                placeholder="••••••••"
-                                required
-                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                            />
-                        </div>
-                        <p className="input-hint">Minimum 8 characters with a symbol</p>
-                    </div>
-
-                    <div className="form-checkbox">
-                        <input
-                            type="checkbox"
-                            id="terms"
-                            required
-                            onChange={(e) => setFormData({ ...formData, agreeToTerms: e.target.checked })}
-                        />
-                        <label htmlFor="terms">I agree to the <button type="button" className="text-link">Terms of Service</button> and <button type="button" className="text-link">Privacy Policy</button></label>
-                    </div>
-
-                    <button type="submit" className="btn-primary auth-submit">
-                        Create Account <ArrowRight size={18} />
-                    </button>
-                </form>
-
-                <div className="auth-footer">
-                    Already have an account? <button className="text-link" onClick={() => onSwitchToLogin('login')}>Sign in</button>
-                </div>
+        {selectedPlan && (
+          <div className="selected-plan-summary">
+            <div className="plan-info">
+              <span className="label">Selected Plan</span>
+              <span className="plan-name">{selectedPlan}</span>
             </div>
+            <button className="change-link" onClick={() => onSwitchToLogin('pricing')}>Change</button>
+          </div>
+        )}
 
-            <style jsx="true">{`
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="form-group">
+            <label className="form-label">Full Name</label>
+            <div className="input-with-icon">
+              <User size={18} className="input-icon" />
+              <input
+                type="text"
+                className="form-input"
+                placeholder="John Doe"
+                required
+                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Work Email</label>
+            <div className="input-with-icon">
+              <Mail size={18} className="input-icon" />
+              <input
+                type="email"
+                className="form-input"
+                placeholder="name@company.com"
+                required
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Password</label>
+            <div className="input-with-icon">
+              <Lock size={18} className="input-icon" />
+              <input
+                type="password"
+                className="form-input"
+                placeholder="••••••••"
+                required
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              />
+            </div>
+            <p className="input-hint">Minimum 8 characters with a symbol</p>
+          </div>
+
+          <div className="form-checkbox">
+            <input
+              type="checkbox"
+              id="terms"
+              required
+              onChange={(e) => setFormData({ ...formData, agreeToTerms: e.target.checked })}
+            />
+            <label htmlFor="terms">I agree to the <button type="button" className="text-link">Terms of Service</button> and <button type="button" className="text-link">Privacy Policy</button></label>
+          </div>
+
+          <button type="submit" className="btn-primary auth-submit">
+            Create Account <ArrowRight size={18} />
+          </button>
+        </form>
+
+        <div className="auth-footer">
+          Already have an account? <button className="text-link" onClick={() => onSwitchToLogin('login')}>Sign in</button>
+        </div>
+      </div>
+
+      <style jsx="true">{`
         .auth-container {
           min-height: 100vh;
           display: flex;
@@ -243,8 +253,8 @@ const SignUp = ({ selectedPlan, onSignUp, onSwitchToLogin }) => {
           color: var(--primary-500);
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 export default SignUp;

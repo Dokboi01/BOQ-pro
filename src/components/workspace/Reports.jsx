@@ -13,9 +13,14 @@ import {
   Lock
 } from 'lucide-react';
 import { hasFeature, PLAN_NAMES } from '../../data/plans';
+import ExcelJS from 'exceljs';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 
-const Reports = ({ user, onUpgrade }) => {
-  const [activeReport, setActiveReport] = useState(null); // null, 'boq', 'summary', 'materials'
+const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
+  const [activeReport, setActiveReport] = useState(null);
+
+  const activeProject = projects.find(p => p.id === activeProjectId) || projects[0];
 
   const reports = [
     {
@@ -43,57 +48,146 @@ const Reports = ({ user, onUpgrade }) => {
 
   // Mock data for project info (linked to current highway context)
   const projectInfo = {
-    title: 'Trans-Sahara Highway Expansion',
-    phase: 'Phase 1 - Section 4',
-    ref: 'TS-HWY/2026/04/D',
-    client: 'Ministry of Works & Infrastructure',
+    title: activeProject?.name || 'Untitled Project',
+    phase: activeProject?.type || 'General',
+    ref: activeProject?.id ? `BOQ-${activeProject.id}` : 'N/A',
+    client: user?.organization || 'Private Client',
     location: 'Lagos - Algiers Sector',
-    preparedBy: 'BOQ Pro Professional',
-    date: 'January 28, 2026'
+    preparedBy: user?.name || 'BOQ Pro Professional',
+    date: activeProject?.date || new Date().toLocaleDateString()
   };
 
-  const boqData = [
-    {
-      section: 'A. PRELIMINARIES',
-      items: [
-        { id: '1.1', desc: 'Project Signboard with project details', unit: 'Nr', qty: 2, rate: 1500, total: 3000 },
-        { id: '1.2', desc: 'Temporary Site Office for Consultant and Site Staff', unit: 'Sum', qty: 1, rate: 25000, total: 25000 },
-        { id: '1.3', desc: 'Mobilization and Demobilization of plant and equipment', unit: 'Sum', qty: 1, rate: 15000, total: 15000 }
-      ],
-      subtotal: 43000
-    },
-    {
-      section: 'B. EARTHWORKS & EXCAVATION',
-      items: [
-        { id: '2.1', desc: 'Excavation in trench not exceeding 1.5m deep for drainage lines', unit: 'm3', qty: 450, rate: 45, total: 20250 },
-        { id: '2.2', desc: 'Cart away surplus material to designated site 5km from project', unit: 'm3', qty: 320, rate: 12, total: 3840 },
-        { id: '2.3', desc: 'Compaction of sub-base material to 98% Proctor density', unit: 'm2', qty: 1200, rate: 8.50, total: 10200 }
-      ],
-      subtotal: 34290
-    }
-  ];
+  const boqData = React.useMemo(() => activeProject?.sections || [], [activeProject]);
 
-  const summaryData = {
-    total: 248500000,
-    breakdown: [
-      { label: 'A. Preliminaries', amt: 43000, percent: 0.02 },
-      { label: 'B. Earthworks & Excavation', amt: 34290, percent: 0.015 },
-      { label: 'C. Surface Dressing & Asphalt', amt: 145000000, percent: 58.35 },
-      { label: 'D. Concrete Structures & Bridges', amt: 85000000, percent: 34.21 },
-      { label: 'E. Signage & Safety Equipment', amt: 18422710, percent: 7.41 }
-    ]
-  };
+  const calculateGrandTotal = React.useCallback(() => {
+    return boqData.reduce((acc, section) => {
+      return acc + (section.items || []).reduce((itemAcc, item) => itemAcc + (item.total || 0), 0);
+    }, 0);
+  }, [boqData]);
 
-  const materialData = [
-    { item: 'OPC Cement (50kg)', unit: 'Bag', totalQty: 12500, usage: 'Sections B, C, D' },
-    { item: 'Deformed Steel Bar (12mm)', unit: 'Ton', totalQty: 450, usage: 'Sections C, D' },
-    { item: 'Sharp Sand (Clean)', unit: 'Ton', totalQty: 2800, usage: 'All Sections' },
-    { item: 'Crushed Granite (Mix)', unit: 'Ton', totalQty: 4200, usage: 'Sections C, D' },
-    { item: 'Bitumen (Cold Mix)', unit: 'Drum', totalQty: 120, usage: 'Section C' }
-  ];
+  const summaryData = React.useMemo(() => {
+    const total = calculateGrandTotal();
+    return {
+      total: total,
+      breakdown: boqData.map(section => {
+        const amt = (section.items || []).reduce((acc, item) => acc + (item.total || 0), 0);
+        return {
+          label: section.title,
+          amt: amt,
+          percent: total > 0 ? (amt / total) * 100 : 0
+        };
+      })
+    };
+  }, [boqData, calculateGrandTotal]);
+
+  const materialData = React.useMemo(() => {
+    const agg = {};
+    boqData.forEach(section => {
+      section.items.forEach(item => {
+        if (item.breakdown?.materials) {
+          item.breakdown.materials.forEach(mat => {
+            const key = mat.name;
+            if (!agg[key]) {
+              agg[key] = { item: mat.name, unit: mat.unit, totalQty: 0, usage: [] };
+            }
+            // Quantity in breakdown is per unit of item. So total mat qty = item.qty * mat.qty
+            agg[key].totalQty += (item.qty * mat.qty);
+            if (!agg[key].usage.includes(section.title)) {
+              agg[key].usage.push(section.title);
+            }
+          });
+        }
+      });
+    });
+    return Object.values(agg).map(m => ({
+      ...m,
+      usage: m.usage.join(', ')
+    }));
+  }, [boqData]);
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleExportExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('BOQ Report');
+
+    worksheet.columns = [
+      { header: 'Item', key: 'id', width: 10 },
+      { header: 'Description', key: 'desc', width: 50 },
+      { header: 'Unit', key: 'unit', width: 10 },
+      { header: 'Qty', key: 'qty', width: 15 },
+      { header: 'Rate (₦)', key: 'rate', width: 15 },
+      { header: 'Total (₦)', key: 'total', width: 15 },
+    ];
+
+    boqData.forEach(section => {
+      worksheet.addRow({ desc: section.title }).font = { bold: true };
+      section.items.forEach((item, idx) => {
+        worksheet.addRow({
+          id: idx + 1,
+          desc: item.description,
+          unit: item.unit,
+          qty: item.qty,
+          rate: item.useBenchmark ? item.benchmark : item.rate,
+          total: item.total
+        });
+      });
+      worksheet.addRow({ desc: `Subtotal ${section.title}`, total: section.items.reduce((acc, i) => acc + i.total, 0) }).font = { italic: true };
+    });
+
+    worksheet.getColumn('desc').alignment = { wrapText: true };
+    worksheet.addRow({});
+    const totalRow = worksheet.addRow({ desc: 'GRAND TOTAL', total: calculateGrandTotal() });
+    totalRow.font = { bold: true, size: 12 };
+    totalRow.getCell('total').numFmt = '"₦"#,##0.00';
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${projectInfo.title}_BOQ.xlsx`;
+    anchor.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(20);
+    doc.text('BILL OF QUANTITIES', 105, 15, { align: 'center' });
+    doc.setFontSize(10);
+    doc.text(`Project: ${projectInfo.title}`, 14, 25);
+    doc.text(`Client: ${projectInfo.client}`, 14, 30);
+    doc.text(`Date: ${projectInfo.date}`, 14, 35);
+
+    const tableData = [];
+    boqData.forEach(section => {
+      tableData.push([{ content: section.title, colSpan: 6, styles: { fillColor: [240, 240, 240], fontStyle: 'bold' } }]);
+      section.items.forEach((item, idx) => {
+        tableData.push([
+          idx + 1,
+          item.description,
+          item.unit,
+          item.qty.toLocaleString(),
+          (item.useBenchmark ? item.benchmark : item.rate).toLocaleString(),
+          item.total.toLocaleString()
+        ]);
+      });
+    });
+
+    tableData.push([{ content: 'GRAND TOTAL', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } }, { content: `₦${calculateGrandTotal().toLocaleString()}`, styles: { fontStyle: 'bold' } }]);
+
+    doc.autoTable({
+      startY: 40,
+      head: [['Item', 'Description', 'Unit', 'Qty', 'Rate', 'Total']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [15, 23, 42] }
+    });
+
+    doc.save(`${projectInfo.title}_BOQ.pdf`);
   };
 
   const renderSelectionScreen = () => (
@@ -165,21 +259,21 @@ const Reports = ({ user, onUpgrade }) => {
           {boqData.map((section, sidx) => (
             <React.Fragment key={sidx}>
               <tr className="section-row">
-                <td colSpan="6" className="font-bold">{section.section}</td>
+                <td colSpan="6" className="font-bold">{section.title}</td>
               </tr>
-              {section.items.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.id}</td>
-                  <td className="text-left">{item.desc}</td>
+              {section.items.map((item, iidx) => (
+                <tr key={iidx}>
+                  <td>{iidx + 1}</td>
+                  <td className="text-left">{item.description}</td>
                   <td>{item.unit}</td>
                   <td>{item.qty.toLocaleString()}</td>
-                  <td>{item.rate.toLocaleString()}</td>
+                  <td>{(item.useBenchmark ? item.benchmark : item.rate).toLocaleString()}</td>
                   <td>{item.total.toLocaleString()}</td>
                 </tr>
               ))}
               <tr className="subtotal-row">
-                <td colSpan="5">SUBTOTAL {section.section.split('.')[0]}</td>
-                <td>{section.subtotal.toLocaleString()}</td>
+                <td colSpan="5">SUBTOTAL</td>
+                <td>{section.items.reduce((acc, i) => acc + (i.total || 0), 0).toLocaleString()}</td>
               </tr>
             </React.Fragment>
           ))}
@@ -306,11 +400,14 @@ const Reports = ({ user, onUpgrade }) => {
             </button>
             <div className="toolbar-actions">
               <span className="print-warning">Preview Mode: Use 'Print to PDF' for digital export</span>
-              <button className="btn-secondary" onClick={() => alert('Exporting as CSV...')}>
+              <button className="btn-secondary" onClick={handleExportExcel}>
                 <FileSpreadsheet size={16} /> Export to Excel
               </button>
+              <button className="btn-primary-action" onClick={handleExportPDF}>
+                <Download size={16} /> Export to PDF
+              </button>
               <button className="btn-primary-action" onClick={handlePrint}>
-                <Printer size={16} /> Generate Consultant-Ready Document
+                <Printer size={16} /> Print Document
               </button>
             </div>
           </div>

@@ -6,13 +6,11 @@ import SignUp from './components/auth/SignUp';
 import Onboarding from './components/onboarding/Onboarding';
 import Sidebar from './components/layout/Sidebar';
 import ProjectDashboard from './components/dashboard/ProjectDashboard';
-import BOQWorkspace from './components/workspace/BOQWorkspace';
-import MaterialLibrary from './components/workspace/MaterialLibrary';
-import Reports from './components/workspace/Reports';
-import Settings from './components/dashboard/Settings';
-import StructureSelector from './components/dashboard/StructureSelector';
+import EmailVerification from './components/auth/EmailVerification';
 import { STRUCTURE_DATA } from './data/structures';
 import { PLAN_LIMITS, PLAN_NAMES } from './data/plans';
+import { saveProject, getProjects, addUser, verifyUser, getUserByEmail } from './db/database';
+import { sendVerificationEmail } from './utils/mailService';
 import {
   BarChart3,
   MapPin,
@@ -21,7 +19,10 @@ import {
   ShieldCheck,
   Target,
   LogOut,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  CreditCard,
+  FileCheck,
+  Calculator as CalcIcon
 } from 'lucide-react';
 
 function App() {
@@ -37,10 +38,17 @@ function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showSelector, setShowSelector] = useState(false);
   const [activeProjectId, setActiveProjectId] = useState(null);
-  const [projects, setProjects] = useState(() => {
-    const savedProjects = localStorage.getItem('boq_pro_projects');
-    return savedProjects ? JSON.parse(savedProjects) : [];
-  });
+  const [projects, setProjects] = useState([]);
+  const [pendingUser, setPendingUser] = useState(null);
+
+  // Load projects from Dexie on mount
+  React.useEffect(() => {
+    const loadData = async () => {
+      const storedProjects = await getProjects();
+      setProjects(storedProjects);
+    };
+    loadData();
+  }, []);
 
   const handleLogin = (credentials) => {
     const mockUser = {
@@ -55,17 +63,55 @@ function App() {
     setView('app');
   };
 
-  const handleSignUp = (data) => {
+  const handleSignUp = async (data) => {
+    // Check if user already exists
+    const existing = await getUserByEmail(data.email);
+    if (existing && existing.isVerified) {
+      alert('An account with this email already exists.');
+      return;
+    }
+
     const newUser = {
-      name: data.fullName,
+      fullName: data.fullName,
       email: data.email,
+      password: data.password, // In production, hash this!
       plan: selectedPlan || PLAN_NAMES.FREE,
+      verificationCode: data.verificationCode,
+      isVerified: false,
       isOnboarded: false
     };
-    setUser(newUser);
-    setProjects([]); // Ensure new users start with empty projects
-    localStorage.removeItem('boq_pro_projects'); // Clear any old session projects
-    setView('onboarding');
+
+    // Save to database (replaces previous record if exists)
+    if (existing) {
+      await verifyUser(data.email, 'RESET'); // Just a hack to clean up if needed, better to handle in DB helper
+    }
+    await addUser(newUser);
+
+    // "Send" the email
+    await sendVerificationEmail(data.email, data.verificationCode);
+
+    setPendingUser(newUser);
+    setView('verification');
+  };
+
+  const handleVerify = async (code) => {
+    if (!pendingUser) return false;
+
+    const success = await verifyUser(pendingUser.email, code);
+    if (success) {
+      const verifiedUser = { ...pendingUser, isVerified: true };
+      setUser(verifiedUser);
+      setPendingUser(null);
+      localStorage.setItem('boq_pro_user', JSON.stringify(verifiedUser));
+      setView('onboarding');
+      return true;
+    }
+    return false;
+  };
+
+  const handleResendCode = async () => {
+    if (!pendingUser) return;
+    await sendVerificationEmail(pendingUser.email, pendingUser.verificationCode);
   };
 
   const handleOnboardingComplete = (data) => {
@@ -76,15 +122,18 @@ function App() {
   };
 
   const handleCreateProject = () => {
+    const limits = PLAN_LIMITS[user?.plan] || PLAN_LIMITS[PLAN_NAMES.FREE];
+    if (projects.length >= limits.maxProjects) {
+      setView('pricing');
+      return;
+    }
     setShowSelector(true);
   };
 
-  const handleStructureSelect = (structureId, structureName) => {
+  const handleStructureSelect = async (structureId, structureName) => {
     const data = STRUCTURE_DATA[structureId] || STRUCTURE_DATA['Residential Building'];
-    // Fallback in case of missing data for a type
 
     const newProj = {
-      id: Date.now(),
       name: `Project: ${structureName}`,
       type: structureId,
       status: 'Draft',
@@ -97,23 +146,35 @@ function App() {
           useBenchmark: true
         }))
       })),
-      date: 'Just now'
+      date: new Date().toLocaleDateString()
     };
 
-    const updated = [...projects, newProj];
+    const id = await saveProject(newProj);
+    const updated = await getProjects();
     setProjects(updated);
-    localStorage.setItem('boq_pro_projects', JSON.stringify(updated));
-    setActiveProjectId(newProj.id);
+    setActiveProjectId(id);
     setShowSelector(false);
     setActiveTab('workspace');
   };
 
-  const handleUpdateProject = (projectId, updatedSections) => {
-    const updated = projects.map(p =>
-      p.id === projectId ? { ...p, sections: updatedSections } : p
-    );
-    setProjects(updated);
-    localStorage.setItem('boq_pro_projects', JSON.stringify(updated));
+  const handleUpdateProject = async (projectId, updatedSections) => {
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return;
+
+    const updatedProject = { ...project, sections: updatedSections };
+    await saveProject(updatedProject);
+
+    // Refresh local state
+    setProjects(prev => prev.map(p => p.id === projectId ? updatedProject : p));
+  };
+
+  const calculateTotalValue = () => {
+    const activeProject = projects.find(p => p.id === activeProjectId) || projects[0];
+    if (!activeProject) return 0;
+
+    return activeProject.sections.reduce((acc, section) => {
+      return acc + section.items.reduce((itemAcc, item) => itemAcc + (item.total || 0), 0);
+    }, 0);
   };
 
   const logout = () => {
@@ -139,6 +200,14 @@ function App() {
   />;
   if (view === 'login') return <Login onLogin={handleLogin} onSwitchToSignUp={() => setView('signup')} />;
   if (view === 'signup') return <SignUp selectedPlan={selectedPlan} onSignUp={handleSignUp} onSwitchToLogin={(target) => setView(target)} />;
+  if (view === 'verification') return (
+    <EmailVerification
+      email={pendingUser?.email}
+      onVerify={handleVerify}
+      onResend={handleResendCode}
+      onBack={() => setView('signup')}
+    />
+  );
   if (view === 'onboarding') return <Onboarding onComplete={handleOnboardingComplete} />;
 
   const renderContent = () => {
@@ -158,7 +227,7 @@ function App() {
       case 'library':
         return <div className="view-fade-in"><MaterialLibrary user={user} onUpgrade={() => { setView('pricing'); }} /></div>;
       case 'reports':
-        return <div className="view-fade-in"><Reports user={user} onUpgrade={() => { setView('pricing'); }} /></div>;
+        return <div className="view-fade-in"><Reports user={user} projects={projects} activeProjectId={activeProjectId} onUpgrade={() => { setView('pricing'); }} /></div>;
       case 'settings':
         return <div className="view-fade-in"><Settings user={user} /></div>;
       default:
@@ -175,12 +244,12 @@ function App() {
         <div className="sticky-summary-bar">
           <div className="summary-item">
             <span className="label">ESTIMATED COST</span>
-            <span className="val">{projects.length > 0 ? '₦248.5M' : '₦0.00'}</span>
+            <span className="val">₦{calculateTotalValue().toLocaleString()}</span>
           </div>
           <div className="summary-divider"></div>
           <div className="summary-item">
             <span className="label">VARIANCE</span>
-            <span className={`val ${projects.length > 0 ? 'text-success' : ''}`}>{projects.length > 0 ? '+₦1.5M' : '₦0.00'}</span>
+            <span className={`val ${projects.length > 0 ? 'text-success' : ''}`}>₦0.00</span>
           </div>
           <div className="summary-item status">
             <ShieldCheck size={14} className="text-success" />

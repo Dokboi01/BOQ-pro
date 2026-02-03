@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Package, HardHat, Plus, Trash2, CheckCircle } from 'lucide-react';
 
 const RateAnalysisModal = ({ item, onClose, onSave }) => {
-    const [breakdown, setBreakdown] = useState({
+    const [breakdown, setBreakdown] = useState(item.breakdown || {
         materials: [
             { id: 1, name: 'Cement (Portland)', qty: 6.5, unit: 'Bags', rate: 10500 },
             { id: 2, name: 'Sharp Sand', qty: 0.5, unit: 'm3', rate: 12000 },
@@ -186,7 +186,7 @@ const RateAnalysisModal = ({ item, onClose, onSave }) => {
 
                 <footer className="analysis-footer">
                     <button className="btn-secondary" onClick={onClose}>Cancel</button>
-                    <button className="btn-primary-glow" onClick={() => onSave(unitRate)}>
+                    <button className="btn-primary-glow" onClick={() => onSave(unitRate, breakdown)}>
                         <CheckCircle size={18} /> Apply Custom Rate
                     </button>
                 </footer>

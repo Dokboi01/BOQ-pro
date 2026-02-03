@@ -15,24 +15,26 @@ import {
   TrendingDown
 } from 'lucide-react';
 import RateAnalysisModal from './RateAnalysisModal';
+import GeometricCalculator from './GeometricCalculator';
 
 const BOQWorkspace = ({ project, onUpdate }) => {
   const [sections, setSections] = useState(project?.sections || []);
   const [analyzingItem, setAnalyzingItem] = useState(null);
+  const [calculatingQtyForItem, setCalculatingQtyForItem] = useState(null);
 
   const toggleSection = (id) => {
     setSections(sections.map(s => s.id === id ? { ...s, expanded: !s.expanded } : s));
   };
 
-  const handleRateApply = (newRate) => {
+  const handleRateApply = (newRate, breakdown) => {
     if (analyzingItem) {
-      updateItem(analyzingItem.sectionId, analyzingItem.item.id, 'rate', newRate);
+      updateItem(analyzingItem.sectionId, analyzingItem.item.id, 'rate', newRate, breakdown);
       updateItem(analyzingItem.sectionId, analyzingItem.item.id, 'useBenchmark', false);
       setAnalyzingItem(null);
     }
   };
 
-  const updateItem = (sectionId, itemId, field, value) => {
+  const updateItem = (sectionId, itemId, field, value, breakdown = null) => {
     const updatedSections = sections.map(section => {
       if (section.id !== sectionId) return section;
       return {
@@ -40,6 +42,10 @@ const BOQWorkspace = ({ project, onUpdate }) => {
         items: section.items.map(item => {
           if (item.id !== itemId) return item;
           const updatedItem = { ...item, [field]: value };
+
+          if (breakdown) {
+            updatedItem.breakdown = breakdown;
+          }
 
           // Recalculate total
           const rateToUse = updatedItem.useBenchmark ? updatedItem.benchmark : updatedItem.rate;
@@ -142,12 +148,21 @@ const BOQWorkspace = ({ project, onUpdate }) => {
                       </td>
                       <td>{item.unit}</td>
                       <td>
-                        <input
-                          type="number"
-                          value={item.qty}
-                          onChange={(e) => updateItem(section.id, item.id, 'qty', Number(e.target.value))}
-                          className="inline-input"
-                        />
+                        <div className="qty-input-wrapper">
+                          <input
+                            type="number"
+                            value={item.qty}
+                            onChange={(e) => updateItem(section.id, item.id, 'qty', Number(e.target.value))}
+                            className="inline-input"
+                          />
+                          <button
+                            className="btn-geo-trigger"
+                            onClick={() => setCalculatingQtyForItem({ sectionId: section.id, item })}
+                            title="Geometric Takeoff"
+                          >
+                            <Calculator size={12} />
+                          </button>
+                        </div>
                       </td>
                       <td>
                         <div className="rate-source-toggle">
@@ -209,6 +224,16 @@ const BOQWorkspace = ({ project, onUpdate }) => {
           item={analyzingItem.item}
           onClose={() => setAnalyzingItem(null)}
           onSave={handleRateApply}
+        />
+      )}
+
+      {calculatingQtyForItem && (
+        <GeometricCalculator
+          onClose={() => setCalculatingQtyForItem(null)}
+          onApply={(newQty) => {
+            updateItem(calculatingQtyForItem.sectionId, calculatingQtyForItem.item.id, 'qty', newQty);
+            setCalculatingQtyForItem(null);
+          }}
         />
       )}
 
@@ -346,6 +371,28 @@ const BOQWorkspace = ({ project, onUpdate }) => {
         .inline-input:hover { border-color: var(--border-medium); background: white; }
         .inline-input:focus { border-color: var(--accent-600); background: white; outline: none; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
         .inline-input:disabled { cursor: not-allowed; color: var(--primary-400); background: transparent; }
+
+        .qty-input-wrapper {
+          display: flex;
+          align-items: center;
+          gap: 0.25rem;
+          background: var(--bg-main);
+          border-radius: 4px;
+          padding-right: 4px;
+        }
+
+        .btn-geo-trigger {
+          border: none;
+          background: transparent;
+          color: var(--primary-400);
+          cursor: pointer;
+          padding: 2px;
+          display: flex;
+          align-items: center;
+          transition: all 0.2s;
+        }
+
+        .btn-geo-trigger:hover { color: var(--accent-600); transform: scale(1.1); }
 
         .rate-source-toggle {
           display: flex;
