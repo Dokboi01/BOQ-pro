@@ -62,6 +62,7 @@ function App() {
   const [view, setView] = useState('loading');
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [authError, setAuthError] = useState(null);
   const [showSelector, setShowSelector] = useState(false);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [projects, setProjects] = useState([]);
@@ -140,19 +141,20 @@ function App() {
   }, [user]);
 
   const handleLogin = async (credentials) => {
+    setAuthError(null);
     const { error } = await supabase.auth.signInWithPassword({
       email: credentials.email,
       password: credentials.password,
     });
 
     if (error) {
-      alert(error.message);
+      setAuthError(error.message);
       return;
     }
-    // Session state change will handle the rest via useEffect
   };
 
   const handleSignUp = async (data) => {
+    setAuthError(null);
     const { data: res, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
@@ -165,7 +167,7 @@ function App() {
     });
 
     if (error) {
-      alert(error.message);
+      setAuthError(error.message);
       return;
     }
 
@@ -332,8 +334,8 @@ function App() {
     }}
     onBack={() => setView(user ? 'app' : 'landing')}
   />;
-  if (view === 'login') return <Login onLogin={handleLogin} onSwitchToSignUp={() => setView('signup')} />;
-  if (view === 'signup') return <SignUp selectedPlan={selectedPlan} onSignUp={handleSignUp} onSwitchToLogin={(target) => setView(target)} />;
+  if (view === 'login') return <Login error={authError} onLogin={handleLogin} onSwitchToSignUp={() => { setAuthError(null); setView('signup'); }} onForgotPassword={() => setView('forgot-password')} />;
+  if (view === 'signup') return <SignUp error={authError} selectedPlan={selectedPlan} onSignUp={handleSignUp} onSwitchToLogin={(target) => { setAuthError(null); setView(target); }} />;
   if (view === 'verification') return (
     <EmailVerification
       email={pendingUser?.email}

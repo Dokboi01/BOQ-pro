@@ -1,85 +1,92 @@
 import React, { useState } from 'react';
-import { Shield, Mail, Lock, ArrowRight, Github } from 'lucide-react';
+import { Shield, Mail, Lock, ArrowRight, Github, AlertCircle } from 'lucide-react';
 
-const Login = ({ onLogin, onSwitchToSignUp, onForgotPassword }) => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        onLogin({ email, password });
-    };
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onLogin({ email, password });
+  };
 
-    return (
-        <div className="auth-container view-fade-in">
-            <div className="auth-card glass-card">
-                <div className="auth-header">
-                    <div className="logo">
-                        <Shield size={32} className="text-accent-600" />
-                        <span>BOQ <strong>PRO</strong></span>
-                    </div>
-                    <h1>Welcome Back</h1>
-                    <p>Login to manage your construction projects</p>
-                </div>
+  return (
+    <div className="auth-container view-fade-in">
+      <div className="auth-card glass-card">
+        <div className="auth-header">
+          <div className="logo">
+            <Shield size={32} className="text-accent-600" />
+            <span>BOQ <strong>PRO</strong></span>
+          </div>
+          <h1>Welcome Back</h1>
+          <p>Login to manage your construction projects</p>
+        </div>
 
-                <form onSubmit={handleSubmit} className="auth-form">
-                    <div className="form-group">
-                        <label className="form-label">Work Email</label>
-                        <div className="input-with-icon">
-                            <Mail size={18} className="input-icon" />
-                            <input
-                                type="email"
-                                className="form-input"
-                                placeholder="name@company.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-                        </div>
-                    </div>
+        {error && (
+          <div className="auth-error-banner view-fade-in">
+            <AlertCircle size={18} />
+            <span>{error}</span>
+          </div>
+        )}
 
-                    <div className="form-group">
-                        <div className="label-row">
-                            <label className="form-label">Password</label>
-                            <button type="button" className="text-link" onClick={onForgotPassword}>Forgot password?</button>
-                        </div>
-                        <div className="input-with-icon">
-                            <Lock size={18} className="input-icon" />
-                            <input
-                                type="password"
-                                className="form-input"
-                                placeholder="••••••••"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    <button type="submit" className="btn-primary auth-submit">
-                        Sign In <ArrowRight size={18} />
-                    </button>
-                </form>
-
-                <div className="auth-divider">
-                    <span>Or continue with</span>
-                </div>
-
-                <div className="social-auth">
-                    <button className="btn-outline social-btn">
-                        <Github size={20} /> GitHub
-                    </button>
-                    <button className="btn-outline social-btn">
-                        Google
-                    </button>
-                </div>
-
-                <div className="auth-footer">
-                    Don't have an account? <button className="text-link" onClick={onSwitchToSignUp}>Create account</button>
-                </div>
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="form-group">
+            <label className="form-label">Work Email</label>
+            <div className="input-with-icon">
+              <Mail size={18} className="input-icon" />
+              <input
+                type="email"
+                className="form-input"
+                placeholder="name@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
+          </div>
 
-            <style jsx="true">{`
+          <div className="form-group">
+            <div className="label-row">
+              <label className="form-label">Password</label>
+              <button type="button" className="text-link" onClick={onForgotPassword}>Forgot password?</button>
+            </div>
+            <div className="input-with-icon">
+              <Lock size={18} className="input-icon" />
+              <input
+                type="password"
+                className="form-input"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <button type="submit" className="btn-primary auth-submit">
+            Sign In <ArrowRight size={18} />
+          </button>
+        </form>
+
+        <div className="auth-divider">
+          <span>Or continue with</span>
+        </div>
+
+        <div className="social-auth">
+          <button className="btn-outline social-btn">
+            <Github size={20} /> GitHub
+          </button>
+          <button className="btn-outline social-btn">
+            Google
+          </button>
+        </div>
+
+        <div className="auth-footer">
+          Don't have an account? <button className="text-link" onClick={onSwitchToSignUp}>Create account</button>
+        </div>
+      </div>
+
+      <style jsx="true">{`
         .auth-container {
           min-height: 100vh;
           display: flex;
@@ -207,8 +214,8 @@ const Login = ({ onLogin, onSwitchToSignUp, onForgotPassword }) => {
           color: var(--primary-500);
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 export default Login;

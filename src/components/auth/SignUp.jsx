@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Shield, Mail, Lock, User, ArrowRight, Check } from 'lucide-react';
+import { Shield, Mail, Lock, User, ArrowRight, Check, AlertCircle } from 'lucide-react';
 
-const SignUp = ({ selectedPlan, onSignUp, onSwitchToLogin }) => {
+const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin }) => {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -43,6 +43,13 @@ const SignUp = ({ selectedPlan, onSignUp, onSwitchToLogin }) => {
               <span className="plan-name">{selectedPlan}</span>
             </div>
             <button className="change-link" onClick={() => onSwitchToLogin('pricing')}>Change</button>
+          </div>
+        )}
+
+        {error && (
+          <div className="auth-error-banner view-fade-in">
+            <AlertCircle size={18} />
+            <span>{error}</span>
           </div>
         )}
 
