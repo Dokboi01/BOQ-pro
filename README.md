@@ -1,16 +1,76 @@
-# React + Vite
+# BOQ Pro - Professional Bill of Quantities Management
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 🚀 Live Demo
 
-Currently, two official plugins are available:
+[View Live Application](#) *(Link will be available after Vercel deployment)*
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 📋 Overview
 
-## React Compiler
+BOQ Pro is a professional-grade Bill of Quantities management platform designed for civil engineering practitioners. Built with modern cloud infrastructure and premium UI/UX design.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Key Features
 
-## Expanding the ESLint configuration
+- ✅ **Cloud-Native Architecture** - Powered by Supabase for real-time data synchronization
+- ✅ **Premium Authentication** - Glassmorphism design with elegant verification flow
+- ✅ **Professional Price Intelligence** - Live market data and benchmark application
+- ✅ **Project Management** - Create, save, load, and delete projects with ease
+- ✅ **Material Library** - Cloud-synced benchmarks and market indices
+- ✅ **Export Capabilities** - Generate Excel and PDF reports
+- ✅ **Row Level Security** - Enterprise-grade data protection
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🛠️ Tech Stack
+
+- **Frontend**: React 19 + Vite
+- **Backend**: Supabase (PostgreSQL + Auth)
+- **UI**: Custom CSS with Glassmorphism
+- **Email**: Resend API for professional communications
+- **Desktop**: Electron support for cross-platform deployment
+
+## 🎨 UI Highlights
+
+- Dark-themed premium interface
+- Responsive design for all devices
+- Smooth animations and micro-interactions
+- Inline error handling with professional feedback
+- Consultant-grade visual design
+
+## 📧 Email & Authentication
+
+- Dual verification methods (Magic Link + 6-digit code)
+- Professional email branding
+- Rate limit handling and workarounds
+- Comprehensive setup documentation
+
+## 🔒 Security
+
+- Row Level Security (RLS) on all database tables
+- Secure session management
+- Environment variable protection
+- Professional-grade authentication flow
+
+## 🚀 Deployment
+
+This application is deployed on Vercel with automatic CI/CD from the main branch.
+
+### Environment Variables Required
+
+- `VITE_SUPABASE_URL` - Your Supabase project URL
+- `VITE_SUPABASE_ANON_KEY` - Your Supabase anonymous key
+
+## 💼 For Investors
+
+BOQ Pro represents a significant opportunity in the civil engineering software market:
+
+- **Market Need**: Traditional BOQ tools are outdated and lack cloud capabilities
+- **Modern Solution**: Cloud-native platform with professional UI/UX
+- **Scalability**: Built on Supabase infrastructure for unlimited growth
+- **Cross-Platform**: Web + Electron desktop app for maximum reach
+- **Professional Grade**: Enterprise-ready security and features
+
+---
+
+## 📞 Contact
+
+For investment inquiries or technical questions, please reach out through the repository.
+
+© 2026 BOQ Pro - Professional Bill of Quantities Management
