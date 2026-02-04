@@ -9,8 +9,13 @@ import ProjectDashboard from './components/dashboard/ProjectDashboard';
 import EmailVerification from './components/auth/EmailVerification';
 import { STRUCTURE_DATA } from './data/structures';
 import { PLAN_LIMITS, PLAN_NAMES } from './data/plans';
-import { saveProject, getProjects, addUser, verifyUser, getUserByEmail, updateUser, verifyPassword } from './db/database';
-import { sendVerificationEmail } from './utils/mailService';
+import { supabase } from './db/supabase';
+import { saveProject, getProjects, getProfile, updateProfile } from './db/database';
+import BOQWorkspace from './components/workspace/BOQWorkspace';
+import MaterialLibrary from './components/workspace/MaterialLibrary';
+import Reports from './components/workspace/Reports';
+import Settings from './components/dashboard/Settings';
+import StructureSelector from './components/dashboard/StructureSelector';
 import {
   BarChart3,
   MapPin,
@@ -26,14 +31,9 @@ import {
 } from 'lucide-react';
 
 function App() {
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('boq_pro_user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
-  const [view, setView] = useState(() => {
-    const savedUser = localStorage.getItem('boq_pro_user');
-    return savedUser ? 'app' : 'landing';
-  });
+  console.log('App Rendering...');
+  const [user, setUser] = useState(null);
+  const [view, setView] = useState('loading');
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showSelector, setShowSelector] = useState(false);
@@ -41,97 +41,144 @@ function App() {
   const [projects, setProjects] = useState([]);
   const [pendingUser, setPendingUser] = useState(null);
 
-  // Load projects from Dexie on mount
+  // Check for active session on mount
   React.useEffect(() => {
-    const loadData = async () => {
-      const storedProjects = await getProjects();
-      setProjects(storedProjects);
+    let isMounted = true;
+
+    const checkUser = async () => {
+      try {
+        console.log('Checking user session...');
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error) throw error;
+
+        if (session && isMounted) {
+          console.log('Session found:', session.user.email);
+          const profile = await getProfile();
+          console.log('Profile found:', profile);
+          setUser({ ...session.user, ...profile });
+          setView('app');
+        } else if (isMounted) {
+          console.log('No session, showing landing');
+          setView('landing');
+        }
+      } catch (err) {
+        console.error('Core initialization failed:', err);
+        if (isMounted) setView('landing');
+      }
     };
-    loadData();
-  }, []);
+
+    checkUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return;
+
+      if (session) {
+        const profile = await getProfile();
+        setUser({ ...session.user, ...profile });
+        setView('app');
+      } else {
+        setUser(null);
+        setView('landing');
+      }
+    });
+
+    // Fallback if still loading after 5 seconds
+    const timer = setTimeout(() => {
+      if (isMounted && view === 'loading') {
+        console.warn('Initialization timed out, falling back to landing');
+        setView('landing');
+      }
+    }, 5000);
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+      clearTimeout(timer);
+    };
+  }, [view]);
+
+  // Load projects from Supabase when user is set
+  React.useEffect(() => {
+    if (user) {
+      const loadData = async () => {
+        const storedProjects = await getProjects();
+        setProjects(storedProjects);
+      };
+      loadData();
+    }
+  }, [user]);
 
   const handleLogin = async (credentials) => {
-    const userInDb = await getUserByEmail(credentials.email);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: credentials.email,
+      password: credentials.password,
+    });
 
-    if (!userInDb) {
-      alert('Account not found.');
+    if (error) {
+      alert(error.message);
       return;
     }
-
-    if (!userInDb.isVerified) {
-      setPendingUser(userInDb);
-      setView('verification');
-      return;
-    }
-
-    const isMatch = await verifyPassword(credentials.password, userInDb.password);
-    if (isMatch) {
-      setUser(userInDb);
-      localStorage.setItem('boq_pro_user', JSON.stringify(userInDb));
-      setView('app');
-    } else {
-      alert('Invalid password.');
-    }
+    // Session state change will handle the rest via useEffect
   };
 
   const handleSignUp = async (data) => {
-    // Check if user already exists
-    const existing = await getUserByEmail(data.email);
+    const { data: res, error } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
+      options: {
+        data: {
+          full_name: data.fullName,
+          plan: selectedPlan || PLAN_NAMES.FREE,
+        }
+      }
+    });
 
-    if (existing && existing.isVerified) {
-      alert('An account with this email already exists.');
+    if (error) {
+      alert(error.message);
       return;
     }
 
-    const userData = {
-      fullName: data.fullName,
-      email: data.email,
-      password: data.password, // In production, hash this!
-      plan: selectedPlan || PLAN_NAMES.FREE,
-      verificationCode: data.verificationCode,
-      isVerified: false,
-      isOnboarded: false
-    };
-
-    // If unverified user exists, update them. Otherwise add new.
-    if (existing) {
-      await updateUser(data.email, userData);
-    } else {
-      await addUser(userData);
+    if (res.user && res.session === null) {
+      // Email verification required (Supabase built-in or user's custom)
+      alert('Please check your email for a verification link.');
+      setPendingUser(data);
+      // We can redirect to a "check your email" view or similar
     }
-
-    // Send the email (currently logs to console)
-    await sendVerificationEmail(data.email, data.verificationCode);
-
-    setPendingUser(userData);
-    setView('verification');
   };
 
   const handleVerify = async (code) => {
-    if (!pendingUser) return false;
+    // If using Supabase built-in OTP:
+    const { error } = await supabase.auth.verifyOtp({
+      email: pendingUser.email,
+      token: code,
+      type: 'signup'
+    });
 
-    const success = await verifyUser(pendingUser.email, code);
-    if (success) {
-      const verifiedUser = { ...pendingUser, isVerified: true };
-      setUser(verifiedUser);
-      setPendingUser(null);
-      localStorage.setItem('boq_pro_user', JSON.stringify(verifiedUser));
-      setView('onboarding');
-      return true;
+    if (error) {
+      alert(error.message);
+      return false;
     }
-    return false;
+    return true;
   };
 
   const handleResendCode = async () => {
     if (!pendingUser) return;
-    await sendVerificationEmail(pendingUser.email, pendingUser.verificationCode);
+    await supabase.auth.resend({
+      type: 'signup',
+      email: pendingUser.email,
+    });
   };
 
-  const handleOnboardingComplete = (data) => {
-    const updatedUser = { ...user, role: data.userType, isOnboarded: true };
-    setUser(updatedUser);
-    localStorage.setItem('boq_pro_user', JSON.stringify(updatedUser));
-    setView('app');
+  const handleOnboardingComplete = async (data) => {
+    const updatedProfile = await updateProfile({
+      role: data.userType,
+      is_onboarded: true
+    });
+    if (updatedProfile) {
+      setUser(prev => ({ ...prev, ...updatedProfile }));
+      setView('app');
+    }
   };
 
   const handleCreateProject = () => {
@@ -182,28 +229,42 @@ function App() {
   };
 
   const calculateTotalValue = () => {
-    const activeProject = projects.find(p => p.id === activeProjectId) || projects[0];
-    if (!activeProject) return 0;
+    try {
+      const activeProject = projects.find(p => p.id === activeProjectId) || projects[0];
+      if (!activeProject || !activeProject.sections) return 0;
 
-    return activeProject.sections.reduce((acc, section) => {
-      return acc + section.items.reduce((itemAcc, item) => itemAcc + (item.total || 0), 0);
-    }, 0);
+      return activeProject.sections.reduce((acc, section) => {
+        if (!section || !section.items) return acc;
+        return acc + section.items.reduce((itemAcc, item) => itemAcc + (item.total || 0), 0);
+      }, 0);
+    } catch (err) {
+      console.error('calculateTotalValue error:', err);
+      return 0;
+    }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem('boq_pro_user');
     setView('landing');
   };
 
+  if (view === 'loading') return (
+    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white' }}>
+      <div className="loading-spinner"></div>
+      <div style={{ marginLeft: '10px' }}>Loading BOQ Pro...</div>
+    </div>
+  );
+
   if (view === 'landing') return <Hero onGetStarted={() => setView('pricing')} />;
   if (view === 'pricing') return <PricingPage
-    onSelectPlan={(plan) => {
+    onSelectPlan={async (plan) => {
       if (user) {
-        const updatedUser = { ...user, plan };
-        setUser(updatedUser);
-        localStorage.setItem('boq_pro_user', JSON.stringify(updatedUser));
-        setView('app');
+        const updatedProfile = await updateProfile({ plan });
+        if (updatedProfile) {
+          setUser(prev => ({ ...prev, ...updatedProfile }));
+          setView('app');
+        }
       } else {
         setSelectedPlan(plan);
         setView('signup');
@@ -236,7 +297,11 @@ function App() {
           onUpgrade={() => { setView('pricing'); }}
         />;
       case 'workspace':
-        return <div className="view-fade-in"><BOQWorkspace key={activeProject?.id} project={activeProject} onUpdate={handleUpdateProject} /></div>;
+        return activeProject ? (
+          <div className="view-fade-in"><BOQWorkspace key={activeProject.id} project={activeProject} onUpdate={handleUpdateProject} /></div>
+        ) : (
+          <div className="enterprise-card p-4">No project selected.</div>
+        );
       case 'library':
         return <div className="view-fade-in"><MaterialLibrary user={user} activeProject={activeProject} onUpdate={handleUpdateProject} onUpgrade={() => { setView('pricing'); }} /></div>;
       case 'reports':
@@ -282,13 +347,13 @@ function App() {
                 </h1>
                 <div className="meta-row">
                   <span className="meta-item"><MapPin size={14} /> Lagos - Algiers Sector</span>
-                  <span className="meta-item"><UserIcon size={14} /> {user?.name || 'Practitioner'}</span>
+                  <span className="meta-item"><UserIcon size={14} /> {user?.full_name || 'Practitioner'}</span>
                   <span className="meta-item"><Calendar size={14} /> Q1 2026</span>
                 </div>
               </>
             ) : (
               <>
-                <h1>Welcome, {user?.name || 'Practitioner'}</h1>
+                <h1>Welcome, {user?.full_name || 'Practitioner'}</h1>
                 <p className="subtitle">Ready to start your next professional BOQ?</p>
               </>
             )}

@@ -10,9 +10,11 @@ import {
   PieChart,
   Package,
   ExternalLink,
-  Lock
+  Lock,
+  Mail as MailIcon
 } from 'lucide-react';
 import { hasFeature, PLAN_NAMES } from '../../data/plans';
+import { sendReportEmail } from '../../utils/mailService';
 import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -53,7 +55,7 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
     ref: activeProject?.id ? `BOQ-${activeProject.id}` : 'N/A',
     client: user?.organization || 'Private Client',
     location: 'Lagos - Algiers Sector',
-    preparedBy: user?.name || 'BOQ Pro Professional',
+    preparedBy: user?.full_name || 'BOQ Pro Professional',
     date: activeProject?.date || new Date().toLocaleDateString()
   };
 
@@ -188,6 +190,22 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
     });
 
     doc.save(`${projectInfo.title}_BOQ.pdf`);
+  };
+
+  const handleEmailReport = async () => {
+    const clientEmail = prompt('Enter client email address:');
+    if (!clientEmail) return;
+
+    const success = await sendReportEmail(clientEmail, {
+      name: projectInfo.title,
+      totalValue: calculateGrandTotal()
+    });
+
+    if (success) {
+      alert(`Report successfully emailed to ${clientEmail}`);
+    } else {
+      alert('Failed to send email. Please ensure your API key is set in Settings.');
+    }
   };
 
   const renderSelectionScreen = () => (
@@ -402,6 +420,9 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
               <span className="print-warning">Preview Mode: Use 'Print to PDF' for digital export</span>
               <button className="btn-secondary" onClick={handleExportExcel}>
                 <FileSpreadsheet size={16} /> Export to Excel
+              </button>
+              <button className="btn-secondary" onClick={handleEmailReport}>
+                <MailIcon size={16} /> Email to Client
               </button>
               <button className="btn-primary-action" onClick={handleExportPDF}>
                 <Download size={16} /> Export to PDF

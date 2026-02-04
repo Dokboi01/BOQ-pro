@@ -26,12 +26,20 @@ const Settings = ({ user }) => {
   ];
 
   const [apiKey, setApiKey] = useState('');
+  const [supabaseUrl, setSupabaseUrl] = useState('');
+  const [supabaseKey, setSupabaseKey] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const loadSettings = async () => {
       const savedKey = await getSetting('resend_api_key');
       if (savedKey) setApiKey(savedKey);
+
+      const sUrl = await getSetting('supabase_url');
+      if (sUrl) setSupabaseUrl(sUrl);
+
+      const sKey = await getSetting('supabase_anon_key');
+      if (sKey) setSupabaseKey(sKey);
     };
     loadSettings();
   }, []);
@@ -39,8 +47,10 @@ const Settings = ({ user }) => {
   const handleSaveAPI = async () => {
     setIsSaving(true);
     await saveSetting('resend_api_key', apiKey);
+    await saveSetting('supabase_url', supabaseUrl);
+    await saveSetting('supabase_anon_key', supabaseKey);
     setIsSaving(false);
-    alert('API settings updated successfully.');
+    alert('Cloud settings updated successfully.');
   };
 
   const renderContent = () => {
@@ -54,13 +64,13 @@ const Settings = ({ user }) => {
             </div>
             <div className="settings-form">
               <div className="form-group-avatar">
-                <div className="avatar-large">{user?.name?.charAt(0).toUpperCase()}</div>
+                <div className="avatar-large">{(user?.full_name || 'P').charAt(0).toUpperCase()}</div>
                 <button className="btn-secondary-sm">Change Photo</button>
               </div>
               <div className="grid-2">
                 <div className="form-item">
                   <label>Full Name</label>
-                  <input type="text" defaultValue={user?.name} className="settings-input" />
+                  <input type="text" defaultValue={user?.full_name} className="settings-input" />
                 </div>
                 <div className="form-item">
                   <label>Job Title</label>
@@ -172,6 +182,47 @@ const Settings = ({ user }) => {
                     disabled={isSaving}
                   >
                     {isSaving ? 'Saving...' : 'Verify & Save'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="api-card enterprise-card mt-6">
+                <div className="service-info">
+                  <div className="icon-box-sm text-success"><Database size={20} /></div>
+                  <div className="text-box">
+                    <h4>Supabase Cloud Storage</h4>
+                    <p>Enables centralized user management and project synchronization across devices.</p>
+                  </div>
+                </div>
+                <div className="grid-2 mt-4">
+                  <div className="form-item">
+                    <label>Supabase URL</label>
+                    <input
+                      type="text"
+                      value={supabaseUrl}
+                      onChange={(e) => setSupabaseUrl(e.target.value)}
+                      placeholder="https://xxxx.supabase.co"
+                      className="settings-input"
+                    />
+                  </div>
+                  <div className="form-item">
+                    <label>Anon Public Key</label>
+                    <input
+                      type="password"
+                      value={supabaseKey}
+                      onChange={(e) => setSupabaseKey(e.target.value)}
+                      placeholder="eyJhbGci..."
+                      className="settings-input"
+                    />
+                  </div>
+                </div>
+                <div className="form-actions mt-4">
+                  <button
+                    className="btn-primary"
+                    onClick={handleSaveAPI}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? 'Saving...' : 'Connect Cloud'}
                   </button>
                 </div>
               </div>

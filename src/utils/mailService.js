@@ -39,3 +39,34 @@ export const sendVerificationEmail = async (email, code) => {
         return false;
     }
 };
+
+export const sendReportEmail = async (email, projectData) => {
+    try {
+        const apiKey = await getSetting('resend_api_key');
+        if (!apiKey) return false;
+
+        const resend = new Resend(apiKey);
+
+        const { error } = await resend.emails.send({
+            from: 'BOQ Pro <reports@boqpro.com>',
+            to: [email],
+            subject: `Professional BOQ Report: ${projectData.name}`,
+            html: `
+                <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                    <h2 style="color: #0f172a;">Project Cost Report</h2>
+                    <p>Please find the cost breakdown summary for <strong>${projectData.name}</strong> prepared via BOQ Pro.</p>
+                    <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <div style="font-size: 14px; color: #64748b;">TOTAL CONTRACT SUM:</div>
+                        <div style="font-size: 24px; font-weight: bold; color: #1e293b;">₦ ${projectData.totalValue.toLocaleString()}</div>
+                    </div>
+                    <p style="font-size: 14px; color: #334155;">The detailed Bill of Quantities breakdown is attached to your practitioner dashboard.</p>
+                </div>
+            `
+        });
+
+        return !error;
+    } catch (err) {
+        console.error('[MAIL SERVICE] Report send failed:', err);
+        return false;
+    }
+};

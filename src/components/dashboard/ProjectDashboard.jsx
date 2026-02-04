@@ -57,7 +57,7 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
       {/* SaaS Header */}
       <header className="dashboard-welcome">
         <div>
-          <h2>Good Afternoon, {user?.name || 'Practitioner'}</h2>
+          <h2>Good Afternoon, {user?.full_name || 'Practitioner'}</h2>
           <p>You have <strong>{projects.length} active projects</strong> this month.</p>
         </div>
         {user?.plan === PLAN_NAMES.FREE && (

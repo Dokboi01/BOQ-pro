@@ -13,6 +13,7 @@
     "electron:build": "npm run build && electron-builder"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.94.0",
     "bcryptjs": "^3.0.3",
     "dexie": "^4.3.0",
     "exceljs": "^4.4.0",

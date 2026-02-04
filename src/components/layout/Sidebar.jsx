@@ -62,11 +62,11 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout }) => {
         {!collapsed && user && (
           <div className="user-profile">
             <div className="user-avatar">
-              {user.name.charAt(0).toUpperCase()}
+              {(user.full_name || user.email || 'P').charAt(0).toUpperCase()}
             </div>
             <div className="user-info">
-              <span className="user-name">{user.name}</span>
-              <span className="user-plan">{user.plan} Plan</span>
+              <span className="user-name">{user.full_name || 'Practitioner'}</span>
+              <span className="user-plan">{user.plan || 'Free'} Plan</span>
             </div>
           </div>
         )}
