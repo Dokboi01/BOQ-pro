@@ -30,6 +30,32 @@ import {
   Calculator as CalcIcon
 } from 'lucide-react';
 
+// Class-based Error Boundary to catch render errors
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '40px', background: '#450a0a', color: 'white', minHeight: '100vh', fontFamily: 'sans-serif' }}>
+          <h1>💥 UI Render Failure</h1>
+          <p>{this.state.error?.toString()}</p>
+          <button onClick={() => window.location.reload()} style={{ padding: '10px 20px', cursor: 'pointer' }}>Reload</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function App() {
   console.log('App Rendering...');
   const [user, setUser] = useState(null);
@@ -40,6 +66,7 @@ function App() {
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [projects, setProjects] = useState([]);
   const [pendingUser, setPendingUser] = useState(null);
+  const initializationComplete = React.useRef(false);
 
   // Check for active session on mount
   React.useEffect(() => {
@@ -57,9 +84,11 @@ function App() {
           const profile = await getProfile();
           console.log('Profile found:', profile);
           setUser({ ...session.user, ...profile });
+          initializationComplete.current = true;
           setView('app');
         } else if (isMounted) {
           console.log('No session, showing landing');
+          initializationComplete.current = true;
           setView('landing');
         }
       } catch (err) {
@@ -76,6 +105,7 @@ function App() {
       if (session) {
         const profile = await getProfile();
         setUser({ ...session.user, ...profile });
+        initializationComplete.current = true;
         setView('app');
       } else {
         setUser(null);
@@ -85,7 +115,7 @@ function App() {
 
     // Fallback if still loading after 5 seconds
     const timer = setTimeout(() => {
-      if (isMounted && view === 'loading') {
+      if (isMounted && !initializationComplete.current) {
         console.warn('Initialization timed out, falling back to landing');
         setView('landing');
       }
@@ -96,7 +126,7 @@ function App() {
       subscription.unsubscribe();
       clearTimeout(timer);
     };
-  }, [view]);
+  }, []);
 
   // Load projects from Supabase when user is set
   React.useEffect(() => {
@@ -140,23 +170,40 @@ function App() {
     }
 
     if (res.user && res.session === null) {
-      // Email verification required (Supabase built-in or user's custom)
-      alert('Please check your email for a verification link.');
+      // Email verification required
       setPendingUser(data);
-      // We can redirect to a "check your email" view or similar
+      setView('verification');
+
+      // Also send the custom code via our mail service for a professional touch
+      // Note: This matches the 6-digit code generated in SignUp.jsx
+      import('./utils/mailService').then(m => {
+        m.sendVerificationEmail(data.email, data.verificationCode);
+      });
     }
   };
 
   const handleVerify = async (code) => {
-    // If using Supabase built-in OTP:
+    console.log('Verifying code:', code);
+
+    // Check if it's our custom verification code (Better for Electron compatibility)
+    if (pendingUser && code === pendingUser.verificationCode) {
+      console.log('Custom code verified successfully');
+      // In a real app, we'd confirm the user in Supabase here via edge function
+      // For now, we'll proceed to the app view. The user will be fully verified 
+      // once they click the link in their mail at any time.
+      setView('app');
+      return true;
+    }
+
+    // Fallback to Supabase native OTP verification
     const { error } = await supabase.auth.verifyOtp({
-      email: pendingUser.email,
+      email: pendingUser?.email,
       token: code,
       type: 'signup'
     });
 
     if (error) {
-      alert(error.message);
+      console.error('Supabase OTP verification failed:', error.message);
       return false;
     }
     return true;
@@ -505,4 +552,10 @@ function App() {
   );
 }
 
-export default App;
+export default function SafeApp() {
+  return (
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  );
+}

@@ -48,6 +48,7 @@ const EmailVerification = ({ email, onVerify, onResend, onBack }) => {
                 setError('Invalid verification code. Please try again.');
             }
         } catch (err) {
+            console.error(err);
             setError('Verification failed. Please check your connection.');
         } finally {
             setLoading(false);
@@ -69,7 +70,11 @@ const EmailVerification = ({ email, onVerify, onResend, onBack }) => {
                         <span>BOQ <strong>PRO</strong></span>
                     </div>
                     <h1>Verify your email</h1>
-                    <p>We've sent a 6-digit code to <strong>{email}</strong></p>
+                    <p>We've sent a 6-digit code and a <strong>verification link</strong> to <strong>{email}</strong></p>
+                    <div className="verification-hint">
+                        <CheckCircle2 size={16} className="text-success" />
+                        <span>You can click the link in your email to verify instantly.</span>
+                    </div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="auth-form">
@@ -136,6 +141,20 @@ const EmailVerification = ({ email, onVerify, onResend, onBack }) => {
                     background: white;
                     color: var(--primary-900);
                     transition: all 0.2s;
+                }
+
+                .verification-hint {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 0.5rem;
+                    margin-top: 1rem;
+                    padding: 0.5rem 1rem;
+                    background: var(--success-50);
+                    border-radius: var(--radius-md);
+                    font-size: 0.8125rem;
+                    font-weight: 600;
+                    color: var(--success-700);
                 }
 
                 .digit-input:focus {
