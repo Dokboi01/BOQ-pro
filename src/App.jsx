@@ -9,7 +9,7 @@ import ProjectDashboard from './components/dashboard/ProjectDashboard';
 import EmailVerification from './components/auth/EmailVerification';
 import { STRUCTURE_DATA } from './data/structures';
 import { PLAN_LIMITS, PLAN_NAMES } from './data/plans';
-import { saveProject, getProjects, addUser, verifyUser, getUserByEmail } from './db/database';
+import { saveProject, getProjects, addUser, verifyUser, getUserByEmail, updateUser, verifyPassword } from './db/database';
 import { sendVerificationEmail } from './utils/mailService';
 import {
   BarChart3,
@@ -50,28 +50,40 @@ function App() {
     loadData();
   }, []);
 
-  const handleLogin = (credentials) => {
-    const mockUser = {
-      name: credentials.email.split('@')[0],
-      email: credentials.email,
-      plan: 'Pro',
-      role: 'Engineer',
-      isOnboarded: true
-    };
-    setUser(mockUser);
-    localStorage.setItem('boq_pro_user', JSON.stringify(mockUser));
-    setView('app');
+  const handleLogin = async (credentials) => {
+    const userInDb = await getUserByEmail(credentials.email);
+
+    if (!userInDb) {
+      alert('Account not found.');
+      return;
+    }
+
+    if (!userInDb.isVerified) {
+      setPendingUser(userInDb);
+      setView('verification');
+      return;
+    }
+
+    const isMatch = await verifyPassword(credentials.password, userInDb.password);
+    if (isMatch) {
+      setUser(userInDb);
+      localStorage.setItem('boq_pro_user', JSON.stringify(userInDb));
+      setView('app');
+    } else {
+      alert('Invalid password.');
+    }
   };
 
   const handleSignUp = async (data) => {
     // Check if user already exists
     const existing = await getUserByEmail(data.email);
+
     if (existing && existing.isVerified) {
       alert('An account with this email already exists.');
       return;
     }
 
-    const newUser = {
+    const userData = {
       fullName: data.fullName,
       email: data.email,
       password: data.password, // In production, hash this!
@@ -81,16 +93,17 @@ function App() {
       isOnboarded: false
     };
 
-    // Save to database (replaces previous record if exists)
+    // If unverified user exists, update them. Otherwise add new.
     if (existing) {
-      await verifyUser(data.email, 'RESET'); // Just a hack to clean up if needed, better to handle in DB helper
+      await updateUser(data.email, userData);
+    } else {
+      await addUser(userData);
     }
-    await addUser(newUser);
 
-    // "Send" the email
+    // Send the email (currently logs to console)
     await sendVerificationEmail(data.email, data.verificationCode);
 
-    setPendingUser(newUser);
+    setPendingUser(userData);
     setView('verification');
   };
 
@@ -225,7 +238,7 @@ function App() {
       case 'workspace':
         return <div className="view-fade-in"><BOQWorkspace key={activeProject?.id} project={activeProject} onUpdate={handleUpdateProject} /></div>;
       case 'library':
-        return <div className="view-fade-in"><MaterialLibrary user={user} onUpgrade={() => { setView('pricing'); }} /></div>;
+        return <div className="view-fade-in"><MaterialLibrary user={user} activeProject={activeProject} onUpdate={handleUpdateProject} onUpgrade={() => { setView('pricing'); }} /></div>;
       case 'reports':
         return <div className="view-fade-in"><Reports user={user} projects={projects} activeProjectId={activeProjectId} onUpgrade={() => { setView('pricing'); }} /></div>;
       case 'settings':

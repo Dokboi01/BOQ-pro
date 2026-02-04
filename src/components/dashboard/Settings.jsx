@@ -1,147 +1,218 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-    User,
-    CreditCard,
-    Shield,
-    Bell,
-    ArrowUpCircle,
-    Check,
-    ChevronRight,
-    Plus
+  User,
+  CreditCard,
+  Shield,
+  Bell,
+  ArrowUpCircle,
+  Check,
+  ChevronRight,
+  Plus,
+  Key,
+  Database,
+  Zap
 } from 'lucide-react';
+import { saveSetting, getSetting } from '../../db/database';
 
 const Settings = ({ user }) => {
-    const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState('profile');
 
-    const tabs = [
-        { id: 'profile', label: 'My Profile', icon: User },
-        { id: 'subscription', label: 'Subscription', icon: CreditCard },
-        { id: 'security', label: 'Security', icon: Shield },
-        { id: 'notifications', label: 'Notifications', icon: Bell },
-    ];
+  const tabs = [
+    { id: 'profile', label: 'My Profile', icon: User },
+    { id: 'subscription', label: 'Subscription', icon: CreditCard },
+    { id: 'advanced', label: 'Professional API', icon: Key },
+    { id: 'security', label: 'Security', icon: Shield },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
+  ];
 
-    const renderContent = () => {
-        switch (activeTab) {
-            case 'profile':
-                return (
-                    <div className="settings-panel view-fade-in">
-                        <div className="settings-header">
-                            <h3>Profile Information</h3>
-                            <p>Update your personal details and professional role.</p>
-                        </div>
-                        <div className="settings-form">
-                            <div className="form-group-avatar">
-                                <div className="avatar-large">{user?.name?.charAt(0).toUpperCase()}</div>
-                                <button className="btn-secondary-sm">Change Photo</button>
-                            </div>
-                            <div className="grid-2">
-                                <div className="form-item">
-                                    <label>Full Name</label>
-                                    <input type="text" defaultValue={user?.name} className="settings-input" />
-                                </div>
-                                <div className="form-item">
-                                    <label>Job Title</label>
-                                    <input type="text" defaultValue={user?.role || 'Quantity Surveyor'} className="settings-input" />
-                                </div>
-                            </div>
-                            <div className="form-item">
-                                <label>Work Email</label>
-                                <input type="email" defaultValue={user?.email} className="settings-input" />
-                            </div>
-                            <div className="form-actions">
-                                <button className="btn-primary">Save Changes</button>
-                            </div>
-                        </div>
-                    </div>
-                );
-            case 'subscription':
-                return (
-                    <div className="settings-panel view-fade-in">
-                        <div className="settings-header">
-                            <h3>Subscription Plan</h3>
-                            <p>Manage your billing and plan limits.</p>
-                        </div>
+  const [apiKey, setApiKey] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
-                        <div className="current-plan-card">
-                            <div className="plan-badge">{user?.plan || 'Free'} Plan</div>
-                            <div className="plan-details">
-                                <h4>{user?.plan === 'Free' ? 'Student & Basic' : 'Practitioner Pro'}</h4>
-                                <p>{user?.plan === 'Free' ? 'Limited to 3 projects' : 'Unlimited professional projects'}</p>
-                            </div>
-                            {user?.plan === 'Free' ? (
-                                <button className="btn-upgrade-glow">Upgrade Now</button>
-                            ) : (
-                                <button className="btn-secondary-sm">Manage Billing</button>
-                            )}
-                        </div>
-
-                        <div className="limits-section">
-                            <h4>Workspace Usage</h4>
-                            <div className="limit-item">
-                                <div className="limit-info">
-                                    <span>Active Projects</span>
-                                    <span>3 / {user?.plan === 'Free' ? '3' : '∞'}</span>
-                                </div>
-                                <div className="limit-bar"><div className="limit-fill" style={{ width: user?.plan === 'Free' ? '100%' : '5%', background: user?.plan === 'Free' ? 'var(--warning-600)' : 'var(--accent-600)' }}></div></div>
-                            </div>
-                            <div className="limit-item">
-                                <div className="limit-info">
-                                    <span>Price Library Exports</span>
-                                    <span>12 / {user?.plan === 'Free' ? '15' : '∞'}</span>
-                                </div>
-                                <div className="limit-bar"><div className="limit-fill" style={{ width: user?.plan === 'Free' ? '80%' : '2%' }}></div></div>
-                            </div>
-                        </div>
-
-                        <div className="history-section">
-                            <h4>Billing History</h4>
-                            <div className="billing-table">
-                                <div className="table-header">
-                                    <span>Date</span>
-                                    <span>Amount</span>
-                                    <span>Status</span>
-                                    <span></span>
-                                </div>
-                                <div className="table-row">
-                                    <span>Oct 12, 2025</span>
-                                    <span>₦0.00</span>
-                                    <span className="badge-success">Paid</span>
-                                    <button className="btn-icon"><ArrowUpCircle size={14} /></button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
-            default:
-                return (
-                    <div className="settings-panel placeholder view-fade-in">
-                        <Check size={48} className="text-subtle" />
-                        <p>This section is coming soon.</p>
-                    </div>
-                );
-        }
+  useEffect(() => {
+    const loadSettings = async () => {
+      const savedKey = await getSetting('resend_api_key');
+      if (savedKey) setApiKey(savedKey);
     };
+    loadSettings();
+  }, []);
 
-    return (
-        <div className="settings-wrapper view-fade-in">
-            <aside className="settings-nav">
-                {tabs.map(tab => (
-                    <button
-                        key={tab.id}
-                        className={`settings-tab ${activeTab === tab.id ? 'active' : ''}`}
-                        onClick={() => setActiveTab(tab.id)}
-                    >
-                        <tab.icon size={18} />
-                        <span>{tab.label}</span>
-                    </button>
-                ))}
-            </aside>
+  const handleSaveAPI = async () => {
+    setIsSaving(true);
+    await saveSetting('resend_api_key', apiKey);
+    setIsSaving(false);
+    alert('API settings updated successfully.');
+  };
 
-            <main className="settings-content">
-                {renderContent()}
-            </main>
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'profile':
+        return (
+          <div className="settings-panel view-fade-in">
+            <div className="settings-header">
+              <h3>Profile Information</h3>
+              <p>Update your personal details and professional role.</p>
+            </div>
+            <div className="settings-form">
+              <div className="form-group-avatar">
+                <div className="avatar-large">{user?.name?.charAt(0).toUpperCase()}</div>
+                <button className="btn-secondary-sm">Change Photo</button>
+              </div>
+              <div className="grid-2">
+                <div className="form-item">
+                  <label>Full Name</label>
+                  <input type="text" defaultValue={user?.name} className="settings-input" />
+                </div>
+                <div className="form-item">
+                  <label>Job Title</label>
+                  <input type="text" defaultValue={user?.role || 'Quantity Surveyor'} className="settings-input" />
+                </div>
+              </div>
+              <div className="form-item">
+                <label>Work Email</label>
+                <input type="email" defaultValue={user?.email} className="settings-input" />
+              </div>
+              <div className="form-actions">
+                <button className="btn-primary">Save Changes</button>
+              </div>
+            </div>
+          </div>
+        );
+      case 'subscription':
+        return (
+          <div className="settings-panel view-fade-in">
+            <div className="settings-header">
+              <h3>Subscription Plan</h3>
+              <p>Manage your billing and plan limits.</p>
+            </div>
 
-            <style jsx="true">{`
+            <div className="current-plan-card">
+              <div className="plan-badge">{user?.plan || 'Free'} Plan</div>
+              <div className="plan-details">
+                <h4>{user?.plan === 'Free' ? 'Student & Basic' : 'Practitioner Pro'}</h4>
+                <p>{user?.plan === 'Free' ? 'Limited to 3 projects' : 'Unlimited professional projects'}</p>
+              </div>
+              {user?.plan === 'Free' ? (
+                <button className="btn-upgrade-glow">Upgrade Now</button>
+              ) : (
+                <button className="btn-secondary-sm">Manage Billing</button>
+              )}
+            </div>
+
+            <div className="limits-section">
+              <h4>Workspace Usage</h4>
+              <div className="limit-item">
+                <div className="limit-info">
+                  <span>Active Projects</span>
+                  <span>3 / {user?.plan === 'Free' ? '3' : '∞'}</span>
+                </div>
+                <div className="limit-bar"><div className="limit-fill" style={{ width: user?.plan === 'Free' ? '100%' : '5%', background: user?.plan === 'Free' ? 'var(--warning-600)' : 'var(--accent-600)' }}></div></div>
+              </div>
+              <div className="limit-item">
+                <div className="limit-info">
+                  <span>Price Library Exports</span>
+                  <span>12 / {user?.plan === 'Free' ? '15' : '∞'}</span>
+                </div>
+                <div className="limit-bar"><div className="limit-fill" style={{ width: user?.plan === 'Free' ? '80%' : '2%' }}></div></div>
+              </div>
+            </div>
+
+            <div className="history-section">
+              <h4>Billing History</h4>
+              <div className="billing-table">
+                <div className="table-header">
+                  <span>Date</span>
+                  <span>Amount</span>
+                  <span>Status</span>
+                  <span></span>
+                </div>
+                <div className="table-row">
+                  <span>Oct 12, 2025</span>
+                  <span>₦0.00</span>
+                  <span className="badge-success">Paid</span>
+                  <button className="btn-icon"><ArrowUpCircle size={14} /></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      case 'advanced':
+        return (
+          <div className="settings-panel view-fade-in">
+            <div className="settings-header">
+              <h3>Professional API Integration</h3>
+              <p>Connect third-party services like Resend for automated client emails.</p>
+            </div>
+
+            <div className="api-config-section">
+              <div className="api-card enterprise-card">
+                <div className="service-info">
+                  <div className="icon-box-sm"><Zap size={20} className="text-accent" /></div>
+                  <div className="text-box">
+                    <h4>Resend Configuration</h4>
+                    <p>Used for sending verification codes and project reports to clients.</p>
+                  </div>
+                </div>
+                <div className="form-item mt-4">
+                  <label>Resend API Key</label>
+                  <div className="input-group-pass">
+                    <input
+                      type="password"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      placeholder="re_xxxxxxxxxxxxxxxxxxxx"
+                      className="settings-input"
+                    />
+                  </div>
+                  <p className="input-hint">Get your key from <a href="https://resend.com/api-keys" target="_blank" rel="noreferrer">resend.com/api-keys</a></p>
+                </div>
+                <div className="form-actions mt-4">
+                  <button
+                    className="btn-primary"
+                    onClick={handleSaveAPI}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? 'Saving...' : 'Verify & Save'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="enterprise-tip mt-6">
+                <div className="icon-box-tip"><Database size={16} /></div>
+                <p>API keys are stored securely in your local database. They are never transmitted to our servers.</p>
+              </div>
+            </div>
+          </div>
+        );
+      default:
+        return (
+          <div className="settings-panel placeholder view-fade-in">
+            <Check size={48} className="text-subtle" />
+            <p>This section is coming soon.</p>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="settings-wrapper view-fade-in">
+      <aside className="settings-nav">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            className={`settings-tab ${activeTab === tab.id ? 'active' : ''}`}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            <tab.icon size={18} />
+            <span>{tab.label}</span>
+          </button>
+        ))}
+      </aside>
+
+      <main className="settings-content">
+        {renderContent()}
+      </main>
+
+      <style jsx="true">{`
         .settings-wrapper {
           display: grid;
           grid-template-columns: 240px 1fr;
@@ -376,8 +447,8 @@ const Settings = ({ user }) => {
           gap: 1rem;
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 export default Settings;

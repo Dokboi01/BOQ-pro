@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { hasFeature, PLAN_NAMES } from '../../data/plans';
 
-const MaterialLibrary = ({ user, onUpgrade }) => {
+const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
   const [selectedMaterial, setSelectedMaterial] = useState(null);
 
   const materials = [
@@ -211,7 +211,35 @@ const MaterialLibrary = ({ user, onUpgrade }) => {
 
         <div className="modal-footer">
           <button className="btn-secondary" onClick={() => setSelectedMaterial(null)}>Close Report</button>
-          <button className="btn-primary">Apply Benchmark to Project</button>
+          <button
+            className="btn-primary"
+            onClick={() => {
+              if (!activeProject) {
+                alert('Please select or open a project first.');
+                return;
+              }
+              const updatedSections = (activeProject.sections || []).map(section => ({
+                ...section,
+                items: section.items.map(item => {
+                  // Matching logic: rudimentary check on description containing material name
+                  if (item.description.toLowerCase().includes(mat.name.toLowerCase().split(' ')[0])) {
+                    return {
+                      ...item,
+                      rate: mat.price,
+                      useBenchmark: false,
+                      total: item.qty * mat.price
+                    };
+                  }
+                  return item;
+                })
+              }));
+              onUpdate(activeProject.id, updatedSections);
+              alert(`Applied ${mat.name} benchmark rate of ₦${mat.price.toLocaleString()} to matching items.`);
+              setSelectedMaterial(null);
+            }}
+          >
+            Apply Benchmark to Project
+          </button>
         </div>
       </div>
     </div>

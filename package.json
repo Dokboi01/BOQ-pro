@@ -13,13 +13,15 @@
     "electron:build": "npm run build && electron-builder"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "dexie": "^4.3.0",
     "exceljs": "^4.4.0",
     "jspdf": "^4.0.0",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.563.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "resend": "^6.9.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

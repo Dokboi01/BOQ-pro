@@ -1,32 +1,41 @@
-/**
- * Mail Service Layer
- * 
- * Replace the stub logic here with your actual email provider (Resend, SendGrid, etc.)
- */
+import { Resend } from 'resend';
+import { getSetting } from '../db/database';
 
 export const sendVerificationEmail = async (email, code) => {
-    console.log(`[MAIL SERVICE] Sending verification code ${code} to ${email}`);
+    console.log(`[MAIL SERVICE] Attempting to send code ${code} to ${email}`);
 
-    /**
-     * EXAMPLE: Using Resend (uncomment to use)
-     * 
-     * const response = await fetch('https://api.resend.com/emails', {
-     *   method: 'POST',
-     *   headers: {
-     *     'Content-Type': 'application/json',
-     *     'Authorization': 'Bearer YOUR_RESEND_API_KEY'
-     *   },
-     *   body: JSON.stringify({
-     *     from: 'BOQ Pro <onboarding@boqpro.com>',
-     *     to: [email],
-     *     subject: 'Verify your BOQ Pro Account',
-     *     html: `<p>Your verification code is: <strong>${code}</strong></p>`
-     *   })
-     * });
-     * return response.ok;
-     */
+    try {
+        const apiKey = await getSetting('resend_api_key');
 
-    // For now, we simulate a delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return true;
+        if (!apiKey) {
+            console.warn('[MAIL SERVICE] No Resend API key found in settings. Falling back to console log.');
+            return true;
+        }
+
+        const resend = new Resend(apiKey);
+
+        const { error } = await resend.emails.send({
+            from: 'BOQ Pro <onboarding@boqpro.com>',
+            to: [email],
+            subject: 'Verify your BOQ Pro Account',
+            html: `
+                <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                    <h2 style="color: #0f172a;">Verify your account</h2>
+                    <p>Welcome to BOQ Pro. Use the code below to complete your registration:</p>
+                    <div style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #2563eb; margin: 20px 0;">${code}</div>
+                    <p style="font-size: 12px; color: #64748b;">If you didn't request this, please ignore this email.</p>
+                </div>
+            `
+        });
+
+        if (error) {
+            console.error('[MAIL SERVICE] Resend error:', error);
+            return false;
+        }
+
+        return true;
+    } catch (err) {
+        console.error('[MAIL SERVICE] Critical failure:', err);
+        return false;
+    }
 };
