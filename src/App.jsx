@@ -10,7 +10,7 @@ import EmailVerification from './components/auth/EmailVerification';
 import { STRUCTURE_DATA } from './data/structures';
 import { PLAN_LIMITS, PLAN_NAMES } from './data/plans';
 import { supabase } from './db/supabase';
-import { saveProject, getProjects, getProfile, updateProfile } from './db/database';
+import { saveProject, getProjects, getProfile, updateProfile, deleteProject } from './db/database';
 import BOQWorkspace from './components/workspace/BOQWorkspace';
 import MaterialLibrary from './components/workspace/MaterialLibrary';
 import Reports from './components/workspace/Reports';
@@ -275,6 +275,19 @@ function App() {
     setProjects(prev => prev.map(p => p.id === projectId ? updatedProject : p));
   };
 
+  const handleDeleteProject = async (projectId) => {
+    const success = await deleteProject(projectId);
+    if (success) {
+      setProjects(prev => prev.filter(p => p.id !== projectId));
+      if (activeProjectId === projectId) {
+        setActiveProjectId(null);
+        setActiveTab('dashboard');
+      }
+    } else {
+      alert('Failed to delete project. Please try again.');
+    }
+  };
+
   const calculateTotalValue = () => {
     try {
       const activeProject = projects.find(p => p.id === activeProjectId) || projects[0];
@@ -340,7 +353,11 @@ function App() {
           user={user}
           projects={projects}
           onCreateProject={handleCreateProject}
-          onSelectProject={(id) => { setActiveProjectId(id); setActiveTab('workspace'); }}
+          onSelectProject={(id) => {
+            setActiveProjectId(id);
+            setActiveTab('workspace');
+          }}
+          onDeleteProject={handleDeleteProject}
           onUpgrade={() => { setView('pricing'); }}
         />;
       case 'workspace':

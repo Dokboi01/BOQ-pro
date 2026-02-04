@@ -19,11 +19,16 @@ import {
   Lock
 } from 'lucide-react';
 import { hasFeature, PLAN_NAMES } from '../../data/plans';
+import { getMaterials, getMarketIndices } from '../../db/database';
+import { Loader2 } from 'lucide-react';
 
 const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
   const [selectedMaterial, setSelectedMaterial] = useState(null);
+  const [materials, setMaterials] = useState([]);
+  const [marketIndices, setMarketIndices] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const materials = [
+  const defaultMaterials = React.useMemo(() => [
     {
       id: 1,
       name: 'OPC Cement (50kg)',
@@ -80,14 +85,38 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
       history: [165000, 170000, 172000, 185000],
       usage: 'Asphaltic surface dressing for road pavements.'
     }
-  ];
+  ], []);
 
-  const marketIndices = [
+  const defaultMarketIndices = React.useMemo(() => [
     { label: 'Overall CMCI', val: 142.5, delta: '+1.4%', trend: 'up' },
     { label: 'Binder Index', val: 156.2, delta: '+3.2%', trend: 'up' },
     { label: 'Metal Index', val: 128.9, delta: '-0.8%', trend: 'down' },
     { label: 'Aggregates', val: 115.4, delta: '+0.2%', trend: 'up' },
-  ];
+  ], []);
+
+  React.useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [mats, indices] = await Promise.all([
+          getMaterials(),
+          getMarketIndices()
+        ]);
+
+        // If Supabase is empty, use defaults for visual consistency, 
+        // but ideally we seed the DB.
+        setMaterials(mats.length > 0 ? mats : defaultMaterials);
+        setMarketIndices(indices.length > 0 ? indices : defaultMarketIndices);
+      } catch (err) {
+        console.error('Failed to load library data:', err);
+        setMaterials(defaultMaterials);
+        setMarketIndices(defaultMarketIndices);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [defaultMarketIndices, defaultMaterials]);
 
   const renderIntelligenceDashboard = () => {
     const isLocked = !hasFeature(user?.plan, 'material-intelligence');
@@ -247,6 +276,12 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
 
   return (
     <div className="library-intelligence-view view-fade-in">
+      {loading && (
+        <div className="loading-overlay-simple">
+          <Loader2 className="animate-spin" size={32} />
+          <span>Synchronizing Market Data...</span>
+        </div>
+      )}
       {/* Header */}
       <div className="library-header-premium">
         <div className="title-group">
@@ -315,7 +350,26 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
 
       {selectedMaterial && renderDetailModal(selectedMaterial)}
 
+      {selectedMaterial && renderDetailModal(selectedMaterial)}
+
       <style jsx="true">{`
+                .loading-overlay-simple {
+                    position: fixed;
+                    top: 0; left: 0; right: 0; bottom: 0;
+                    background: rgba(255,255,255,0.7);
+                    z-index: 2000;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 1rem;
+                    color: var(--accent-600);
+                    font-weight: 600;
+                }
+
+                .animate-spin { animation: spin 1s linear infinite; }
+                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
                 .library-intelligence-view {
                     display: flex;
                     flex-direction: column;

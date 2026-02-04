@@ -18,7 +18,7 @@ export const sendVerificationEmail = async (email, code) => {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                from: 'BOQ Pro <onboarding@resend.dev>', // Use resend.dev for testing if no domain verified
+                from: 'BOQ Pro <onboarding@resend.dev>', // Display name added
                 to: [email],
                 subject: 'Verify your BOQ Pro Account',
                 html: `

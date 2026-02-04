@@ -95,6 +95,32 @@ export const getSetting = async (key) => {
     return data.value;
 };
 
+// Global Market Data
+export const getMaterials = async () => {
+    const { data, error } = await supabase
+        .from('materials')
+        .select('*')
+        .order('name');
+
+    if (error) {
+        console.error('Error fetching materials:', error);
+        return [];
+    }
+    return data;
+};
+
+export const getMarketIndices = async () => {
+    const { data, error } = await supabase
+        .from('market_indices')
+        .select('*');
+
+    if (error) {
+        console.error('Error fetching market indices:', error);
+        return [];
+    }
+    return data;
+};
+
 // User Profile Management (Supabase Auth handles the core, we use 'profiles' table for metadata)
 export const getProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();

@@ -14,11 +14,12 @@ import {
   Calendar,
   ChevronRight,
   Info,
-  Lock
+  Lock,
+  Trash2
 } from 'lucide-react';
 import { PLAN_LIMITS, PLAN_NAMES } from '../../data/plans';
 
-const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProject, onUpgrade }) => {
+const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProject, onDeleteProject, onUpgrade }) => {
   const [budget, setBudget] = useState(250000000); // ₦250M
 
   const calculateTotal = (proj) => {
@@ -111,7 +112,21 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
                     <span className="label">Value</span>
                     <span className="val">₦{calculateTotal(project).toLocaleString()}</span>
                   </div>
-                  <ChevronRight size={18} className="text-subtle" />
+                  <div className="project-actions-row">
+                    <button
+                      className="btn-icon-delete"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm(`Are you sure you want to delete "${project.name}"?`)) {
+                          onDeleteProject(project.id);
+                        }
+                      }}
+                      title="Delete Project"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                    <ChevronRight size={18} className="text-subtle" />
+                  </div>
                 </div>
               </div>
             ))}
@@ -354,6 +369,30 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
         .project-val .label { display: block; font-size: 0.625rem; font-weight: 700; color: var(--primary-400); text-transform: uppercase; }
         .project-val .val { font-size: 0.875rem; font-weight: 700; color: var(--primary-900); }
         
+        .project-actions-row {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .btn-icon-delete {
+          background: transparent;
+          border: none;
+          color: var(--primary-400);
+          padding: 4px;
+          border-radius: 4px;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .btn-icon-delete:hover {
+          color: var(--danger-600);
+          background: rgba(220, 38, 38, 0.05);
+        }
+
         .project-card.locked { background: var(--bg-main); border-style: dashed; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; color: var(--primary-400); text-align: center; }
         .project-card.locked p { font-size: 0.75rem; font-weight: 600; }
 
