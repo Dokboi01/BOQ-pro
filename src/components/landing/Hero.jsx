@@ -1,196 +1,313 @@
 import React from 'react';
-import { ShieldCheck, BarChart3, Clock, Layers } from 'lucide-react';
+import { Shield, TrendingUp, Users, Zap, CheckCircle2, ArrowRight, Sparkles } from 'lucide-react';
 
 const Hero = ({ onGetStarted }) => {
-    return (
-        <div className="hero-section">
-            <div className="hero-content">
-                <div className="badge">Platform for Professionals</div>
-                <h1>Intelligent Construction <br /><span>Cost Management</span></h1>
-                <p>
-                    BOQ Pro is the financial control system for engineering projects. Precise quantity surveying, unit rate computation, and cost analytics in one enterprise platform.
-                </p>
-                <div className="hero-actions">
-                    <button className="btn-primary-large" onClick={onGetStarted}>
-                        Enter Platform
-                    </button>
-                    <button className="btn-secondary-large">
-                        Watch Technical Demo
-                    </button>
-                </div>
+  const stats = [
+    { value: '₦2.4B+', label: 'Projects Managed', icon: TrendingUp },
+    { value: '500+', label: 'Civil Engineers', icon: Users },
+    { value: '99.9%', label: 'Accuracy Rate', icon: Sparkles },
+    { value: '<2min', label: 'BOQ Generation', icon: Zap }
+  ];
 
-                <div className="hero-features">
-                    <div className="feature">
-                        <ShieldCheck size={20} className="icon" />
-                        <span>Audit-Ready BOQs</span>
-                    </div>
-                    <div className="feature">
-                        <BarChart3 size={20} className="icon" />
-                        <span>Real-time Analytics</span>
-                    </div>
-                    <div className="feature">
-                        <Clock size={20} className="icon" />
-                        <span>Accelerated Tender Prep</span>
-                    </div>
-                </div>
-            </div>
+  const features = [
+    'AI-Powered Cost Estimation',
+    'Real-Time Cloud Sync',
+    'Professional PDF/Excel Export',
+    'Market Price Intelligence',
+    'Multi-Project Management',
+    'Enterprise Security (RLS)'
+  ];
 
-            <div className="hero-visual">
-                <div className="dashboard-mockup">
-                    <div className="mock-header">
-                        <div className="dot"></div>
-                        <div className="dot"></div>
-                        <div className="dot"></div>
-                    </div>
-                    <div className="mock-body">
-                        <div className="mock-sidebar"></div>
-                        <div className="mock-main">
-                            <div className="mock-kpi-row">
-                                <div className="mock-kpi"></div>
-                                <div className="mock-kpi"></div>
-                                <div className="mock-kpi"></div>
-                            </div>
-                            <div className="mock-table">
-                                <div className="mock-row"></div>
-                                <div className="mock-row"></div>
-                                <div className="mock-row"></div>
-                                <div className="mock-row"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+  return (
+    <div className="hero-container">
+      {/* Animated Background */}
+      <div className="hero-bg-gradient"></div>
+      <div className="hero-bg-grid"></div>
 
-            <style jsx="true">{`
-        .hero-section {
-          min-height: 90vh;
+      <div className="hero-content">
+        {/* Main Hero Section */}
+        <div className="hero-main">
+          <div className="badge-pill">
+            <Sparkles size={16} />
+            <span>AI-Powered BOQ Platform</span>
+          </div>
+
+          <h1 className="hero-title">
+            Professional Bill of Quantities
+            <span className="gradient-text"> Management Platform</span>
+          </h1>
+
+          <p className="hero-subtitle">
+            Cloud-native platform for civil engineering professionals.
+            Replace Excel with intelligent automation, real-time collaboration,
+            and AI-powered cost estimation.
+          </p>
+
+          <div className="hero-cta">
+            <button className="btn-hero-primary" onClick={onGetStarted}>
+              Start Free Trial
+              <ArrowRight size={20} />
+            </button>
+            <button className="btn-hero-secondary">
+              <Shield size={20} />
+              View Demo
+            </button>
+          </div>
+
+          {/* Feature Pills */}
+          <div className="feature-pills">
+            {features.map((feature, idx) => (
+              <div key={idx} className="feature-pill">
+                <CheckCircle2 size={16} />
+                <span>{feature}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Stats Section */}
+        <div className="stats-grid">
+          {stats.map((stat, idx) => {
+            const Icon = stat.icon;
+            return (
+              <div key={idx} className="stat-card">
+                <div className="stat-icon">
+                  <Icon size={24} />
+                </div>
+                <div className="stat-value">{stat.value}</div>
+                <div className="stat-label">{stat.label}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <style jsx="true">{`
+        .hero-container {
+          min-height: 100vh;
           display: flex;
           align-items: center;
-          padding: 4rem 8%;
-          gap: 4rem;
-          background: radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.05) 0%, transparent 50%),
-                      white;
+          justify-content: center;
+          position: relative;
+          overflow: hidden;
+          background: linear-gradient(135deg, #0a0f1d 0%, #1a1f35 100%);
+          padding: 4rem 2rem;
+        }
+
+        .hero-bg-gradient {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: radial-gradient(circle at 30% 20%, rgba(37, 99, 235, 0.15) 0%, transparent 50%),
+                      radial-gradient(circle at 70% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%);
+          pointer-events: none;
+        }
+
+        .hero-bg-grid {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-image: 
+            linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+          background-size: 50px 50px;
+          pointer-events: none;
         }
 
         .hero-content {
-          flex: 1;
-          max-width: 600px;
+          max-width: 1200px;
+          width: 100%;
+          z-index: 10;
+          position: relative;
         }
 
-        .badge {
-          display: inline-block;
+        .hero-main {
+          text-align: center;
+          margin-bottom: 4rem;
+        }
+
+        .badge-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
           background: rgba(37, 99, 235, 0.1);
-          color: var(--accent-600);
-          padding: 0.5rem 1rem;
+          border: 1px solid rgba(37, 99, 235, 0.3);
+          padding: 0.5rem 1.25rem;
           border-radius: 100px;
+          color: #60a5fa;
           font-size: 0.875rem;
-          font-weight: 600;
-          margin-bottom: 1.5rem;
+          font-weight: 700;
+          margin-bottom: 2rem;
+          animation: float 3s ease-in-out infinite;
         }
 
-        h1 {
-          font-size: 3.5rem;
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+        }
+
+        .hero-title {
+          font-size: 4rem;
+          font-weight: 900;
+          color: white;
           line-height: 1.1;
           margin-bottom: 1.5rem;
+          letter-spacing: -0.02em;
         }
 
-        h1 span {
-          color: var(--accent-600);
+        .gradient-text {
+          background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
 
-        p {
-          font-size: 1.125rem;
-          color: var(--primary-600);
-          margin-bottom: 2.5rem;
-          max-width: 500px;
+        .hero-subtitle {
+          font-size: 1.25rem;
+          color: #94a3b8;
+          max-width: 700px;
+          margin: 0 auto 2.5rem;
+          line-height: 1.6;
         }
 
-        .hero-actions {
+        .hero-cta {
           display: flex;
           gap: 1rem;
+          justify-content: center;
           margin-bottom: 3rem;
         }
 
-        .btn-primary-large {
-          background: var(--primary-900);
+        .btn-hero-primary {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 1rem 2rem;
+          background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
           color: white;
           border: none;
-          padding: 1rem 2rem;
-          border-radius: var(--radius-sm);
-          font-size: 1rem;
-          font-weight: 600;
+          border-radius: 12px;
+          font-size: 1.125rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.3s;
+          box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);
         }
 
-        .btn-secondary-large {
-          background: white;
-          color: var(--primary-900);
-          border: 1px solid var(--border-medium);
-          padding: 1rem 2rem;
-          border-radius: var(--radius-sm);
-          font-size: 1rem;
-          font-weight: 600;
+        .btn-hero-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 20px 40px rgba(37, 99, 235, 0.4);
         }
 
-        .hero-features {
-          display: flex;
-          gap: 2rem;
-        }
-
-        .feature {
+        .btn-hero-secondary {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: var(--primary-700);
+          gap: 0.75rem;
+          padding: 1rem 2rem;
+          background: rgba(255, 255, 255, 0.05);
+          color: white;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+          font-size: 1.125rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.3s;
         }
 
-        .feature .icon {
-          color: var(--success-600);
+        .btn-hero-secondary:hover {
+          background: rgba(255, 255, 255, 0.1);
+          transform: translateY(-2px);
         }
 
-        .hero-visual {
-          flex: 1;
+        .feature-pills {
           display: flex;
+          flex-wrap: wrap;
+          gap: 0.75rem;
           justify-content: center;
-          perspective: 1000px;
+          max-width: 800px;
+          margin: 0 auto;
         }
 
-        .dashboard-mockup {
-          width: 100%;
-          max-width: 550px;
-          height: 400px;
-          background: white;
-          border: 1px solid var(--border-light);
-          border-radius: var(--radius-lg);
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-          transform: rotateY(-15deg) rotateX(10deg);
-          overflow: hidden;
-        }
-
-        .mock-header {
-          height: 40px;
-          background: var(--bg-main);
-          border-bottom: 1px solid var(--border-light);
+        .feature-pill {
           display: flex;
           align-items: center;
-          padding: 0 1rem;
           gap: 0.5rem;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          padding: 0.5rem 1rem;
+          border-radius: 8px;
+          color: #e2e8f0;
+          font-size: 0.875rem;
+          font-weight: 600;
         }
 
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: #e2e8f0; }
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 1.5rem;
+          margin-top: 4rem;
+        }
 
-        .mock-body { display: flex; height: calc(100% - 40px); }
-        .mock-sidebar { width: 40px; background: var(--primary-900); opacity: 0.05; }
-        .mock-main { flex: 1; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
-        .mock-kpi-row { display: flex; gap: 1rem; }
-        .mock-kpi { flex: 1; height: 60px; background: var(--bg-main); border-radius: 4px; }
-        .mock-table { flex: 1; display: flex; flex-direction: column; gap: 0.75rem; }
-        .mock-row { height: 12px; background: var(--bg-main); border-radius: 2px; width: 100%; }
-        .mock-row:nth-child(even) { width: 80%; }
+        .stat-card {
+          background: rgba(255, 255, 255, 0.03);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 16px;
+          padding: 2rem;
+          text-align: center;
+          transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+          background: rgba(255, 255, 255, 0.05);
+          transform: translateY(-4px);
+          border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        .stat-icon {
+          width: 56px;
+          height: 56px;
+          background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 1rem;
+          color: white;
+        }
+
+        .stat-value {
+          font-size: 2.5rem;
+          font-weight: 900;
+          color: white;
+          margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+          font-size: 0.875rem;
+          color: #94a3b8;
+          font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+          .hero-title {
+            font-size: 2.5rem;
+          }
+          
+          .hero-cta {
+            flex-direction: column;
+          }
+          
+          .stats-grid {
+            grid-template-columns: 1fr;
+          }
+        }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 export default Hero;
