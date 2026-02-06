@@ -38,10 +38,15 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
       trend: 'up',
       benchmark: 11800,
       range: '₦11,200 - ₦13,500',
-      lastUpdated: '2 days ago',
+      lastUpdated: '2 hours ago',
       delta: '+4.2%',
       history: [11000, 11500, 11800, 12500],
-      usage: 'Primary binder for all concrete works, plastering, and block making.'
+      usage: 'Primary binder for all concrete works, plastering, and block making.',
+      regions: {
+        'Lagos': 12500,
+        'Abuja': 13200,
+        'Port Harcourt': 12900
+      }
     },
     {
       id: 2,
@@ -138,7 +143,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
               <Activity size={16} className="text-accent" />
             </div>
             <div className="metric-val text-danger">+4.8%</div>
-            <div className="metric-footer">Across 12 major categories</div>
+            <div className="metric-footer">Regional Inflation (Lagos/Abuja)</div>
           </div>
           <div className="enterprise-card intel-metric">
             <div className="metric-header">
@@ -164,7 +169,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
               <h3>Construction Material Cost Index (CMCI)</h3>
               <p>Industry-standard tracking of cost movements in West Africa</p>
             </div>
-            <button className="btn-secondary small">View Full Index History</button>
+            <button className="btn-secondary small" onClick={() => alert('Index breakdown history will be available in the next update.')}>View Full Index History</button>
           </div>
           <div className="index-grid">
             {marketIndices.map((idx, i) => (
@@ -217,8 +222,15 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 <span className="s-val">₦{mat.benchmark.toLocaleString()}</span>
               </div>
               <div className="stat-box">
-                <span className="s-label">Regional Range (Lagos)</span>
-                <span className="s-val small">{mat.range}</span>
+                <span className="s-label">Regional Breakdown</span>
+                <div className="regional-list">
+                  {mat.regions && Object.entries(mat.regions).map(([r, p]) => (
+                    <div key={r} className="regional-item">
+                      <span>{r}</span>
+                      <span>₦{p.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
               <div className="stat-box">
                 <span className="s-label">Confidence Rating</span>
@@ -312,8 +324,8 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
             <input type="text" placeholder="Search benchmark repository..." />
           </div>
           <div className="filter-actions">
-            <button className="btn-filter"><Filter size={14} /> All Categories</button>
-            <button className="btn-filter"><MapPin size={14} /> Region: Lagos</button>
+            <button className="btn-filter" onClick={() => alert('Category filters are coming soon.')}><Filter size={14} /> All Categories</button>
+            <button className="btn-filter" onClick={() => alert('Regional benchmark selection will be available shortly.')}><MapPin size={14} /> Region: Lagos</button>
           </div>
         </div>
 
@@ -634,6 +646,9 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 .s-label { font-size: 0.6875rem; font-weight: 600; color: var(--primary-500); margin-bottom: 0.25rem; }
                 .s-val { font-size: 1.125rem; font-weight: 800; }
                 .s-val.small { font-size: 0.8125rem; }
+
+                .regional-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem; }
+                .regional-item { display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 600; color: var(--primary-700); border-bottom: 1px dashed var(--border-light); padding-bottom: 2px; }
 
                 .usage-notes h4 { font-size: 0.875rem; margin-bottom: 0.5rem; }
                 .usage-notes p { font-size: 0.875rem; color: var(--primary-600); line-height: 1.5; }

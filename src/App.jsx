@@ -388,6 +388,40 @@ function App() {
     setProjects(prev => prev.map(p => p.id === projectId ? updatedProject : p));
   };
 
+  const handleAddSection = async (projectId) => {
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return;
+
+    const newSection = {
+      id: Math.random().toString(36).substr(2, 9),
+      title: 'New Workspace Section',
+      expanded: true,
+      items: []
+    };
+
+    const updatedSections = [...(project.sections || []), newSection];
+    await handleUpdateProject(projectId, updatedSections);
+  };
+
+  const handleDeleteSectionOrItem = async (projectId, sectionId, itemId = null) => {
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return;
+
+    let updatedSections;
+    if (itemId) {
+      // Delete specific item
+      updatedSections = project.sections.map(s => {
+        if (s.id !== sectionId) return s;
+        return { ...s, items: s.items.filter(i => i.id !== itemId) };
+      });
+    } else {
+      // Delete entire section
+      updatedSections = project.sections.filter(s => s.id !== sectionId);
+    }
+
+    await handleUpdateProject(projectId, updatedSections);
+  };
+
   const handleDeleteProject = async (projectId) => {
     const success = await deleteProject(projectId);
     if (success) {
@@ -475,7 +509,16 @@ function App() {
         />;
       case 'workspace':
         return activeProject ? (
-          <div className="view-fade-in"><BOQWorkspace key={activeProject.id} project={activeProject} onUpdate={handleUpdateProject} /></div>
+          <div className="view-fade-in">
+            <BOQWorkspace
+              key={activeProject.id}
+              project={activeProject}
+              onUpdate={handleUpdateProject}
+              onAddSection={() => handleAddSection(activeProject.id)}
+              onDelete={handleDeleteSectionOrItem}
+              onExport={() => setActiveTab('reports')}
+            />
+          </div>
         ) : (
           <div className="enterprise-card p-4">No project selected. Selected ID: {activeProjectId}</div>
         );
@@ -492,7 +535,7 @@ function App() {
 
   return (
     <div className={`app-container ${focusMode ? 'focus-mode' : ''}`}>
-      {!focusMode && <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={user} onLogout={logout} />}
+      {!focusMode && <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={user} onLogout={logout} onViewPlans={() => setView('pricing')} />}
 
       {/* Focus Mode Toggle (appears when sidebar is hidden) */}
       {focusMode && (

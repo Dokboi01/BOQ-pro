@@ -45,14 +45,14 @@ const Hero = ({ onGetStarted, onLogin }) => {
           </div>
 
           <h1 className="hero-title">
-            Professional Bill of Quantities
-            <span className="gradient-text"> Management Platform</span>
+            Intelligent Infrastructure
+            <span className="gradient-text"> Cost Management</span>
           </h1>
 
           <p className="hero-subtitle">
-            Cloud-native platform for civil engineering professionals.
-            Replace Excel with intelligent automation, real-time collaboration,
-            and AI-powered cost estimation.
+            The next-generation platform for Civil Engineers and Quantity Surveyors.
+            Harnessing **AI-powered market intelligence** to deliver professional BOQs with
+            unrivaled speed and regional accuracy.
           </p>
 
           <div className="hero-cta">

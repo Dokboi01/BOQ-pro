@@ -26,6 +26,7 @@ const Settings = ({ user }) => {
   ];
 
   const [apiKey, setApiKey] = useState('');
+  const [openAIKey, setOpenAIKey] = useState('');
   const [supabaseUrl, setSupabaseUrl] = useState('');
   const [supabaseKey, setSupabaseKey] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -34,6 +35,9 @@ const Settings = ({ user }) => {
     const loadSettings = async () => {
       const savedKey = await getSetting('resend_api_key');
       if (savedKey) setApiKey(savedKey);
+
+      const savedAIKey = await getSetting('openai_api_key');
+      if (savedAIKey) setOpenAIKey(savedAIKey);
 
       const sUrl = await getSetting('supabase_url');
       if (sUrl) setSupabaseUrl(sUrl);
@@ -47,6 +51,7 @@ const Settings = ({ user }) => {
   const handleSaveAPI = async () => {
     setIsSaving(true);
     await saveSetting('resend_api_key', apiKey);
+    await saveSetting('openai_api_key', openAIKey);
     await saveSetting('supabase_url', supabaseUrl);
     await saveSetting('supabase_anon_key', supabaseKey);
     setIsSaving(false);
@@ -182,6 +187,38 @@ const Settings = ({ user }) => {
                     disabled={isSaving}
                   >
                     {isSaving ? 'Saving...' : 'Verify & Save'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="api-card enterprise-card mt-6">
+                <div className="service-info">
+                  <div className="icon-box-sm text-primary"><Zap size={20} /></div>
+                  <div className="text-box">
+                    <h4>OpenAI Intelligence</h4>
+                    <p>Powers AI Rate Assistant and project summaries.</p>
+                  </div>
+                </div>
+                <div className="form-item mt-4">
+                  <label>OpenAI API Key</label>
+                  <div className="input-group-pass">
+                    <input
+                      type="password"
+                      value={openAIKey}
+                      onChange={(e) => setOpenAIKey(e.target.value)}
+                      placeholder="sk-xxxxxxxxxxxxxxxxxxxx"
+                      className="settings-input"
+                    />
+                  </div>
+                  <p className="input-hint">Get your key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer">platform.openai.com</a></p>
+                </div>
+                <div className="form-actions mt-4">
+                  <button
+                    className="btn-primary"
+                    onClick={handleSaveAPI}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? 'Saving...' : 'Connect AI Engine'}
                   </button>
                 </div>
               </div>

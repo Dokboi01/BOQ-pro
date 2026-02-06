@@ -11,7 +11,7 @@ import {
   Building2
 } from 'lucide-react';
 
-const Sidebar = ({ activeTab, setActiveTab, user, onLogout }) => {
+const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
   const [collapsed, setCollapsed] = React.useState(false);
 
   const menuItems = [
@@ -54,7 +54,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout }) => {
         <div className="upgrade-prompt">
           <h4>Upgrade to Pro</h4>
           <p>Get unlimited projects and AI-powered insights.</p>
-          <button className="btn-upgrade">View Plans</button>
+          <button className="btn-upgrade" onClick={onViewPlans}>View Plans</button>
         </div>
       )}
 

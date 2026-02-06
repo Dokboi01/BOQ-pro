@@ -17,7 +17,7 @@ import {
 import RateAnalysisModal from './RateAnalysisModal';
 import GeometricCalculator from './GeometricCalculator';
 
-const BOQWorkspace = ({ project, onUpdate }) => {
+const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) => {
   const [sections, setSections] = useState(project?.sections || []);
   const [analyzingItem, setAnalyzingItem] = useState(null);
   const [calculatingQtyForItem, setCalculatingQtyForItem] = useState(null);
@@ -61,6 +61,26 @@ const BOQWorkspace = ({ project, onUpdate }) => {
           return updatedItem;
         })
       };
+    });
+
+    onUpdate(project.id, updatedSections);
+  };
+
+  const addItemToSection = (sectionId) => {
+    const newItem = {
+      id: Math.random().toString(36).substr(2, 9),
+      description: 'New Engineering Item',
+      unit: 'm³',
+      qty: 0,
+      rate: 0,
+      benchmark: 5000,
+      total: 0,
+      useBenchmark: true
+    };
+
+    const updatedSections = sections.map(s => {
+      if (s.id !== sectionId) return s;
+      return { ...s, items: [...s.items, newItem] };
     });
 
     setSections(updatedSections);
@@ -108,9 +128,9 @@ const BOQWorkspace = ({ project, onUpdate }) => {
           <input type="text" placeholder="Search project items..." />
         </div>
         <div className="workspace-actions">
-          <button className="btn-secondary"><Calculator size={16} /> Rate Analysis</button>
-          <button className="btn-secondary"><Download size={16} /> Export Document</button>
-          <button className="btn-primary"><Plus size={16} /> New Section</button>
+          <button className="btn-secondary" onClick={() => setAnalyzingItem({ sectionId: sections[0]?.id, item: sections[0]?.items[0] || { description: 'Reference Item', rate: 0, benchmark: 0 } })}><Calculator size={16} /> Rate Analysis</button>
+          <button className="btn-secondary" onClick={onExport}><Download size={16} /> Export Document</button>
+          <button className="btn-primary" onClick={onAddSection}><Plus size={16} /> New Section</button>
         </div>
       </div>
 
@@ -138,81 +158,98 @@ const BOQWorkspace = ({ project, onUpdate }) => {
                       {section.title}
                     </div>
                   </td>
-                  <td className="actions-cell"><MoreVertical size={14} /></td>
+                  <td className="actions-cell">
+                    <button className="btn-icon-danger" onClick={(e) => { e.stopPropagation(); onDelete(project.id, section.id); }} title="Delete Section">
+                      <Trash2 size={14} />
+                    </button>
+                  </td>
                 </tr>
-                {section.expanded && section.items.map((item, idx) => {
-                  const outlier = !item.useBenchmark && isOutlier(item.rate, item.benchmark);
-                  return (
-                    <tr key={item.id} className={`item-row ${outlier ? 'outlier-warning' : ''}`}>
-                      <td className="text-subtle">{idx + 1}</td>
-                      <td className="description-cell">
-                        {item.description}
-                        {outlier && (
-                          <div className="outlier-tag">
-                            <AlertCircle size={10} /> Significant Variance Detected
-                          </div>
-                        )}
-                      </td>
-                      <td>{item.unit}</td>
-                      <td>
-                        <div className="qty-input-wrapper">
-                          <input
-                            type="number"
-                            value={item.qty}
-                            onChange={(e) => updateItem(section.id, item.id, 'qty', Number(e.target.value))}
-                            className="inline-input"
-                          />
-                          <button
-                            className="btn-geo-trigger"
-                            onClick={() => setCalculatingQtyForItem({ sectionId: section.id, item })}
-                            title="Geometric Takeoff"
-                          >
-                            <Calculator size={12} />
-                          </button>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="rate-source-toggle">
-                          <button
-                            className={`toggle-btn ${!item.useBenchmark ? 'active' : ''}`}
-                            onClick={() => updateItem(section.id, item.id, 'useBenchmark', false)}
-                          >
-                            Custom
-                          </button>
-                          <button
-                            className={`toggle-btn shadow-sm ${item.useBenchmark ? 'active' : ''}`}
-                            onClick={() => updateItem(section.id, item.id, 'useBenchmark', true)}
-                          >
-                            Benchmark
-                          </button>
-                        </div>
-                      </td>
-                      <td className="rate-cell">
-                        <div className="rate-input-wrapper">
-                          <span className="currency-prefix">₦</span>
-                          <input
-                            type="number"
-                            value={item.useBenchmark ? item.benchmark : item.rate}
-                            onChange={(e) => updateItem(section.id, item.id, 'rate', Number(e.target.value))}
-                            className="inline-input rate-input"
-                            disabled={item.useBenchmark}
-                          />
-                          <button
-                            className="btn-analysis-trigger"
-                            title="Open Rate Analysis"
-                            onClick={() => setAnalyzingItem({ sectionId: section.id, item })}
-                          >
-                            <Calculator size={14} />
-                          </button>
-                        </div>
-                      </td>
-                      <td className="total-cell">₦{item.total.toLocaleString()}</td>
-                      <td className="actions-cell">
-                        <MoreVertical size={14} />
+                {section.expanded && (
+                  <>
+                    {section.items.map((item, idx) => {
+                      const outlier = !item.useBenchmark && isOutlier(item.rate, item.benchmark);
+                      return (
+                        <tr key={item.id} className={`item-row ${outlier ? 'outlier-warning' : ''}`}>
+                          <td className="text-subtle">{idx + 1}</td>
+                          <td className="description-cell">
+                            {item.description}
+                            {outlier && (
+                              <div className="outlier-tag">
+                                <AlertCircle size={10} /> Significant Variance Detected
+                              </div>
+                            )}
+                          </td>
+                          <td>{item.unit}</td>
+                          <td>
+                            <div className="qty-input-wrapper">
+                              <input
+                                type="number"
+                                value={item.qty}
+                                onChange={(e) => updateItem(section.id, item.id, 'qty', Number(e.target.value))}
+                                className="inline-input"
+                              />
+                              <button
+                                className="btn-geo-trigger"
+                                onClick={() => setCalculatingQtyForItem({ sectionId: section.id, item })}
+                                title="Geometric Takeoff"
+                              >
+                                <Calculator size={12} />
+                              </button>
+                            </div>
+                          </td>
+                          <td>
+                            <div className="rate-source-toggle">
+                              <button
+                                className={`toggle-btn ${!item.useBenchmark ? 'active' : ''}`}
+                                onClick={() => updateItem(section.id, item.id, 'useBenchmark', false)}
+                              >
+                                Custom
+                              </button>
+                              <button
+                                className={`toggle-btn shadow-sm ${item.useBenchmark ? 'active' : ''}`}
+                                onClick={() => updateItem(section.id, item.id, 'useBenchmark', true)}
+                              >
+                                Benchmark
+                              </button>
+                            </div>
+                          </td>
+                          <td className="rate-cell">
+                            <div className="rate-input-wrapper">
+                              <span className="currency-prefix">₦</span>
+                              <input
+                                type="number"
+                                value={item.useBenchmark ? item.benchmark : item.rate}
+                                onChange={(e) => updateItem(section.id, item.id, 'rate', Number(e.target.value))}
+                                className="inline-input rate-input"
+                                disabled={item.useBenchmark}
+                              />
+                              <button
+                                className="btn-analysis-trigger"
+                                title="Open Rate Analysis"
+                                onClick={() => setAnalyzingItem({ sectionId: section.id, item })}
+                              >
+                                <Calculator size={14} />
+                              </button>
+                            </div>
+                          </td>
+                          <td className="total-cell">₦{item.total.toLocaleString()}</td>
+                          <td className="actions-cell">
+                            <button className="btn-icon-danger" onClick={() => onDelete(project.id, section.id, item.id)} title="Delete Item">
+                              <Trash2 size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    <tr className="add-item-row">
+                      <td colSpan="8">
+                        <button className="btn-add-inline" onClick={() => addItemToSection(section.id)}>
+                          <Plus size={14} /> Add Work Item to {section.title}
+                        </button>
                       </td>
                     </tr>
-                  );
-                })}
+                  </>
+                )}
               </React.Fragment>
             ))}
           </tbody>
@@ -480,8 +517,49 @@ const BOQWorkspace = ({ project, onUpdate }) => {
         .grand-total-row td { padding: 1.5rem 1rem; font-weight: 800; font-size: 1rem; text-align: right; }
         .grand-total-value { color: var(--accent-400); }
 
-        .actions-cell { color: var(--primary-300); cursor: pointer; text-align: center; }
+        .actions-cell { color: var(--primary-300); text-align: center; }
         .actions-cell:hover { color: var(--primary-600); }
+
+        .btn-icon-danger {
+          background: transparent;
+          border: none;
+          color: var(--primary-300);
+          cursor: pointer;
+          padding: 4px;
+          border-radius: 4px;
+          transition: all 0.2s;
+        }
+
+        .btn-icon-danger:hover {
+          color: #ef4444;
+          background: #fee2e2;
+        }
+
+        .add-item-row {
+          background: #fdfdfd;
+        }
+
+        .btn-add-inline {
+          width: 100%;
+          padding: 0.75rem;
+          background: transparent;
+          border: 1px dashed var(--border-medium);
+          color: var(--primary-500);
+          font-weight: 600;
+          font-size: 0.75rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .btn-add-inline:hover {
+          background: var(--bg-main);
+          color: var(--accent-600);
+          border-color: var(--accent-400);
+        }
       `}</style>
     </div>
   );

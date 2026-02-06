@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, Package, HardHat, Plus, Trash2, CheckCircle } from 'lucide-react';
+import { X, Package, HardHat, Plus, Trash2, CheckCircle, Zap, ShieldCheck } from 'lucide-react';
+import { generateAIInsight } from '../../utils/aiService';
 
 const RateAnalysisModal = ({ item, onClose, onSave }) => {
     const [breakdown, setBreakdown] = useState(item.breakdown || {
@@ -18,6 +19,19 @@ const RateAnalysisModal = ({ item, onClose, onSave }) => {
         overheads: 15,
         profit: 10
     });
+
+    const [aiInsight, setAiInsight] = useState(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+    React.useEffect(() => {
+        const fetchInsight = async () => {
+            setIsAnalyzing(true);
+            const insight = await generateAIInsight(item);
+            setAiInsight(insight);
+            setIsAnalyzing(false);
+        };
+        fetchInsight();
+    }, [item]);
 
     const updateBreakdown = (category, id, field, value) => {
         setBreakdown(prev => ({
@@ -75,6 +89,30 @@ const RateAnalysisModal = ({ item, onClose, onSave }) => {
                 </header>
 
                 <div className="analysis-content">
+                    {/* AI Advisor Panel */}
+                    <div className="ai-advisor-panel enterprise-card">
+                        <div className="advisor-header">
+                            <div className="title">
+                                <Zap size={14} className="text-primary" />
+                                <span>AI Cost Advisor</span>
+                            </div>
+                            {aiInsight && (
+                                <div className="confidence-pill">
+                                    <ShieldCheck size={12} /> {aiInsight.confidence}% Confidence
+                                </div>
+                            )}
+                        </div>
+                        {isAnalyzing ? (
+                            <div className="advisor-loading">Consulting market intelligence...</div>
+                        ) : (
+                            <div className="advisor-body">
+                                <p className="ai-summary">{aiInsight?.summary}</p>
+                                <div className="ai-recommendation">
+                                    <strong>Recommendation:</strong> {aiInsight?.recommendation}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                     {/* Materials Section */}
                     <section className="analysis-section">
                         <div className="section-head">
@@ -278,8 +316,38 @@ const RateAnalysisModal = ({ item, onClose, onSave }) => {
         }
         .btn-close { border: none; background: transparent; color: white; cursor: pointer; opacity: 0.7; }
         .btn-close:hover { opacity: 1; }
+
+        /* AI Advisor Styles */
+        .ai-advisor-panel {
+          background: linear-gradient(to right, #f8fafc, #eff6ff);
+          border: 1px solid #dbeafe;
+          padding: 1.25rem;
+          margin-bottom: 2rem;
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .advisor-header { display: flex; justify-content: space-between; align-items: center; }
+        .advisor-header .title { display: flex; align-items: center; gap: 0.5rem; font-weight: 800; font-size: 0.7rem; color: #1e3a8a; text-transform: uppercase; }
+        
+        .confidence-pill { 
+          display: flex; 
+          align-items: center; 
+          gap: 4px; 
+          background: #dcfce7; 
+          color: #166534; 
+          font-size: 0.625rem; 
+          font-weight: 800; 
+          padding: 2px 8px; 
+          border-radius: 100px; 
+        }
+
+        .advisor-loading { font-size: 0.8125rem; color: #64748b; font-style: italic; }
+        .ai-summary { font-size: 0.8125rem; color: #1e293b; line-height: 1.5; margin: 0; font-weight: 500; }
+        .ai-recommendation { font-size: 0.75rem; color: #2563eb; background: #ebf2ff; padding: 0.5rem 0.75rem; border-radius: 6px; font-weight: 600; }
       `}</style>
-        </div>
+        </div >
     );
 };
 
