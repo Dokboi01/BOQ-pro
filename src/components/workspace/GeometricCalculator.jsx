@@ -13,7 +13,11 @@ const GeometricCalculator = ({ onApply, onClose }) => {
         topWidth: 0,
         bottomWidth: 0,
         base: 0,
-        sections: 1
+        thickness: 0.2, // For culverts/walls
+        footingWidth: 0,
+        footingDepth: 0,
+        sections: 1,
+        wastage: 5 // Default 5% wastage
     });
 
     const shapes = [
@@ -53,11 +57,22 @@ const GeometricCalculator = ({ onApply, onClose }) => {
             formula: 'V = π × (R² - r²) × L × N'
         },
         {
-            id: 'cone',
-            label: 'Conical Pile',
-            icon: Pyramid,
             fields: ['radius', 'height', 'sections'],
             formula: 'V = (1/3) × π × r² × H × N'
+        },
+        {
+            id: 'culvert',
+            label: 'Box Culvert',
+            icon: Square,
+            fields: ['length', 'width', 'height', 'thickness', 'sections'],
+            formula: 'V = (Outer Vol - Inner Vol) × N'
+        },
+        {
+            id: 'abutment',
+            label: 'T-Wall / Abutment',
+            icon: Layers,
+            fields: ['length', 'height', 'thickness', 'footingWidth', 'footingDepth', 'sections'],
+            formula: 'V = (Stem Vol + Footing Vol) × N'
         },
     ];
 
@@ -65,7 +80,8 @@ const GeometricCalculator = ({ onApply, onClose }) => {
         let vol = 0;
         const {
             length, width, depth, height, radius,
-            innerRadius, topWidth, bottomWidth, base, sections
+            innerRadius, topWidth, bottomWidth, base, sections,
+            thickness, footingWidth, footingDepth
         } = params;
 
         switch (shape) {
@@ -87,11 +103,25 @@ const GeometricCalculator = ({ onApply, onClose }) => {
             case 'cone':
                 vol = (1 / 3) * Math.PI * Math.pow(radius || 0, 2) * (height || 0);
                 break;
+            case 'culvert': {
+                const outer = (width || 0) * (height || 0);
+                const inner = (Number(width || 0) - (2 * Number(thickness || 0))) * (Number(height || 0) - (2 * Number(thickness || 0)));
+                vol = (outer - inner) * (length || 0);
+                break;
+            }
+            case 'abutment': {
+                const stem = (height || 0) * (thickness || 0) * (length || 0);
+                const footing = (footingWidth || 0) * (footingDepth || 0) * (length || 0);
+                vol = stem + footing;
+                break;
+            }
             default:
                 vol = 0;
         }
 
-        return vol * (sections || 1);
+        const net = vol * (sections || 1);
+        const gross = net * (1 + (params.wastage / 100));
+        return gross;
     };
 
     const result = getVolume().toFixed(3);
@@ -133,6 +163,38 @@ const GeometricCalculator = ({ onApply, onClose }) => {
                         <code className="formula-code">{currentShape.formula}</code>
                     </div>
 
+                    <div className="visual-aid-panel">
+                        {shape === 'rectangular' && (
+                            <svg viewBox="0 0 100 60" className="shape-svg">
+                                <rect x="20" y="20" width="60" height="30" fill="none" stroke="currentColor" strokeWidth="2" />
+                                <line x1="20" y1="20" x2="30" y2="10" stroke="currentColor" strokeWidth="1" />
+                                <line x1="80" y1="20" x2="90" y2="10" stroke="currentColor" strokeWidth="1" />
+                                <line x1="80" y1="50" x2="90" y2="40" stroke="currentColor" strokeWidth="1" />
+                                <line x1="30" y1="10" x2="90" y2="10" stroke="currentColor" strokeWidth="1" />
+                                <line x1="90" y1="10" x2="90" y2="40" stroke="currentColor" strokeWidth="1" />
+                                <text x="50" y="58" fontSize="6" textAnchor="middle" fill="#3b82f6">{params.length}m (L)</text>
+                                <text x="10" y="35" fontSize="6" textAnchor="middle" fill="#3b82f6" transform="rotate(-90 10 35)">{params.width}m (W)</text>
+                            </svg>
+                        )}
+                        {shape === 'culvert' && (
+                            <svg viewBox="0 0 100 80" className="shape-svg">
+                                <rect x="20" y="20" width="60" height="40" fill="none" stroke="currentColor" strokeWidth="3" />
+                                <rect x="28" y="28" width="44" height="24" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="2" />
+                                <text x="50" y="70" fontSize="6" textAnchor="middle" fill="#3b82f6">Box Culvert Section</text>
+                            </svg>
+                        )}
+                        {shape === 'abutment' && (
+                            <svg viewBox="0 0 100 80" className="shape-svg">
+                                <rect x="40" y="10" width="20" height="40" fill="none" stroke="currentColor" strokeWidth="2" />
+                                <rect x="20" y="50" width="60" height="15" fill="none" stroke="currentColor" strokeWidth="2" />
+                                <text x="50" y="75" fontSize="6" textAnchor="middle" fill="#3b82f6">Abutment / T-Wall</text>
+                            </svg>
+                        )}
+                        {!['rectangular', 'culvert', 'abutment'].includes(shape) && (
+                            <div className="placeholder-aid">Visual aid for {shape} available in render...</div>
+                        )}
+                    </div>
+
                     <div className="input-grid">
                         {currentShape.fields.map(field => (
                             <div key={field} className="form-item">
@@ -150,6 +212,15 @@ const GeometricCalculator = ({ onApply, onClose }) => {
                                 />
                             </div>
                         ))}
+                        <div className="form-item">
+                            <label>WASTAGE FACTOR (%)</label>
+                            <input
+                                type="number"
+                                value={params.wastage}
+                                onChange={(e) => setParams(prev => ({ ...prev, wastage: Number(e.target.value) }))}
+                                className="geo-input highlight"
+                            />
+                        </div>
                     </div>
 
                     <div className="result-area-new">
@@ -328,6 +399,34 @@ const GeometricCalculator = ({ onApply, onClose }) => {
 
         .text-success { color: #22c55e; }
         .text-secondary { color: #3b82f6; }
+
+        .visual-aid-panel {
+            background: #f1f5f9;
+            border-radius: 12px;
+            height: 140px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e2e8f0;
+            color: #475569;
+        }
+
+        .shape-svg {
+            max-width: 80%;
+            height: 120px;
+        }
+
+        .geo-input.highlight {
+            border-color: #fbbf24;
+            background: #fffbeb;
+        }
+
+        .placeholder-aid {
+            font-size: 0.75rem;
+            font-style: italic;
+            color: #94a3b8;
+        }
       `}</style>
         </div>
     );
