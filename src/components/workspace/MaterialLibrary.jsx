@@ -129,7 +129,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
     return (
       <div className={`intelligence-dashboard ${isLocked ? 'locked-view' : ''}`}>
         {isLocked && (
-          <div className="locked-overlay">
+          <div className="locked-overlay glass-card">
             <Lock size={40} className="mb-4" />
             <h3>Premium Feature</h3>
             <p>Upgrade to Practitioner to unlock real-time market intelligence and cost indices.</p>
@@ -137,7 +137,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
           </div>
         )}
         <div className="dashboard-grid-mini">
-          <div className="enterprise-card intel-metric">
+          <div className="enterprise-card intel-metric glass-card">
             <div className="metric-header">
               <span className="label">Monthly CMCI Movement</span>
               <Activity size={16} className="text-accent" />
@@ -163,7 +163,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
           </div>
         </div>
 
-        <div className="market-index-section enterprise-card">
+        <div className="market-index-section enterprise-card glass-card">
           <div className="index-header">
             <div className="title-box">
               <h3>Construction Material Cost Index (CMCI)</h3>
@@ -331,7 +331,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
 
         <div className="intelligence-grid-l">
           {materials.map((mat) => (
-            <div key={mat.id} className="enterprise-card mat-intel-card" onClick={() => setSelectedMaterial(mat)}>
+            <div key={mat.id} className="enterprise-card mat-intel-card glass-card" onClick={() => setSelectedMaterial(mat)}>
               <div className="card-top-row">
                 <span className="cat-text">{mat.category}</span>
                 <div className={`mini-trend ${mat.trend}`}>

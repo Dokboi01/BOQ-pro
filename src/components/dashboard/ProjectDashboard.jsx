@@ -41,12 +41,30 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
   const limits = PLAN_LIMITS[user?.plan] || PLAN_LIMITS[PLAN_NAMES.FREE];
   const isLimitReached = projects.length >= limits.maxProjects;
 
-  const costBreakdown = projects.length > 0 ? [
-    { label: 'Material Costs', amount: 161525000, color: 'var(--primary-900)', percent: 65, trend: 'up' },
-    { label: 'Labour Costs', amount: 62125000, color: 'var(--accent-600)', percent: 25, trend: 'stable' },
-    { label: 'Overheads & Profit', amount: 17395000, color: 'var(--accent-400)', percent: 7, trend: 'down' },
-    { label: 'Taxes & Deductions', amount: 7455000, color: 'var(--border-medium)', percent: 3, trend: 'stable' },
-  ] : [];
+  const costBreakdown = React.useMemo(() => {
+    if (projects.length === 0) return [];
+    const activeProject = projects[0];
+    if (!activeProject.sections) return [];
+
+    let materials = 0, labour = 0, others = 0;
+    activeProject.sections.forEach(s => {
+      s.items.forEach(item => {
+        const cost = item.qty * (item.useBenchmark ? item.benchmark : item.rate);
+        if (item.description.toLowerCase().includes('material') || item.description.toLowerCase().includes('cement') || item.description.toLowerCase().includes('sand')) materials += cost;
+        else if (item.description.toLowerCase().includes('labour') || item.description.toLowerCase().includes('work')) labour += cost;
+        else others += cost;
+      });
+    });
+
+    const total = materials + labour + others;
+    if (total === 0) return [];
+
+    return [
+      { label: 'Material Costs', amount: materials, color: 'var(--primary-900)', percent: Math.round((materials / total) * 100), trend: 'up' },
+      { label: 'Labour Costs', amount: labour, color: 'var(--accent-600)', percent: Math.round((labour / total) * 100), trend: 'stable' },
+      { label: 'Other Costs', amount: others, color: 'var(--accent-400)', percent: Math.round((others / total) * 100), trend: 'down' },
+    ];
+  }, [projects]);
 
   const riskFlags = projects.length > 0 ? [
     { level: 'high', message: 'Material cost exceeds 65% of total — review supplier rates.', icon: ShieldAlert },
@@ -284,22 +302,26 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
           </div>
           <div className="chart-container-large">
             <div className="viz-bars">
-              {[
-                { label: 'Earthworks', val: 45 },
-                { label: 'Pavements', val: 30 },
-                { label: 'Drainage', val: 15 },
-                { label: 'Prelims', val: 10 },
-              ].map((b, i) => (
-                <div key={i} className="viz-row">
-                  <div className="row-info">
-                    <span>{b.label}</span>
-                    <span>{b.val}%</span>
-                  </div>
-                  <div className="row-bar-bg">
-                    <div className="row-bar-fill" style={{ width: `${b.val}%` }}></div>
-                  </div>
-                </div>
-              ))}
+              {projects.length > 0 && projects[0].sections ?
+                projects[0].sections.slice(0, 5).map((s, i) => {
+                  const sectionTotal = s.items.reduce((acc, item) => acc + (item.qty * (item.useBenchmark ? item.benchmark : item.rate)), 0);
+                  const percent = currentTotal > 0 ? Math.round((sectionTotal / currentTotal) * 100) : 0;
+                  return (
+                    <div key={i} className="viz-row">
+                      <div className="row-info">
+                        <span>{s.title}</span>
+                        <span>{percent}%</span>
+                      </div>
+                      <div className="row-bar-bg">
+                        <div className="row-bar-fill" style={{ width: `${percent}%` }}></div>
+                      </div>
+                    </div>
+                  );
+                })
+                : (
+                  <p className="text-subtle text-center py-8">No section data available</p>
+                )
+              }
             </div>
           </div>
         </section>

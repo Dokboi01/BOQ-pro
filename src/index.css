@@ -68,17 +68,35 @@ h6 {
   letter-spacing: -0.025em;
 }
 
+/* Premium Typography */
+h1,
+h2,
+h3,
+h4 {
+  color: var(--primary-950);
+  letter-spacing: -0.025em;
+  font-weight: 800;
+}
+
 button {
   cursor: pointer;
   font-family: inherit;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Enterprise Card - Glassmorphism Refresh */
 .enterprise-card {
-  background: var(--bg-card);
+  background: white;
   border: 1px solid var(--border-light);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.enterprise-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--accent-200);
+  transform: translateY(-2px);
 }
 
 .btn-primary {

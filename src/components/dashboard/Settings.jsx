@@ -12,7 +12,9 @@ import {
   Database,
   Zap
 } from 'lucide-react';
-import { saveSetting, getSetting } from '../../db/database';
+import { getSetting, saveSetting } from '../../db/database';
+import { seedMarketData } from '../../db/seed_materials';
+import { Loader2 } from 'lucide-react';
 
 const Settings = ({ user }) => {
   const [activeTab, setActiveTab] = useState('profile');
@@ -29,6 +31,7 @@ const Settings = ({ user }) => {
   const [openAIKey, setOpenAIKey] = useState('');
   const [supabaseUrl, setSupabaseUrl] = useState('');
   const [supabaseKey, setSupabaseKey] = useState('');
+  const [isSeeding, setIsSeeding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -264,7 +267,31 @@ const Settings = ({ user }) => {
                 </div>
               </div>
 
-              <div className="enterprise-tip mt-6">
+              <div className="enterprise-card api-section mt-6">
+                <div className="api-header">
+                  <div>
+                    <h4>Market Intelligence Seeding</h4>
+                    <p>Populate your database with the latest Nigerian construction market rates (2025/2026).</p>
+                  </div>
+                </div>
+                <div className="api-inputs">
+                  <button
+                    className="btn-primary-action"
+                    onClick={async () => {
+                      setIsSeeding(true);
+                      const success = await seedMarketData();
+                      setIsSeeding(false);
+                      if (success) alert('Market data seeded successfully!');
+                      else alert('Seeding failed. Check console for details.');
+                    }}
+                    disabled={isSeeding}
+                  >
+                    {isSeeding ? <Loader2 className="animate-spin" size={18} /> : 'Seed Professional Market Data'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="enterprise-card api-section mt-6">
                 <div className="icon-box-tip"><Database size={16} /></div>
                 <p>API keys are stored securely in your local database. They are never transmitted to our servers.</p>
               </div>
