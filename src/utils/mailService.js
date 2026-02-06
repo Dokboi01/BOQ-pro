@@ -46,10 +46,41 @@ export const sendVerificationEmail = async (email, code) => {
     }
 };
 
-export const sendReportEmail = async (email, projectData) => {
+export const sendReportEmail = async (email, projectData, attachments = []) => {
     try {
-        const apiKey = await getSetting('resend_api_key');
-        if (!apiKey) return false;
+        // Try to get key from settings first, then fallback to environment variable
+        let apiKey = await getSetting('resend_api_key');
+        if (!apiKey) {
+            apiKey = import.meta.env.VITE_RESEND_API_KEY;
+        }
+
+        if (!apiKey) {
+            console.error('[MAIL SERVICE] No Resend API key found.');
+            return false;
+        }
+
+        const payload = {
+            from: 'BOQ Pro <onboarding@resend.dev>',
+            to: [email],
+            subject: `Professional BOQ Report: ${projectData.name}`,
+            html: `
+                <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                    <h2 style="color: #0f172a;">Project Cost Report</h2>
+                    <p>Please find the cost breakdown summary for <strong>${projectData.name}</strong> prepared via BOQ Pro.</p>
+                    <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <div style="font-size: 14px; color: #64748b;">TOTAL CONTRACT SUM:</div>
+                        <div style="font-size: 24px; font-weight: bold; color: #1e293b;">₦ ${projectData.totalValue.toLocaleString()}</div>
+                    </div>
+                    <p style="font-size: 14px; color: #334155;">${attachments.length > 0 ? 'The detailed reports are attached to this email.' : 'The detailed Bill of Quantities breakdown is available in your practitioner dashboard.'}</p>
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+                    <p style="font-size: 11px; color: #94a3b8; text-align: center;">Generated via BOQ Pro Enterprise</p>
+                </div>
+            `
+        };
+
+        if (attachments && attachments.length > 0) {
+            payload.attachments = attachments;
+        }
 
         const response = await fetch('https://api.resend.com/emails', {
             method: 'POST',
@@ -57,27 +88,19 @@ export const sendReportEmail = async (email, projectData) => {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                from: 'BOQ Pro <onboarding@resend.dev>',
-                to: [email],
-                subject: `Professional BOQ Report: ${projectData.name}`,
-                html: `
-                    <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-                        <h2 style="color: #0f172a;">Project Cost Report</h2>
-                        <p>Please find the cost breakdown summary for <strong>${projectData.name}</strong> prepared via BOQ Pro.</p>
-                        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                            <div style="font-size: 14px; color: #64748b;">TOTAL CONTRACT SUM:</div>
-                            <div style="font-size: 24px; font-weight: bold; color: #1e293b;">₦ ${projectData.totalValue.toLocaleString()}</div>
-                        </div>
-                        <p style="font-size: 14px; color: #334155;">The detailed Bill of Quantities breakdown is attached to your practitioner dashboard.</p>
-                    </div>
-                `
-            })
+            body: JSON.stringify(payload)
         });
 
-        return response.ok;
+        const result = await response.json();
+        if (!response.ok) {
+            console.error('[MAIL SERVICE] Resend API error:', result);
+            return false;
+        }
+
+        return true;
     } catch (err) {
         console.error('[MAIL SERVICE] Report send failed:', err);
         return false;
     }
 };
+

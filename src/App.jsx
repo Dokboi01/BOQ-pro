@@ -378,14 +378,17 @@ function App() {
   };
 
   const handleUpdateProject = async (projectId, updatedSections) => {
-    const project = projects.find(p => p.id === projectId);
-    if (!project) return;
+    // 1. OPTIMISTIC UPDATE: Update local state immediately
+    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, sections: updatedSections } : p));
 
-    const updatedProject = { ...project, sections: updatedSections };
-    await saveProject(updatedProject);
-
-    // Refresh local state
-    setProjects(prev => prev.map(p => p.id === projectId ? updatedProject : p));
+    // 2. BACKGROUND SAVE: Don't await this for UI update
+    saveProject({
+      id: projectId,
+      sections: updatedSections
+    }).catch(err => {
+      console.error('❌ Background save failed:', err);
+      // Optional: Rollback state if critical, but for now we trust the local state
+    });
   };
 
   const handleAddSection = async (projectId) => {
@@ -435,7 +438,7 @@ function App() {
     }
   };
 
-  const calculateTotalValue = () => {
+  const calculateTotalValue = React.useMemo(() => {
     try {
       const activeProject = projects.find(p => p.id === activeProjectId) || projects[0];
       if (!activeProject || !activeProject.sections) return 0;
@@ -448,7 +451,7 @@ function App() {
       console.error('calculateTotalValue error:', err);
       return 0;
     }
-  };
+  }, [projects, activeProjectId]);
 
   const logout = async () => {
     await supabase.auth.signOut();
@@ -553,7 +556,7 @@ function App() {
         <div className="sticky-summary-bar">
           <div className="summary-item">
             <span className="label">ESTIMATED COST</span>
-            <span className="val">₦{calculateTotalValue().toLocaleString()}</span>
+            <span className="val">₦{calculateTotalValue.toLocaleString()}</span>
           </div>
           <div className="summary-divider"></div>
           <div className="summary-item">

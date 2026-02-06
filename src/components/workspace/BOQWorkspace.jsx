@@ -17,6 +17,43 @@ import {
 import RateAnalysisModal from './RateAnalysisModal';
 import GeometricCalculator from './GeometricCalculator';
 
+const SmoothInput = ({ value, onChange, className, disabled, type = "number" }) => {
+  const [localValue, setLocalValue] = React.useState(value);
+
+  React.useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const handleChange = (e) => {
+    const newVal = e.target.value;
+    setLocalValue(newVal);
+  };
+
+  const handleBlur = () => {
+    if (localValue !== value) {
+      onChange(type === "number" ? Number(localValue) : localValue);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.target.blur();
+    }
+  };
+
+  return (
+    <input
+      type={type}
+      value={localValue}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      className={className}
+      disabled={disabled}
+    />
+  );
+};
+
 const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) => {
   const [sections, setSections] = useState(project?.sections || []);
   const [analyzingItem, setAnalyzingItem] = useState(null);
@@ -87,11 +124,11 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
     onUpdate(project.id, updatedSections);
   };
 
-  const calculateGrandTotal = () => {
+  const calculateGrandTotal = React.useMemo(() => {
     return sections.reduce((acc, section) => {
-      return acc + section.items.reduce((itemAcc, item) => itemAcc + item.total, 0);
+      return acc + section.items.reduce((itemAcc, item) => itemAcc + (item.total || 0), 0);
     }, 0);
-  };
+  }, [sections]);
 
   const isOutlier = (rate, benchmark) => {
     if (!benchmark) return false;
@@ -182,10 +219,9 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                           <td>{item.unit}</td>
                           <td>
                             <div className="qty-input-wrapper">
-                              <input
-                                type="number"
+                              <SmoothInput
                                 value={item.qty}
-                                onChange={(e) => updateItem(section.id, item.id, 'qty', Number(e.target.value))}
+                                onChange={(val) => updateItem(section.id, item.id, 'qty', val)}
                                 className="inline-input"
                               />
                               <button
@@ -216,10 +252,9 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                           <td className="rate-cell">
                             <div className="rate-input-wrapper">
                               <span className="currency-prefix">₦</span>
-                              <input
-                                type="number"
+                              <SmoothInput
                                 value={item.useBenchmark ? item.benchmark : item.rate}
-                                onChange={(e) => updateItem(section.id, item.id, 'rate', Number(e.target.value))}
+                                onChange={(val) => updateItem(section.id, item.id, 'rate', val)}
                                 className="inline-input rate-input"
                                 disabled={item.useBenchmark}
                               />
@@ -256,7 +291,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           <tfoot>
             <tr className="grand-total-row">
               <td colSpan="6">Professional Contract Sum</td>
-              <td className="grand-total-value">₦{calculateGrandTotal().toLocaleString()}</td>
+              <td className="grand-total-value">₦{calculateGrandTotal.toLocaleString()}</td>
               <td></td>
             </tr>
           </tfoot>

@@ -24,6 +24,9 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
   const [activeReport, setActiveReport] = useState(null);
   const [projectSummary, setProjectSummary] = useState('');
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [emailConfig, setEmailConfig] = useState({ recipient: '', includePDF: true, includeExcel: false });
+  const [isSending, setIsSending] = useState(false);
 
   const activeProject = projects.find(p => p.id === activeProjectId) || projects[0];
 
@@ -227,18 +230,87 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
   };
 
   const handleEmailReport = async () => {
-    const clientEmail = prompt('Enter client email address:');
-    if (!clientEmail) return;
+    setIsSending(true);
+    try {
+      const attachments = [];
 
-    const success = await sendReportEmail(clientEmail, {
-      name: projectInfo.title,
-      totalValue: calculateGrandTotal()
-    });
+      if (emailConfig.includePDF) {
+        const doc = new jsPDF();
+        // Recalculate same as handleExportPDF for consistency
+        doc.setFontSize(20);
+        doc.text('BILL OF QUANTITIES', 105, 15, { align: 'center' });
+        doc.setFontSize(10);
+        doc.text(`Project: ${projectInfo.title}`, 14, 25);
+        doc.text(`Client: ${projectInfo.client}`, 14, 30);
+        doc.text(`Date: ${projectInfo.date}`, 14, 35);
 
-    if (success) {
-      alert(`Report successfully emailed to ${clientEmail}`);
-    } else {
-      alert('Failed to send email. Please ensure your API key is set in Settings.');
+        const tableData = [];
+        boqData.forEach(section => {
+          tableData.push([{ content: section.title, colSpan: 6, styles: { fillColor: [240, 240, 240], fontStyle: 'bold' } }]);
+          section.items.forEach((item, idx) => {
+            tableData.push([
+              idx + 1,
+              item.description,
+              item.unit,
+              item.qty.toLocaleString(),
+              (item.useBenchmark ? item.benchmark : item.rate).toLocaleString(),
+              item.total.toLocaleString()
+            ]);
+          });
+        });
+
+        tableData.push([{ content: 'GRAND TOTAL', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } }, { content: `₦${calculateGrandTotal().toLocaleString()}`, styles: { fontStyle: 'bold' } }]);
+
+        doc.autoTable({
+          startY: 40,
+          head: [['Item', 'Description', 'Unit', 'Qty', 'Rate', 'Total']],
+          body: tableData,
+          theme: 'grid',
+          headStyles: { fillColor: [15, 23, 42], fontSize: 9, fontStyle: 'bold' },
+          columnStyles: { 0: { cellWidth: 15 }, 5: { fontStyle: 'bold', halign: 'right' } },
+          styles: { fontSize: 8 }
+        });
+
+        const pdfBase64 = doc.output('datauristring').split(',')[1];
+        attachments.push({
+          filename: `${projectInfo.title}_BOQ.pdf`,
+          content: pdfBase64
+        });
+      }
+
+      if (emailConfig.includeExcel) {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('BOQ Report');
+        // Simple excel gen for attachment
+        worksheet.addRow(['Description', 'Unit', 'Qty', 'Rate', 'Total']).font = { bold: true };
+        boqData.forEach(s => {
+          worksheet.addRow([s.title]).font = { bold: true };
+          s.items.forEach(i => worksheet.addRow([i.description, i.unit, i.qty, i.rate, i.total]));
+        });
+        const buffer = await workbook.xlsx.writeBuffer();
+        const excelBase64 = btoa(new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+        attachments.push({
+          filename: `${projectInfo.title}_BOQ.xlsx`,
+          content: excelBase64
+        });
+      }
+
+      const success = await sendReportEmail(emailConfig.recipient, {
+        name: projectInfo.title,
+        totalValue: calculateGrandTotal()
+      }, attachments);
+
+      if (success) {
+        alert(`Report successfully emailed to ${emailConfig.recipient}`);
+        setIsEmailModalOpen(false);
+      } else {
+        alert('Failed to send email. Check your Resend API key in Settings.');
+      }
+    } catch (error) {
+      console.error('Email error:', error);
+      alert('An error occurred while preparing the email.');
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -467,7 +539,7 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
               <button className="btn-secondary" onClick={handleExportExcel}>
                 <FileSpreadsheet size={16} /> Export to Excel
               </button>
-              <button className="btn-secondary" onClick={handleEmailReport}>
+              <button className="btn-secondary" onClick={() => setIsEmailModalOpen(true)}>
                 <MailIcon size={16} /> Email to Client
               </button>
               <button className="btn-primary-action" onClick={handleExportPDF}>
@@ -486,6 +558,70 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
           </div>
         </div>
       )}
+
+      {/* Email Modal */}
+      {isEmailModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content email-modal view-fade-in">
+            <div className="modal-header">
+              <div className="title-with-icon">
+                <MailIcon className="text-accent" />
+                <h3>Email Professional Report</h3>
+              </div>
+              <button className="btn-close" onClick={() => setIsEmailModalOpen(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p className="modal-desc">Send the project cost breakdown directly to your client's inbox.</p>
+
+              <div className="form-group">
+                <label>Recipient Email</label>
+                <input
+                  type="email"
+                  placeholder="client@company.com"
+                  className="modal-input"
+                  value={emailConfig.recipient}
+                  onChange={(e) => setEmailConfig({ ...emailConfig, recipient: e.target.value })}
+                />
+              </div>
+
+              <div className="attachment-options">
+                <label className="checkbox-item">
+                  <input
+                    type="checkbox"
+                    checked={emailConfig.includePDF}
+                    onChange={(e) => setEmailConfig({ ...emailConfig, includePDF: e.target.checked })}
+                  />
+                  <span>Include Official PDF Report</span>
+                </label>
+                <label className="checkbox-item">
+                  <input
+                    type="checkbox"
+                    checked={emailConfig.includeExcel}
+                    onChange={(e) => setEmailConfig({ ...emailConfig, includeExcel: e.target.checked })}
+                  />
+                  <span>Include Excel Data Summary</span>
+                </label>
+              </div>
+
+              <div className="modal-info-box">
+                <CheckCircle2 size={14} className="text-success" />
+                <span>Reports are generated using your consultant branding.</span>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setIsEmailModalOpen(false)}>Cancel</button>
+              <button
+                className="btn-primary-glow"
+                onClick={handleEmailReport}
+                disabled={isSending || !emailConfig.recipient}
+              >
+                {isSending ? 'Generating & Sending...' : 'Send Report Now'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       <style jsx="true">{`
         .reporting-workspace {
@@ -800,6 +936,135 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
           font-family: sans-serif;
           color: #e2e8f0;
           text-align: left;
+        }
+/* Modal Styles */
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(15, 23, 42, 0.7);
+          backdrop-filter: blur(4px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+        }
+
+        .modal-content.email-modal {
+          background: white;
+          width: 480px;
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .modal-header {
+          padding: 1.5rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-bottom: 1px solid var(--border-light);
+        }
+
+        .title-with-icon {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .title-with-icon h3 { margin: 0; font-size: 1.125rem; }
+
+        .btn-close {
+          background: none;
+          border: none;
+          font-size: 1.5rem;
+          color: var(--primary-400);
+          cursor: pointer;
+        }
+
+        .modal-body {
+          padding: 1.5rem;
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+
+        .modal-desc {
+          font-size: 0.875rem;
+          color: var(--primary-500);
+          margin: 0;
+        }
+
+        .form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .form-group label {
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: var(--primary-700);
+          text-transform: uppercase;
+        }
+
+        .modal-input {
+          padding: 0.75rem;
+          border: 1px solid var(--border-medium);
+          border-radius: 8px;
+          font-size: 0.875rem;
+        }
+
+        .attachment-options {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+          padding: 1rem;
+          background: var(--bg-main);
+          border-radius: 8px;
+        }
+
+        .checkbox-item {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          font-size: 0.875rem;
+          font-weight: 500;
+          cursor: pointer;
+        }
+
+        .modal-info-box {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.75rem;
+          color: var(--primary-500);
+        }
+
+        .modal-footer {
+          padding: 1.25rem 1.5rem;
+          display: flex;
+          justify-content: flex-end;
+          gap: 1rem;
+          background: var(--bg-main);
+          border-top: 1px solid var(--border-light);
+        }
+
+        .btn-primary-glow {
+          background: var(--primary-900);
+          color: white;
+          border: none;
+          padding: 0.75rem 1.5rem;
+          border-radius: 8px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .btn-primary-glow:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
       `}</style>
     </div>
