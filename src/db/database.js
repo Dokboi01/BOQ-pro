@@ -2,25 +2,49 @@ import { supabase } from './supabase';
 
 // Projects Management
 export const saveProject = async (project) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            console.error('saveProject: No authenticated user found');
+            return null;
+        }
 
-    const projectData = {
-        ...project,
-        user_id: user.id
-    };
+        // Prepare project data - ensure sections is serializable
+        const projectData = {
+            name: project.name,
+            type: project.type,
+            status: project.status || 'Draft',
+            date: project.date,
+            user_id: user.id,
+            // Sections must be stored as JSONB - ensure it's a plain object
+            sections: JSON.parse(JSON.stringify(project.sections || []))
+        };
 
-    const { data, error } = await supabase
-        .from('projects')
-        .upsert(projectData)
-        .select()
-        .single();
+        // If project has an ID, include it for upsert
+        if (project.id) {
+            projectData.id = project.id;
+        }
 
-    if (error) {
-        console.error('Error saving project:', error);
+        console.log('💾 Saving project:', projectData.name, 'with', projectData.sections?.length, 'sections');
+
+        const { data, error } = await supabase
+            .from('projects')
+            .upsert(projectData)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('❌ Supabase save error:', error.message, error.details, error.hint);
+            console.error('Full error object:', JSON.stringify(error, null, 2));
+            return null;
+        }
+
+        console.log('✅ Project saved successfully, ID:', data.id);
+        return data.id;
+    } catch (err) {
+        console.error('❌ saveProject exception:', err.message);
         return null;
     }
-    return data.id;
 };
 
 export const getProjects = async () => {
@@ -122,14 +146,19 @@ export const getMarketIndices = async () => {
 };
 
 // User Profile Management (Supabase Auth handles the core, we use 'profiles' table for metadata)
-export const getProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+export const getProfile = async (userId = null) => {
+    let targetId = userId;
+
+    if (!targetId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
+        targetId = user.id;
+    }
 
     const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', targetId)
         .single();
 
     if (error) {

@@ -57,12 +57,17 @@ const PricingPage = ({ onSelectPlan, onBack }) => {
 
   return (
     <div className="pricing-container view-fade-in">
+      <div className="hero-bg-gradient"></div>
+      <div className="hero-bg-grid"></div>
+
       <nav className="pricing-nav">
         <div className="logo" onClick={onBack} style={{ cursor: 'pointer' }}>
-          <Shield size={24} className="text-accent-600" />
+          <Shield size={28} className="text-accent-500" />
           <span>BOQ <strong>PRO</strong><sup>®</sup></span>
         </div>
-        <button className="btn-outline" onClick={onBack}>Back to Home</button>
+        <div className="header-actions">
+          <button className="btn-text" onClick={onBack}>Back to Home</button>
+        </div>
       </nav>
 
       <div className="pricing-header">
@@ -73,20 +78,25 @@ const PricingPage = ({ onSelectPlan, onBack }) => {
 
       <div className="pricing-grid">
         {plans.map((plan, index) => (
-          <div key={index} className={`pricing-card ${plan.popular ? 'popular' : ''}`}>
+          <div key={index} className={`pricing-card glass-card ${plan.popular ? 'popular' : ''}`}>
             {plan.popular && <div className="popular-badge">Most Popular</div>}
-            <div className="plan-icon">{plan.icon}</div>
-            <h3>{plan.name}</h3>
-            <div className="price">
-              <span className="amount">{plan.price}</span>
+            <div className="plan-icon-container">{plan.icon}</div>
+            <h3 className="plan-name">{plan.name}</h3>
+            <div className="price-display">
+              <span className="currency">₦</span>
+              <span className="amount">{plan.price.replace('₦', '')}</span>
               {plan.period && <span className="period">{plan.period}</span>}
             </div>
             <p className="plan-desc">{plan.description}</p>
 
+            <div className="divider"></div>
+
             <ul className="feature-list">
               {plan.features.map((feature, fIndex) => (
                 <li key={fIndex}>
-                  <Check size={16} className="text-success" />
+                  <div className="check-icon">
+                    <Check size={12} strokeWidth={3} />
+                  </div>
                   <span>{feature}</span>
                 </li>
               ))}
@@ -94,17 +104,13 @@ const PricingPage = ({ onSelectPlan, onBack }) => {
 
             {plan.name === 'Enterprise' ? (
               <div className="contact-details">
-                <a href={`mailto:${plan.contactEmail}`} className="plan-cta btn-primary mb-2">
-                  Email Sales
+                <a href={`mailto:${plan.contactEmail}`} className="plan-cta btn-hero-primary mb-2">
+                  Contact Sales Support
                 </a>
-                <div className="contact-info-strip">
-                  <div className="info-item"><strong>Email:</strong> {plan.contactEmail}</div>
-                  <div className="info-item"><strong>Phone:</strong> {plan.contactPhone}</div>
-                </div>
               </div>
             ) : (
               <button
-                className={`plan-cta ${plan.popular ? 'btn-primary' : 'btn-outline'}`}
+                className={`plan-cta ${plan.popular ? 'btn-hero-primary' : 'btn-hero-secondary'}`}
                 onClick={() => onSelectPlan(plan.name)}
               >
                 {plan.cta}
@@ -127,9 +133,35 @@ const PricingPage = ({ onSelectPlan, onBack }) => {
       <style jsx="true">{`
         .pricing-container {
           min-height: 100vh;
-          background: var(--bg-main);
-          padding: 2rem 8%;
-          color: var(--primary-900);
+          background: linear-gradient(135deg, #0a0f1d 0%, #1a1f35 100%);
+          padding: 2rem 5%;
+          color: white;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .hero-bg-gradient {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.12) 0%, transparent 40%),
+                      radial-gradient(circle at 90% 80%, rgba(99, 102, 241, 0.12) 0%, transparent 40%);
+          pointer-events: none;
+        }
+
+        .hero-bg-grid {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-image: 
+            linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+          background-size: 50px 50px;
+          pointer-events: none;
         }
 
         .pricing-nav {
@@ -137,27 +169,50 @@ const PricingPage = ({ onSelectPlan, onBack }) => {
           justify-content: space-between;
           align-items: center;
           margin-bottom: 4rem;
+          position: relative;
+          z-index: 10;
         }
 
         .logo {
           display: flex;
           align-items: center;
           gap: 0.75rem;
-          font-size: 1.25rem;
-          color: var(--primary-900);
+          font-size: 1.5rem;
+          font-weight: 800;
+          color: white;
         }
+
+        .header-actions {
+          display: flex;
+          align-items: center;
+          gap: 1.5rem;
+        }
+
+        .btn-text {
+          background: none;
+          border: none;
+          color: #94a3b8;
+          font-weight: 600;
+          cursor: pointer;
+          transition: color 0.3s;
+        }
+
+        .btn-text:hover { color: white; }
 
         .pricing-header {
           text-align: center;
           max-width: 800px;
           margin: 0 auto 5rem;
+          position: relative;
+          z-index: 10;
         }
 
         .badge {
           display: inline-block;
           background: rgba(37, 99, 235, 0.1);
-          color: var(--accent-600);
-          padding: 0.4rem 1rem;
+          border: 1px solid rgba(37, 99, 235, 0.3);
+          color: #60a5fa;
+          padding: 0.5rem 1.25rem;
           border-radius: 100px;
           font-size: 0.75rem;
           font-weight: 700;
@@ -168,32 +223,41 @@ const PricingPage = ({ onSelectPlan, onBack }) => {
 
         h1 {
           font-size: 3.5rem;
+          font-weight: 900;
           line-height: 1.1;
           margin-bottom: 1.5rem;
+          letter-spacing: -0.02em;
         }
 
         h1 span {
-          color: var(--accent-600);
+          background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
         }
 
-        p {
-          font-size: 1.125rem;
-          color: var(--primary-600);
+        .pricing-header p {
+          font-size: 1.25rem;
+          color: #94a3b8;
         }
 
         .pricing-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-          gap: 2.5rem;
+          gap: 2rem;
           margin-bottom: 6rem;
+          position: relative;
+          z-index: 10;
+        }
+
+        .glass-card {
+          background: rgba(255, 255, 255, 0.03);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 24px;
         }
 
         .pricing-card {
-          background: white;
-          border: 1px solid var(--border-light);
-          border-radius: var(--radius-xl);
-          padding: 3rem 2.5rem;
-          position: relative;
+          padding: 3.5rem 2.5rem;
           transition: all 0.3s ease;
           display: flex;
           flex-direction: column;
@@ -201,13 +265,14 @@ const PricingPage = ({ onSelectPlan, onBack }) => {
 
         .pricing-card:hover {
           transform: translateY(-8px);
-          box-shadow: var(--shadow-xl);
-          border-color: var(--accent-400);
+          background: rgba(255, 255, 255, 0.05);
+          border-color: rgba(59, 130, 246, 0.4);
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
         }
 
         .pricing-card.popular {
-          border: 2px solid var(--accent-500);
-          box-shadow: var(--shadow-lg);
+          border: 1px solid rgba(59, 130, 246, 0.5);
+          background: rgba(37, 99, 235, 0.05);
         }
 
         .popular-badge {
@@ -215,44 +280,69 @@ const PricingPage = ({ onSelectPlan, onBack }) => {
           top: 0;
           left: 50%;
           transform: translate(-50%, -50%);
-          background: var(--accent-500);
+          background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
           color: white;
-          padding: 0.4rem 1.2rem;
+          padding: 0.5rem 1.5rem;
           border-radius: 100px;
           font-size: 0.75rem;
           font-weight: 700;
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
         }
 
-        .plan-icon {
+        .plan-icon-container {
+          width: 56px;
+          height: 56px;
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           margin-bottom: 1.5rem;
+          color: #60a5fa;
         }
 
-        h3 {
+        .plan-name {
           font-size: 1.5rem;
+          font-weight: 800;
           margin-bottom: 1rem;
         }
 
-        .price {
+        .price-display {
           margin-bottom: 1.5rem;
           display: flex;
           align-items: baseline;
           gap: 0.25rem;
         }
 
+        .currency {
+          font-size: 1.5rem;
+          font-weight: 600;
+          color: #94a3b8;
+        }
+
         .amount {
-          font-size: 2.5rem;
-          font-weight: 800;
+          font-size: 3rem;
+          font-weight: 900;
         }
 
         .period {
-          color: var(--primary-500);
-          font-size: 1.125rem;
+          color: #64748b;
+          font-size: 1rem;
+          font-weight: 600;
         }
 
         .plan-desc {
           font-size: 0.875rem;
-          margin-bottom: 2.5rem;
-          min-height: 3rem;
+          color: #94a3b8;
+          line-height: 1.6;
+          margin-bottom: 2rem;
+          min-height: 2.5rem;
+        }
+
+        .divider {
+          height: 1px;
+          background: rgba(255, 255, 255, 0.1);
+          margin-bottom: 2rem;
         }
 
         .feature-list {
@@ -267,27 +357,67 @@ const PricingPage = ({ onSelectPlan, onBack }) => {
           gap: 0.75rem;
           font-size: 0.875rem;
           margin-bottom: 1rem;
-          color: var(--primary-700);
+          color: #cbd5e1;
+        }
+
+        .check-icon {
+          width: 20px;
+          height: 20px;
+          background: rgba(34, 197, 94, 0.1);
+          color: #22c55e;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
         }
 
         .plan-cta {
           width: 100%;
           padding: 1rem;
-          font-size: 1rem;
+          font-weight: 700;
+          border-radius: 12px;
+          cursor: pointer;
+          transition: all 0.3s;
+          border: none;
+        }
+
+        .btn-hero-primary {
+          background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+          color: white;
+          box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2);
+        }
+
+        .btn-hero-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 15px 30px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-hero-secondary {
+          background: rgba(255, 255, 255, 0.05);
+          color: white;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-hero-secondary:hover {
+          background: rgba(255, 255, 255, 0.1);
+          transform: translateY(-2px);
         }
 
         .pricing-footer {
           text-align: center;
           padding-top: 4rem;
-          border-top: 1px solid var(--border-light);
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+          position: relative;
+          z-index: 10;
         }
 
         .pricing-footer p {
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: var(--primary-400);
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: #475569;
           text-transform: uppercase;
-          letter-spacing: 0.1em;
+          letter-spacing: 0.2em;
           margin-bottom: 2rem;
         }
 
@@ -296,8 +426,8 @@ const PricingPage = ({ onSelectPlan, onBack }) => {
           justify-content: center;
           gap: 4rem;
           font-size: 1.5rem;
-          font-weight: 800;
-          color: var(--primary-300);
+          font-weight: 900;
+          color: #1e293b;
         }
 
         .text-success { color: var(--success-600); }

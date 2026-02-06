@@ -1,7 +1,7 @@
 import React from 'react';
 import { Shield, TrendingUp, Users, Zap, CheckCircle2, ArrowRight, Sparkles } from 'lucide-react';
 
-const Hero = ({ onGetStarted }) => {
+const Hero = ({ onGetStarted, onLogin }) => {
   const stats = [
     { value: '₦2.4B+', label: 'Projects Managed', icon: TrendingUp },
     { value: '500+', label: 'Civil Engineers', icon: Users },
@@ -24,6 +24,18 @@ const Hero = ({ onGetStarted }) => {
       <div className="hero-bg-gradient"></div>
       <div className="hero-bg-grid"></div>
 
+      {/* Premium Header Navigation */}
+      <nav className="hero-header">
+        <div className="hero-logo">
+          <Shield size={32} className="text-accent-500" />
+          <span>BOQ <strong>PRO</strong><sup>®</sup></span>
+        </div>
+        <div className="header-actions">
+          <button className="btn-text" onClick={onLogin}>Log In</button>
+          <button className="btn-nav-primary" onClick={onGetStarted}>Sign Up</button>
+        </div>
+      </nav>
+
       <div className="hero-content">
         {/* Main Hero Section */}
         <div className="hero-main">
@@ -45,12 +57,12 @@ const Hero = ({ onGetStarted }) => {
 
           <div className="hero-cta">
             <button className="btn-hero-primary" onClick={onGetStarted}>
-              Start Free Trial
+              Get Started Free
               <ArrowRight size={20} />
             </button>
-            <button className="btn-hero-secondary">
-              <Shield size={20} />
-              View Demo
+            <button className="btn-hero-secondary" onClick={onLogin}>
+              <Users size={20} />
+              Existing User Login
             </button>
           </div>
 
@@ -118,15 +130,64 @@ const Hero = ({ onGetStarted }) => {
           pointer-events: none;
         }
 
-        .hero-content {
-          max-width: 1200px;
-          width: 100%;
-          z-index: 10;
-          position: relative;
+        .hero-header {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          padding: 2rem 5%;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          z-index: 100;
+        }
+
+        .hero-logo {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          font-size: 1.5rem;
+          color: white;
+          font-weight: 800;
+        }
+
+        .header-actions {
+          display: flex;
+          align-items: center;
+          gap: 1.5rem;
+        }
+
+        .btn-text {
+          background: none;
+          border: none;
+          color: #94a3b8;
+          font-weight: 600;
+          cursor: pointer;
+          transition: color 0.3s;
+        }
+
+        .btn-text:hover { color: white; }
+
+        .btn-nav-primary {
+          background: rgba(37, 99, 235, 0.1);
+          border: 1px solid rgba(37, 99, 235, 0.4);
+          color: #60a5fa;
+          padding: 0.5rem 1.5rem;
+          border-radius: 8px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+
+        .btn-nav-primary:hover {
+          background: var(--accent-600);
+          color: white;
+          border-color: var(--accent-600);
         }
 
         .hero-main {
           text-align: center;
+          margin-top: 4rem;
           margin-bottom: 4rem;
         }
 

@@ -27,7 +27,11 @@ import {
   Settings as SettingsIcon,
   CreditCard,
   FileCheck,
-  Calculator as CalcIcon
+  Calculator as CalcIcon,
+  ChevronRight,
+  ChevronLeft,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 
 // Class-based Error Boundary to catch render errors
@@ -67,6 +71,7 @@ function App() {
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [projects, setProjects] = useState([]);
   const [pendingUser, setPendingUser] = useState(null);
+  const [focusMode, setFocusMode] = useState(false);
   const initializationComplete = React.useRef(false);
 
   // Check for active session on mount
@@ -75,40 +80,66 @@ function App() {
 
     const checkUser = async () => {
       try {
-        console.log('Checking user session...');
-        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('🔄 INITIALIZING AUTH...');
 
+        // 1. FAST PATH: UI Caching
+        const cachedProfile = localStorage.getItem('boq_pro_profile');
+        if (cachedProfile) {
+          try {
+            const parsed = JSON.parse(cachedProfile);
+            console.log('✨ Using cached profile:', parsed.full_name);
+            setUser(parsed);
+            setView('app');
+          } catch (e) {
+            localStorage.removeItem('boq_pro_profile');
+          }
+        }
+
+        // 2. SESSION CHECK (Silent)
+        const { data: { session }, error } = await supabase.auth.getSession();
         if (error) throw error;
 
-        if (session && isMounted) {
-          console.log('Session found:', session.user.email);
-          const profile = await getProfile();
-          console.log('Profile found:', profile);
-          setUser({ ...session.user, ...profile });
+        if (session) {
+          console.log('✅ Active session found:', session.user.email);
+          const profile = await getProfile(session.user.id);
+          const fullUser = { ...session.user, ...profile };
+          setUser(fullUser);
+          localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
           initializationComplete.current = true;
           setView('app');
-        } else if (isMounted) {
-          console.log('No session, showing landing');
+        } else {
+          console.log('ℹ️ No active session');
+          localStorage.removeItem('boq_pro_profile');
+          setUser(null);
           initializationComplete.current = true;
-          setView('landing');
+          if (view === 'loading') setView('landing');
         }
       } catch (err) {
-        console.error('Core initialization failed:', err);
-        if (isMounted) setView('landing');
+        console.error('❌ Init error:', err);
+        initializationComplete.current = true;
+        setView('landing');
       }
     };
 
     checkUser();
 
+    // 3. AUTH STATE LISTENER (Global)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔐 AUTH EVENT:', event, !!session);
       if (!isMounted) return;
 
       if (session) {
-        const profile = await getProfile();
-        setUser({ ...session.user, ...profile });
-        initializationComplete.current = true;
-        setView('app');
-      } else {
+        // Only trigger profile fetch on sign-in related events to avoid loops
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          const profile = await getProfile(session.user.id);
+          const fullUser = { ...session.user, ...profile };
+          setUser(fullUser);
+          localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
+          initializationComplete.current = true;
+          setView('app');
+        }
+      } else if (event === 'SIGNED_OUT') {
+        localStorage.removeItem('boq_pro_profile');
         setUser(null);
         setView('landing');
       }
@@ -142,14 +173,26 @@ function App() {
 
   const handleLogin = async (credentials) => {
     setAuthError(null);
-    const { error } = await supabase.auth.signInWithPassword({
+    console.log('🚀 Attempting login for:', credentials.email);
+
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: credentials.email,
       password: credentials.password,
     });
 
     if (error) {
+      console.error('❌ Login failed:', error.message);
       setAuthError(error.message);
       return;
+    }
+
+    if (data.session) {
+      console.log('✅ Login successful, updating UI...');
+      const profile = await getProfile(data.user.id);
+      const fullUser = { ...data.user, ...profile };
+      setUser(fullUser);
+      localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
+      setView('app');
     }
   };
 
@@ -240,30 +283,98 @@ function App() {
   };
 
   const handleStructureSelect = async (structureId, structureName) => {
+    console.log('Selected structure:', structureId);
+    console.log('Available keys:', Object.keys(STRUCTURE_DATA));
+
     const data = STRUCTURE_DATA[structureId] || STRUCTURE_DATA['Residential Building'];
+
+    if (!data) {
+      console.error('❌ CRITICAL: No data found for structureId:', structureId);
+      alert('Could not find components for this structure type.');
+      return;
+    }
+
+    if (!data.sections) {
+      console.error('❌ CRITICAL: Data found but contains no sections:', data);
+      alert('This structure type has no predefined sections.');
+      return;
+    }
+
+    console.log('✅ Structure metadata found:', {
+      icon: data.icon,
+      description: data.description,
+      sectionCount: data.sections.length
+    });
 
     const newProj = {
       name: `Project: ${structureName}`,
       type: structureId,
       status: 'Draft',
-      sections: data.sections.map(s => ({
-        ...s,
-        items: s.items.map(item => ({
-          ...item,
-          id: Math.random(),
-          total: item.qty * item.rate,
-          useBenchmark: true
-        }))
-      })),
+      sections: data.sections.map(s => {
+        const items = s.items || [];
+        console.log(`📍 Mapping section [${s.title}] with ${items.length} items`);
+
+        return {
+          ...s,
+          expanded: true,
+          items: items.map(item => ({
+            ...item,
+            id: Math.random().toString(36).substr(2, 9), // Use string ID
+            qty: item.qty || 0,
+            rate: item.rate || 0,
+            total: (item.qty || 0) * (item.rate || 0),
+            useBenchmark: true
+          }))
+        };
+      }),
       date: new Date().toLocaleDateString()
     };
 
-    const id = await saveProject(newProj);
-    const updated = await getProjects();
-    setProjects(updated);
-    setActiveProjectId(id);
-    setShowSelector(false);
-    setActiveTab('workspace');
+    console.log('🚀 FINAL NEW PROJECT OBJECT:', newProj);
+
+    try {
+      const savedId = await saveProject(newProj);
+
+      // Use database ID if available, otherwise generate a local ID
+      const projectId = savedId || `local_${Date.now()}`;
+      const finalProj = { ...newProj, id: projectId };
+
+      if (!savedId) {
+        console.warn('⚠️ Project saved locally only (DB save failed). ID:', projectId);
+      } else {
+        console.log('💾 Project saved to database, ID:', savedId);
+      }
+
+      // Update local state immediately
+      setProjects(prev => [finalProj, ...prev]);
+      setActiveProjectId(projectId);
+      setShowSelector(false);
+      setActiveTab('workspace');
+      console.log('✨ Workspace navigation triggered with project:', projectId);
+
+      // Only refresh from DB if save was successful
+      if (savedId) {
+        getProjects().then(updated => {
+          console.log('🔄 Background refresh completed, projects count:', updated.length);
+          if (updated.length > 0) {
+            setProjects(updated);
+          }
+        });
+      }
+    } catch (dbError) {
+      console.error('❌ Database operation failed during structure selection:', dbError);
+
+      // Fallback: Create project locally so user can still work
+      const localId = `local_${Date.now()}`;
+      const fallbackProj = { ...newProj, id: localId };
+
+      setProjects(prev => [fallbackProj, ...prev]);
+      setActiveProjectId(localId);
+      setShowSelector(false);
+      setActiveTab('workspace');
+
+      console.warn('⚠️ Created local-only project due to DB error:', localId);
+    }
   };
 
   const handleUpdateProject = async (projectId, updatedSections) => {
@@ -318,7 +429,7 @@ function App() {
     </div>
   );
 
-  if (view === 'landing') return <Hero onGetStarted={() => setView('pricing')} />;
+  if (view === 'landing') return <Hero onGetStarted={() => setView('pricing')} onLogin={() => setView('login')} />;
   if (view === 'pricing') return <PricingPage
     onSelectPlan={async (plan) => {
       if (user) {
@@ -366,7 +477,7 @@ function App() {
         return activeProject ? (
           <div className="view-fade-in"><BOQWorkspace key={activeProject.id} project={activeProject} onUpdate={handleUpdateProject} /></div>
         ) : (
-          <div className="enterprise-card p-4">No project selected.</div>
+          <div className="enterprise-card p-4">No project selected. Selected ID: {activeProjectId}</div>
         );
       case 'library':
         return <div className="view-fade-in"><MaterialLibrary user={user} activeProject={activeProject} onUpdate={handleUpdateProject} onUpgrade={() => { setView('pricing'); }} /></div>;
@@ -380,8 +491,19 @@ function App() {
   };
 
   return (
-    <div className="app-container">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={user} onLogout={logout} />
+    <div className={`app-container ${focusMode ? 'focus-mode' : ''}`}>
+      {!focusMode && <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={user} onLogout={logout} />}
+
+      {/* Focus Mode Toggle (appears when sidebar is hidden) */}
+      {focusMode && (
+        <button
+          className="focus-mode-exit-btn"
+          onClick={() => setFocusMode(false)}
+          title="Exit Focus Mode"
+        >
+          <ChevronRight size={20} />
+        </button>
+      )}
 
       <main className="content-area">
         {/* Sticky Summary Bar (Decision Support) */}
@@ -425,6 +547,16 @@ function App() {
             )}
           </div>
           <div className="topbar-actions">
+            {activeTab === 'workspace' && (
+              <button
+                className={`btn-focus ${focusMode ? 'active' : ''}`}
+                onClick={() => setFocusMode(!focusMode)}
+                title={focusMode ? 'Exit Focus Mode' : 'Enter Focus Mode'}
+              >
+                {focusMode ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                {focusMode ? 'Exit Focus' : 'Focus Mode'}
+              </button>
+            )}
             <button className="btn-secondary" onClick={() => setActiveTab('settings')}><SettingsIcon size={16} /> Settings</button>
             <button className="btn-primary" onClick={handleCreateProject}>Create New Project</button>
           </div>
@@ -443,6 +575,57 @@ function App() {
         .app-container {
           display: flex;
           min-height: 100vh;
+          transition: all 0.3s ease;
+        }
+
+        .app-container.focus-mode .content-area {
+          margin-left: 0;
+        }
+
+        .focus-mode-exit-btn {
+          position: fixed;
+          left: 0;
+          top: 50%;
+          transform: translateY(-50%);
+          z-index: 1000;
+          background: var(--primary-900);
+          border: none;
+          color: white;
+          padding: 1rem 0.5rem;
+          border-radius: 0 8px 8px 0;
+          cursor: pointer;
+          transition: all 0.3s;
+          box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+        }
+
+        .focus-mode-exit-btn:hover {
+          padding-left: 1rem;
+          background: var(--accent-600);
+        }
+
+        .btn-focus {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.5rem 1rem;
+          border-radius: var(--radius-sm);
+          font-weight: 600;
+          font-size: 0.875rem;
+          cursor: pointer;
+          transition: all 0.2s;
+          background: rgba(37, 99, 235, 0.1);
+          border: 1px solid var(--accent-400);
+          color: var(--accent-600);
+        }
+
+        .btn-focus:hover {
+          background: var(--accent-600);
+          color: white;
+        }
+
+        .btn-focus.active {
+          background: var(--accent-600);
+          color: white;
         }
 
         .content-area {

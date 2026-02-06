@@ -22,6 +22,13 @@ const BOQWorkspace = ({ project, onUpdate }) => {
   const [analyzingItem, setAnalyzingItem] = useState(null);
   const [calculatingQtyForItem, setCalculatingQtyForItem] = useState(null);
 
+  // Sync state with props when project changes
+  React.useEffect(() => {
+    if (project?.sections) {
+      setSections(project.sections);
+    }
+  }, [project]);
+
   const toggleSection = (id) => {
     setSections(sections.map(s => s.id === id ? { ...s, expanded: !s.expanded } : s));
   };
@@ -300,6 +307,28 @@ const BOQWorkspace = ({ project, onUpdate }) => {
           padding: 0;
           overflow: hidden;
           border-radius: 12px;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          max-height: calc(100vh - 320px);
+          overflow-y: auto;
+        }
+
+        .boq-intelligence-table-wrapper::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        .boq-intelligence-table-wrapper::-webkit-scrollbar-track {
+          background: var(--bg-main);
+        }
+
+        .boq-intelligence-table-wrapper::-webkit-scrollbar-thumb {
+          background: var(--primary-400);
+          border-radius: 4px;
+        }
+
+        .boq-intelligence-table-wrapper::-webkit-scrollbar-thumb:hover {
+          background: var(--primary-600);
         }
 
         .boq-intelligence-table {

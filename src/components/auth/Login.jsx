@@ -4,10 +4,13 @@ import { Shield, Mail, Lock, ArrowRight, Github, AlertCircle } from 'lucide-reac
 const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onLogin({ email, password });
+    setIsLoading(true);
+    await onLogin({ email, password });
+    setIsLoading(false);
   };
 
   return (
@@ -63,8 +66,17 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword }) => {
             </div>
           </div>
 
-          <button type="submit" className="btn-primary auth-submit">
-            Sign In <ArrowRight size={18} />
+          <button type="submit" className={`btn-primary auth-submit ${isLoading ? 'loading' : ''}`} disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <span className="loading-spinner-sm"></span>
+                Signing in...
+              </>
+            ) : (
+              <>
+                Sign In <ArrowRight size={18} />
+              </>
+            )}
           </button>
         </form>
 
@@ -212,6 +224,23 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword }) => {
           text-align: center;
           font-size: 0.875rem;
           color: var(--primary-500);
+        }
+        .auth-submit.loading {
+          pointer-events: none;
+          opacity: 0.7;
+        }
+
+        .loading-spinner-sm {
+          width: 18px;
+          height: 18px;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-radius: 50%;
+          border-top-color: white;
+          animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
       `}</style>
     </div>

@@ -13,7 +13,13 @@ try {
     if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('YOUR_')) {
         throw new Error('Supabase credentials are not configured');
     }
-    supabase = createClient(supabaseUrl, supabaseAnonKey);
+    supabase = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true
+        }
+    });
 } catch (err) {
     console.error('FAILED TO INITIALIZE SUPABASE:', err.message);
     // Create a dummy object to avoid crashes on import, though it won't work
