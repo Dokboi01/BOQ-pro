@@ -67,6 +67,48 @@ export const generateAIInsight = async (item, context = {}) => {
     }
 };
 
+export const generateProjectSummary = async (projectData) => {
+    try {
+        let apiKey = await getSetting('openai_api_key');
+        if (!apiKey) apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+
+        if (!apiKey) {
+            return "Professional summary is available in Pro mode with a valid API Key. For this project, we observe a standard cost distribution with a primary focus on civil works.";
+        }
+
+        const sectionsDesc = projectData.sections.map(s => `${s.title}: ₦${s.items.reduce((acc, i) => acc + i.total, 0).toLocaleString()}`).join(', ');
+
+        const prompt = `
+            Act as a Senior Quantity Surveying Consultant. 
+            Provide a 3-sentence executive summary for a project report.
+            Project: ${projectData.name}
+            Total Contract Sum: ₦ ${projectData.totalValue.toLocaleString()}
+            Sections: ${sectionsDesc}
+            
+            Mention one potential cost risk (e.g. material volatility) and one professional recommendation.
+        `;
+
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'gpt-3.5-turbo',
+                messages: [{ role: 'user', content: prompt }],
+                temperature: 0.7
+            })
+        });
+
+        const data = await response.json();
+        return data.choices[0].message.content;
+    } catch (err) {
+        console.error('[AI SERVICE] Summary failed:', err);
+        return "Unable to generate professional summary. Please review project totals manually.";
+    }
+};
+
 export const getMarketOutlook = async () => {
     // Mock outlook for now, can be connected to real news scrapers later
     return {

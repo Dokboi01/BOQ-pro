@@ -18,9 +18,12 @@ import { sendReportEmail } from '../../utils/mailService';
 import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import { generateProjectSummary } from '../../utils/aiService';
 
 const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
   const [activeReport, setActiveReport] = useState(null);
+  const [projectSummary, setProjectSummary] = useState('');
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
 
   const activeProject = projects.find(p => p.id === activeProjectId) || projects[0];
 
@@ -111,6 +114,22 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
     window.print();
   };
 
+  React.useEffect(() => {
+    if (activeReport === 'summary' && !projectSummary) {
+      const fetchSummary = async () => {
+        setIsGeneratingSummary(true);
+        const summ = await generateProjectSummary({
+          name: projectInfo.title,
+          totalValue: summaryData.total,
+          sections: boqData
+        });
+        setProjectSummary(summ);
+        setIsGeneratingSummary(false);
+      };
+      fetchSummary();
+    }
+  }, [activeReport, projectSummary, projectInfo.title, summaryData.total, boqData]);
+
   const handleExportExcel = async () => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('BOQ Report');
@@ -186,8 +205,23 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
       head: [['Item', 'Description', 'Unit', 'Qty', 'Rate', 'Total']],
       body: tableData,
       theme: 'grid',
-      headStyles: { fillColor: [15, 23, 42] }
+      headStyles: { fillColor: [15, 23, 42], fontSize: 9, fontStyle: 'bold' },
+      columnStyles: {
+        0: { cellWidth: 15 },
+        1: { cellWidth: 'auto' },
+        5: { fontStyle: 'bold', halign: 'right' }
+      },
+      styles: { fontSize: 8, font: 'helvetica' }
     });
+
+    // Branding Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text(`Generated via BOQ Pro Enterprise - Page ${i} of ${pageCount}`, 105, 285, { align: 'center' });
+    }
 
     doc.save(`${projectInfo.title}_BOQ.pdf`);
   };
@@ -366,6 +400,18 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
       <div className="executive-notes">
         <h4>COMMERCIAL NOTES</h4>
         <p>This estimate is based on Lagos prevailing market rates as of Q1 2026. A 10% contingency has been included for price volatility in steel and bitumen indices.</p>
+      </div>
+
+      <div className="ai-executive-summary enterprise-card mt-8 text-left">
+        <div className="summary-header">
+          <Zap size={16} className="text-accent" />
+          <h4>AI EXECUTIVE INSIGHT</h4>
+        </div>
+        {isGeneratingSummary ? (
+          <p className="summary-text animate-pulse">Synthesizing project intelligence...</p>
+        ) : (
+          <p className="summary-text">{projectSummary}</p>
+        )}
       </div>
     </div>
   );
@@ -723,6 +769,37 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
             break-inside: avoid;
             break-after: auto;
           }
+        }
+
+        .ai-executive-summary {
+          padding: 1.5rem;
+          background: linear-gradient(to right, #0f172a, #1e293b);
+          color: white;
+          border: none;
+          margin-top: 2rem;
+          border-radius: 8px;
+        }
+        .ai-executive-summary .summary-header {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          margin-bottom: 0.75rem;
+        }
+        .ai-executive-summary h4 {
+          font-size: 0.75rem;
+          font-weight: 800;
+          letter-spacing: 0.05em;
+          margin: 0;
+          color: #94a3b8;
+          text-decoration: none;
+        }
+        .ai-executive-summary .summary-text {
+          font-size: 0.875rem;
+          line-height: 1.6;
+          margin: 0;
+          font-family: sans-serif;
+          color: #e2e8f0;
+          text-align: left;
         }
       `}</style>
     </div>
