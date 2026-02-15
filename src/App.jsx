@@ -138,7 +138,12 @@ function App() {
           setUser(fullUser);
           localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
           initializationComplete.current = true;
-          setView('app');
+
+          if (profile && profile.is_onboarded) {
+            setView('app');
+          } else {
+            setView('onboarding');
+          }
         }
       } else if (event === 'SIGNED_OUT') {
         localStorage.removeItem('boq_pro_profile');
