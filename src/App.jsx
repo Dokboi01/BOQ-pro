@@ -226,6 +226,8 @@ function App() {
         options: {
           data: {
             full_name: data.fullName,
+            company_name: data.companyName,
+            phone_number: data.phoneNumber,
             plan: selectedPlan || PLAN_NAMES.FREE,
           }
         }

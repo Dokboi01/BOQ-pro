@@ -1,25 +1,38 @@
 import React, { useState } from 'react';
-import { Shield, Mail, Lock, User, ArrowRight, Check, AlertCircle } from 'lucide-react';
+import { Shield, Mail, Lock, User, ArrowRight, Check, AlertCircle, Building2, Phone } from 'lucide-react';
 
 const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [localError, setLocalError] = useState(null);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
+    companyName: '',
+    phoneNumber: '',
     password: '',
+    confirmPassword: '',
     agreeToTerms: false
   });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLocalError(null);
+
+    // Client-side validations
+    if (formData.password !== formData.confirmPassword) {
+      setLocalError('Passwords do not match.');
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      setLocalError('Password must be at least 8 characters long.');
+      return;
+    }
+
     setIsLoading(true);
 
-    const signupData = {
-      ...formData,
-    };
-
     try {
-      await onSignUp(signupData);
+      await onSignUp(formData);
     } finally {
       setIsLoading(false);
     }
@@ -47,10 +60,10 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin }) => {
           </div>
         )}
 
-        {error && (
+        {(error || localError) && (
           <div className="auth-error-banner view-fade-in">
             <AlertCircle size={18} />
-            <span>{error}</span>
+            <span>{error || localError}</span>
           </div>
         )}
 
@@ -70,7 +83,7 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin }) => {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Work Email</label>
+            <label className="form-label">Professional Email</label>
             <div className="input-with-icon">
               <Mail size={18} className="input-icon" />
               <input
@@ -78,24 +91,74 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin }) => {
                 className="form-input"
                 placeholder="name@company.com"
                 required
+                value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
             </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Password</label>
-            <div className="input-with-icon">
-              <Lock size={18} className="input-icon" />
-              <input
-                type="password"
-                className="form-input"
-                placeholder="••••••••"
-                required
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              />
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Company / Institution</label>
+              <div className="input-with-icon">
+                <Building2 size={18} className="input-icon" />
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="BuildPro Ltd"
+                  required
+                  value={formData.companyName}
+                  onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                />
+              </div>
             </div>
-            <p className="input-hint">Minimum 8 characters with a symbol</p>
+
+            <div className="form-group">
+              <label className="form-label">Phone Number</label>
+              <div className="input-with-icon">
+                <Phone size={18} className="input-icon" />
+                <input
+                  type="tel"
+                  className="form-input"
+                  placeholder="+234..."
+                  required
+                  value={formData.phoneNumber}
+                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Password</label>
+              <div className="input-with-icon">
+                <Lock size={18} className="input-icon" />
+                <input
+                  type="password"
+                  className="form-input"
+                  placeholder="••••••••"
+                  required
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Confirm Password</label>
+              <div className="input-with-icon">
+                <Lock size={18} className="input-icon" />
+                <input
+                  type="password"
+                  className="form-input"
+                  placeholder="••••••••"
+                  required
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                />
+              </div>
+            </div>
           </div>
 
           <div className="form-checkbox">
@@ -199,6 +262,18 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin }) => {
           color: var(--accent-600);
           font-size: 0.875rem;
           font-weight: 600;
+        }
+
+        .form-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+        }
+
+        @media (max-width: 480px) {
+          .form-row {
+            grid-template-columns: 1fr;
+          }
         }
 
         .input-with-icon {
