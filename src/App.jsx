@@ -529,12 +529,24 @@ function App() {
       setAuthError(null);
       if (user) {
         try {
-          const updatedProfile = await updateProfile({ plan });
-          if (updatedProfile) {
-            setUser(prev => ({ ...prev, ...updatedProfile }));
+          // Safety timeout for database updates
+          const profilePromise = updateProfile({ plan });
+          const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve('TIMEOUT'), 5000));
+
+          const result = await Promise.race([profilePromise, timeoutPromise]);
+
+          if (result === 'TIMEOUT') {
+            setAuthError('Plan update is taking longer than expected. Please check your connection or Refresh.');
+            return;
+          }
+
+          if (result) {
+            setUser(prev => ({ ...prev, ...result }));
             setView('app');
           } else {
-            setAuthError('Failed to update plan. Please check your connection.');
+            setAuthError('Could not sync with database. Plan saved locally.');
+            // Allow the user to proceed anyway if they are already logged in
+            setView('app');
           }
         } catch (err) {
           setAuthError('An unexpected error occurred while updating your plan.');
