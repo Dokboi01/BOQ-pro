@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Shield, Mail, Lock, User, ArrowRight, Check, AlertCircle } from 'lucide-react';
 
 const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin }) => {
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -11,8 +12,17 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
 
-    onSignUp(formData);
+    const signupData = {
+      ...formData,
+    };
+
+    try {
+      await onSignUp(signupData);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -98,8 +108,10 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin }) => {
             <label htmlFor="terms">I agree to the <button type="button" className="text-link">Terms of Service</button> and <button type="button" className="text-link">Privacy Policy</button></label>
           </div>
 
-          <button type="submit" className="btn-primary auth-submit">
-            Create Account <ArrowRight size={18} />
+          <button type="submit" className={`btn-primary auth-submit ${isLoading ? 'loading' : ''}`} disabled={isLoading}>
+            {isLoading ? 'Creating Account...' : (
+              <>Create Account <ArrowRight size={18} /></>
+            )}
           </button>
         </form>
 

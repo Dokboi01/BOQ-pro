@@ -216,26 +216,51 @@ function App() {
 
   const handleSignUp = async (data) => {
     setAuthError(null);
-    const { data: res, error } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
-      options: {
-        data: {
-          full_name: data.fullName,
-          plan: selectedPlan || PLAN_NAMES.FREE,
+    console.log('🚀 Attempting Supabase Signup for:', data.email);
+
+    try {
+      // 10s Timeout for Signup - browser default is too long
+      const signupPromise = supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            full_name: data.fullName,
+            plan: selectedPlan || PLAN_NAMES.FREE,
+          }
         }
+      });
+
+      const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('TIMEOUT'), 10000));
+      const result = await Promise.race([signupPromise, timeoutPromise]);
+
+      if (result === 'TIMEOUT') {
+        setAuthError('Signup is taking too long. This looks like a connection issue with Supabase.');
+        return;
       }
-    });
 
-    if (error) {
-      setAuthError(error.message);
-      return;
-    }
+      const { data: res, error } = result;
 
-    if (res.user && res.session === null) {
-      // Email verification required
-      setPendingUser(data);
-      setView('verification');
+      if (error) {
+        console.error('❌ Supabase Signup Error:', error.message);
+        setAuthError(error.message);
+        return;
+      }
+
+      if (res.user && res.session === null) {
+        console.log('📬 Signup successful, email verification required.');
+        setPendingUser(data);
+        setView('verification');
+      } else if (res.user && res.session) {
+        console.log('✨ Signup successful, user logged in directly.');
+        const profile = await getProfile(res.user.id);
+        const fullUser = { ...res.user, ...profile };
+        setUser(fullUser);
+        setView('app');
+      }
+    } catch (err) {
+      console.error('❌ Critical Signup Crash:', err);
+      setAuthError('Could not reach verification server. Please check your internet connection.');
     }
   };
 
