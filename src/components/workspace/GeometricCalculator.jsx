@@ -57,6 +57,9 @@ const GeometricCalculator = ({ onApply, onClose }) => {
             formula: 'V = π × (R² - r²) × L × N'
         },
         {
+            id: 'cone',
+            label: 'Circular Cone',
+            icon: Pyramid,
             fields: ['radius', 'height', 'sections'],
             formula: 'V = (1/3) × π × r² × H × N'
         },
@@ -92,7 +95,7 @@ const GeometricCalculator = ({ onApply, onClose }) => {
                 vol = Math.PI * Math.pow(radius || 0, 2) * (height || 0);
                 break;
             case 'trapezoidal':
-                vol = ((Number(topWidth || 0) + Number(bottomWidth || 0)) / 2) * (depth || 0) * (length || 0);
+                vol = ((Number(topWidth || 0) + Number(bottomWidth || 0)) / 2) * Number(depth || 0) * Number(length || 0);
                 break;
             case 'triangular':
                 vol = 0.5 * (base || 0) * (height || 0) * (length || 0);
@@ -110,8 +113,8 @@ const GeometricCalculator = ({ onApply, onClose }) => {
                 break;
             }
             case 'abutment': {
-                const stem = (height || 0) * (thickness || 0) * (length || 0);
-                const footing = (footingWidth || 0) * (footingDepth || 0) * (length || 0);
+                const stem = Number(height || 0) * Number(thickness || 0) * Number(length || 0);
+                const footing = Number(footingWidth || 0) * Number(footingDepth || 0) * Number(length || 0);
                 vol = stem + footing;
                 break;
             }
@@ -119,9 +122,9 @@ const GeometricCalculator = ({ onApply, onClose }) => {
                 vol = 0;
         }
 
-        const net = vol * (sections || 1);
-        const gross = net * (1 + (params.wastage / 100));
-        return gross;
+        const net = (vol || 0) * (sections || 1);
+        const gross = net * (1 + ((params.wastage || 0) / 100));
+        return isNaN(gross) ? 0 : gross;
     };
 
     const result = getVolume().toFixed(3);
@@ -204,8 +207,15 @@ const GeometricCalculator = ({ onApply, onClose }) => {
                                     min="0"
                                     value={params[field] || ''}
                                     onChange={(e) => {
-                                        const val = Math.max(0, Number(e.target.value));
-                                        setParams(prev => ({ ...prev, [field]: val }));
+                                        const raw = e.target.value;
+                                        if (raw === '') {
+                                            setParams(prev => ({ ...prev, [field]: 0 }));
+                                            return;
+                                        }
+                                        const val = Math.max(0, parseFloat(raw));
+                                        if (!isNaN(val)) {
+                                            setParams(prev => ({ ...prev, [field]: val }));
+                                        }
                                     }}
                                     className="geo-input"
                                     placeholder="0.00"
@@ -257,10 +267,12 @@ const GeometricCalculator = ({ onApply, onClose }) => {
 
         .geo-calc-modal {
           width: 520px;
+          max-height: 90vh;
           background: white;
           border-radius: 16px;
           box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-          overflow: hidden;
+          display: flex;
+          flex-direction: column;
           border: 1px solid rgba(255,255,255,0.1);
         }
 
@@ -303,7 +315,7 @@ const GeometricCalculator = ({ onApply, onClose }) => {
         .shape-btn:hover { border-color: #3b82f6; background: #f8fafc; }
         .shape-btn.active { border-color: #3b82f6; background: #eff6ff; color: #3b82f6; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2); }
 
-        .calc-body { padding: 1.5rem; }
+        .calc-body { padding: 1.5rem; overflow-y: auto; flex: 1; }
 
         .formula-preview {
           background: #f8fafc;

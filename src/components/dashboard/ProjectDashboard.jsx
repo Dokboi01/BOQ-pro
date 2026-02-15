@@ -22,6 +22,8 @@ import { PLAN_LIMITS, PLAN_NAMES } from '../../data/plans';
 
 const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProject, onDeleteProject, onUpgrade }) => {
   const [budget, setBudget] = useState(250000000); // ₦250M
+  const [activeVizTab, setActiveVizTab] = useState('section');
+  const [isApproved, setIsApproved] = useState(false);
 
   const calculateTotal = (proj) => {
     if (!proj.sections) return 0;
@@ -296,30 +298,68 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
           <div className="panel-header">
             <h3>Cost Distribution</h3>
             <div className="header-actions">
-              <button className="btn-tab active">By Section</button>
-              <button className="btn-tab">Top 5 Drivers</button>
+              <button
+                className={`btn-tab ${activeVizTab === 'section' ? 'active' : ''}`}
+                onClick={() => setActiveVizTab('section')}
+              >
+                By Section
+              </button>
+              <button
+                className={`btn-tab ${activeVizTab === 'drivers' ? 'active' : ''}`}
+                onClick={() => setActiveVizTab('drivers')}
+              >
+                Top 5 Drivers
+              </button>
             </div>
           </div>
           <div className="chart-container-large">
             <div className="viz-bars">
               {projects.length > 0 && projects[0].sections ?
-                projects[0].sections.slice(0, 5).map((s, i) => {
-                  const sectionTotal = s.items.reduce((acc, item) => acc + (item.qty * (item.useBenchmark ? item.benchmark : item.rate)), 0);
-                  const percent = currentTotal > 0 ? Math.round((sectionTotal / currentTotal) * 100) : 0;
-                  return (
-                    <div key={i} className="viz-row">
-                      <div className="row-info">
-                        <span>{s.title}</span>
-                        <span>{percent}%</span>
+                (activeVizTab === 'section' ? (
+                  projects[0].sections.slice(0, 5).map((s, i) => {
+                    const sectionTotal = s.items.reduce((acc, item) => acc + (item.qty * (item.useBenchmark ? item.benchmark : item.rate)), 0);
+                    const percent = currentTotal > 0 ? Math.round((sectionTotal / currentTotal) * 100) : 0;
+                    return (
+                      <div key={i} className="viz-row">
+                        <div className="row-info">
+                          <span>{s.title}</span>
+                          <span>{percent}%</span>
+                        </div>
+                        <div className="row-bar-bg">
+                          <div className="row-bar-fill" style={{ width: `${percent}%` }}></div>
+                        </div>
                       </div>
-                      <div className="row-bar-bg">
-                        <div className="row-bar-fill" style={{ width: `${percent}%` }}></div>
-                      </div>
-                    </div>
-                  );
-                })
+                    );
+                  })
+                ) : (
+                  // Top 5 Drivers Logic
+                  (() => {
+                    const allItems = projects[0].sections.flatMap(s => s.items.map(i => ({ ...i, section: s.title })));
+                    const sortedItems = [...allItems].sort((a, b) => {
+                      const aTotal = a.qty * (a.useBenchmark ? a.benchmark : a.rate);
+                      const bTotal = b.qty * (b.useBenchmark ? b.benchmark : b.rate);
+                      return bTotal - aTotal;
+                    }).slice(0, 5);
+
+                    return sortedItems.map((item, i) => {
+                      const itemTotal = item.qty * (item.useBenchmark ? item.benchmark : item.rate);
+                      const percent = currentTotal > 0 ? Math.round((itemTotal / currentTotal) * 100) : 0;
+                      return (
+                        <div key={i} className="viz-row">
+                          <div className="row-info">
+                            <span>{item.description} ({item.section})</span>
+                            <span>{percent}%</span>
+                          </div>
+                          <div className="row-bar-bg">
+                            <div className="row-bar-fill" style={{ width: `${percent}%`, background: 'var(--accent-600)' }}></div>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()
+                ))
                 : (
-                  <p className="text-subtle text-center py-8">No section data available</p>
+                  <p className="text-subtle text-center py-8">No data available for visualization</p>
                 )
               }
             </div>
@@ -370,7 +410,18 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
           </div>
         </div>
         <div className="workflow-actions">
-          <button className="btn-approve">Approve Cost Plan</button>
+          <button
+            className={`btn-approve ${isApproved ? 'approved' : ''}`}
+            onClick={() => {
+              if (confirm('Are you sure you want to approve this cost plan? This will finalize the draft for export.')) {
+                setIsApproved(true);
+                alert('Cost plan approved successfully.');
+              }
+            }}
+            disabled={isApproved || projects.length === 0}
+          >
+            {isApproved ? 'Plan Approved' : 'Approve Cost Plan'}
+          </button>
         </div>
       </section>
 
@@ -610,7 +661,10 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
         .workflow-item .label { display: block; font-size: 0.625rem; font-weight: 700; color: var(--primary-400); text-transform: uppercase; }
         .workflow-item .val { font-size: 0.8125rem; font-weight: 700; }
         .workflow-actions { margin-left: auto; }
-        .btn-approve { background: var(--success-600); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: 700; }
+        .btn-approve { background: var(--success-600); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+        .btn-approve:hover { background: #15803d; transform: translateY(-1px); }
+        .btn-approve.approved { background: var(--primary-500); cursor: default; transform: none; }
+        .btn-approve:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .text-danger { color: var(--danger-600); }
         .text-success { color: var(--success-600); }

@@ -58,6 +58,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
   const [sections, setSections] = useState(project?.sections || []);
   const [analyzingItem, setAnalyzingItem] = useState(null);
   const [calculatingQtyForItem, setCalculatingQtyForItem] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Sync state with props when project changes
   React.useEffect(() => {
@@ -103,6 +104,16 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
     onUpdate(project.id, updatedSections);
   };
 
+  const updateSectionTitle = (sectionId, newTitle) => {
+    const updatedSections = sections.map(section => {
+      if (section.id !== sectionId) return section;
+      return { ...section, title: newTitle };
+    });
+
+    setSections(updatedSections);
+    onUpdate(project.id, updatedSections);
+  };
+
   const addItemToSection = (sectionId) => {
     const newItem = {
       id: Math.random().toString(36).substr(2, 9),
@@ -129,6 +140,23 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
       return acc + section.items.reduce((itemAcc, item) => itemAcc + (item.total || 0), 0);
     }, 0);
   }, [sections]);
+
+  const filteredSections = React.useMemo(() => {
+    if (!searchQuery.trim()) return sections;
+
+    const query = searchQuery.toLowerCase();
+    return sections.map(section => {
+      const filteredItems = section.items.filter(item =>
+        item.description.toLowerCase().includes(query) ||
+        item.unit.toLowerCase().includes(query)
+      );
+
+      if (filteredItems.length > 0 || section.title.toLowerCase().includes(query)) {
+        return { ...section, items: filteredItems, expanded: true };
+      }
+      return null;
+    }).filter(Boolean);
+  }, [sections, searchQuery]);
 
   const isOutlier = (rate, benchmark) => {
     if (!benchmark) return false;
@@ -162,10 +190,26 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
       <div className="workspace-header">
         <div className="search-bar">
           <Search size={18} />
-          <input type="text" placeholder="Search project items..." />
+          <input
+            type="text"
+            placeholder="Search project items..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
         <div className="workspace-actions">
-          <button className="btn-secondary" onClick={() => setAnalyzingItem({ sectionId: sections[0]?.id, item: sections[0]?.items[0] || { description: 'Reference Item', rate: 0, benchmark: 0 } })}><Calculator size={16} /> Rate Analysis</button>
+          <button
+            className="btn-secondary"
+            onClick={() => {
+              if (sections.length > 0 && sections[0].items.length > 0) {
+                setAnalyzingItem({ sectionId: sections[0].id, item: sections[0].items[0] });
+              } else {
+                alert('Please add a work item first to use many-factor rate analysis.');
+              }
+            }}
+          >
+            <Calculator size={16} /> Rate Analysis
+          </button>
           <button className="btn-secondary" onClick={onExport}><Download size={16} /> Export Document</button>
           <button className="btn-primary" onClick={onAddSection}><Plus size={16} /> New Section</button>
         </div>
@@ -186,13 +230,22 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
             </tr>
           </thead>
           <tbody>
-            {sections.map((section) => (
+            {filteredSections.map((section) => (
               <React.Fragment key={section.id}>
                 <tr className="section-header-row" onClick={() => toggleSection(section.id)}>
                   <td colSpan="7">
-                    <div className="section-title">
-                      {section.expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                      {section.title}
+                    <div className="section-title" onClick={(e) => e.stopPropagation()}>
+                      {section.expanded ? (
+                        <ChevronDown size={14} onClick={(e) => { e.stopPropagation(); toggleSection(section.id); }} style={{ cursor: 'pointer' }} />
+                      ) : (
+                        <ChevronRight size={14} onClick={(e) => { e.stopPropagation(); toggleSection(section.id); }} style={{ cursor: 'pointer' }} />
+                      )}
+                      <SmoothInput
+                        type="text"
+                        value={section.title}
+                        onChange={(val) => updateSectionTitle(section.id, val)}
+                        className="section-title-input"
+                      />
                     </div>
                   </td>
                   <td className="actions-cell">
@@ -431,10 +484,37 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           display: flex;
           align-items: center;
           gap: 0.75rem;
-          padding: 0.75rem 1rem;
+          padding: 0.5rem 1rem;
           font-weight: 800;
           color: var(--primary-900);
           font-size: 0.75rem;
+          width: 100%;
+        }
+
+        .section-title-input {
+          border: 1px solid transparent;
+          background: transparent;
+          font-weight: 800;
+          color: var(--primary-900);
+          font-size: 0.75rem;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          width: 100%;
+          padding: 4px 8px;
+          border-radius: 4px;
+          transition: all 0.2s;
+        }
+
+        .section-title-input:hover {
+          background: rgba(0,0,0,0.05);
+          border-color: var(--border-medium);
+        }
+
+        .section-title-input:focus {
+          background: white;
+          border-color: var(--accent-600);
+          outline: none;
+          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
         }
 
         .item-row { border-bottom: 1px solid var(--border-light); transition: all 0.2s; }

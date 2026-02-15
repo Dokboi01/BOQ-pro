@@ -78,6 +78,14 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword }) => {
               </>
             )}
           </button>
+
+          <button
+            type="button"
+            className="btn-guest-access"
+            onClick={() => onLogin({ email: 'guest@boqpro.com', password: 'password' })}
+          >
+            Engineer Guest Access (Quick Test)
+          </button>
         </form>
 
         <div className="auth-divider">
@@ -237,6 +245,25 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword }) => {
           border-radius: 50%;
           border-top-color: white;
           animation: spin 0.8s linear infinite;
+        }
+
+        .btn-guest-access {
+          width: 100%;
+          padding: 0.75rem;
+          margin-top: 1rem;
+          background: rgba(37, 99, 235, 0.05);
+          border: 1px dashed var(--accent-400);
+          color: var(--accent-600);
+          border-radius: var(--radius-sm);
+          font-weight: 700;
+          font-size: 0.875rem;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .btn-guest-access:hover {
+          background: var(--accent-50);
+          border-color: var(--accent-600);
         }
 
         @keyframes spin {

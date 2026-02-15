@@ -27,6 +27,8 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
   const [materials, setMaterials] = useState([]);
   const [marketIndices, setMarketIndices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('All');
 
   const defaultMaterials = React.useMemo(() => [
     {
@@ -122,6 +124,20 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
     };
     loadData();
   }, [defaultMarketIndices, defaultMaterials]);
+
+  const filteredMaterials = React.useMemo(() => {
+    return materials.filter(mat => {
+      const matchesSearch = mat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        mat.category.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = categoryFilter === 'All' || mat.category === categoryFilter;
+      return matchesSearch && matchesCategory;
+    });
+  }, [materials, searchQuery, categoryFilter]);
+
+  const categories = React.useMemo(() => {
+    const cats = new Set(materials.map(m => m.category));
+    return ['All', ...Array.from(cats)];
+  }, [materials]);
 
   const renderIntelligenceDashboard = () => {
     const isLocked = !hasFeature(user?.plan, 'material-intelligence');
@@ -321,16 +337,30 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
         <div className="listing-header">
           <div className="search-box-l">
             <Search size={18} />
-            <input type="text" placeholder="Search benchmark repository..." />
+            <input
+              type="text"
+              placeholder="Search benchmark repository..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
           <div className="filter-actions">
-            <button className="btn-filter" onClick={() => alert('Category filters are coming soon.')}><Filter size={14} /> All Categories</button>
+            <select
+              className="btn-filter"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              style={{ appearance: 'none', paddingRight: '2rem' }}
+            >
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat} {cat === 'All' ? 'Categories' : ''}</option>
+              ))}
+            </select>
             <button className="btn-filter" onClick={() => alert('Regional benchmark selection will be available shortly.')}><MapPin size={14} /> Region: Lagos</button>
           </div>
         </div>
 
         <div className="intelligence-grid-l">
-          {materials.map((mat) => (
+          {filteredMaterials.map((mat) => (
             <div key={mat.id} className="enterprise-card mat-intel-card glass-card" onClick={() => setSelectedMaterial(mat)}>
               <div className="card-top-row">
                 <span className="cat-text">{mat.category}</span>

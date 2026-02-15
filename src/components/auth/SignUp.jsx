@@ -12,16 +12,7 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Generate a 6-digit confirmation code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-
-    const signupData = {
-      ...formData,
-      verificationCode: code,
-      isVerified: false
-    };
-
-    onSignUp(signupData);
+    onSignUp(formData);
   };
 
   return (

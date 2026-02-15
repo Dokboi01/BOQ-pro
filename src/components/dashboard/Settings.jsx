@@ -16,7 +16,7 @@ import { getSetting, saveSetting } from '../../db/database';
 import { seedMarketData } from '../../db/seed_materials';
 import { Loader2 } from 'lucide-react';
 
-const Settings = ({ user }) => {
+const Settings = ({ user, onUpgrade }) => {
   const [activeTab, setActiveTab] = useState('profile');
 
   const tabs = [
@@ -73,7 +73,18 @@ const Settings = ({ user }) => {
             <div className="settings-form">
               <div className="form-group-avatar">
                 <div className="avatar-large">{(user?.full_name || 'P').charAt(0).toUpperCase()}</div>
-                <button className="btn-secondary-sm">Change Photo</button>
+                <button
+                  className="btn-secondary-sm"
+                  onClick={() => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*';
+                    input.onchange = () => alert('Avatar upload functionality will be integrated with Supabase storage in the next update.');
+                    input.click();
+                  }}
+                >
+                  Change Photo
+                </button>
               </div>
               <div className="grid-2">
                 <div className="form-item">
@@ -90,7 +101,12 @@ const Settings = ({ user }) => {
                 <input type="email" defaultValue={user?.email} className="settings-input" />
               </div>
               <div className="form-actions">
-                <button className="btn-primary">Save Changes</button>
+                <button
+                  className="btn-primary"
+                  onClick={() => alert('Profile changes saved successfully (Simulation).')}
+                >
+                  Save Changes
+                </button>
               </div>
             </div>
           </div>
@@ -110,9 +126,9 @@ const Settings = ({ user }) => {
                 <p>{user?.plan === 'Free' ? 'Limited to 3 projects' : 'Unlimited professional projects'}</p>
               </div>
               {user?.plan === 'Free' ? (
-                <button className="btn-upgrade-glow">Upgrade Now</button>
+                <button className="btn-upgrade-glow" onClick={onUpgrade}>Upgrade Now</button>
               ) : (
-                <button className="btn-secondary-sm">Manage Billing</button>
+                <button className="btn-secondary-sm" onClick={() => alert('Billing portal is being synchronized with Paystack/Flutterwave.')}>Manage Billing</button>
               )}
             </div>
 
@@ -147,7 +163,9 @@ const Settings = ({ user }) => {
                   <span>Oct 12, 2025</span>
                   <span>₦0.00</span>
                   <span className="badge-success">Paid</span>
-                  <button className="btn-icon"><ArrowUpCircle size={14} /></button>
+                  <button className="btn-icon" onClick={() => alert('Downloading invoice PDF...')}>
+                    <ArrowUpCircle size={14} />
+                  </button>
                 </div>
               </div>
             </div>

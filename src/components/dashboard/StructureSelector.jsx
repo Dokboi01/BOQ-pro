@@ -8,7 +8,10 @@ import {
   X,
   ChevronRight,
   TrendingUp,
-  Fence
+  Fence,
+  Sparkles,
+  Zap,
+  ArrowRight
 } from 'lucide-react';
 import { STRUCTURE_TYPES } from '../../data/structures';
 
@@ -58,6 +61,15 @@ const StructureSelector = ({ onSelect, onClose }) => {
     }
   ];
 
+  const aiOption = {
+    id: 'ai-analysis',
+    label: 'AI Drawing Assistant',
+    icon: Sparkles,
+    desc: 'Instant takeoff from blueprints. Upload drawing files to auto-build your BOQ.',
+    tags: ['AI Powered', 'Consultant Grade'],
+    isPremium: true
+  };
+
   return (
     <div className="selector-overlay">
       <div className="selector-modal enterprise-card view-fade-in">
@@ -70,6 +82,27 @@ const StructureSelector = ({ onSelect, onClose }) => {
         </header>
 
         <div className="selection-grid">
+          <div className="selection-card ai-card" onClick={() => onSelect('ai-analysis', 'AI Drawing Draft')}>
+            <div className="card-icon ai-icon">
+              <Sparkles size={24} />
+            </div>
+            <div className="card-body">
+              <div className="title-row">
+                <h4>{aiOption.label}</h4>
+                <span className="premium-tag">PREMIUM</span>
+              </div>
+              <p>{aiOption.desc}</p>
+              <div className="card-tags">
+                {aiOption.tags.map(tag => <span key={tag} className="tag ai-tag">{tag}</span>)}
+              </div>
+            </div>
+            <ArrowRight size={18} className="arrow" />
+          </div>
+
+          <div className="grid-divider">
+            <span>Or select a standard structure</span>
+          </div>
+
           {structureOptions.map((opt) => (
             <div
               key={opt.id}
@@ -168,6 +201,67 @@ const StructureSelector = ({ onSelect, onClose }) => {
           background: var(--bg-main);
           transform: translateX(4px);
         }
+
+        .selection-card.ai-card {
+          background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+          border: 1px solid rgba(59, 130, 246, 0.3);
+          color: white;
+        }
+
+        .selection-card.ai-card:hover {
+          transform: translateY(-2px) translateX(4px);
+          border-color: var(--accent-500);
+          box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .ai-icon {
+          background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+          border: none;
+          color: white;
+        }
+
+        .ai-card h4 { color: white; }
+        .ai-card p { color: #94a3b8; }
+        
+        .title-row {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .premium-tag {
+          font-size: 0.625rem;
+          font-weight: 800;
+          background: var(--accent-600);
+          color: white;
+          padding: 2px 6px;
+          border-radius: 4px;
+        }
+
+        .ai-tag {
+          background: rgba(255,255,255,0.05);
+          color: #60a5fa;
+        }
+
+        .grid-divider {
+          display: flex;
+          align-items: center;
+          margin: 1rem 0;
+          color: var(--primary-400);
+          font-size: 0.625rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .grid-divider::before, .grid-divider::after {
+          content: "";
+          flex: 1;
+          height: 1px;
+          background: var(--border-light);
+        }
+
+        .grid-divider span { padding: 0 1rem; }
 
         .card-icon {
           width: 48px;

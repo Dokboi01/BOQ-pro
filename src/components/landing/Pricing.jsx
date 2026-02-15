@@ -1,7 +1,14 @@
 import React from 'react';
 import { Check, Shield, Zap, Building2, GraduationCap } from 'lucide-react';
 
-const PricingPage = ({ onSelectPlan, onBack }) => {
+const PricingPage = ({ onSelectPlan, onBack, error }) => {
+  const [loadingPlan, setLoadingPlan] = React.useState(null);
+
+  const handleSelect = async (planName) => {
+    setLoadingPlan(planName);
+    await onSelectPlan(planName);
+    setLoadingPlan(null);
+  };
   const plans = [
     {
       name: 'Student & Basic',
@@ -74,6 +81,13 @@ const PricingPage = ({ onSelectPlan, onBack }) => {
         <span className="badge">Flexible Pricing</span>
         <h1>Built for Every Scale of <span>Construction</span></h1>
         <p>From university projects to national infrastructure, BOQ Pro provides the precision and control you need.</p>
+
+        {error && (
+          <div className="pricing-error-banner view-fade-in">
+            <span className="error-icon">!</span>
+            <span>{error}</span>
+          </div>
+        )}
       </div>
 
       <div className="pricing-grid">
@@ -110,10 +124,11 @@ const PricingPage = ({ onSelectPlan, onBack }) => {
               </div>
             ) : (
               <button
-                className={`plan-cta ${plan.popular ? 'btn-hero-primary' : 'btn-hero-secondary'}`}
-                onClick={() => onSelectPlan(plan.name)}
+                className={`plan-cta ${plan.popular ? 'btn-hero-primary' : 'btn-hero-secondary'} ${loadingPlan === plan.name ? 'loading' : ''}`}
+                onClick={() => handleSelect(plan.name)}
+                disabled={!!loadingPlan}
               >
-                {plan.cta}
+                {loadingPlan === plan.name ? 'Working...' : plan.cta}
               </button>
             )}
           </div>
@@ -438,23 +453,39 @@ const PricingPage = ({ onSelectPlan, onBack }) => {
           gap: 1rem;
         }
 
-        .contact-info-strip {
-          background: var(--bg-main);
-          padding: 1rem;
-          border-radius: var(--radius-md);
+        .pricing-error-banner {
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid rgba(239, 68, 68, 0.2);
+          padding: 1rem 1.5rem;
+          border-radius: 12px;
+          color: #f87171;
+          font-size: 0.875rem;
+          font-weight: 600;
           display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-          text-align: left;
+          align-items: center;
+          justify-content: center;
+          gap: 0.75rem;
+          margin: 2rem auto 0;
+          max-width: 500px;
         }
 
-        .info-item {
-          font-size: 0.75rem;
-          color: var(--primary-700);
-          word-break: break-all;
+        .error-icon {
+          width: 20px;
+          height: 20px;
+          background: #ef4444;
+          color: white;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          font-weight: 900;
         }
 
-        .mb-2 { margin-bottom: 0.5rem; }
+        .plan-cta.loading {
+          opacity: 0.7;
+          pointer-events: none;
+        }
       `}</style>
     </div>
   );

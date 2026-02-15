@@ -133,15 +133,21 @@ const RateAnalysisModal = ({ item, onClose, onSave }) => {
                                     <div className="calc-inputs">
                                         <input
                                             type="number"
-                                            value={m.qty}
-                                            onChange={(e) => updateBreakdown('materials', m.id, 'qty', Number(e.target.value))}
+                                            value={m.qty || ''}
+                                            onChange={(e) => {
+                                                const val = parseFloat(e.target.value);
+                                                updateBreakdown('materials', m.id, 'qty', isNaN(val) ? 0 : val);
+                                            }}
                                         />
                                         <span className="unit">{m.unit}</span>
                                         <span className="at">@</span>
                                         <input
                                             type="number"
-                                            value={m.rate}
-                                            onChange={(e) => updateBreakdown('materials', m.id, 'rate', Number(e.target.value))}
+                                            value={m.rate || ''}
+                                            onChange={(e) => {
+                                                const val = parseFloat(e.target.value);
+                                                updateBreakdown('materials', m.id, 'rate', isNaN(val) ? 0 : val);
+                                            }}
                                         />
                                     </div>
                                     <span className="total">₦{(m.qty * m.rate).toLocaleString()}</span>
@@ -171,15 +177,21 @@ const RateAnalysisModal = ({ item, onClose, onSave }) => {
                                     <div className="calc-inputs">
                                         <input
                                             type="number"
-                                            value={l.qty}
-                                            onChange={(e) => updateBreakdown('labor', l.id, 'qty', Number(e.target.value))}
+                                            value={l.qty || ''}
+                                            onChange={(e) => {
+                                                const val = parseFloat(e.target.value);
+                                                updateBreakdown('labor', l.id, 'qty', isNaN(val) ? 0 : val);
+                                            }}
                                         />
                                         <span className="unit">{l.unit}</span>
                                         <span className="at">@</span>
                                         <input
                                             type="number"
-                                            value={l.rate}
-                                            onChange={(e) => updateBreakdown('labor', l.id, 'rate', Number(e.target.value))}
+                                            value={l.rate || ''}
+                                            onChange={(e) => {
+                                                const val = parseFloat(e.target.value);
+                                                updateBreakdown('labor', l.id, 'rate', isNaN(val) ? 0 : val);
+                                            }}
                                         />
                                     </div>
                                     <span className="total">₦{(l.qty * l.rate).toLocaleString()}</span>

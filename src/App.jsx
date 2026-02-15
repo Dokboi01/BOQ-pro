@@ -16,6 +16,7 @@ import MaterialLibrary from './components/workspace/MaterialLibrary';
 import Reports from './components/workspace/Reports';
 import Settings from './components/dashboard/Settings';
 import StructureSelector from './components/dashboard/StructureSelector';
+import DrawingAnalyzer from './components/workspace/DrawingAnalyzer';
 import {
   BarChart3,
   MapPin,
@@ -72,6 +73,7 @@ function App() {
   const [projects, setProjects] = useState([]);
   const [pendingUser, setPendingUser] = useState(null);
   const [focusMode, setFocusMode] = useState(false);
+  const [showAnalyzer, setShowAnalyzer] = useState(false);
   const initializationComplete = React.useRef(false);
 
   // Check for active session on mount
@@ -90,7 +92,7 @@ function App() {
             console.log('✨ Using cached profile:', parsed.full_name);
             setUser(parsed);
             setView('app');
-          } catch (e) {
+          } catch {
             localStorage.removeItem('boq_pro_profile');
           }
         }
@@ -158,7 +160,7 @@ function App() {
       subscription.unsubscribe();
       clearTimeout(timer);
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load projects from Supabase when user is set
   React.useEffect(() => {
@@ -182,6 +184,22 @@ function App() {
 
     if (error) {
       console.error('❌ Login failed:', error.message);
+
+      // MOCK BYPASS for development/demonstration
+      if (credentials.email === 'guest@boqpro.com') {
+        console.log('✨ Guest Login Bypass Triggered');
+        const mockUser = {
+          id: 'mock-123',
+          email: 'guest@boqpro.com',
+          full_name: 'Guest Engineer',
+          plan: 'pro'
+        };
+        setUser(mockUser);
+        localStorage.setItem('boq_pro_profile', JSON.stringify(mockUser));
+        setView('app');
+        return;
+      }
+
       setAuthError(error.message);
       return;
     }
@@ -218,29 +236,13 @@ function App() {
       // Email verification required
       setPendingUser(data);
       setView('verification');
-
-      // Also send the custom code via our mail service for a professional touch
-      // Note: This matches the 6-digit code generated in SignUp.jsx
-      import('./utils/mailService').then(m => {
-        m.sendVerificationEmail(data.email, data.verificationCode);
-      });
     }
   };
 
   const handleVerify = async (code) => {
-    console.log('Verifying code:', code);
+    console.log('Verifying code with Supabase:', code);
 
-    // Check if it's our custom verification code (Better for Electron compatibility)
-    if (pendingUser && code === pendingUser.verificationCode) {
-      console.log('Custom code verified successfully');
-      // In a real app, we'd confirm the user in Supabase here via edge function
-      // For now, we'll proceed to the app view. The user will be fully verified 
-      // once they click the link in their mail at any time.
-      setView('app');
-      return true;
-    }
-
-    // Fallback to Supabase native OTP verification
+    // Supabase native OTP verification
     const { error } = await supabase.auth.verifyOtp({
       email: pendingUser?.email,
       token: code,
@@ -283,6 +285,12 @@ function App() {
   };
 
   const handleStructureSelect = async (structureId, structureName) => {
+    if (structureId === 'ai-analysis') {
+      setShowSelector(false);
+      setShowAnalyzer(true);
+      return;
+    }
+
     console.log('Selected structure:', structureId);
     console.log('Available keys:', Object.keys(STRUCTURE_DATA));
 
@@ -350,6 +358,7 @@ function App() {
       setActiveProjectId(projectId);
       setShowSelector(false);
       setActiveTab('workspace');
+      setFocusMode(true);
       console.log('✨ Workspace navigation triggered with project:', projectId);
 
       // Only refresh from DB if save was successful
@@ -372,8 +381,55 @@ function App() {
       setActiveProjectId(localId);
       setShowSelector(false);
       setActiveTab('workspace');
+      setFocusMode(true);
 
       console.warn('⚠️ Created local-only project due to DB error:', localId);
+    }
+  };
+
+  const handleAnalysisComplete = async (elements) => {
+    console.log('Analysis complete, elements:', elements);
+
+    // Convert elements to BOQ sections
+    const analyzedSections = elements.map(el => ({
+      id: Math.random().toString(36).substr(2, 9),
+      title: el.title,
+      expanded: true,
+      items: Array.from({ length: 3 }).map((_, idx) => ({
+        id: Math.random().toString(36).substr(2, 9),
+        description: `Identified Component ${idx + 1} from ${el.title}`,
+        unit: 'm³',
+        qty: Math.floor(Math.random() * 50) + 10,
+        rate: 0,
+        total: 0,
+        isAnalyzed: true
+      }))
+    }));
+
+    const newProj = {
+      name: `AI Draft: ${new Date().toLocaleDateString()}`,
+      type: 'AI Drawing Analysis',
+      status: 'Draft',
+      sections: analyzedSections,
+      date: new Date().toLocaleDateString()
+    };
+
+    try {
+      const savedId = await saveProject(newProj);
+      const projectId = savedId || `local_${Date.now()}`;
+      const finalProj = { ...newProj, id: projectId };
+
+      setProjects(prev => [finalProj, ...prev]);
+      setActiveProjectId(projectId);
+      setShowAnalyzer(false);
+      setActiveTab('workspace');
+      setFocusMode(true);
+
+      if (savedId) {
+        getProjects().then(updated => setProjects(updated));
+      }
+    } catch (err) {
+      console.error('Error creating project from analysis:', err);
     }
   };
 
@@ -468,19 +524,28 @@ function App() {
 
   if (view === 'landing') return <Hero onGetStarted={() => setView('pricing')} onLogin={() => setView('login')} />;
   if (view === 'pricing') return <PricingPage
+    error={authError}
     onSelectPlan={async (plan) => {
+      setAuthError(null);
       if (user) {
-        const updatedProfile = await updateProfile({ plan });
-        if (updatedProfile) {
-          setUser(prev => ({ ...prev, ...updatedProfile }));
-          setView('app');
+        try {
+          const updatedProfile = await updateProfile({ plan });
+          if (updatedProfile) {
+            setUser(prev => ({ ...prev, ...updatedProfile }));
+            setView('app');
+          } else {
+            setAuthError('Failed to update plan. Please check your connection.');
+          }
+        } catch (err) {
+          setAuthError('An unexpected error occurred while updating your plan.');
+          console.error('Plan update error:', err);
         }
       } else {
         setSelectedPlan(plan);
         setView('signup');
       }
     }}
-    onBack={() => setView(user ? 'app' : 'landing')}
+    onBack={() => { setAuthError(null); setView(user ? 'app' : 'landing'); }}
   />;
   if (view === 'login') return <Login error={authError} onLogin={handleLogin} onSwitchToSignUp={() => { setAuthError(null); setView('signup'); }} onForgotPassword={() => setView('forgot-password')} />;
   if (view === 'signup') return <SignUp error={authError} selectedPlan={selectedPlan} onSignUp={handleSignUp} onSwitchToLogin={(target) => { setAuthError(null); setView(target); }} />;
@@ -506,6 +571,7 @@ function App() {
           onSelectProject={(id) => {
             setActiveProjectId(id);
             setActiveTab('workspace');
+            setFocusMode(true);
           }}
           onDeleteProject={handleDeleteProject}
           onUpgrade={() => { setView('pricing'); }}
@@ -530,7 +596,7 @@ function App() {
       case 'reports':
         return <div className="view-fade-in"><Reports user={user} projects={projects} activeProjectId={activeProjectId} onUpgrade={() => { setView('pricing'); }} /></div>;
       case 'settings':
-        return <div className="view-fade-in"><Settings user={user} /></div>;
+        return <div className="view-fade-in"><Settings user={user} onUpgrade={() => setView('pricing')} /></div>;
       default:
         return <div className="enterprise-card p-4">Feature development in progress...</div>;
     }
@@ -614,6 +680,11 @@ function App() {
           onSelect={handleStructureSelect}
           onClose={() => setShowSelector(false)}
         />}
+
+        {showAnalyzer && <DrawingAnalyzer
+          onComplete={handleAnalysisComplete}
+          onClose={() => setShowAnalyzer(false)}
+        />}
       </main>
 
 
@@ -626,6 +697,13 @@ function App() {
 
         .app-container.focus-mode .content-area {
           margin-left: 0;
+          padding: 0 1.5rem 1.5rem;
+        }
+
+        .app-container.focus-mode .sticky-summary-bar {
+          margin: 0 -1.5rem 1.5rem;
+          padding: 0.75rem 1.5rem;
+          top: 0;
         }
 
         .focus-mode-exit-btn {

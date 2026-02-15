@@ -76,7 +76,7 @@ const EmailVerification = ({ email, onVerify, onResend, onBack }) => {
                         <Mail size={32} />
                     </div>
                     <h2>Confirm your Identity</h2>
-                    <p>Professional BOQ access requires verification. We've sent a 6-digit code and a verification link to:</p>
+                    <p>Professional BOQ access requires verification. Please check your inbox for a verification code or link sent to:</p>
                     <div className="email-badge-card">{email}</div>
                 </div>
 
