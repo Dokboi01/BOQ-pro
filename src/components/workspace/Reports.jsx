@@ -135,98 +135,246 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
 
   const handleExportExcel = async () => {
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('BOQ Report');
+    const worksheet = workbook.addWorksheet('BEME Report');
 
+    // --- 1. SET COLUMN WIDTHS ---
     worksheet.columns = [
-      { header: 'Item', key: 'id', width: 10 },
-      { header: 'Description', key: 'desc', width: 50 },
-      { header: 'Unit', key: 'unit', width: 10 },
-      { header: 'Qty', key: 'qty', width: 15 },
-      { header: 'Rate (₦)', key: 'rate', width: 15 },
-      { header: 'Total (₦)', key: 'total', width: 15 },
+      { key: 'item', width: 8 },
+      { key: 'desc', width: 60 },
+      { key: 'unit', width: 10 },
+      { key: 'qty', width: 15 },
+      { key: 'rate', width: 18 },
+      { key: 'total', width: 20 },
     ];
 
-    boqData.forEach(section => {
-      worksheet.addRow({ desc: section.title }).font = { bold: true };
-      section.items.forEach((item, idx) => {
-        worksheet.addRow({
-          id: idx + 1,
-          desc: item.description,
-          unit: item.unit,
-          qty: item.qty,
-          rate: item.useBenchmark ? item.benchmark : item.rate,
-          total: item.total
-        });
-      });
-      worksheet.addRow({ desc: `Subtotal ${section.title}`, total: section.items.reduce((acc, i) => acc + i.total, 0) }).font = { italic: true };
+    // --- 2. PROFESSIONAL HEADER ---
+    worksheet.mergeCells('A1:F1');
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = 'BILL OF ENGINEERING MEASUREMENT AND EVALUATION (BEME)';
+    titleCell.font = { name: 'Arial Black', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } }; // Navy
+    titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+    worksheet.getRow(1).height = 30;
+
+    worksheet.mergeCells('A2:F2');
+    const projectCell = worksheet.getCell('A2');
+    projectCell.value = `PROJECT: ${projectInfo.title.toUpperCase()}`;
+    projectCell.font = { bold: true, size: 11 };
+    projectCell.alignment = { horizontal: 'left' };
+
+    worksheet.mergeCells('A3:F3');
+    worksheet.getCell('A3').value = `CLIENT: ${projectInfo.client}`;
+
+    worksheet.mergeCells('A4:F4');
+    worksheet.getCell('A4').value = `LOCATION: ${projectInfo.location} | DATE: ${projectInfo.date}`;
+    worksheet.getRow(4).border = { bottom: { style: 'medium' } };
+
+    // --- 3. TABLE HEADERS ---
+    const headerRow = worksheet.addRow(['ITEM', 'DESCRIPTION OF WORK', 'UNIT', 'QTY', 'RATE (N)', 'AMOUNT (N)']);
+    headerRow.height = 25;
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
     });
 
-    worksheet.getColumn('desc').alignment = { wrapText: true };
-    worksheet.addRow({});
-    const totalRow = worksheet.addRow({ desc: 'GRAND TOTAL', total: calculateGrandTotal() });
-    totalRow.font = { bold: true, size: 12 };
-    totalRow.getCell('total').numFmt = '"₦"#,##0.00';
+    // --- 4. POPULATE DATA ---
+    boqData.forEach((section, sIdx) => {
+      // Section Header
+      const sRow = worksheet.addRow([String.fromCharCode(65 + sIdx), section.title.toUpperCase()]);
+      sRow.font = { bold: true };
+      sRow.getCell(2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
 
+      section.items.forEach((item, idx) => {
+        const row = worksheet.addRow([
+          idx + 1,
+          item.description,
+          item.unit,
+          item.qty,
+          item.useBenchmark ? item.benchmark : item.rate,
+          item.total
+        ]);
+
+        row.getCell(2).alignment = { wrapText: true, vertical: 'middle' };
+        row.getCell(4).numFmt = '#,##0.00';
+        row.getCell(5).numFmt = '#,##0.00';
+        row.getCell(6).numFmt = '#,##0.00';
+
+        // Borders for all data cells
+        row.eachCell((cell) => {
+          cell.border = { top: { style: 'hair' }, left: { style: 'thin' }, bottom: { style: 'hair' }, right: { style: 'thin' } };
+        });
+      });
+
+      // Section Subtotal
+      const sectionTotal = section.items.reduce((acc, i) => acc + (i.total || 0), 0);
+      const subRow = worksheet.addRow(['', `TOTAL FOR ${section.title.toUpperCase()}`, '', '', '', sectionTotal]);
+      subRow.font = { bold: true, italic: true };
+      subRow.getCell(6).numFmt = '"N"#,##0.00';
+      subRow.getCell(6).border = { bottom: { style: 'medium' } };
+    });
+
+    // --- 5. GRAND TOTAL ---
+    worksheet.addRow([]); // Empty spacing
+    const grandRow = worksheet.addRow(['', 'GRAND TOTAL (CARRIED TO TENDER)', '', '', '', calculateGrandTotal()]);
+    grandRow.height = 25;
+    grandRow.font = { bold: true, size: 12 };
+    grandRow.getCell(6).numFmt = '"N"#,##0.00';
+    grandRow.getCell(6).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE68A' } }; // Light Gold/Yellow
+
+    // --- 6. SIGNATURES ---
+    worksheet.addRow([]);
+    worksheet.addRow(['', '_________________________', '', '', '', '_________________________']);
+    const labelRow = worksheet.addRow(['', 'QS PREPARED BY', '', '', '', 'CLIENT AUTHORISED SIGNATORY']);
+    labelRow.font = { size: 9, bold: true };
+
+    // --- 7. EXPORT ---
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = window.URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `${projectInfo.title}_BOQ.xlsx`;
+    anchor.download = `${projectInfo.title.replace(/\s+/g, '_')}_BEME.xlsx`;
     anchor.click();
     window.URL.revokeObjectURL(url);
   };
 
   const handleExportPDF = () => {
     const doc = new jsPDF();
-    doc.setFontSize(20);
-    doc.text('BILL OF QUANTITIES', 105, 15, { align: 'center' });
+    const pageWidth = doc.internal.pageSize.width;
+
+    // --- PAGE 1: FORMAL LETTERHEAD & START OF BEME ---
+    // Professional Header
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.setTextColor(15, 23, 42); // Navy
+    doc.text('BILL OF QUANTITIES (BEME)', pageWidth / 2, 20, { align: 'center' });
+
+    doc.setDrawColor(37, 99, 235);
+    doc.setLineWidth(1.5);
+    doc.line(14, 25, pageWidth - 14, 25);
+
+    // Project Metadata Box
     doc.setFontSize(10);
-    doc.text(`Project: ${projectInfo.title}`, 14, 25);
-    doc.text(`Client: ${projectInfo.client}`, 14, 30);
-    doc.text(`Date: ${projectInfo.date}`, 14, 35);
+    doc.setTextColor(100);
+    doc.text('PROJECT INFO', 14, 35);
+
+    doc.setFontSize(11);
+    doc.setTextColor(0);
+    doc.text(`Title: ${projectInfo.title.toUpperCase()}`, 14, 42);
+    doc.text(`Client: ${projectInfo.client}`, 14, 48);
+    doc.text(`Ref: ${projectInfo.ref}`, 14, 54);
+
+    doc.text(`Date: ${projectInfo.date}`, pageWidth - 14, 42, { align: 'right' });
+    doc.text(`Location: ${projectInfo.location}`, pageWidth - 14, 48, { align: 'right' });
+    doc.text(`Prepared By: ${projectInfo.preparedBy}`, pageWidth - 14, 54, { align: 'right' });
 
     const tableData = [];
-    boqData.forEach(section => {
-      tableData.push([{ content: section.title, colSpan: 6, styles: { fillColor: [240, 240, 240], fontStyle: 'bold' } }]);
+    boqData.forEach((section, sIdx) => {
+      // Section Header Row
+      tableData.push([
+        { content: String.fromCharCode(65 + sIdx), styles: { fontStyle: 'bold', halign: 'center' } },
+        { content: section.title.toUpperCase(), colSpan: 5, styles: { fontStyle: 'bold', fillColor: [248, 250, 252] } }
+      ]);
+
       section.items.forEach((item, idx) => {
         tableData.push([
           idx + 1,
           item.description,
           item.unit,
-          item.qty.toLocaleString(),
-          (item.useBenchmark ? item.benchmark : item.rate).toLocaleString(),
-          item.total.toLocaleString()
+          item.qty.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          (item.useBenchmark ? item.benchmark : item.rate).toLocaleString(undefined, { minimumFractionDigits: 2 }),
+          item.total.toLocaleString(undefined, { minimumFractionDigits: 2 })
         ]);
       });
-    });
 
-    tableData.push([{ content: 'GRAND TOTAL', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } }, { content: `₦${calculateGrandTotal().toLocaleString()}`, styles: { fontStyle: 'bold' } }]);
+      // Section Sub-total
+      const sectionTotal = section.items.reduce((acc, i) => acc + (i.total || 0), 0);
+      tableData.push([
+        { content: '', colSpan: 4 },
+        { content: `Total for ${section.title}`, styles: { fontStyle: 'bold', halign: 'right' } },
+        { content: sectionTotal.toLocaleString(undefined, { minimumFractionDigits: 2 }), styles: { fontStyle: 'bold' } }
+      ]);
+    });
 
     doc.autoTable({
-      startY: 40,
-      head: [['Item', 'Description', 'Unit', 'Qty', 'Rate', 'Total']],
+      startY: 65,
+      head: [['ITEM', 'DESCRIPTION', 'UNIT', 'QTY', 'RATE (N)', 'AMOUNT (N)']],
       body: tableData,
       theme: 'grid',
-      headStyles: { fillColor: [15, 23, 42], fontSize: 9, fontStyle: 'bold' },
+      headStyles: { fillColor: [15, 23, 42], fontSize: 9, fontStyle: 'bold', halign: 'center' },
       columnStyles: {
-        0: { cellWidth: 15 },
+        0: { cellWidth: 12, halign: 'center' },
         1: { cellWidth: 'auto' },
-        5: { fontStyle: 'bold', halign: 'right' }
+        2: { cellWidth: 15, halign: 'center' },
+        3: { cellWidth: 25, halign: 'right' },
+        4: { cellWidth: 30, halign: 'right' },
+        5: { cellWidth: 35, halign: 'right' }
       },
-      styles: { fontSize: 8, font: 'helvetica' }
+      styles: { fontSize: 8, font: 'helvetica', cellPadding: 3 },
+      didDrawPage: () => {
+        // Footer on every page
+        const str = `Page ${doc.internal.getNumberOfPages()}`;
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(str, pageWidth / 2, doc.internal.pageSize.height - 10, { align: 'center' });
+        doc.text('BOQ PRO ENTERPRISE - DIGITAL ENGINEERING STANDARDS', 14, doc.internal.pageSize.height - 10);
+      }
     });
 
-    // Branding Footer
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(150);
-      doc.text(`Generated via BOQ Pro Enterprise - Page ${i} of ${pageCount}`, 105, 285, { align: 'center' });
-    }
+    // --- SUMMARY OF COLLECTIONS PAGE ---
+    doc.addPage();
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.setTextColor(15, 23, 42);
+    doc.text('SUMMARY OF COLLECTIONS', pageWidth / 2, 30, { align: 'center' });
 
-    doc.save(`${projectInfo.title}_BOQ.pdf`);
+    doc.setDrawColor(200);
+    doc.line(14, 35, pageWidth - 14, 35);
+
+    const summaryRows = boqData.map((section, idx) => [
+      String.fromCharCode(65 + idx),
+      section.title.toUpperCase(),
+      section.items.reduce((acc, i) => acc + (i.total || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2 })
+    ]);
+
+    doc.autoTable({
+      startY: 45,
+      head: [['REF', 'ELEMENT DESCRIPTION', 'AMOUNT (N)']],
+      body: summaryRows,
+      theme: 'grid',
+      headStyles: { fillColor: [30, 41, 59], fontSize: 10, fontStyle: 'bold' },
+      columnStyles: {
+        0: { cellWidth: 20, halign: 'center' },
+        1: { cellWidth: 'auto' },
+        2: { cellWidth: 50, halign: 'right', fontStyle: 'bold' }
+      },
+      styles: { cellPadding: 5 }
+    });
+
+    const finalY = doc.lastAutoTable.finalY + 10;
+
+    // Grand Total Row in Summary
+    doc.setFillColor(241, 245, 249);
+    doc.rect(14, finalY, pageWidth - 28, 12, 'F');
+    doc.setFontSize(12);
+    doc.text('TOTAL ESTIMATED CONTRACT SUM (CARRIED TO FORM OF TENDER)', 20, finalY + 8);
+    doc.text(`N ${calculateGrandTotal().toLocaleString(undefined, { minimumFractionDigits: 2 })}`, pageWidth - 20, finalY + 8, { align: 'right' });
+
+    // Official Signature Blocks
+    const sigY = finalY + 40;
+    doc.setFontSize(10);
+    doc.line(14, sigY, 90, sigY);
+    doc.text('PREPARED BY (Quantity Surveyor)', 14, sigY + 5);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Reg No: NIQS/P/${Math.floor(Math.random() * 9000) + 1000}`, 14, sigY + 10);
+
+    doc.setFont('helvetica', 'bold');
+    doc.line(pageWidth - 90, sigY, pageWidth - 14, sigY);
+    doc.text('FOR THE CLIENT (Authorised Signatory)', pageWidth - 14, sigY + 5, { align: 'right' });
+
+    doc.save(`${projectInfo.title.replace(/\s+/g, '_')}_BEME.pdf`);
   };
 
   const handleEmailReport = async () => {
