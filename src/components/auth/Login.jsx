@@ -1,15 +1,26 @@
 import React, { useState } from 'react';
-import { Shield, Mail, Lock, ArrowRight, Github, AlertCircle } from 'lucide-react';
+import { Shield, Mail, Lock, ArrowRight, Github, AlertCircle, Sparkles, Send } from 'lucide-react';
 
-const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword }) => {
+const Login = ({ error, onLogin, onSendMagicLink, onSwitchToSignUp, onForgotPassword }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loginMode, setLoginMode] = useState('password'); // 'password' or 'magic-link'
+  const [message, setMessage] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    await onLogin({ email, password });
+    setMessage(null);
+
+    if (loginMode === 'password') {
+      await onLogin({ email, password });
+    } else {
+      const success = await onSendMagicLink(email);
+      if (success) {
+        setMessage('✨ Magic link sent! Please check your inbox.');
+      }
+    }
     setIsLoading(false);
   };
 
@@ -25,10 +36,10 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword }) => {
           <p>Login to manage your construction projects</p>
         </div>
 
-        {error && (
-          <div className="auth-error-banner view-fade-in">
-            <AlertCircle size={18} />
-            <span>{error}</span>
+        {(error || message) && (
+          <div className={`auth-error-banner view-fade-in ${message ? 'success' : ''}`}>
+            {message ? <Sparkles size={18} /> : <AlertCircle size={18} />}
+            <span>{message || error}</span>
           </div>
         )}
 
@@ -48,33 +59,36 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword }) => {
             </div>
           </div>
 
-          <div className="form-group">
-            <div className="label-row">
-              <label className="form-label">Password</label>
-              <button type="button" className="text-link" onClick={onForgotPassword}>Forgot password?</button>
+          {loginMode === 'password' && (
+            <div className="form-group">
+              <div className="label-row">
+                <label className="form-label">Password</label>
+                <button type="button" className="text-link" onClick={onForgotPassword}>Forgot password?</button>
+              </div>
+              <div className="input-with-icon">
+                <Lock size={18} className="input-icon" />
+                <input
+                  type="password"
+                  className="form-input"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
             </div>
-            <div className="input-with-icon">
-              <Lock size={18} className="input-icon" />
-              <input
-                type="password"
-                className="form-input"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-          </div>
+          )}
 
           <button type="submit" className={`btn-primary auth-submit ${isLoading ? 'loading' : ''}`} disabled={isLoading}>
             {isLoading ? (
               <>
                 <span className="loading-spinner-sm"></span>
-                Signing in...
+                {loginMode === 'password' ? 'Signing in...' : 'Sending Link...'}
               </>
             ) : (
               <>
-                Sign In <ArrowRight size={18} />
+                {loginMode === 'password' ? 'Sign In' : 'Send Magic Link'}
+                {loginMode === 'password' ? <ArrowRight size={18} /> : <Send size={18} />}
               </>
             )}
           </button>
@@ -102,7 +116,19 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword }) => {
         </div>
 
         <div className="auth-footer">
-          Don't have an account? <button className="text-link" onClick={onSwitchToSignUp}>Create account</button>
+          <button
+            type="button"
+            className="text-link mode-toggle"
+            onClick={() => {
+              setLoginMode(loginMode === 'password' ? 'magic-link' : 'password');
+              setMessage(null);
+            }}
+          >
+            {loginMode === 'password' ? 'Sign in with Magic Link' : 'Back to Password Login'}
+          </button>
+          <div className="signup-link">
+            Don't have an account? <button className="text-link" onClick={onSwitchToSignUp}>Create account</button>
+          </div>
         </div>
       </div>
 
@@ -232,6 +258,28 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword }) => {
           text-align: center;
           font-size: 0.875rem;
           color: var(--primary-500);
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+        
+        .auth-error-banner.success {
+          background: rgba(34, 197, 94, 0.1);
+          border-color: rgba(34, 197, 94, 0.2);
+          color: #22c55e;
+        }
+
+        .mode-toggle {
+          padding: 0.75rem;
+          background: rgba(37, 99, 235, 0.05);
+          border-radius: var(--radius-sm);
+          border: 1px solid rgba(37, 99, 235, 0.1);
+          transition: all 0.2s;
+        }
+
+        .mode-toggle:hover {
+          background: rgba(37, 99, 235, 0.1);
+          text-decoration: none;
         }
         .auth-submit.loading {
           pointer-events: none;

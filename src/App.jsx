@@ -542,6 +542,27 @@ function App() {
     setView('landing');
   };
 
+  const handleSendMagicLink = async (email) => {
+    setAuthError(null);
+    console.log('🚀 Sending Magic Link to:', email);
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: window.location.origin,
+      },
+    });
+
+    if (error) {
+      console.error('❌ Magic Link failed:', error.message);
+      setAuthError(error.message);
+      return false;
+    }
+
+    console.log('✅ Magic Link triggered successfully');
+    return true;
+  };
+
   if (view === 'loading') return (
     <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white' }}>
       <div className="loading-spinner"></div>
@@ -609,7 +630,13 @@ function App() {
     }}
     onBack={() => { setAuthError(null); setView(user ? 'app' : 'landing'); }}
   />;
-  if (view === 'login') return <Login error={authError} onLogin={handleLogin} onSwitchToSignUp={() => { setAuthError(null); setView('signup'); }} onForgotPassword={() => setView('forgot-password')} />;
+  if (view === 'login') return <Login
+    error={authError}
+    onLogin={handleLogin}
+    onSendMagicLink={handleSendMagicLink}
+    onSwitchToSignUp={() => { setAuthError(null); setView('signup'); }}
+    onForgotPassword={() => setView('forgot-password')}
+  />;
   if (view === 'signup') return <SignUp error={authError} selectedPlan={selectedPlan} onSignUp={handleSignUp} onSwitchToLogin={(target) => { setAuthError(null); setView(target); }} />;
   if (view === 'verification') return (
     <EmailVerification
