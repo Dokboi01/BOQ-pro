@@ -215,7 +215,12 @@ function App() {
       const fullUser = { ...data.user, ...profile };
       setUser(fullUser);
       localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
-      setView('app');
+
+      if (profile && profile.is_onboarded) {
+        setView('app');
+      } else {
+        setView('onboarding');
+      }
     }
   };
 
@@ -263,7 +268,12 @@ function App() {
         const profile = await getProfile(res.user.id);
         const fullUser = { ...res.user, ...profile };
         setUser(fullUser);
-        setView('app');
+
+        if (profile && profile.is_onboarded) {
+          setView('app');
+        } else {
+          setView('onboarding');
+        }
       }
     } catch (err) {
       console.error('❌ Critical Signup Crash:', err);
