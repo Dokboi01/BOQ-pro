@@ -475,14 +475,22 @@ function App() {
     }
   };
 
-  const handleUpdateProject = async (projectId, updatedSections) => {
+  const handleUpdateProject = async (projectId, updatedSections, region = null) => {
     // 1. OPTIMISTIC UPDATE: Update local state immediately
-    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, sections: updatedSections } : p));
+    setProjects(prev => prev.map(p =>
+      p.id === projectId ? {
+        ...p,
+        sections: updatedSections,
+        region: region || p.region || 'Lagos'
+      } : p
+    ));
 
     // 2. BACKGROUND SAVE: Don't await this for UI update
+    const currentProject = projects.find(p => p.id === projectId);
     saveProject({
       id: projectId,
-      sections: updatedSections
+      sections: updatedSections,
+      region: region || currentProject?.region || 'Lagos'
     }).catch(err => {
       console.error('❌ Background save failed:', err);
       // Optional: Rollback state if critical, but for now we trust the local state

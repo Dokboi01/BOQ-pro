@@ -27,6 +27,7 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [emailConfig, setEmailConfig] = useState({ recipient: '', includePDF: true, includeExcel: false });
   const [isSending, setIsSending] = useState(false);
+  const [isUnpriced, setIsUnpriced] = useState(false);
 
   const activeProject = projects.find(p => p.id === activeProjectId) || projects[0];
 
@@ -192,8 +193,8 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
           item.description,
           item.unit,
           item.qty,
-          item.useBenchmark ? item.benchmark : item.rate,
-          item.total
+          isUnpriced ? '' : (item.useBenchmark ? item.benchmark : item.rate),
+          isUnpriced ? '' : item.total
         ]);
 
         row.getCell(2).alignment = { wrapText: true, vertical: 'middle' };
@@ -209,19 +210,23 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
 
       // Section Subtotal
       const sectionTotal = section.items.reduce((acc, i) => acc + (i.total || 0), 0);
-      const subRow = worksheet.addRow(['', `TOTAL FOR ${section.title.toUpperCase()}`, '', '', '', sectionTotal]);
+      const subRow = worksheet.addRow(['', `TOTAL FOR ${section.title.toUpperCase()}`, '', '', '', isUnpriced ? '' : sectionTotal]);
       subRow.font = { bold: true, italic: true };
-      subRow.getCell(6).numFmt = '"N"#,##0.00';
-      subRow.getCell(6).border = { bottom: { style: 'medium' } };
+      if (!isUnpriced) {
+        subRow.getCell(6).numFmt = '"N"#,##0.00';
+        subRow.getCell(6).border = { bottom: { style: 'medium' } };
+      }
     });
 
     // --- 5. GRAND TOTAL ---
     worksheet.addRow([]); // Empty spacing
-    const grandRow = worksheet.addRow(['', 'GRAND TOTAL (CARRIED TO TENDER)', '', '', '', calculateGrandTotal()]);
+    const grandRow = worksheet.addRow(['', 'GRAND TOTAL (CARRIED TO TENDER)', '', '', '', isUnpriced ? '' : calculateGrandTotal()]);
     grandRow.height = 25;
     grandRow.font = { bold: true, size: 12 };
-    grandRow.getCell(6).numFmt = '"N"#,##0.00';
-    grandRow.getCell(6).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE68A' } }; // Light Gold/Yellow
+    if (!isUnpriced) {
+      grandRow.getCell(6).numFmt = '"N"#,##0.00';
+      grandRow.getCell(6).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE68A' } }; // Light Gold/Yellow
+    }
 
     // --- 6. SIGNATURES ---
     worksheet.addRow([]);
@@ -284,8 +289,8 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
           item.description,
           item.unit,
           item.qty.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-          (item.useBenchmark ? item.benchmark : item.rate).toLocaleString(undefined, { minimumFractionDigits: 2 }),
-          item.total.toLocaleString(undefined, { minimumFractionDigits: 2 })
+          isUnpriced ? '-' : (item.useBenchmark ? item.benchmark : item.rate).toLocaleString(undefined, { minimumFractionDigits: 2 }),
+          isUnpriced ? '-' : item.total.toLocaleString(undefined, { minimumFractionDigits: 2 })
         ]);
       });
 
@@ -294,7 +299,7 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
       tableData.push([
         { content: '', colSpan: 4 },
         { content: `Total for ${section.title}`, styles: { fontStyle: 'bold', halign: 'right' } },
-        { content: sectionTotal.toLocaleString(undefined, { minimumFractionDigits: 2 }), styles: { fontStyle: 'bold' } }
+        { content: isUnpriced ? '-' : sectionTotal.toLocaleString(undefined, { minimumFractionDigits: 2 }), styles: { fontStyle: 'bold' } }
       ]);
     });
 
@@ -336,7 +341,7 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
     const summaryRows = boqData.map((section, idx) => [
       String.fromCharCode(65 + idx),
       section.title.toUpperCase(),
-      section.items.reduce((acc, i) => acc + (i.total || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2 })
+      isUnpriced ? '-' : section.items.reduce((acc, i) => acc + (i.total || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2 })
     ]);
 
     doc.autoTable({
@@ -356,11 +361,17 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
     const finalY = doc.lastAutoTable.finalY + 10;
 
     // Grand Total Row in Summary
-    doc.setFillColor(241, 245, 249);
-    doc.rect(14, finalY, pageWidth - 28, 12, 'F');
-    doc.setFontSize(12);
-    doc.text('TOTAL ESTIMATED CONTRACT SUM (CARRIED TO FORM OF TENDER)', 20, finalY + 8);
-    doc.text(`N ${calculateGrandTotal().toLocaleString(undefined, { minimumFractionDigits: 2 })}`, pageWidth - 20, finalY + 8, { align: 'right' });
+    if (!isUnpriced) {
+      doc.setFillColor(241, 245, 249);
+      doc.rect(14, finalY, pageWidth - 28, 12, 'F');
+      doc.setFontSize(12);
+      doc.text('TOTAL ESTIMATED CONTRACT SUM (CARRIED TO FORM OF TENDER)', 20, finalY + 8);
+      doc.text(`N ${calculateGrandTotal().toLocaleString(undefined, { minimumFractionDigits: 2 })}`, pageWidth - 20, finalY + 8, { align: 'right' });
+    } else {
+      doc.setFontSize(12);
+      doc.text('GRAND TOTAL (CARRIED TO FORM OF TENDER)', 20, finalY + 8);
+      doc.text('-', pageWidth - 20, finalY + 8, { align: 'right' });
+    }
 
     // Official Signature Blocks
     const sigY = finalY + 40;
@@ -465,8 +476,24 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
   const renderSelectionScreen = () => (
     <div className="selection-screen">
       <div className="report-header-text">
-        <h2>Document Generation Center</h2>
-        <p>Prepare consultant-grade, audit-ready documents for official submission.</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h2>Document Generation Center</h2>
+            <p>Prepare consultant-grade, audit-ready documents for official submission.</p>
+          </div>
+          <div className="tendering-mode-switch enterprise-card">
+            <div className="switch-info">
+              <span className="switch-label">TENDERING MODE</span>
+              <span className="switch-desc">{isUnpriced ? 'Unpriced - Ready for Bidders' : 'Priced - Consultant View'}</span>
+            </div>
+            <button
+              className={`switch-btn ${isUnpriced ? 'active' : ''}`}
+              onClick={() => setIsUnpriced(!isUnpriced)}
+            >
+              <div className="switch-handle"></div>
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="selection-grid">
@@ -775,6 +802,45 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
         .reporting-workspace {
           padding-top: 1rem;
         }
+
+        .tendering-mode-switch {
+          background: white;
+          padding: 0.75rem 1rem;
+          display: flex;
+          align-items: center;
+          gap: 1.5rem;
+          border-radius: 12px;
+          border: 1px solid var(--border-medium);
+        }
+
+        .switch-info { display: flex; flex-direction: column; }
+        .switch-label { font-size: 0.625rem; font-weight: 800; color: var(--primary-500); letter-spacing: 0.05em; }
+        .switch-desc { font-size: 0.75rem; font-weight: 700; color: var(--primary-900); }
+
+        .switch-btn {
+          width: 44px;
+          height: 22px;
+          background: #e2e8f0;
+          border-radius: 20px;
+          border: none;
+          position: relative;
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+
+        .switch-btn.active { background: var(--accent-600); }
+        .switch-handle {
+          position: absolute;
+          top: 2px;
+          left: 2px;
+          width: 18px;
+          height: 18px;
+          background: white;
+          border-radius: 50%;
+          transition: all 0.3s;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .switch-btn.active .switch-handle { left: 24px; }
 
         .report-header-text {
           margin-bottom: 2.5rem;

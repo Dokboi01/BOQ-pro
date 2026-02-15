@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BOQ Pro Magic Link</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #020617;
+            margin: 0;
+            padding: 0;
+            color: #f8fafc;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #0f172a;
+            border-radius: 16px;
+            border: 1px solid #1e293b;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        }
+        .header {
+            padding: 40px;
+            text-align: center;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-bottom: 1px solid #1e293b;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.025em;
+        }
+        .logo span {
+            color: #3b82f6;
+        }
+        .content {
+            padding: 40px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            color: #ffffff;
+        }
+        p {
+            font-size: 16px;
+            line-height: 24px;
+            color: #94a3b8;
+            margin-bottom: 32px;
+        }
+        .button {
+            display: inline-block;
+            padding: 16px 32px;
+            background-color: #2563eb;
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .footer {
+            padding: 32px;
+            background: #020617;
+            text-align: center;
+            font-size: 14px;
+            color: #475569;
+            border-top: 1px solid #1e293b;
+        }
+        .security-notice {
+            margin-top: 24px;
+            padding: 16px;
+            background: rgba(37, 99, 235, 0.05);
+            border: 1px solid rgba(37, 99, 235, 0.1);
+            border-radius: 8px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">BOQ <span>PRO</span></div>
+        </div>
+        <div class="content">
+            <h1>Sign in to your account</h1>
+            <p>We received a request to sign in to BOQ Pro using this email address. Click the button below to sign in instantly without a password.</p>
+            
+            <a href="{{ .ConfirmationURL }}" class="button">Log In Instantly</a>
+            
+            <div class="security-notice">
+                If you didn't request this email, you can safely ignore it. This link will expire in 24 hours.
+            </div>
+        </div>
+        <div class="footer">
+            &copy; 2026 BOQ Pro. Professional Infrastructure Cost Management.<br>
+            Regional Accuracy. AI-Powered Intelligence.
+        </div>
+    </div>
+</body>
+</html>

@@ -200,3 +200,74 @@ export const getMarketOutlook = async () => {
         trend: "upward"
     };
 };
+
+/**
+ * Smart Material Computation Engine
+ * Provides "Recipes" for common Nigerian construction items
+ */
+export const calculateResourceRequirement = (description, qty, unit) => {
+    const desc = description.toLowerCase();
+    const resources = [];
+
+    // 1. Concrete (m3) - Standard 1:2:4 Mix
+    if (desc.includes('concrete') && (unit.toLowerCase() === 'm3' || unit.toLowerCase() === 'cum')) {
+        const cementBags = qty * 6.5; // ~6.5 bags per m3
+        const sandTons = qty * 0.5;   // ~0.5 tons per m3
+        const graniteTons = qty * 0.9; // ~0.9 tons per m3
+
+        resources.push(
+            { name: 'Cement (50kg bags)', qty: Math.ceil(cementBags) },
+            { name: 'Sharp Sand (Tons)', qty: parseFloat(sandTons.toFixed(2)) },
+            { name: 'Granite 20mm (Tons)', qty: parseFloat(graniteTons.toFixed(2)) }
+        );
+    }
+
+    // 2. Plastering/Screeding (m2) - 1:4 Mix (15-20mm)
+    else if ((desc.includes('plaster') || desc.includes('render') || desc.includes('screed')) && unit.toLowerCase() === 'm2') {
+        const cementBags = qty * 0.15; // ~0.15 bags per m2
+        const sandTons = qty * 0.02;   // ~0.02 tons per m2
+
+        resources.push(
+            { name: 'Cement (50kg bags)', qty: Math.ceil(cementBags) },
+            { name: 'Plaster Sand (Tons)', qty: parseFloat(sandTons.toFixed(2)) }
+        );
+    }
+
+    // 3. Blocks/Bricks (m2) - 9" or 6" Blocks
+    else if (desc.includes('block') && unit.toLowerCase() === 'm2') {
+        const blockCount = qty * 10.5; // ~10.5 blocks per m2
+        const cementBags = qty * 0.2;  // ~0.2 bags for mortar
+
+        resources.push(
+            { name: 'Vibrated Blocks (pcs)', qty: Math.ceil(blockCount) },
+            { name: 'Cement (50kg bags)', qty: Math.ceil(cementBags) }
+        );
+    }
+
+    // 4. Reinforcement (Tons) - Structural Steel
+    else if (desc.includes('reinforcement') || desc.includes('rebar')) {
+        if (unit.toLowerCase() === 'ton' || unit.toLowerCase() === 't') {
+            resources.push(
+                { name: 'Steel Reinforcement (Tons)', qty: qty },
+                { name: 'Binding Wire (Rolls)', qty: Math.ceil(qty * 0.5) }
+            );
+        }
+    }
+
+    return resources;
+};
+
+/**
+ * Regional Rate Modifiers for Nigerian Market (2025/2026)
+ * Adjusts base Lagos rates for other major hubs
+ */
+export const getRegionalModifier = (region) => {
+    const modifiers = {
+        'LAGOS': 1.0,
+        'ABUJA': 1.15, // Higher logistics and living costs
+        'PORT_HARCOURT': 1.10, // Oil-hub premium
+        'IBADAN': 0.90, // Lower labor and sand costs
+        'KANO': 0.95    // Lower labor costs
+    };
+    return modifiers[region?.toUpperCase()] || 1.0;
+};

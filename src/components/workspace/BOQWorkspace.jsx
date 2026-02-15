@@ -12,10 +12,13 @@ import {
   AlertCircle,
   Info,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  Zap,
+  Globe
 } from 'lucide-react';
 import RateAnalysisModal from './RateAnalysisModal';
 import GeometricCalculator from './GeometricCalculator';
+import { calculateResourceRequirement, getRegionalModifier } from '../../utils/aiService';
 
 const SmoothInput = ({ value, onChange, className, disabled, type = "number" }) => {
   const [localValue, setLocalValue] = React.useState(value);
@@ -177,8 +180,18 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         </div>
         <div className="banner-metrics">
           <div className="b-metric">
-            <span className="b-label">BENCHMARK ADOPTION</span>
-            <span className="b-val">65%</span>
+            <span className="b-label">REGION</span>
+            <select
+              className="region-select"
+              value={project?.region || 'Lagos'}
+              onChange={(e) => onUpdate(project.id, sections, e.target.value)}
+            >
+              <option value="Lagos">Lagos</option>
+              <option value="Abuja">Abuja</option>
+              <option value="Port_Harcourt">Port Harcourt</option>
+              <option value="Ibadan">Ibadan</option>
+              <option value="Kano">Kano</option>
+            </select>
           </div>
           <div className="b-metric">
             <span className="b-label">PRICE VOLATILITY</span>
@@ -263,11 +276,23 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                           <td className="text-subtle">{idx + 1}</td>
                           <td className="description-cell">
                             {item.description}
-                            {outlier && (
-                              <div className="outlier-tag">
-                                <AlertCircle size={10} /> Significant Variance Detected
-                              </div>
-                            )}
+                            <div className="item-intelligence-tags">
+                              {outlier && (
+                                <div className="outlier-tag">
+                                  <AlertCircle size={10} /> Significant Variance
+                                </div>
+                              )}
+                              {(() => {
+                                const resources = calculateResourceRequirement(item.description, item.qty, item.unit);
+                                if (resources.length === 0) return null;
+                                return (
+                                  <div className="resource-tag">
+                                    <Zap size={10} className="text-accent" />
+                                    {resources.map(r => `${r.qty} ${r.name.split(' ')[0]}`).join(', ')}
+                                  </div>
+                                );
+                              })()}
+                            </div>
                           </td>
                           <td>{item.unit}</td>
                           <td>
@@ -306,7 +331,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                             <div className="rate-input-wrapper">
                               <span className="currency-prefix">₦</span>
                               <SmoothInput
-                                value={item.useBenchmark ? item.benchmark : item.rate}
+                                value={(item.useBenchmark ? (item.benchmark * getRegionalModifier(project?.region || 'Lagos')) : item.rate)}
                                 onChange={(val) => updateItem(section.id, item.id, 'rate', val)}
                                 className="inline-input rate-input"
                                 disabled={item.useBenchmark}
@@ -320,7 +345,9 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                               </button>
                             </div>
                           </td>
-                          <td className="total-cell">₦{item.total.toLocaleString()}</td>
+                          <td className="total-cell">
+                            ₦{(item.qty * (item.useBenchmark ? (item.benchmark * getRegionalModifier(project?.region || 'Lagos')) : item.rate)).toLocaleString()}
+                          </td>
                           <td className="actions-cell">
                             <button className="btn-icon-danger" onClick={() => onDelete(project.id, section.id, item.id)} title="Delete Item">
                               <Trash2 size={14} />
@@ -394,8 +421,45 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         .banner-title { font-weight: 800; font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.05em; display: block; }
         .banner-subtitle { font-size: 0.75rem; color: rgba(255,255,255,0.6); margin: 0; }
 
+        .region-select {
+          background: rgba(255,255,255,0.1);
+          border: 1px solid rgba(255,255,255,0.2);
+          color: white;
+          font-size: 0.75rem;
+          font-weight: 800;
+          padding: 2px 8px;
+          border-radius: 4px;
+          outline: none;
+          cursor: pointer;
+        }
+
+        .region-select option {
+          background: #0f172a;
+          color: white;
+        }
+
+        .item-intelligence-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+          margin-top: 0.35rem;
+        }
+
+        .resource-tag {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.25rem;
+          background: rgba(59, 130, 246, 0.05);
+          color: var(--accent-600);
+          font-size: 0.625rem;
+          font-weight: 800;
+          padding: 2px 6px;
+          border-radius: 4px;
+          border: 1px solid rgba(59, 130, 246, 0.1);
+        }
+
         .banner-metrics { display: flex; gap: 2rem; }
-        .b-metric { display: flex; flex-direction: column; align-items: flex-end; }
+        .b-metric { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
         .b-label { font-size: 0.625rem; color: rgba(255,255,255,0.5); font-weight: 700; text-transform: uppercase; }
         .b-val { font-size: 1rem; font-weight: 900; color: white; }
 
