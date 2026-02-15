@@ -527,16 +527,35 @@ function App() {
     error={authError}
     onSelectPlan={async (plan) => {
       setAuthError(null);
+
+      // 1. FAST PATH: Guest/Mock User Bypass
+      if (user && (user.id?.startsWith('mock-') || user.email === 'guest@boqpro.com')) {
+        console.log('✨ Local Plan Selection (Mock User)');
+        const updated = { ...user, plan };
+        setUser(updated);
+        localStorage.setItem('boq_pro_profile', JSON.stringify(updated));
+        setView('app');
+        return;
+      }
+
       if (user) {
         try {
-          // Safety timeout for database updates
+          console.log('📡 Syncing plan selection with database:', plan);
+
+          // Safety race: 4s timeout for real database updates
           const profilePromise = updateProfile({ plan });
-          const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve('TIMEOUT'), 5000));
+          const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('TIMEOUT'), 4000));
 
           const result = await Promise.race([profilePromise, timeoutPromise]);
 
           if (result === 'TIMEOUT') {
-            setAuthError('Plan update is taking longer than expected. Please check your connection or Refresh.');
+            console.warn('⚠️ DB Sync timed out, applying locally');
+            setAuthError('Connection sync slow. Plan saved locally.');
+            const localUpdate = { ...user, plan };
+            setUser(localUpdate);
+            localStorage.setItem('boq_pro_profile', JSON.stringify(localUpdate));
+            // Show message for a moment then proceed
+            setTimeout(() => setView('app'), 1500);
             return;
           }
 
@@ -544,13 +563,17 @@ function App() {
             setUser(prev => ({ ...prev, ...result }));
             setView('app');
           } else {
-            setAuthError('Could not sync with database. Plan saved locally.');
-            // Allow the user to proceed anyway if they are already logged in
+            // DB returned null or error
+            console.warn('⚠️ DB update failed, falling back to local');
+            const localUpdate = { ...user, plan };
+            setUser(localUpdate);
             setView('app');
           }
         } catch (err) {
-          setAuthError('An unexpected error occurred while updating your plan.');
-          console.error('Plan update error:', err);
+          console.error('❌ Plan selection crash:', err);
+          const localUpdate = { ...user, plan };
+          setUser(localUpdate);
+          setView('app');
         }
       } else {
         setSelectedPlan(plan);
