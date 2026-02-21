@@ -9,6 +9,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['pwa-192x192.png', 'pwa-512x512.png'],
+      workbox: {
+        maximumFileSizeToCacheInBytes: 5000000, // Increase limit to 5MB
+      },
       manifest: {
         name: 'BOQ Pro - Enterprise Engineering',
         short_name: 'BOQ Pro',
@@ -41,5 +44,23 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    chunkSizeWarningLimit: 3000, // Increase warning limit to 3MB
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('lucide-react')) return 'vendor-icons';
+            if (id.includes('@supabase')) return 'vendor-supabase';
+            if (id.includes('react')) return 'vendor-react';
+            return 'vendor'; // all other package dependencies
+          }
+          if (id.includes('src/data/')) {
+            return 'engineering-data';
+          }
+        },
+      },
+    },
+  },
   base: './',
 })
