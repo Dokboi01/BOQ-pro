@@ -300,6 +300,89 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
         .text-danger:hover {
           background: rgba(248, 113, 113, 0.1);
         }
+
+        /* ── MOBILE: Bottom Navigation Bar ── */
+        @media (max-width: 768px) {
+          .sidebar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            top: auto;
+            width: 100% !important;
+            height: 64px;
+            flex-direction: row;
+            align-items: center;
+            z-index: 1000;
+            border-right: none;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.3);
+            padding: 0 0.5rem;
+            overflow: hidden;
+          }
+
+          .sidebar-header {
+            display: none;
+          }
+
+          .sidebar-nav {
+            flex: 1;
+            flex-direction: row;
+            padding: 0;
+            gap: 0;
+            height: 100%;
+            align-items: stretch;
+            justify-content: space-around;
+          }
+
+          .nav-item {
+            flex: 1;
+            flex-direction: column;
+            gap: 3px;
+            padding: 8px 4px;
+            font-size: 0.55rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            text-align: center;
+            border-radius: 8px;
+            min-height: 52px;
+            justify-content: center;
+          }
+
+          .nav-item span {
+            display: block !important;
+            font-size: 0.55rem;
+          }
+
+          .nav-item:hover {
+            transform: translateY(-2px);
+          }
+
+          .upgrade-prompt {
+            display: none;
+          }
+
+          .sidebar-footer {
+            display: flex;
+            flex-direction: row;
+            border-top: none;
+            padding: 0;
+            gap: 0;
+            align-items: stretch;
+          }
+
+          .sidebar-footer .nav-item {
+            flex: 1;
+            flex-direction: column;
+            gap: 3px;
+            font-size: 0.55rem;
+          }
+
+          .user-profile {
+            display: none;
+          }
+        }
       `}</style>
     </aside>
   );

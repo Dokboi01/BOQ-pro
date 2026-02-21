@@ -994,6 +994,53 @@ function App() {
         .text-success { color: #4ade80; }
         .text-warning { color: var(--warning-600); }
         .text-danger { color: #f87171; }
+
+        /* ── App Mobile Overrides ── */
+        @media (max-width: 768px) {
+          .topbar {
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+          }
+
+          .topbar-actions {
+            width: 100%;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+          }
+
+          .topbar-actions button {
+            white-space: nowrap;
+            flex: 1;
+          }
+
+          .sticky-summary-bar {
+            gap: 1rem;
+            padding: 0.5rem 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+          }
+
+          .summary-item .label {
+            font-size: 0.55rem;
+          }
+
+          .summary-item .val {
+            font-size: 0.75rem;
+          }
+
+          .summary-divider {
+             display: none;
+          }
+
+          .summary-item.status {
+            margin-left: 0;
+            width: 100%;
+            justify-content: center;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 0.25rem;
+          }
+        }
       `}</style>
     </div>
   );

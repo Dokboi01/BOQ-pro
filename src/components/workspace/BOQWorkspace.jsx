@@ -1046,6 +1046,44 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           color: var(--accent-600);
           border-color: var(--accent-400);
         }
+
+        /* ── Workspace Mobile Overrides ── */
+        @media (max-width: 768px) {
+          .workspace-intelligence-container {
+            padding: 0.75rem;
+          }
+
+          .workspace-header {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: stretch;
+          }
+
+          .search-bar {
+            width: 100%;
+          }
+
+          .workspace-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+          }
+
+          .workspace-actions button {
+            width: 100%;
+            justify-content: center;
+          }
+
+          .boq-intelligence-table th:nth-child(3),
+          .boq-intelligence-table td:nth-child(3) {
+            display: none; /* Hide Unit on mobile */
+          }
+
+          .grand-total-row td {
+            font-size: 0.8125rem;
+            padding: 1rem;
+          }
+        }
       `}</style>
     </div>
   );

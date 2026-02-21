@@ -454,6 +454,65 @@ const RateAnalysisModal = ({ item, structureType, onClose, onSave }) => {
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .ai-summary { font-size: 0.8125rem; color: #1e293b; line-height: 1.5; margin: 0; font-weight: 500; }
         .ai-recommendation { font-size: 0.75rem; color: #2563eb; background: rgba(37, 99, 235, 0.08); padding: 0.625rem 0.875rem; border-radius: 8px; font-weight: 600; border-left: 3px solid #2563eb; }
+
+        /* ── Modal Mobile Overrides ── */
+        @media (max-width: 768px) {
+          .analysis-modal {
+            width: 100%;
+            height: 100vh;
+            max-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            border-radius: 0;
+            margin: 0;
+          }
+
+          .analysis-header {
+            padding: 1.5rem 1rem;
+          }
+
+          .analysis-content {
+            padding: 1rem;
+            flex: 1;
+            overflow-y: auto;
+          }
+
+          .analysis-footer {
+            padding: 1rem;
+            position: sticky;
+            bottom: 0;
+            background: white;
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.05);
+          }
+
+          .calc-inputs {
+            gap: 4px;
+          }
+
+          .calc-inputs input {
+            width: 45px;
+            font-size: 0.75rem;
+          }
+
+          .calc-inputs .unit, .calc-inputs .at {
+            font-size: 0.6rem;
+          }
+
+          .analysis-row {
+            padding: 0.75rem 0;
+            gap: 0.5rem;
+            grid-template-columns: 1fr;
+          }
+
+          .analysis-row .name-input {
+            margin-bottom: 0.25rem;
+          }
+
+          .analysis-row .total {
+             margin-left: auto;
+             font-size: 0.75rem;
+          }
+        }
       `}</style>
         </div >
     );

@@ -313,6 +313,44 @@ const StructureSelector = ({ onSelect, onClose }) => {
           font-weight: 600;
           color: var(--accent-600);
         }
+
+        /* ── Selector Mobile Overrides ── */
+        @media (max-width: 768px) {
+          .selector-modal {
+            width: 100%;
+            height: 100vh;
+            max-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            border-radius: 0;
+            margin: 0;
+          }
+
+          .selector-header {
+            padding: 1.5rem 1rem;
+          }
+
+          .selection-grid {
+            padding: 1rem;
+            flex: 1;
+            overflow-y: auto;
+            max-height: none;
+          }
+
+          .selection-card {
+            padding: 1rem;
+            gap: 1rem;
+          }
+
+          .selection-card .card-icon {
+            width: 40px;
+            height: 40px;
+          }
+
+          .selector-footer {
+            padding: 1rem;
+          }
+        }
       `}</style>
     </div>
   );

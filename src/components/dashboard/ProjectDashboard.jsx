@@ -798,8 +798,7 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
         .risk-list { padding: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; }
         .risk-item { display: flex; gap: 1rem; padding: 1rem; border-radius: 8px; }
         .risk-item.high { background: rgba(220, 38, 38, 0.03); color: var(--danger-600); }
-        .risk-item.medium { background: rgba(217, 119, 6, 0.03); color: var(--warning-600); }
-        .risk-item.low { background: var(--bg-main); color: var(--primary-600); }
+        .risk-item.low { background: #f8fafc; color: var(--primary-600); }
         .risk-message { font-size: 0.8125rem; line-height: 1.4; color: var(--primary-800); }
 
         .workflow-strip { padding: 1.25rem 2rem; display: flex; align-items: center; gap: 3rem; margin-top: 1rem; }
@@ -807,6 +806,7 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
         .workflow-item .label { display: block; font-size: 0.625rem; font-weight: 700; color: var(--primary-400); text-transform: uppercase; }
         .workflow-item .val { font-size: 0.8125rem; font-weight: 700; }
         .workflow-actions { margin-left: auto; }
+
         .btn-approve { background: var(--success-600); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
         .btn-approve:hover { background: #15803d; transform: translateY(-1px); }
         .btn-approve.approved { background: var(--primary-500); cursor: default; transform: none; }
@@ -821,6 +821,78 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
         .row-info { display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 600; }
         .row-bar-bg { height: 8px; background: var(--bg-main); border-radius: 100px; overflow: hidden; }
         .row-bar-fill { height: 100%; background: var(--primary-800); }
+
+        /* ── Dashboard Mobile Overrides ── */
+        @media (max-width: 768px) {
+          .dashboard-welcome {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1.5rem;
+          }
+
+          .usage-card {
+            width: 100%;
+          }
+
+          .analytics-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .pipeline-track-pro {
+            flex-direction: column;
+            gap: 1.5rem;
+            padding: 1.5rem;
+          }
+
+          .node-spacer {
+            width: 2px;
+            height: 20px;
+            margin: 0.5rem 0 0.5rem 15px;
+          }
+
+          .dashboard-split {
+            grid-template-columns: 1fr;
+          }
+
+          .visualization-panel {
+            order: 2;
+          }
+
+          .health-metrics {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+          }
+
+          .health-header {
+            flex-direction: column;
+            gap: 1.5rem;
+          }
+
+          .edit-budget {
+            align-items: flex-start;
+            width: 100%;
+          }
+
+          .budget-input {
+            width: 100%;
+            text-align: left;
+          }
+
+          .workflow-strip {
+            flex-direction: column;
+            padding: 1.5rem;
+            gap: 1.5rem;
+          }
+
+          .workflow-actions {
+            width: 100%;
+          }
+
+          .btn-approve {
+            width: 100%;
+            justify-content: center;
+          }
+        }
       `}</style>
     </div>
   );
