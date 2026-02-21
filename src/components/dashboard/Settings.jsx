@@ -28,19 +28,17 @@ const Settings = ({ user, onUpgrade }) => {
   ];
 
   const [apiKey, setApiKey] = useState('');
-  const [openAIKey, setOpenAIKey] = useState('');
   const [supabaseUrl, setSupabaseUrl] = useState('');
   const [supabaseKey, setSupabaseKey] = useState('');
   const [isSeeding, setIsSeeding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  const geminiConnected = !!import.meta.env.VITE_GEMINI_API_KEY;
+
   useEffect(() => {
     const loadSettings = async () => {
       const savedKey = await getSetting('resend_api_key');
       if (savedKey) setApiKey(savedKey);
-
-      const savedAIKey = await getSetting('openai_api_key');
-      if (savedAIKey) setOpenAIKey(savedAIKey);
 
       const sUrl = await getSetting('supabase_url');
       if (sUrl) setSupabaseUrl(sUrl);
@@ -54,7 +52,6 @@ const Settings = ({ user, onUpgrade }) => {
   const handleSaveAPI = async () => {
     setIsSaving(true);
     await saveSetting('resend_api_key', apiKey);
-    await saveSetting('openai_api_key', openAIKey);
     await saveSetting('supabase_url', supabaseUrl);
     await saveSetting('supabase_anon_key', supabaseKey);
     setIsSaving(false);
@@ -212,36 +209,33 @@ const Settings = ({ user, onUpgrade }) => {
                 </div>
               </div>
 
-              <div className="api-card enterprise-card mt-6">
+              <div className="api-card enterprise-card mt-6" style={{ background: geminiConnected ? 'linear-gradient(135deg, #f0fdf4, #dcfce7)' : undefined, borderColor: geminiConnected ? '#86efac' : undefined }}>
                 <div className="service-info">
-                  <div className="icon-box-sm text-primary"><Zap size={20} /></div>
+                  <div className="icon-box-sm" style={{ background: geminiConnected ? '#bbf7d0' : '#f1f5f9' }}>
+                    <Zap size={20} style={{ color: geminiConnected ? '#16a34a' : '#94a3b8' }} />
+                  </div>
                   <div className="text-box">
-                    <h4>OpenAI Intelligence</h4>
-                    <p>Powers AI Rate Assistant and project summaries.</p>
+                    <h4>Google Gemini AI</h4>
+                    <p>Powers AI Rate Analysis, Project Summaries, and Drawing Analysis.</p>
+                  </div>
+                  <div style={{ marginLeft: 'auto' }}>
+                    <span style={{
+                      padding: '0.35rem 0.85rem',
+                      borderRadius: '100px',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      background: geminiConnected ? '#16a34a' : '#ef4444',
+                      color: 'white'
+                    }}>
+                      {geminiConnected ? '✓ Connected' : '✗ No Key'}
+                    </span>
                   </div>
                 </div>
-                <div className="form-item mt-4">
-                  <label>OpenAI API Key</label>
-                  <div className="input-group-pass">
-                    <input
-                      type="password"
-                      value={openAIKey}
-                      onChange={(e) => setOpenAIKey(e.target.value)}
-                      placeholder="sk-xxxxxxxxxxxxxxxxxxxx"
-                      className="settings-input"
-                    />
+                {geminiConnected && (
+                  <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'rgba(22,163,74,0.08)', borderRadius: '8px', fontSize: '0.8125rem', color: '#15803d', fontWeight: 600 }}>
+                    ✓ Gemini API key loaded from environment — no configuration needed.
                   </div>
-                  <p className="input-hint">Get your key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer">platform.openai.com</a></p>
-                </div>
-                <div className="form-actions mt-4">
-                  <button
-                    className="btn-primary"
-                    onClick={handleSaveAPI}
-                    disabled={isSaving}
-                  >
-                    {isSaving ? 'Saving...' : 'Connect AI Engine'}
-                  </button>
-                </div>
+                )}
               </div>
 
               <div className="api-card enterprise-card mt-6">
@@ -297,10 +291,10 @@ const Settings = ({ user, onUpgrade }) => {
                     className="btn-primary-action"
                     onClick={async () => {
                       setIsSeeding(true);
-                      const success = await seedMarketData();
+                      const result = await seedMarketData();
                       setIsSeeding(false);
-                      if (success) alert('Market data seeded successfully!');
-                      else alert('Seeding failed. Check console for details.');
+                      if (result === true) alert('✅ Market data seeded successfully! All 43 materials loaded.');
+                      else alert('❌ Seeding failed:\n\n' + (result?.error || 'Unknown error — check browser console (F12)'));
                     }}
                     disabled={isSeeding}
                   >
@@ -367,22 +361,25 @@ const Settings = ({ user, onUpgrade }) => {
           border: none;
           background: transparent;
           color: var(--primary-600);
-          border-radius: var(--radius-sm);
+          border-radius: 10px;
           font-weight: 600;
           font-size: 0.875rem;
           text-align: left;
-          transition: all 0.2s;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          cursor: pointer;
         }
 
         .settings-tab:hover {
           background: var(--bg-main);
           color: var(--primary-900);
+          transform: translateX(4px);
         }
 
         .settings-tab.active {
-          background: white;
-          color: var(--accent-600);
-          box-shadow: var(--shadow-sm);
+          background: linear-gradient(135deg, #eff6ff, #dbeafe);
+          color: #2563eb;
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+          font-weight: 700;
         }
 
         .settings-content {
@@ -418,7 +415,7 @@ const Settings = ({ user, onUpgrade }) => {
         .avatar-large {
           width: 80px;
           height: 80px;
-          background: var(--accent-600);
+          background: linear-gradient(135deg, #2563eb, #7c3aed);
           color: white;
           border-radius: 50%;
           display: flex;
@@ -426,6 +423,7 @@ const Settings = ({ user, onUpgrade }) => {
           justify-content: center;
           font-size: 2rem;
           font-weight: 800;
+          box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
         }
 
         .grid-2 {
@@ -449,15 +447,16 @@ const Settings = ({ user, onUpgrade }) => {
 
         .settings-input {
           padding: 0.75rem;
-          border: 1px solid var(--border-medium);
-          border-radius: var(--radius-sm);
+          border: 1.5px solid var(--border-medium);
+          border-radius: 10px;
           font-size: 0.875rem;
+          transition: all 0.3s;
         }
 
         .settings-input:focus {
           outline: none;
-          border-color: var(--accent-400);
-          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+          border-color: var(--accent-500);
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1), 0 4px 12px rgba(37, 99, 235, 0.08);
         }
 
         .btn-primary {
@@ -494,13 +493,20 @@ const Settings = ({ user, onUpgrade }) => {
         .plan-details p { font-size: 0.875rem; color: var(--primary-500); }
 
         .btn-upgrade-glow {
-          background: var(--primary-950);
+          background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
           color: white;
           border: none;
           padding: 0.75rem 1.25rem;
-          border-radius: var(--radius-sm);
+          border-radius: 10px;
           font-weight: 700;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+          box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+
+        .btn-upgrade-glow:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 12px 30px rgba(0,0,0,0.3);
         }
 
         .limits-section {
@@ -555,6 +561,11 @@ const Settings = ({ user, onUpgrade }) => {
           align-items: center;
           font-size: 0.875rem;
           border-top: 1px solid var(--border-light);
+          transition: background 0.2s;
+        }
+
+        .table-row:hover {
+          background: var(--bg-main);
         }
 
         .badge-success {

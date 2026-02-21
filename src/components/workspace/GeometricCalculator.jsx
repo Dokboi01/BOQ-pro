@@ -257,23 +257,35 @@ const GeometricCalculator = ({ onApply, onClose }) => {
         .geo-calc-overlay {
           position: fixed;
           top: 0; left: 0; right: 0; bottom: 0;
-          background: rgba(15, 23, 42, 0.7);
-          backdrop-filter: blur(8px);
+          background: rgba(15, 23, 42, 0.75);
+          backdrop-filter: blur(12px);
           display: flex;
           align-items: center;
           justify-content: center;
           z-index: 2000;
+          animation: geo-fade 0.25s ease;
+        }
+
+        @keyframes geo-fade {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
 
         .geo-calc-modal {
-          width: 520px;
+          width: 540px;
           max-height: 90vh;
           background: white;
-          border-radius: 16px;
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+          border-radius: 20px;
+          box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.5);
           display: flex;
           flex-direction: column;
           border: 1px solid rgba(255,255,255,0.1);
+          animation: geo-pop 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes geo-pop {
+          from { transform: scale(0.95); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
         }
 
         .geo-header {
@@ -312,8 +324,8 @@ const GeometricCalculator = ({ onApply, onClose }) => {
         }
 
         .shape-btn span { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; }
-        .shape-btn:hover { border-color: #3b82f6; background: #f8fafc; }
-        .shape-btn.active { border-color: #3b82f6; background: #eff6ff; color: #3b82f6; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2); }
+        .shape-btn:hover { border-color: #3b82f6; background: #f8fafc; transform: translateY(-1px); }
+        .shape-btn.active { border-color: #3b82f6; background: linear-gradient(135deg, #eff6ff, #dbeafe); color: #2563eb; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2); transform: translateY(-1px); }
 
         .calc-body { padding: 1.5rem; overflow-y: auto; flex: 1; }
 
@@ -390,21 +402,21 @@ const GeometricCalculator = ({ onApply, onClose }) => {
 
         .btn-apply-main { 
             flex: 2;
-            background: #2563eb; 
+            background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%); 
             color: white; 
             border: none; 
-            padding: 0.75rem; 
-            border-radius: 8px; 
+            padding: 0.875rem; 
+            border-radius: 10px; 
             font-weight: 700; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
             gap: 0.5rem; 
             cursor: pointer; 
-            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
-            transition: all 0.2s;
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .btn-apply-main:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 20px 25px -5px rgba(37, 99, 235, 0.4); }
+        .btn-apply-main:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(37, 99, 235, 0.4); }
 
         .btn-close { border: none; background: transparent; color: white; opacity: 0.7; cursor: pointer; transition: all 0.2s; }
         .btn-close:hover { opacity: 1; transform: rotate(90deg); }

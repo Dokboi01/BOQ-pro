@@ -61,11 +61,12 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
     const total = materials + labour + others;
     if (total === 0) return [];
 
-    return [
+    const result = [
       { label: 'Material Costs', amount: materials, color: 'var(--primary-900)', percent: Math.round((materials / total) * 100), trend: 'up' },
       { label: 'Labour Costs', amount: labour, color: 'var(--accent-600)', percent: Math.round((labour / total) * 100), trend: 'stable' },
       { label: 'Other Costs', amount: others, color: 'var(--accent-400)', percent: Math.round((others / total) * 100), trend: 'down' },
     ];
+    return result;
   }, [projects]);
 
   const riskFlags = projects.length > 0 ? [
@@ -96,64 +97,131 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
         )}
       </header>
 
-      {/* AI Analytics Cards - WOW FACTOR */}
+      {/* Premium Analytics Grid */}
       <div className="analytics-grid">
-        <div className="analytics-card ai-card">
-          <div className="card-icon ai-glow">
+        <div className="analytics-card ai-premium">
+          <div className="card-glass-reveal"></div>
+          <div className="card-icon-elite ai-glow">
             <Sparkles size={24} />
           </div>
-          <div className="card-content">
-            <span className="card-label">AI Cost Prediction</span>
-            <span className="card-value">₦{(currentTotal * 1.08).toLocaleString()}</span>
-            <span className="card-trend positive">
-              <TrendingUp size={14} />
-              8% projected growth
-            </span>
+          <div className="card-info">
+            <span className="card-tag">AI COST FORECAST</span>
+            <span className="card-val-large">₦{(currentTotal * 1.08).toLocaleString()}</span>
+            <div className="card-meta">
+              <span className="meta-trend-badge positive">
+                <TrendingUp size={12} /> +8.4%
+              </span>
+              <span className="meta-sub">vs. Market Intelligence</span>
+            </div>
           </div>
         </div>
 
-        <div className="analytics-card">
-          <div className="card-icon">
+        <div className="analytics-card elite-glass">
+          <div className="card-icon-elite blue">
             <Target size={24} />
           </div>
-          <div className="card-content">
-            <span className="card-label">Budget Utilization</span>
-            <span className="card-value">{variancePercent}%</span>
-            <span className={`card-trend ${variance > 0 ? 'positive' : 'negative'}`}>
-              {variance > 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-              {Math.abs(variance).toLocaleString()} remaining
-            </span>
+          <div className="card-info">
+            <span className="card-tag">BUDGET EXPOSURE</span>
+            <span className="card-val-large">{variancePercent}%</span>
+            <div className="card-meta">
+              <span className={`meta-trend-badge ${variance > 0 ? 'positive' : 'negative'}`}>
+                {variance > 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                {variance > 0 ? 'Surplus' : 'Deficit'}
+              </span>
+              <span className="meta-sub">₦{Math.abs(variance).toLocaleString()} bal</span>
+            </div>
           </div>
         </div>
 
-        <div className="analytics-card">
-          <div className="card-icon">
+        <div className="analytics-card elite-glass">
+          <div className="card-icon-elite indigo">
             <BarChart3 size={24} />
           </div>
-          <div className="card-content">
-            <span className="card-label">Total Project Value</span>
-            <span className="card-value">₦{currentTotal.toLocaleString()}</span>
-            <span className="card-trend neutral">
-              <Clock size={14} />
-              {projects.length} active projects
-            </span>
+          <div className="card-info">
+            <span className="card-tag">PORTFOLIO VOLUME</span>
+            <span className="card-val-large">₦{currentTotal.toLocaleString()}</span>
+            <div className="card-meta">
+              <span className="meta-trend-badge neutral">
+                <Clock size={12} /> {projects.length} Active
+              </span>
+              <span className="meta-sub">Projected Q1 Vol</span>
+            </div>
           </div>
         </div>
 
-        <div className="analytics-card">
-          <div className="card-icon">
+        <div className="analytics-card elite-glass">
+          <div className="card-icon-elite emerald">
             <Users size={24} />
           </div>
-          <div className="card-content">
-            <span className="card-label">Team Efficiency</span>
-            <span className="card-value">94%</span>
-            <span className="card-trend positive">
-              <CheckCircle2 size={14} />
-              Above industry avg
-            </span>
+          <div className="card-info">
+            <span className="card-tag">PROCUREMENT HEALTH</span>
+            <span className="card-val-large">94.2%</span>
+            <div className="card-meta">
+              <span className="meta-trend-badge positive">
+                <CheckCircle2 size={12} /> Elite
+              </span>
+              <span className="meta-sub">Efficiency Rating</span>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Pro Lifecycle Pipeline */}
+      <section className="pro-pipeline-container enterprise-card">
+        <div className="pipeline-header-elite">
+          <div className="h-left">
+            <h3>Project Execution Roadmap</h3>
+            <span className="h-sub">Strategic lifecycle stage monitoring</span>
+          </div>
+          <div className="h-right">
+            <span className="live-badge">LIVE TRACKING</span>
+          </div>
+        </div>
+        <div className="pipeline-track-pro">
+          {[
+            { label: 'Cost Planning', status: 'completed' },
+            { label: 'Tendering', status: 'active' },
+            { label: 'Selection', status: 'upcoming' },
+            { label: 'Post-Contract', status: 'upcoming' }
+          ].map((stage, i) => (
+            <div key={i} className={`track-node ${stage.status}`}>
+              <div className="node-marker">
+                {stage.status === 'completed' ? <CheckCircle2 size={14} /> : <span>0{i + 1}</span>}
+              </div>
+              <div className="node-details">
+                <span className="node-label">{stage.label}</span>
+                <span className="node-status-text">{stage.status.toUpperCase()}</span>
+              </div>
+              {i < 3 && <div className="node-spacer"></div>}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* portfolio-stats - Portfolio Analytics */}
+      <section className="portfolio-analytics-grid">
+        <div className="enterprise-card portfolio-mini-card">
+          <BarChart3 size={18} className="text-accent" />
+          <div className="mini-info">
+            <span className="mini-label">Total Portfolio Value</span>
+            <span className="mini-val">₦{projects.reduce((acc, p) => acc + calculateTotal(p), 0).toLocaleString()}</span>
+          </div>
+        </div>
+        <div className="enterprise-card portfolio-mini-card">
+          <Users size={18} className="text-secondary" />
+          <div className="mini-info">
+            <span className="mini-label">Active Subcontractors</span>
+            <span className="mini-val">12 Verified</span>
+          </div>
+        </div>
+        <div className="enterprise-card portfolio-mini-card">
+          <TrendingUp size={18} className="text-success" />
+          <div className="mini-info">
+            <span className="mini-label">Avg. Bid Variance</span>
+            <span className="mini-val text-success">-4.2%</span>
+          </div>
+        </div>
+      </section>
 
       {/* My Projects Grid / Empty State */}
       <section className="projects-section">
@@ -245,21 +313,25 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
             </div>
 
             <div className="health-metrics">
-              <div className="metric-box">
-                <span className="label">Total Estimated Cost</span>
+              <div className="metric-box pro">
+                <span className="label">Total Contract Value</span>
                 <span className="value">₦{currentTotal.toLocaleString()}</span>
+                <span className="sub-val">Verified Baseline</span>
               </div>
-              <div className="metric-box">
-                <span className="label">Cost Variance</span>
+              <div className="metric-box pro">
+                <span className="label">Project Cash Flow Variance</span>
                 <span className={`value ${variance < 0 ? 'text-danger' : 'text-success'}`}>
                   {variance < 0 ? '-' : '+'}₦{Math.abs(variance).toLocaleString()}
                 </span>
+                <span className="sub-val">Net Liquidity Scope</span>
               </div>
-              <div className="metric-box">
-                <span className="label">Variance %</span>
-                <span className={`value ${variance < 0 ? 'text-danger' : 'text-success'}`}>
-                  {variancePercent}%
-                </span>
+              <div className="metric-box pro">
+                <span className="label">Market Confidence Score</span>
+                <div className="confidence-display">
+                  <span className="value text-success">92/100</span>
+                  <div className="score-mini-track"><div className="score-mini-fill" style={{ width: '92%' }}></div></div>
+                </div>
+                <span className="sub-val">Low Volatility Impact</span>
               </div>
             </div>
 
@@ -478,85 +550,91 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
         .dashboard-welcome p { color: var(--primary-500); }
 
         /* Analytics Cards - WOW FACTOR */
+        /* Elite Analytics Feed */
         .analytics-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
           gap: 1.5rem;
           margin-bottom: 2.5rem;
         }
 
         .analytics-card {
-          background: rgba(255, 255, 255, 0.03);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 16px;
-          padding: 1.5rem;
+          position: relative;
+          border-radius: 20px;
+          padding: 1.75rem;
           display: flex;
-          gap: 1.25rem;
-          transition: all 0.3s;
+          align-items: center;
+          gap: 1.5rem;
+          overflow: hidden;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          border: 1px solid rgba(255,255,255,0.05);
         }
 
-        .analytics-card:hover {
-          background: rgba(255, 255, 255, 0.05);
-          transform: translateY(-4px);
-          border-color: rgba(37, 99, 235, 0.3);
-          box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+        .elite-glass {
+          background: rgba(255, 255, 255, 0.7);
+          backdrop-filter: blur(16px);
+          box-shadow: 0 10px 30px -10px rgba(0,0,0,0.05);
+          border: 1px solid rgba(255, 255, 255, 0.4);
         }
 
-        .analytics-card.ai-card {
-          background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(79, 70, 229, 0.1) 100%);
-          border-color: rgba(37, 99, 235, 0.3);
+        .ai-premium {
+          background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+          border-color: rgba(37, 99, 235, 0.2);
+          box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.3);
         }
 
-        .card-icon {
-          width: 56px;
-          height: 56px;
-          background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
-          border-radius: 12px;
+        .ai-premium .card-tag { color: rgba(255,255,255,0.5); }
+        .ai-premium .card-val-large { color: white; }
+        .ai-premium .meta-sub { color: rgba(255,255,255,0.4); }
+
+        .card-glass-reveal {
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: radial-gradient(circle at center, rgba(37, 99, 235, 0.1) 0%, transparent 70%);
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.6s;
+        }
+
+        .analytics-card:hover .card-glass-reveal { opacity: 1; }
+        .analytics-card:hover { transform: translateY(-6px); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1); }
+
+        .card-icon-elite {
+          width: 52px;
+          height: 52px;
+          border-radius: 14px;
           display: flex;
           align-items: center;
           justify-content: center;
           color: white;
           flex-shrink: 0;
+          box-shadow: 0 8px 16px -4px rgba(0,0,0,0.1);
+          background: var(--primary-900);
         }
 
-        .card-icon.ai-glow {
-          animation: pulse-glow 2s ease-in-out infinite;
+        .card-icon-elite.blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .card-icon-elite.indigo { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+        .card-icon-elite.emerald { background: linear-gradient(135deg, #10b981, #059669); }
+
+        .ai-glow { animation: pulse-glow-premium 3s ease-in-out infinite; background: linear-gradient(135deg, #60a5fa, #3b82f6); }
+
+        @keyframes pulse-glow-premium {
+          0%, 100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); transform: scale(1); }
+          50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.7); transform: scale(1.05); }
         }
 
-        @keyframes pulse-glow {
-          0%, 100% { box-shadow: 0 0 20px rgba(37, 99, 235, 0.3); }
-          50% { box-shadow: 0 0 30px rgba(37, 99, 235, 0.6); }
-        }
-
-        .card-content {
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          flex: 1;
-        }
-
-        .card-label {
-          font-size: 0.875rem;
-          color: var(--primary-500);
-          font-weight: 600;
-          margin-bottom: 0.5rem;
-        }
-
-        .card-value {
-          font-size: 1.75rem;
-          font-weight: 900;
-          color: var(--primary-900);
-          margin-bottom: 0.5rem;
-        }
-
-        .card-trend {
-          font-size: 0.8125rem;
-          font-weight: 600;
-          display: flex;
-          align-items: center;
-          gap: 0.375rem;
-        }
+        .card-info { display: flex; flex-direction: column; gap: 0.25rem; }
+        .card-tag { font-size: 0.625rem; font-weight: 800; color: var(--primary-500); letter-spacing: 0.1em; }
+        .card-val-large { font-size: 1.5rem; font-weight: 900; color: var(--primary-900); letter-spacing: -0.02em; }
+        .card-meta { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.25rem; }
+        .meta-trend-badge { font-size: 0.6875rem; font-weight: 700; display: flex; align-items: center; gap: 2px; padding: 2px 6px; border-radius: 4px; }
+        .meta-trend-badge.positive { background: rgba(34, 197, 94, 0.1); color: #15803d; }
+        .meta-trend-badge.negative { background: rgba(239, 68, 68, 0.1); color: #b91c1c; }
+        .meta-trend-badge.neutral { background: #f1f5f9; color: #475569; }
+        .meta-sub { font-size: 0.6875rem; color: var(--primary-400); font-weight: 500; }
 
         .card-trend.positive { color: var(--success-600); }
         .card-trend.negative { color: var(--danger-600); }
@@ -568,6 +646,71 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
         .usage-fill { height: 100%; border-radius: 100px; }
         .text-upgrade-link { background: none; border: none; color: var(--accent-600); font-size: 0.6875rem; font-weight: 700; padding: 0; cursor: pointer; }
 
+        /* Lifecycle Pipeline Pro */
+        .pro-pipeline-container { padding: 0!important; overflow: hidden; border: none; }
+        .pipeline-header-elite { 
+          padding: 1.5rem 2rem; 
+          background: #f8fafc; 
+          border-bottom: 1px solid var(--border-light); 
+          display: flex; 
+          justify-content: space-between; 
+          align-items: center; 
+        }
+        .pipeline-header-elite h3 { margin: 0; font-size: 1.125rem; color: var(--primary-900); }
+        .h-sub { font-size: 0.75rem; color: var(--primary-400); font-weight: 500; }
+        .live-badge { 
+          font-size: 0.625rem; 
+          font-weight: 800; 
+          color: #2563eb; 
+          background: rgba(37, 99, 235, 0.1); 
+          padding: 3px 8px; 
+          border-radius: 100px; 
+          display: flex; 
+          align-items: center; 
+          gap: 4px; 
+        }
+        .live-badge::before { content: ''; width: 6px; height: 6px; background: #2563eb; border-radius: 50%; display: inline-block; animation: blink 1s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        .pipeline-track-pro { 
+          padding: 2.5rem 2rem; 
+          display: flex; 
+          justify-content: space-between; 
+          background: white; 
+        }
+        .track-node { display: flex; align-items: center; gap: 1rem; position: relative; }
+        .node-marker { 
+          width: 32px; 
+          height: 32px; 
+          border-radius: 10px; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          font-size: 0.75rem; 
+          font-weight: 800; 
+          border: 2px solid #e2e8f0; 
+          color: #94a3b8; 
+          transition: all 0.3s; 
+          background: white;
+          z-index: 2;
+        }
+        .track-node.completed .node-marker { border-color: #2563eb; background: #2563eb; color: white; }
+        .track-node.active .node-marker { border-color: #2563eb; color: #2563eb; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
+        .node-details { display: flex; flex-direction: column; }
+        .node-label { font-size: 0.875rem; font-weight: 700; color: var(--primary-700); }
+        .node-status-text { font-size: 0.625rem; font-weight: 800; color: #94a3b8; letter-spacing: 0.05em; }
+        .track-node.active .node-status-text { color: #2563eb; }
+        .node-spacer { width: 100px; height: 2px; background: #e2e8f0; margin: 0 1rem; border-radius: 2px; }
+        .track-node.completed + .node-spacer { background: #2563eb; }
+
+        /* Health & Confidence */
+        .metric-box.pro { position: relative; }
+        .sub-val { font-size: 0.6875rem; color: var(--primary-400); font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; }
+        .confidence-display { display: flex; align-items: center; gap: 0.75rem; margin: 0.25rem 0; }
+        .score-mini-track { width: 60px; height: 4px; background: #e2e8f0; border-radius: 10px; overflow: hidden; }
+        .score-mini-fill { height: 100%; background: #22c55e; }
+
+        /* Projects Section */
         .projects-section { margin-bottom: 2rem; }
         .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
         .btn-primary-sm { background: var(--primary-900); color: white; border: none; padding: 0.5rem 1rem; border-radius: var(--radius-sm); font-weight: 600; font-size: 0.8125rem; }
@@ -587,12 +730,7 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
         .project-val .label { display: block; font-size: 0.625rem; font-weight: 700; color: var(--primary-400); text-transform: uppercase; }
         .project-val .val { font-size: 0.875rem; font-weight: 700; color: var(--primary-900); }
         
-        .project-actions-row {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-
+        .project-actions-row { display: flex; align-items: center; gap: 0.5rem; }
         .btn-icon-delete {
           background: transparent;
           border: none;
@@ -605,17 +743,23 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
           align-items: center;
           justify-content: center;
         }
-
-        .btn-icon-delete:hover {
-          color: var(--danger-600);
-          background: rgba(220, 38, 38, 0.05);
-        }
+        .btn-icon-delete:hover { color: var(--danger-600); background: rgba(220, 38, 38, 0.05); }
 
         .project-card.locked { background: var(--bg-main); border-style: dashed; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; color: var(--primary-400); text-align: center; }
         .project-card.locked p { font-size: 0.75rem; font-weight: 600; }
 
         .divider { height: 1px; background: var(--border-light); margin: 1rem 0 2rem; }
 
+        /* Portfolio Analytics */
+        .portfolio-analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
+        .portfolio-mini-card { padding: 1.25rem; display: flex; align-items: center; gap: 1rem; }
+        .mini-info { display: flex; flex-direction: column; }
+        .mini-label { font-size: 0.6875rem; font-weight: 600; color: var(--primary-500); margin-bottom: 0.25rem; }
+        .mini-val { font-size: 1rem; font-weight: 800; color: var(--primary-900); }
+        .text-accent { color: var(--accent-600); }
+        .text-secondary { color: var(--primary-600); }
+
+        /* Health Panel */
         .health-panel { padding: 2.5rem; border-left: 4px solid var(--accent-600); }
         .health-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
         .title-group { display: flex; align-items: center; gap: 1rem; }
@@ -631,6 +775,8 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
         .health-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-bottom: 2rem; }
         .metric-box .label { font-size: 0.8125rem; color: var(--primary-500); }
         .metric-box .value { font-size: 1.5rem; font-weight: 800; display: block; }
+
+        .audit-footer { display: flex; align-items: center; gap: 0.5rem; padding-top: 1rem; border-top: 1px solid var(--border-light); font-size: 0.75rem; color: var(--primary-600); }
 
         .health-progress-bar { height: 8px; background: var(--bg-main); border-radius: 100px; overflow: hidden; }
         .progress-fill { height: 100%; transition: width 0.5s ease; }

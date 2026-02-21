@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+import RateAnalysisModal from './RateAnalysisModal';
+import GeometricCalculator from './GeometricCalculator';
+import BidManagerModal from './BidManagerModal';
+import { calculateResourceRequirement, getRegionalModifier } from '../../utils/aiService';
 import {
   Plus,
   Trash2,
@@ -14,13 +18,19 @@ import {
   TrendingUp,
   TrendingDown,
   Zap,
-  Globe
+  Globe,
+  Gavel,
+  Trophy,
+  Activity,
+  Percent,
+  ClipboardCheck,
+  AlertTriangle,
+  Pencil,
+  Sparkles,
+  Globe2
 } from 'lucide-react';
-import RateAnalysisModal from './RateAnalysisModal';
-import GeometricCalculator from './GeometricCalculator';
-import { calculateResourceRequirement, getRegionalModifier } from '../../utils/aiService';
 
-const SmoothInput = ({ value, onChange, className, disabled, type = "number" }) => {
+const SmoothInput = ({ value, onChange, className, disabled, type = "number", source }) => {
   const [localValue, setLocalValue] = React.useState(value);
 
   React.useEffect(() => {
@@ -44,16 +54,26 @@ const SmoothInput = ({ value, onChange, className, disabled, type = "number" }) 
     }
   };
 
+  const getSourceIcon = () => {
+    if (source === 'manual') return <Pencil size={10} className="source-icon edited" title="Manually Edited" />;
+    if (source === 'calculated') return <Sparkles size={10} className="source-icon calculated" title="Calculated by AI/Engine" />;
+    if (source === 'benchmark') return <Globe2 size={10} className="source-icon benchmark" title="Market Benchmark" />;
+    return null;
+  };
+
   return (
-    <input
-      type={type}
-      value={localValue}
-      onChange={handleChange}
-      onBlur={handleBlur}
-      onKeyDown={handleKeyDown}
-      className={className}
-      disabled={disabled}
-    />
+    <div className="smooth-input-container">
+      <input
+        type={type}
+        value={localValue}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        className={className}
+        disabled={disabled}
+      />
+      {getSourceIcon()}
+    </div>
   );
 };
 
@@ -61,7 +81,9 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
   const [sections, setSections] = useState(project?.sections || []);
   const [analyzingItem, setAnalyzingItem] = useState(null);
   const [calculatingQtyForItem, setCalculatingQtyForItem] = useState(null);
+  const [biddingItem, setBiddingItem] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState('estimation'); // 'estimation' or 'valuation'
 
   // Sync state with props when project changes
   React.useEffect(() => {
@@ -76,34 +98,72 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
 
   const handleRateApply = (newRate, breakdown) => {
     if (analyzingItem) {
-      updateItem(analyzingItem.sectionId, analyzingItem.item.id, 'rate', newRate, breakdown);
-      updateItem(analyzingItem.sectionId, analyzingItem.item.id, 'useBenchmark', false);
+      updateItem(analyzingItem.sectionId, analyzingItem.item.id, {
+        rate: newRate,
+        useBenchmark: false,
+        rateSource: 'calculated'
+      }, breakdown);
       setAnalyzingItem(null);
     }
   };
 
-  const updateItem = (sectionId, itemId, field, value, breakdown = null) => {
+  const updateItem = (sectionId, itemId, fieldOrUpdates, valueOrBreakdown = null, breakdown = null) => {
+    let updates = {};
+    let finalBreakdown = breakdown;
+
+    if (typeof fieldOrUpdates === 'string') {
+      updates[fieldOrUpdates] = valueOrBreakdown;
+      // Auto-tag manual source if updating value directly from UI
+      if (fieldOrUpdates === 'qty') updates.qtySource = 'manual';
+      if (fieldOrUpdates === 'rate') updates.rateSource = 'manual';
+    } else {
+      updates = fieldOrUpdates;
+      finalBreakdown = valueOrBreakdown;
+    }
+
     const updatedSections = sections.map(section => {
       if (section.id !== sectionId) return section;
       return {
         ...section,
         items: section.items.map(item => {
           if (item.id !== itemId) return item;
-          const updatedItem = { ...item, [field]: value };
+          const updatedItem = { ...item, ...updates };
 
-          if (breakdown) {
-            updatedItem.breakdown = breakdown;
+          if (finalBreakdown) {
+            updatedItem.breakdown = finalBreakdown;
           }
 
           // Recalculate total
-          const rateToUse = updatedItem.useBenchmark ? updatedItem.benchmark : updatedItem.rate;
+          const rateToUse = updatedItem.useBenchmark ? (updatedItem.benchmark * getRegionalModifier(project?.region || 'Lagos')) : updatedItem.rate;
           updatedItem.total = updatedItem.qty * rateToUse;
+
+          // Update valuation math if in valuation mode
+          if (updatedItem.qtyCompleted !== undefined) {
+            updatedItem.progressPercent = (updatedItem.qtyCompleted / updatedItem.qty) * 100;
+            updatedItem.totalDone = updatedItem.qtyCompleted * rateToUse;
+          }
 
           return updatedItem;
         })
       };
     });
 
+    setSections(updatedSections);
+    onUpdate(project.id, updatedSections);
+  };
+
+  const toggleVO = (sectionId, itemId) => {
+    const updatedSections = sections.map(section => {
+      if (section.id !== sectionId) return section;
+      return {
+        ...section,
+        items: section.items.map(item => {
+          if (item.id !== itemId) return item;
+          return { ...item, isVO: !item.isVO };
+        })
+      };
+    });
+    setSections(updatedSections);
     onUpdate(project.id, updatedSections);
   };
 
@@ -126,7 +186,9 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
       rate: 0,
       benchmark: 5000,
       total: 0,
-      useBenchmark: true
+      useBenchmark: true,
+      qtySource: 'manual',
+      rateSource: 'benchmark'
     };
 
     const updatedSections = sections.map(s => {
@@ -210,6 +272,20 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+        <div className="workspace-mode-switcher">
+          <button
+            className={`mode-btn ${viewMode === 'estimation' ? 'active' : ''}`}
+            onClick={() => setViewMode('estimation')}
+          >
+            <Calculator size={14} /> Estimation
+          </button>
+          <button
+            className={`mode-btn ${viewMode === 'valuation' ? 'active' : ''}`}
+            onClick={() => setViewMode('valuation')}
+          >
+            <Activity size={14} /> Site Valuation
+          </button>
+        </div>
         <div className="workspace-actions">
           <button
             className="btn-secondary"
@@ -234,11 +310,18 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
             <tr>
               <th style={{ width: '40px' }}>#</th>
               <th>Work Description</th>
-              <th style={{ width: '80px' }}>Unit</th>
-              <th style={{ width: '80px' }}>Qty</th>
-              <th style={{ width: '180px' }}>Rate Strategy</th>
-              <th style={{ width: '140px' }}>Rate (₦)</th>
-              <th style={{ width: '140px' }}>Total (₦)</th>
+              <th style={{ width: '80px' }}>UNIT</th>
+              <th style={{ width: '80px' }}>QTY</th>
+              {viewMode === 'valuation' ? (
+                <>
+                  <th style={{ width: '120px' }}>QTY DONE</th>
+                  <th style={{ width: '140px' }}>PROGRESS (%)</th>
+                </>
+              ) : (
+                <th style={{ width: '180px' }}>RATE STRATEGY</th>
+              )}
+              <th style={{ width: '140px' }}>RATE (₦)</th>
+              <th style={{ width: '140px' }}>TOTAL (₦)</th>
               <th style={{ width: '40px' }}></th>
             </tr>
           </thead>
@@ -275,7 +358,10 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                         <tr key={item.id} className={`item-row ${outlier ? 'outlier-warning' : ''}`}>
                           <td className="text-subtle">{idx + 1}</td>
                           <td className="description-cell">
-                            {item.description}
+                            <div className="item-description-wrapper">
+                              {item.isVO && <span className="vo-badge" title="Variation Order">VO</span>}
+                              <span className="item-desc-text">{item.description}</span>
+                            </div>
                             <div className="item-intelligence-tags">
                               {outlier && (
                                 <div className="outlier-tag">
@@ -292,6 +378,15 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                                   </div>
                                 );
                               })()}
+                              {(() => {
+                                const bestBid = item.bids?.find(b => b.selected);
+                                if (!bestBid) return null;
+                                return (
+                                  <div className="intelligence-tag gold">
+                                    <Trophy size={10} /> {bestBid.subcontractor}
+                                  </div>
+                                );
+                              })()}
                             </div>
                           </td>
                           <td>{item.unit}</td>
@@ -301,6 +396,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                                 value={item.qty}
                                 onChange={(val) => updateItem(section.id, item.id, 'qty', val)}
                                 className="inline-input"
+                                source={item.qtySource}
                               />
                               <button
                                 className="btn-geo-trigger"
@@ -311,22 +407,45 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                               </button>
                             </div>
                           </td>
-                          <td>
-                            <div className="rate-source-toggle">
-                              <button
-                                className={`toggle-btn ${!item.useBenchmark ? 'active' : ''}`}
-                                onClick={() => updateItem(section.id, item.id, 'useBenchmark', false)}
-                              >
-                                Custom
-                              </button>
-                              <button
-                                className={`toggle-btn shadow-sm ${item.useBenchmark ? 'active' : ''}`}
-                                onClick={() => updateItem(section.id, item.id, 'useBenchmark', true)}
-                              >
-                                Benchmark
-                              </button>
-                            </div>
-                          </td>
+                          {viewMode === 'valuation' ? (
+                            <>
+                              <td className="valuation-cell">
+                                <SmoothInput
+                                  value={item.qtyCompleted || 0}
+                                  onChange={(val) => updateItem(section.id, item.id, 'qtyCompleted', val)}
+                                  className="inline-input text-accent font-bold"
+                                />
+                              </td>
+                              <td className="valuation-cell">
+                                <div className="progress-mini-bar">
+                                  <div className="progress-fill" style={{ width: `${Math.min(100, item.progressPercent || 0)}%` }}></div>
+                                  <span className="percent-text">{Math.round(item.progressPercent || 0)}%</span>
+                                </div>
+                              </td>
+                            </>
+                          ) : (
+                            <td>
+                              <div className="rate-source-toggle">
+                                <button
+                                  className={`toggle-btn shadow-sm ${!item.useBenchmark ? 'active' : ''}`}
+                                  onClick={() => updateItem(section.id, item.id, 'useBenchmark', false)}
+                                >
+                                  Custom
+                                </button>
+                                <button
+                                  className={`toggle-btn shadow-sm ${item.useBenchmark ? 'active' : ''}`}
+                                  onClick={() => {
+                                    updateItem(section.id, item.id, {
+                                      useBenchmark: true,
+                                      rateSource: 'benchmark'
+                                    });
+                                  }}
+                                >
+                                  Benchmark
+                                </button>
+                              </div>
+                            </td>
+                          )}
                           <td className="rate-cell">
                             <div className="rate-input-wrapper">
                               <span className="currency-prefix">₦</span>
@@ -335,6 +454,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                                 onChange={(val) => updateItem(section.id, item.id, 'rate', val)}
                                 className="inline-input rate-input"
                                 disabled={item.useBenchmark}
+                                source={item.useBenchmark ? 'benchmark' : (item.rateSource || 'manual')}
                               />
                               <button
                                 className="btn-analysis-trigger"
@@ -349,9 +469,28 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                             ₦{(item.qty * (item.useBenchmark ? (item.benchmark * getRegionalModifier(project?.region || 'Lagos')) : item.rate)).toLocaleString()}
                           </td>
                           <td className="actions-cell">
-                            <button className="btn-icon-danger" onClick={() => onDelete(project.id, section.id, item.id)} title="Delete Item">
-                              <Trash2 size={14} />
-                            </button>
+                            {viewMode === 'valuation' ? (
+                              <button
+                                className={`btn-vo-toggle ${item.isVO ? 'active' : ''}`}
+                                onClick={() => toggleVO(section.id, item.id)}
+                                title={item.isVO ? "Remove VO Tag" : "Tag as Variation Order"}
+                              >
+                                <AlertTriangle size={14} />
+                              </button>
+                            ) : (
+                              <>
+                                <button
+                                  className={`btn-icon-action ${item.bids?.length > 0 ? 'active' : ''}`}
+                                  onClick={() => setBiddingItem({ sectionId: section.id, item })}
+                                  title="Market Bids & Leveling"
+                                >
+                                  <Gavel size={14} />
+                                </button>
+                                <button className="btn-icon-danger" onClick={() => onDelete(project.id, section.id, item.id)} title="Delete Item">
+                                  <Trash2 size={14} />
+                                </button>
+                              </>
+                            )}
                           </td>
                         </tr>
                       );
@@ -381,6 +520,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
       {analyzingItem && (
         <RateAnalysisModal
           item={analyzingItem.item}
+          structureType={project?.type}
           onClose={() => setAnalyzingItem(null)}
           onSave={handleRateApply}
         />
@@ -390,8 +530,28 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         <GeometricCalculator
           onClose={() => setCalculatingQtyForItem(null)}
           onApply={(newQty) => {
-            updateItem(calculatingQtyForItem.sectionId, calculatingQtyForItem.item.id, 'qty', newQty);
+            updateItem(calculatingQtyForItem.sectionId, calculatingQtyForItem.item.id, {
+              qty: newQty,
+              qtySource: 'calculated'
+            });
             setCalculatingQtyForItem(null);
+          }}
+        />
+      )}
+
+      {biddingItem && (
+        <BidManagerModal
+          item={biddingItem.item}
+          onClose={() => setBiddingItem(null)}
+          onSave={(updatedBids) => {
+            const selectedBid = updatedBids.find(b => b.selected);
+            updateItem(biddingItem.sectionId, biddingItem.item.id, {
+              bids: updatedBids,
+              rate: selectedBid ? selectedBid.rate : biddingItem.item.rate,
+              useBenchmark: selectedBid ? false : biddingItem.item.useBenchmark,
+              rateSource: selectedBid ? 'calculated' : biddingItem.item.rateSource
+            });
+            setBiddingItem(null);
           }}
         />
       )}
@@ -407,7 +567,8 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         }
 
         .intelligence-banner {
-          background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+          background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+          backdrop-filter: blur(12px);
           color: white;
           padding: 1.25rem 2rem;
           display: flex;
@@ -415,7 +576,26 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           align-items: center;
           border: 1px solid rgba(255,255,255,0.1);
           border-radius: 12px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.2);
         }
+
+        .smooth-input-container {
+          position: relative;
+          display: flex;
+          align-items: center;
+          width: 100%;
+        }
+
+        .source-icon {
+          position: absolute;
+          right: 4px;
+          opacity: 0.6;
+          pointer-events: none;
+        }
+
+        .source-icon.edited { color: #f59e0b; }
+        .source-icon.calculated { color: #8b5cf6; }
+        .source-icon.benchmark { color: #10b981; }
 
         .banner-left { display: flex; align-items: center; gap: 1rem; }
         .banner-title { font-weight: 800; font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.05em; display: block; }
@@ -463,10 +643,27 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         .b-label { font-size: 0.625rem; color: rgba(255,255,255,0.5); font-weight: 700; text-transform: uppercase; }
         .b-val { font-size: 1rem; font-weight: 900; color: white; }
 
-        .workspace-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
+        .boq-intelligence-table tr.item-row:hover {
+          background: #f8fafc;
+        }
+
+        .boq-intelligence-table td {
+          padding: 0.75rem 1rem;
+          border-bottom: 1px solid var(--border-light);
+          font-size: 0.8125rem;
+          transition: background 0.2s;
+        }
+
+        .total-cell, .grand-total-value {
+          font-family: 'Inter', system-ui, sans-serif;
+          font-weight: 700;
+          color: var(--primary-900);
+        }
+
+        .inline-input:focus {
+          background: #fff;
+          border-color: var(--accent-600);
+          box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
         }
 
         .search-bar {
@@ -645,6 +842,116 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           padding: 2px;
           border-radius: 6px;
           width: fit-content;
+        }
+
+        .workspace-mode-switcher {
+          background: #f1f5f9;
+          padding: 3px;
+          border-radius: 10px;
+          display: flex;
+          gap: 2px;
+          border: 1px solid var(--border-medium);
+        }
+
+        .workspace-mode-switcher .mode-btn {
+          padding: 0.5rem 1.25rem;
+          border-radius: 8px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          border: none;
+          background: transparent;
+          color: var(--primary-500);
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .workspace-mode-switcher .mode-btn.active {
+          background: white;
+          color: var(--primary-900);
+          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .item-description-wrapper {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .vo-badge {
+          background: #ef4444;
+          color: white;
+          font-size: 9px;
+          font-weight: 900;
+          padding: 2px 5px;
+          border-radius: 4px;
+          letter-spacing: 0.05em;
+          box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+        }
+
+        .item-desc-text {
+          font-weight: 600;
+          color: var(--primary-900);
+        }
+
+        .valuation-cell {
+          background: rgba(37, 99, 235, 0.015);
+        }
+
+        .progress-mini-bar {
+          width: 100%;
+          height: 16px;
+          background: #e2e8f0;
+          border-radius: 100px;
+          position: relative;
+          overflow: hidden;
+          border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .progress-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #22c55e, #16a34a);
+          box-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
+          transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .percent-text {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          font-size: 9px;
+          font-weight: 900;
+          color: #064e3b;
+          text-shadow: 0 0 2px rgba(255,255,255,0.8);
+        }
+
+        .text-accent { color: var(--accent-600); }
+        .font-bold { font-weight: 800; }
+
+        .btn-vo-toggle {
+          background: transparent;
+          border: 1px solid var(--border-medium);
+          padding: 6px;
+          border-radius: 6px;
+          color: var(--primary-300);
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .btn-vo-toggle:hover {
+          color: #ef4444;
+          background: #fef2f2;
+          border-color: #fecaca;
+        }
+
+        .btn-vo-toggle.active {
+          background: #ef4444;
+          color: white;
+          border-color: #dc2626;
+          box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
         }
 
         .toggle-btn {

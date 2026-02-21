@@ -44,11 +44,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
       delta: '+4.2%',
       history: [11000, 11500, 11800, 12500],
       usage: 'Primary binder for all concrete works, plastering, and block making.',
-      regions: {
-        'Lagos': 12500,
-        'Abuja': 13200,
-        'Port Harcourt': 12900
-      }
+      regions: { 'Lagos': 12500, 'Abuja': 13200, 'Port Harcourt': 12900, 'Kano': 13800, 'Enugu': 13000 }
     },
     {
       id: 2,
@@ -62,7 +58,8 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
       lastUpdated: '1 week ago',
       delta: '-2.1%',
       history: [1250000, 1220000, 1200000, 1150000],
-      usage: 'High-tensile reinforcement for structural concrete elements.'
+      usage: 'High-tensile reinforcement for structural concrete elements.',
+      regions: { 'Lagos': 1150000, 'Abuja': 1180000, 'Port Harcourt': 1175000, 'Kano': 1200000 }
     },
     {
       id: 3,
@@ -76,10 +73,26 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
       lastUpdated: '3 days ago',
       delta: '0.0%',
       history: [27500, 28000, 28000, 28000],
-      usage: 'Essential for concrete production and mortar mixes.'
+      usage: 'Essential for concrete production and mortar mixes.',
+      regions: { 'Lagos': 28000, 'Abuja': 30000, 'Port Harcourt': 29000, 'Ibadan': 26000 }
     },
     {
       id: 4,
+      name: 'Granite (20mm)',
+      category: 'Aggregates',
+      price: 35000,
+      unit: 'Ton',
+      trend: 'up',
+      benchmark: 32000,
+      range: '₦30,000 - ₦38,000',
+      lastUpdated: '2 days ago',
+      delta: '+3.5%',
+      history: [30000, 31000, 32000, 35000],
+      usage: 'Coarse aggregate for structural concrete mixing.',
+      regions: { 'Lagos': 35000, 'Abuja': 37000, 'Port Harcourt': 36000, 'Ibadan': 32000 }
+    },
+    {
+      id: 5,
       name: 'Bitumen (Cold Mix)',
       category: 'Surface',
       price: 185000,
@@ -90,15 +103,140 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
       lastUpdated: 'Yesterday',
       delta: '+7.5%',
       history: [165000, 170000, 172000, 185000],
-      usage: 'Asphaltic surface dressing for road pavements.'
-    }
+      usage: 'Asphaltic surface dressing for road pavements.',
+      regions: { 'Lagos': 185000, 'Abuja': 192000, 'Port Harcourt': 189000 }
+    },
+    {
+      id: 6,
+      name: 'Laterite (Filling)',
+      category: 'Earthworks',
+      price: 12000,
+      unit: 'm³',
+      trend: 'stable',
+      benchmark: 12000,
+      range: '₦10,000 - ₦14,000',
+      lastUpdated: '4 days ago',
+      delta: '0.0%',
+      history: [11500, 12000, 12000, 12000],
+      usage: 'Backfilling and sub-grade material for road construction.',
+      regions: { 'Lagos': 12000, 'Abuja': 13000, 'Port Harcourt': 12500, 'Ibadan': 11000 }
+    },
+    {
+      id: 7,
+      name: '9-Inch Hollow Block',
+      category: 'Masonry',
+      price: 650,
+      unit: 'Block',
+      trend: 'up',
+      benchmark: 580,
+      range: '₦580 - ₦720',
+      lastUpdated: '1 day ago',
+      delta: '+5.8%',
+      history: [520, 550, 580, 650],
+      usage: 'Load-bearing and non-load-bearing external and internal walls.',
+      regions: { 'Lagos': 650, 'Abuja': 700, 'Port Harcourt': 680, 'Kano': 620, 'Ibadan': 600 }
+    },
+    {
+      id: 8,
+      name: 'Plywood Formwork (18mm)',
+      category: 'Timber',
+      price: 8500,
+      unit: 'Sheet',
+      trend: 'up',
+      benchmark: 7800,
+      range: '₦7,500 - ₦9,500',
+      lastUpdated: '3 days ago',
+      delta: '+5.1%',
+      history: [7000, 7500, 7800, 8500],
+      usage: 'Concrete formwork for slabs, beams, columns, and walls.',
+      regions: { 'Lagos': 8500, 'Abuja': 9000, 'Port Harcourt': 8800 }
+    },
+    {
+      id: 9,
+      name: 'Aluminium Long-Span Roofing (0.55mm)',
+      category: 'Roofing',
+      price: 3800,
+      unit: 'm²',
+      trend: 'up',
+      benchmark: 3500,
+      range: '₦3,300 - ₦4,200',
+      lastUpdated: '2 days ago',
+      delta: '+4.5%',
+      history: [3100, 3300, 3500, 3800],
+      usage: 'Industrial and commercial roofing; low-pitch roof covering.',
+      regions: { 'Lagos': 3800, 'Abuja': 4000, 'Port Harcourt': 3900 }
+    },
+    {
+      id: 10,
+      name: 'uPVC Pipe (4-inch, Class B)',
+      category: 'MEP',
+      price: 6500,
+      unit: 'Length',
+      trend: 'up',
+      benchmark: 5900,
+      range: '₦5,600 - ₦7,200',
+      lastUpdated: '5 days ago',
+      delta: '+5.3%',
+      history: [5200, 5600, 5900, 6500],
+      usage: 'Foul and storm water drainage, sewerage reticulation piping.',
+      regions: { 'Lagos': 6500, 'Abuja': 6900, 'Port Harcourt': 6700 }
+    },
+    {
+      id: 11,
+      name: 'Emulsion Paint (20L)',
+      category: 'Finishes',
+      price: 28500,
+      unit: 'Bucket',
+      trend: 'up',
+      benchmark: 26000,
+      range: '₦24,000 - ₦31,000',
+      lastUpdated: '1 day ago',
+      delta: '+3.9%',
+      history: [23000, 24500, 26000, 28500],
+      usage: 'Interior wall and ceiling paint finish — premium washable emulsion.',
+      regions: { 'Lagos': 28500, 'Abuja': 30000, 'Port Harcourt': 29500 }
+    },
+    {
+      id: 12,
+      name: 'Bituminous Membrane (3mm SBS)',
+      category: 'Waterproofing',
+      price: 3800,
+      unit: 'm²',
+      trend: 'up',
+      benchmark: 3400,
+      range: '₦3,200 - ₦4,200',
+      lastUpdated: '6 days ago',
+      delta: '+5.6%',
+      history: [3000, 3200, 3400, 3800],
+      usage: 'Basement tanking, flat roof waterproofing, and below-slab barrier membrane.',
+      regions: { 'Lagos': 3800, 'Abuja': 4100, 'Port Harcourt': 4000 }
+    },
+    {
+      id: 13,
+      name: 'Precast Concrete Pile (300mm)',
+      category: 'Geotechnical',
+      price: 85000,
+      unit: 'm',
+      trend: 'up',
+      benchmark: 78000,
+      range: '₦74,000 - ₦92,000',
+      lastUpdated: '1 week ago',
+      delta: '+5.3%',
+      history: [70000, 74000, 78000, 85000],
+      usage: 'Foundation piling for bridges, high-rise buildings, and soft-ground structures.',
+      regions: { 'Lagos': 85000, 'Abuja': 90000, 'Port Harcourt': 88000 }
+    },
   ], []);
 
   const defaultMarketIndices = React.useMemo(() => [
-    { label: 'Overall CMCI', val: 142.5, delta: '+1.4%', trend: 'up' },
+    { label: 'Overall CMCI', val: 148.3, delta: '+2.1%', trend: 'up' },
     { label: 'Binder Index', val: 156.2, delta: '+3.2%', trend: 'up' },
     { label: 'Metal Index', val: 128.9, delta: '-0.8%', trend: 'down' },
     { label: 'Aggregates', val: 115.4, delta: '+0.2%', trend: 'up' },
+    { label: 'Masonry Index', val: 138.7, delta: '+5.5%', trend: 'up' },
+    { label: 'Surface & Roads', val: 162.4, delta: '+6.8%', trend: 'up' },
+    { label: 'MEP Index', val: 134.1, delta: '+3.7%', trend: 'up' },
+    { label: 'Finishes Index', val: 122.9, delta: '+1.9%', trend: 'up' },
   ], []);
 
   React.useEffect(() => {
@@ -481,6 +619,12 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                     display: flex;
                     flex-direction: column;
                     gap: 0.5rem;
+                    transition: all 0.3s;
+                    border-radius: 12px;
+                }
+
+                .intel-metric:hover {
+                    background: rgba(37, 99, 235, 0.03);
                 }
 
                 .metric-header {
@@ -520,7 +664,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
 
                 .index-grid {
                     display: grid;
-                    grid-template-columns: repeat(4, 1fr);
+                    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
                     gap: 1.5rem;
                 }
 
@@ -551,13 +695,19 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
 
                 .search-box-l {
                     background: white;
-                    border: 1px solid var(--border-medium);
-                    border-radius: 8px;
-                    padding: 0.625rem 1rem;
+                    border: 1.5px solid var(--border-medium);
+                    border-radius: 10px;
+                    padding: 0.75rem 1rem;
                     display: flex;
                     align-items: center;
                     gap: 0.75rem;
                     width: 400px;
+                    transition: all 0.3s;
+                }
+
+                .search-box-l:focus-within {
+                    border-color: var(--accent-500);
+                    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
                 }
 
                 .search-box-l input { border: none; outline: none; width: 100%; font-size: 0.875rem; }
@@ -585,10 +735,11 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 .mat-intel-card {
                     padding: 1.25rem;
                     cursor: pointer;
-                    transition: transform 0.2s;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    border-radius: 14px;
                 }
 
-                .mat-intel-card:hover { transform: translateY(-3px); border-color: var(--accent-600); }
+                .mat-intel-card:hover { transform: translateY(-4px); border-color: var(--accent-500); box-shadow: 0 12px 30px rgba(37, 99, 235, 0.1); }
 
                 .card-top-row { display: flex; justify-content: space-between; margin-bottom: 0.75rem; }
                 .cat-text { font-size: 0.6875rem; font-weight: 700; color: var(--primary-400); text-transform: uppercase; }
@@ -618,25 +769,39 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 .last-sync { color: var(--primary-400); }
                 .view-link { color: var(--accent-600); display: flex; align-items: center; gap: 0.25rem; }
 
-                /* Modal Styles */
                 .detail-modal-overlay {
                     position: fixed;
                     top: 0; left: 0; right: 0; bottom: 0;
-                    background: rgba(15, 23, 42, 0.7);
-                    backdrop-filter: blur(4px);
+                    background: rgba(15, 23, 42, 0.75);
+                    backdrop-filter: blur(12px);
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     z-index: 1000;
+                    animation: overlay-fade 0.25s ease;
+                }
+
+                @keyframes overlay-fade {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
                 }
 
                 .detail-modal {
                     width: 100%;
-                    max-width: 800px;
+                    max-width: 820px;
                     background: white;
                     padding: 0;
                     display: flex;
                     flex-direction: column;
+                    border-radius: 20px;
+                    overflow: hidden;
+                    box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.4);
+                    animation: modal-pop 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+
+                @keyframes modal-pop {
+                    from { transform: scale(0.95) translateY(10px); opacity: 0; }
+                    to { transform: scale(1) translateY(0); opacity: 1; }
                 }
 
                 .modal-header {
@@ -668,7 +833,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
 
                 .chart-bars { display: flex; width: 100%; justify-content: space-between; align-items: flex-end; }
                 .chart-bar-group { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
-                .bar { width: 40px; background: var(--accent-600); border-radius: 4px 4px 0 0; }
+                .bar { width: 40px; background: linear-gradient(180deg, #3b82f6, #2563eb); border-radius: 6px 6px 0 0; transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
                 .chart-bar-group span { font-size: 0.625rem; font-weight: 700; color: var(--primary-400); }
 
                 .bench-stats { display: flex; flex-direction: column; gap: 1rem; }

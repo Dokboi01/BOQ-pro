@@ -272,22 +272,28 @@ const PricingPage = ({ onSelectPlan, onBack, error }) => {
         }
 
         .pricing-card {
+          position: relative;
           padding: 3.5rem 2.5rem;
-          transition: all 0.3s ease;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
           display: flex;
           flex-direction: column;
         }
 
         .pricing-card:hover {
-          transform: translateY(-8px);
-          background: rgba(255, 255, 255, 0.05);
-          border-color: rgba(59, 130, 246, 0.4);
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+          transform: translateY(-10px);
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(59, 130, 246, 0.5);
+          box-shadow: 0 25px 50px -12px rgba(37, 99, 235, 0.3);
         }
 
         .pricing-card.popular {
-          border: 1px solid rgba(59, 130, 246, 0.5);
-          background: rgba(37, 99, 235, 0.05);
+          border: 2px solid rgba(59, 130, 246, 0.6);
+          background: rgba(37, 99, 235, 0.08);
+          box-shadow: 0 15px 35px -10px rgba(37, 99, 235, 0.2);
+        }
+
+        .pricing-card.popular:hover {
+          box-shadow: 0 30px 60px -15px rgba(37, 99, 235, 0.4);
         }
 
         .popular-badge {
@@ -297,23 +303,36 @@ const PricingPage = ({ onSelectPlan, onBack, error }) => {
           transform: translate(-50%, -50%);
           background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
           color: white;
-          padding: 0.5rem 1.5rem;
+          padding: 0.625rem 1.75rem;
           border-radius: 100px;
           font-size: 0.75rem;
-          font-weight: 700;
-          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+          font-weight: 800;
+          letter-spacing: 0.05em;
+          box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+          animation: pulse-badge 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-badge {
+          0%, 100% { box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4); }
+          50% { box-shadow: 0 8px 30px rgba(37, 99, 235, 0.6); }
         }
 
         .plan-icon-container {
-          width: 56px;
-          height: 56px;
-          background: rgba(255, 255, 255, 0.05);
-          border-radius: 12px;
+          width: 64px;
+          height: 64px;
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
+          border: 1px solid rgba(59, 130, 246, 0.2);
+          border-radius: 16px;
           display: flex;
           align-items: center;
           justify-content: center;
           margin-bottom: 1.5rem;
-          color: #60a5fa;
+          transition: all 0.3s;
+        }
+
+        .pricing-card:hover .plan-icon-container {
+          transform: scale(1.1) rotate(-5deg);
+          box-shadow: 0 8px 20px rgba(59, 130, 246, 0.2);
         }
 
         .plan-name {

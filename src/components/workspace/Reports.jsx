@@ -11,14 +11,19 @@ import {
   Package,
   ExternalLink,
   Lock,
-  Mail as MailIcon
+  Mail as MailIcon,
+  ShieldCheck,
+  AlertTriangle,
+  History,
+  TrendingUp,
+  Landmark
 } from 'lucide-react';
 import { hasFeature, PLAN_NAMES } from '../../data/plans';
 import { sendReportEmail } from '../../utils/mailService';
 import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
-import { generateProjectSummary } from '../../utils/aiService';
+import { generateProjectSummary, getRegionalModifier } from '../../utils/aiService';
 
 const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
   const [activeReport, setActiveReport] = useState(null);
@@ -52,6 +57,22 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
       description: 'Aggregated list of all materials across all segments. Essential for site procurement and logistics planning.',
       icon: Package,
       tag: 'Operations'
+    },
+    {
+      id: 'ipc',
+      title: 'Interim Payment Certificate',
+      description: 'Formal financial certification of work completed. Calculates retention, advance recoveries, and net amount due.',
+      icon: ShieldCheck,
+      tag: 'Post-Contract',
+      isPremium: true
+    },
+    {
+      id: 'variations',
+      title: 'Variation Order Summary',
+      description: 'Tracks all additions and omissions to the original contract sum. Essential for final account reconciliation.',
+      icon: AlertTriangle,
+      tag: 'Post-Contract',
+      isPremium: true
     }
   ];
 
@@ -88,6 +109,39 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
       })
     };
   }, [boqData, calculateGrandTotal]);
+
+  const ipcStats = React.useMemo(() => {
+    let grossWorkDone = 0;
+    let voTotal = 0;
+
+    boqData.forEach(section => {
+      section.items.forEach(item => {
+        const rate = (item.useBenchmark ? (item.benchmark * getRegionalModifier(activeProject?.region || 'Lagos')) : item.rate);
+        grossWorkDone += (item.qtyCompleted || 0) * rate;
+        if (item.isVO) {
+          voTotal += (item.qty * rate);
+        }
+      });
+    });
+
+    const contractSum = calculateGrandTotal();
+    const retentionPercent = 0.05;
+    const retentionAmt = grossWorkDone * retentionPercent;
+    const netWorkDone = grossWorkDone - retentionAmt;
+    const advanceRecovery = grossWorkDone > (contractSum * 0.1) ? (grossWorkDone * 0.05) : 0;
+    const totalDue = netWorkDone - advanceRecovery;
+
+    return {
+      contractSum,
+      grossWorkDone,
+      voTotal,
+      retentionAmt,
+      netWorkDone,
+      advanceRecovery,
+      totalDue,
+      progressPercent: contractSum > 0 ? (grossWorkDone / contractSum) * 100 : 0
+    };
+  }, [boqData, activeProject, calculateGrandTotal]);
 
   const materialData = React.useMemo(() => {
     const agg = {};
@@ -600,6 +654,162 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
     </div>
   );
 
+  const renderVariationSummary = () => {
+    const voItems = boqData.flatMap(s => s.items.filter(i => i.isVO));
+
+    return (
+      <div className="report-preview-canvas enterprise-card view-fade-in">
+        <div className="report-header-premium">
+          <div className="header-main">
+            <h1 className="report-type-title">VARIATION ORDER (VO) SUMMARY</h1>
+            <h2 className="project-title-large">{projectInfo.title}</h2>
+          </div>
+          <div className="header-meta">
+            <div className="meta-item"><span className="label">DATE:</span> <span className="val">{projectInfo.date}</span></div>
+            <div className="meta-item"><span className="label">REF:</span> <span className="val">{projectInfo.ref}/VO</span></div>
+          </div>
+        </div>
+
+        <div className="vo-summary-stats">
+          <div className="v-stat-card">
+            <span className="v-label">ORIGINAL CONTRACT SUM</span>
+            <span className="v-val">₦{ipcStats.contractSum.toLocaleString()}</span>
+          </div>
+          <div className="v-stat-card highlight">
+            <span className="v-label">TOTAL VARIATION VALUE</span>
+            <span className="v-val">₦{ipcStats.voTotal.toLocaleString()}</span>
+          </div>
+        </div>
+
+        <table className="professional-report-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Description of Variation</th>
+              <th>Unit</th>
+              <th>Qty</th>
+              <th>Rate (₦)</th>
+              <th>Amount (₦)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {voItems.length > 0 ? voItems.map((item, idx) => (
+              <tr key={item.id}>
+                <td>{idx + 1}</td>
+                <td className="text-bold">{item.description}</td>
+                <td>{item.unit}</td>
+                <td>{item.qty.toLocaleString()}</td>
+                <td>{item.rate.toLocaleString()}</td>
+                <td className="text-right">₦{(item.qty * item.rate).toLocaleString()}</td>
+              </tr>
+            )) : (
+              <tr>
+                <td colSpan="6" className="text-center p-8 text-subtle">No variation orders recorded for this project.</td>
+              </tr>
+            )}
+          </tbody>
+          {voItems.length > 0 && (
+            <tfoot>
+              <tr className="grand-total-row">
+                <td colSpan="5">NET IMPACT OF VARIATIONS</td>
+                <td className="text-right">₦{ipcStats.voTotal.toLocaleString()}</td>
+              </tr>
+            </tfoot>
+          )}
+        </table>
+      </div>
+    );
+  };
+
+  const renderIPC = () => {
+    return (
+      <div className="report-preview-canvas enterprise-card view-fade-in">
+        <div className="ipc-header-premium">
+          <div className="certificate-badge">INTERIM PAYMENT CERTIFICATE</div>
+          <div className="header-content">
+            <div className="client-info">
+              <span className="label">CLIENT/EMPLOYER:</span>
+              <span className="val-large">{projectInfo.client}</span>
+            </div>
+            <div className="project-id-box">
+              <div className="box-item">
+                <span className="label">CERTIFICATE NO:</span>
+                <span className="val-bold">01</span>
+              </div>
+              <div className="box-item">
+                <span className="label">DATE:</span>
+                <span className="val-bold">{projectInfo.date}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="ipc-body">
+          <div className="project-context-box">
+            <div className="c-item"><span className="l">Project Title:</span> <span className="v">{projectInfo.title}</span></div>
+            <div className="c-item"><span className="l">Location:</span> <span className="v">{projectInfo.location}</span></div>
+          </div>
+
+          <div className="valuation-breakdown-box">
+            <h3 className="section-heading">VALUATION SUMMARY</h3>
+            <div className="accounting-table">
+              <div className="account-row main">
+                <span>1.0 CONTRACT SUM</span>
+                <span className="val">₦{ipcStats.contractSum.toLocaleString()}</span>
+              </div>
+              <div className="account-row divider"></div>
+              <div className="account-row indent">
+                <span>2.0 Gross Value of Work Done to Date</span>
+                <span className="val">₦{ipcStats.grossWorkDone.toLocaleString()}</span>
+              </div>
+              <div className="account-row indent text-danger">
+                <span>3.0 Less Retention (5%)</span>
+                <span className="val">(-) ₦{ipcStats.retentionAmt.toLocaleString()}</span>
+              </div>
+              <div className="account-row indent-2 highlight">
+                <span>4.0 NET VALUE OF WORK DONE TO DATE (2.0 - 3.0)</span>
+                <span className="val">₦{ipcStats.netWorkDone.toLocaleString()}</span>
+              </div>
+              <div className="account-row indent text-warning">
+                <span>5.0 Less Mobilization Advance Recovery</span>
+                <span className="val">(-) ₦{ipcStats.advanceRecovery.toLocaleString()}</span>
+              </div>
+              <div className="account-row indent">
+                <span>6.0 Less Previous Payments (First Cert)</span>
+                <span className="val">(-) ₦0.00</span>
+              </div>
+              <div className="account-row grand-total">
+                <div className="total-label-box">
+                  <span className="main-label">7.0 TOTAL NET AMOUNT DUE FOR PAYMENT</span>
+                  <span className="sub-label">Subject to certification by Consultant Engineer</span>
+                </div>
+                <span className="total-val">₦{ipcStats.totalDue.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="ipc-signature-block">
+            <div className="sig-item">
+              <div className="sig-line"></div>
+              <span>Quantity Surveyor</span>
+              <span className="date-sig">{projectInfo.date}</span>
+            </div>
+            <div className="sig-item">
+              <div className="sig-line"></div>
+              <span>Consultant Engineer</span>
+              <span className="date-sig">....................</span>
+            </div>
+            <div className="sig-item">
+              <div className="sig-line"></div>
+              <span>Employer Selection</span>
+              <span className="date-sig">....................</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderSummaryReport = () => (
     <div className="print-document view-fade-in text-center">
       <div className="doc-header mb-8">
@@ -730,6 +940,8 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
             {activeReport === 'boq' && renderBOQReport()}
             {activeReport === 'summary' && renderSummaryReport()}
             {activeReport === 'materials' && renderMaterialSchedule()}
+            {activeReport === 'ipc' && renderIPC()}
+            {activeReport === 'variations' && renderVariationSummary()}
           </div>
         </div>
       )}
@@ -1151,7 +1363,184 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
           color: #e2e8f0;
           text-align: left;
         }
-/* Modal Styles */
+        /* IPC & Variation Report Styles */
+        .report-preview-canvas {
+          background: white;
+          width: 210mm;
+          min-height: 297mm;
+          padding: 20mm;
+          box-shadow: var(--shadow-2xl);
+          color: #0f172a;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .report-header-premium {
+          border-bottom: 3px solid var(--primary-900);
+          padding-bottom: 2rem;
+          margin-bottom: 2rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+        }
+
+        .report-type-title {
+          font-size: 1.75rem;
+          font-weight: 900;
+          color: var(--primary-900);
+          margin: 0;
+          letter-spacing: -0.02em;
+        }
+
+        .project-title-large {
+          font-size: 1.125rem;
+          color: var(--primary-500);
+          margin-top: 0.5rem;
+        }
+
+        .vo-summary-stats {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1.5rem;
+          margin-bottom: 2.5rem;
+        }
+
+        .v-stat-card {
+          background: #f8fafc;
+          padding: 1.5rem;
+          border-radius: 12px;
+          border: 1px solid var(--border-light);
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .v-stat-card.highlight {
+          background: #fef2f2;
+          border-color: #fecaca;
+        }
+
+        .v-stat-card.highlight .v-val { color: #ef4444; }
+
+        .v-label { font-size: 0.7rem; font-weight: 800; color: var(--primary-400); text-transform: uppercase; }
+        .v-val { font-size: 1.5rem; font-weight: 900; color: var(--primary-900); }
+
+        .professional-report-table {
+          width: 100%;
+          border-collapse: collapse;
+          border: 1px solid var(--primary-900);
+        }
+
+        .professional-report-table th {
+          background: var(--primary-900);
+          color: white;
+          padding: 1rem;
+          text-align: left;
+          font-size: 0.75rem;
+          text-transform: uppercase;
+        }
+
+        .professional-report-table td {
+          padding: 1rem;
+          border-bottom: 1px solid var(--border-light);
+          font-size: 0.875rem;
+        }
+
+        /* IPC Specific Styles */
+        .ipc-header-premium {
+          border: 2px solid var(--primary-900);
+          padding: 1.5rem;
+          margin-bottom: 2rem;
+          background: #f1f5f9;
+        }
+
+        .certificate-badge {
+          background: var(--primary-900);
+          color: white;
+          padding: 4px 12px;
+          font-size: 0.7rem;
+          font-weight: 900;
+          width: fit-content;
+          margin-bottom: 1rem;
+        }
+
+        .header-content {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+        }
+
+        .client-info { display: flex; flex-direction: column; gap: 0.25rem; }
+        .project-id-box { display: flex; gap: 2rem; }
+        .box-item { display: flex; flex-direction: column; align-items: flex-end; }
+        .val-large { font-size: 1.5rem; font-weight: 900; color: var(--primary-900); }
+        .val-bold { font-size: 1rem; font-weight: 800; color: var(--primary-900); }
+
+        .project-context-box {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          padding: 1rem;
+          background: white;
+          border: 1px solid var(--border-medium);
+          margin-bottom: 2rem;
+        }
+
+        .project-context-box .c-item { display: flex; gap: 1rem; font-size: 0.8125rem; }
+        .project-context-box .l { font-weight: 800; color: var(--primary-500); width: 100px; }
+        .project-context-box .v { font-weight: 700; color: var(--primary-900); }
+
+        .accounting-table {
+          display: flex;
+          flex-direction: column;
+          border: 1px solid var(--primary-900);
+        }
+
+        .account-row {
+          display: flex;
+          justify-content: space-between;
+          padding: 0.75rem 1rem;
+          font-size: 0.875rem;
+          font-weight: 600;
+          border-bottom: 1px solid var(--border-light);
+        }
+
+        .account-row.main { background: #f8fafc; font-weight: 800; }
+        .account-row.indent { padding-left: 3rem; }
+        .account-row.indent-2 { padding-left: 4.5rem; }
+        .account-row.highlight { background: #f0fdf4; border-top: 1px solid #bbf7d0; border-bottom: 1px solid #bbf7d0; }
+        .account-row.grand-total { 
+          background: var(--primary-900); 
+          color: white; 
+          padding: 1.5rem 1rem;
+          align-items: center;
+          margin-top: 1rem;
+        }
+
+        .total-label-box { display: flex; flex-direction: column; }
+        .main-label { font-size: 1rem; font-weight: 900; }
+        .sub-label { font-size: 0.65rem; color: var(--primary-300); text-transform: uppercase; font-weight: 500; }
+        .total-val { font-size: 1.75rem; font-weight: 900; color: var(--accent-400); }
+
+        .ipc-signature-block {
+          margin-top: 4rem;
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 2rem;
+        }
+
+        .sig-item { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+        .sig-line { border-bottom: 1px solid var(--primary-900); width: 100%; height: 2rem; }
+        .sig-item span { font-size: 0.75rem; font-weight: 800; color: var(--primary-900); }
+        .date-sig { font-size: 0.65rem !important; color: var(--primary-400) !important; font-weight: 500 !important; }
+
+        .text-danger { color: #ef4444 !important; }
+        .text-warning { color: #f59e0b !important; }
+        .text-bold { font-weight: 800; }
+        .text-right { text-align: right !important; }
+        .section-heading { font-size: 0.75rem; font-weight: 900; margin-bottom: 1rem; color: var(--primary-400); }
+
+        /* Modal Styles */
         .modal-overlay {
           position: fixed;
           top: 0;

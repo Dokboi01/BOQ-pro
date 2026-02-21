@@ -225,25 +225,37 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
           right: 0;
           bottom: 0;
           background: rgba(15, 23, 42, 0.9);
-          backdrop-filter: blur(8px);
+          backdrop-filter: blur(14px);
           display: flex;
           align-items: center;
           justify-content: center;
           z-index: 2000;
           padding: 2rem;
+          animation: da-fade 0.25s ease;
+        }
+
+        @keyframes da-fade {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
 
         .analyzer-modal {
           width: 100%;
-          max-width: 560px;
+          max-width: 580px;
           background: white;
           border-radius: 24px;
           position: relative;
           overflow: hidden;
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+          box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.5);
           min-height: 500px;
           display: flex;
           flex-direction: column;
+          animation: da-pop 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes da-pop {
+          from { transform: scale(0.93) translateY(15px); opacity: 0; }
+          to { transform: scale(1) translateY(0); opacity: 1; }
         }
 
         .btn-close {
@@ -313,6 +325,12 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
           align-items: center;
           gap: 1rem;
           margin-bottom: 2.5rem;
+          transition: all 0.3s;
+        }
+
+        .drop-area:hover {
+          border-color: var(--accent-400);
+          background: rgba(37, 99, 235, 0.03);
         }
 
         .hint { font-size: 0.75rem; color: var(--primary-400); }
@@ -365,8 +383,9 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
 
         .progress-bar {
           height: 100%;
-          background: var(--accent-600);
+          background: linear-gradient(90deg, #2563eb, #7c3aed);
           transition: width 0.3s ease-out;
+          border-radius: 100px;
         }
 
         .percentage { font-size: 0.75rem; font-weight: 800; color: var(--accent-600); }
@@ -382,6 +401,13 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
           background: var(--bg-main);
           border: 1px solid var(--border-light);
           border-radius: 12px;
+          transition: all 0.2s;
+        }
+
+        .identified-card:hover {
+          border-color: var(--accent-300);
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+          transform: translateX(4px);
         }
 
         .card-info { flex: 1; text-align: left; }

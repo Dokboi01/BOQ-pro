@@ -8,7 +8,8 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Building2
+  Building2,
+  Gavel
 } from 'lucide-react';
 
 const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
@@ -17,6 +18,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Project Dashboard', icon: LayoutDashboard },
     { id: 'workspace', label: 'BOQ Workspace', icon: FileSpreadsheet },
+    { id: 'tendering', label: 'Tendering & Bids', icon: Gavel },
     { id: 'library', label: 'Price Library', icon: Database },
     { id: 'reports', label: 'Documents & Export', icon: FileText },
   ];
@@ -84,14 +86,15 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
         .sidebar {
           width: 260px;
           height: 100vh;
-          background: var(--primary-900);
+          background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
           color: white;
           display: flex;
           flex-direction: column;
-          transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          border-right: 1px solid rgba(255,255,255,0.1);
+          transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          border-right: 1px solid rgba(255,255,255,0.06);
           position: sticky;
           top: 0;
+          box-shadow: 4px 0 25px rgba(0, 0, 0, 0.15);
         }
 
         .sidebar.collapsed {
@@ -150,38 +153,57 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
           align-items: center;
           gap: 1rem;
           padding: 0.75rem 0.75rem;
-          border-radius: var(--radius-sm);
+          border-radius: 10px;
           border: none;
           background: transparent;
-          color: var(--primary-500);
+          color: rgba(148, 163, 184, 0.9);
           text-align: left;
           font-weight: 500;
           font-size: 0.875rem;
-          transition: all 0.2s ease;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          cursor: pointer;
+          position: relative;
         }
 
         .nav-item:hover {
-          background: rgba(255,255,255,0.05);
+          background: rgba(255,255,255,0.07);
           color: white;
+          transform: translateX(4px);
         }
 
         .nav-item.active {
-          background: var(--accent-600);
+          background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
           color: white;
+          box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+          font-weight: 600;
         }
 
         .upgrade-prompt {
           margin: 1rem 0.75rem;
           padding: 1.25rem;
-          background: linear-gradient(135deg, var(--accent-600), var(--accent-400));
-          border-radius: var(--radius-md);
+          background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+          border-radius: 12px;
           color: white;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .upgrade-prompt::before {
+          content: '';
+          position: absolute;
+          top: -50%;
+          right: -50%;
+          width: 100%;
+          height: 100%;
+          background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+          pointer-events: none;
         }
 
         .upgrade-prompt h4 {
           color: white;
           font-size: 0.875rem;
           margin-bottom: 0.5rem;
+          font-weight: 800;
         }
 
         .upgrade-prompt p {
@@ -194,12 +216,20 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
         .btn-upgrade {
           width: 100%;
           background: white;
-          color: var(--accent-600);
+          color: #2563eb;
           border: none;
-          padding: 0.5rem;
-          border-radius: var(--radius-xs);
+          padding: 0.625rem;
+          border-radius: 8px;
           font-size: 0.75rem;
           font-weight: 700;
+          cursor: pointer;
+          transition: all 0.3s;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-upgrade:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
         }
 
         .user-profile {
@@ -211,15 +241,29 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
         }
 
         .user-avatar {
-          width: 32px;
-          height: 32px;
-          background: var(--accent-600);
+          width: 36px;
+          height: 36px;
+          background: linear-gradient(135deg, #3b82f6, #6366f1);
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
           font-weight: 700;
           font-size: 0.875rem;
+          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+          position: relative;
+        }
+
+        .user-avatar::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          right: 0;
+          width: 10px;
+          height: 10px;
+          background: #22c55e;
+          border-radius: 50%;
+          border: 2px solid #0f172a;
         }
 
         .user-info {

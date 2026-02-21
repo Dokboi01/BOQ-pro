@@ -146,8 +146,18 @@ const Login = ({ error, onLogin, onSendMagicLink, onSwitchToSignUp, onForgotPass
 
         .auth-card {
           width: 100%;
-          max-width: 440px;
-          padding: 3rem;
+          max-width: 460px;
+          padding: 3.5rem;
+          background: rgba(255, 255, 255, 0.85);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.5);
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+          transition: all 0.3s;
+        }
+
+        .auth-card:hover {
+          box-shadow: 0 30px 60px -15px rgba(37, 99, 235, 0.15);
+        }
           border-radius: var(--radius-2xl);
         }
 
@@ -211,10 +221,42 @@ const Login = ({ error, onLogin, onSendMagicLink, onSwitchToSignUp, onForgotPass
         }
 
         .auth-submit {
+          position: relative;
           width: 100%;
-          padding: 0.875rem;
+          padding: 1rem;
           font-size: 1rem;
           margin-top: 1rem;
+          background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+          border: none;
+          color: white;
+          font-weight: 700;
+          border-radius: var(--radius-sm);
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+          overflow: hidden;
+        }
+
+        .auth-submit::before {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 0;
+          height: 0;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.2);
+          transform: translate(-50%, -50%);
+          transition: width 0.6s, height 0.6s;
+        }
+
+        .auth-submit:hover::before {
+          width: 300px;
+          height: 300px;
+        }
+
+        .auth-submit:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 12px 30px rgba(37, 99, 235, 0.4);
         }
 
         .auth-divider {
@@ -297,21 +339,39 @@ const Login = ({ error, onLogin, onSendMagicLink, onSwitchToSignUp, onForgotPass
 
         .btn-guest-access {
           width: 100%;
-          padding: 0.75rem;
+          padding: 0.875rem;
           margin-top: 1rem;
           background: rgba(37, 99, 235, 0.05);
-          border: 1px dashed var(--accent-400);
+          border: 1.5px dashed var(--accent-400);
           color: var(--accent-600);
           border-radius: var(--radius-sm);
           font-weight: 700;
           font-size: 0.875rem;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all 0.3s;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .btn-guest-access::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.1), transparent);
+          transition: left 0.5s;
+        }
+
+        .btn-guest-access:hover::before {
+          left: 100%;
         }
 
         .btn-guest-access:hover {
           background: var(--accent-50);
           border-color: var(--accent-600);
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
         }
 
         @keyframes spin {
