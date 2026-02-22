@@ -757,6 +757,105 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
     doc.save(`${projectInfo.title.replace(/\s+/g, '_')}_BEME.pdf`);
   };
 
+  const handleExportMaterialsPDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    const margin = 14;
+    const contentWidth = pageWidth - margin * 2;
+
+    // Top accent line
+    doc.setFillColor(37, 99, 235);
+    doc.rect(0, 0, pageWidth, 6, 'F');
+
+    // Header
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139);
+    doc.text('BOQ PRO ENTERPRISE', margin, 20);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('Digital Engineering Standards Platform', margin, 26);
+
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.5);
+    doc.line(margin, 32, pageWidth - margin, 32);
+
+    // Title
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.setTextColor(15, 23, 42);
+    doc.text('MATERIAL REQUIREMENT SCHEDULE', margin, 48);
+
+    doc.setFontSize(10);
+    doc.setTextColor(37, 99, 235);
+    doc.text('Aggregated Procurement & Logistics Planning', margin, 56);
+
+    // Project details
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Project: ${projectInfo.title}  |  Ref: ${projectInfo.ref}  |  Date: ${projectInfo.date}`, margin, 66);
+
+    doc.setDrawColor(37, 99, 235);
+    doc.setLineWidth(1);
+    doc.line(margin, 70, pageWidth - margin, 70);
+
+    // Build table
+    const matRows = materialData.map((mat, i) => [
+      i + 1,
+      mat.item,
+      mat.unit,
+      mat.totalQty.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      mat.usage
+    ]);
+
+    doc.autoTable({
+      startY: 76,
+      head: [['SN', 'MATERIAL DESCRIPTION', 'UNIT', 'TOTAL QTY', 'PROJECT USAGE SEGMENTS']],
+      body: matRows,
+      theme: 'grid',
+      headStyles: { fillColor: [15, 23, 42], fontSize: 8, fontStyle: 'bold', halign: 'center', cellPadding: 4 },
+      columnStyles: {
+        0: { cellWidth: 12, halign: 'center' },
+        1: { cellWidth: 'auto', fontStyle: 'bold' },
+        2: { cellWidth: 18, halign: 'center' },
+        3: { cellWidth: 28, halign: 'right' },
+        4: { cellWidth: 55 }
+      },
+      styles: { fontSize: 7.5, font: 'helvetica', cellPadding: 3, lineColor: [226, 232, 240] },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      didDrawPage: () => {
+        doc.setFillColor(37, 99, 235);
+        doc.rect(0, 0, pageWidth, 3, 'F');
+        doc.setFontSize(7);
+        doc.setTextColor(148, 163, 184);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`BOQ PRO ENTERPRISE  •  ${projectInfo.ref}  •  Material Schedule`, margin, pageHeight - 8);
+        doc.text(`Page ${doc.internal.getNumberOfPages()}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
+      }
+    });
+
+    const finalY = doc.lastAutoTable.finalY + 8;
+
+    // Summary box
+    doc.setFillColor(15, 23, 42);
+    doc.roundedRect(margin, finalY, contentWidth, 14, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    doc.text(`TOTAL UNIQUE MATERIALS: ${materialData.length}`, margin + 8, finalY + 9);
+    doc.text(`SECTIONS COVERED: ${boqData.length}`, pageWidth - margin - 8, finalY + 9, { align: 'right' });
+
+    // Logistics note
+    doc.setFontSize(7);
+    doc.setTextColor(148, 163, 184);
+    doc.setFont('helvetica', 'italic');
+    doc.text('Note: Quantities are aggregated from individual BOQ item rate breakdowns. Site conditions may require quantity adjustments.', margin, finalY + 26);
+    doc.text('Coordinate bulk delivery logistics with Ministry of Works representative for heavy-duty axle permits.', margin, finalY + 32);
+
+    doc.save(`${projectInfo.title.replace(/\s+/g, '_')}_Material_Schedule.pdf`);
+  };
+
   const handleEmailReport = async () => {
     setIsSending(true);
     try {
@@ -1242,7 +1341,7 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
               <button className="btn-secondary" onClick={() => setIsEmailModalOpen(true)}>
                 <MailIcon size={16} /> Email to Client
               </button>
-              <button className="btn-primary-action" onClick={handleExportPDF}>
+              <button className="btn-primary-action" onClick={activeReport === 'materials' ? handleExportMaterialsPDF : handleExportPDF}>
                 <Download size={16} /> Export to PDF
               </button>
               <button className="btn-primary-action" onClick={handlePrint}>
