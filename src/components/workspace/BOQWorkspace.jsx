@@ -84,6 +84,15 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
   const [biddingItem, setBiddingItem] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('estimation'); // 'estimation' or 'valuation'
+  const [expandedItems, setExpandedItems] = useState({});
+
+  const toggleItemExpand = (itemId) => {
+    setExpandedItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
+  };
+
+  const isItemExpanded = (itemId) => {
+    return expandedItems[itemId] !== false; // default expanded
+  };
 
   // Sync state with props when project changes
   React.useEffect(() => {
@@ -317,21 +326,21 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         <table className="boq-intelligence-table">
           <thead>
             <tr>
-              <th style={{ width: '40px' }}>#</th>
-              <th>Work Description</th>
-              <th style={{ width: '80px' }}>UNIT</th>
-              <th style={{ width: '80px' }}>QTY</th>
+              <th style={{ width: '50px' }}>#</th>
+              <th>WORK DESCRIPTION</th>
+              <th style={{ width: '70px' }}>UNIT</th>
+              <th style={{ width: '90px' }}>QTY</th>
               {viewMode === 'valuation' ? (
                 <>
-                  <th style={{ width: '120px' }}>QTY DONE</th>
-                  <th style={{ width: '140px' }}>PROGRESS (%)</th>
+                  <th style={{ width: '100px' }}>QTY DONE</th>
+                  <th style={{ width: '120px' }}>PROGRESS</th>
                 </>
               ) : (
-                <th style={{ width: '180px' }}>RATE STRATEGY</th>
+                <th style={{ width: '140px' }}>STRATEGY</th>
               )}
-              <th style={{ width: '140px' }}>RATE (₦)</th>
-              <th style={{ width: '140px' }}>TOTAL (₦)</th>
-              <th style={{ width: '40px' }}></th>
+              <th style={{ width: '120px' }}>RATE (₦)</th>
+              <th style={{ width: '130px' }}>TOTAL (₦)</th>
+              <th style={{ width: '60px' }}></th>
             </tr>
           </thead>
           <tbody>
@@ -368,156 +377,171 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                     {section.items.map((item, idx) => {
                       const outlier = !item.useBenchmark && isOutlier(item.rate, item.benchmark);
                       return (
-                        <tr key={item.id} className={`item-row ${outlier ? 'outlier-warning' : ''}`}>
-                          <td className="item-num">{String.fromCharCode(65 + filteredSections.indexOf(section))}.{idx + 1}</td>
-                          <td className="description-cell">
-                            <div className="item-description-wrapper">
-                              {item.isVO && <span className="vo-badge" title="Variation Order">VO</span>}
-                              <SmoothInput
-                                type="text"
-                                value={item.description}
-                                onChange={(val) => updateItem(section.id, item.id, 'description', val)}
-                                className="inline-input desc-input"
-                              />
-                            </div>
-                            <div className="item-intelligence-tags">
-                              {outlier && (
-                                <div className="outlier-tag">
-                                  <AlertCircle size={10} /> Significant Variance
+                        <React.Fragment key={item.id}>
+                          {/* Full-width description row */}
+                          <tr className={`item-desc-row ${outlier ? 'outlier-warning' : ''}`} onClick={() => toggleItemExpand(item.id)}>
+                            <td className="item-num">{String.fromCharCode(65 + filteredSections.indexOf(section))}.{idx + 1}</td>
+                            <td colSpan={viewMode === 'valuation' ? 6 : 5} className="description-cell-full">
+                              <div className="desc-full-wrapper">
+                                <div className="desc-expand-toggle">
+                                  {isItemExpanded(item.id) ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                                 </div>
-                              )}
-                              {(() => {
-                                const resources = calculateResourceRequirement(item.description, item.qty, item.unit);
-                                if (resources.length === 0) return null;
-                                return (
-                                  <div className="resource-tag">
-                                    <Zap size={10} className="text-accent" />
-                                    {resources.map(r => `${r.qty} ${r.name.split(' ')[0]}`).join(', ')}
-                                  </div>
-                                );
-                              })()}
-                              {(() => {
-                                const bestBid = item.bids?.find(b => b.selected);
-                                if (!bestBid) return null;
-                                return (
-                                  <div className="intelligence-tag gold">
-                                    <Trophy size={10} /> {bestBid.subcontractor}
-                                  </div>
-                                );
-                              })()}
-                            </div>
-                          </td>
-                          <td>
-                            <SmoothInput
-                              type="text"
-                              value={item.unit}
-                              onChange={(val) => updateItem(section.id, item.id, 'unit', val)}
-                              className="inline-input unit-input"
-                            />
-                          </td>
-                          <td>
-                            <div className="qty-input-wrapper">
-                              <SmoothInput
-                                value={item.qty}
-                                onChange={(val) => updateItem(section.id, item.id, 'qty', val)}
-                                className="inline-input"
-                                source={item.qtySource}
-                              />
-                              <button
-                                className="btn-geo-trigger"
-                                onClick={() => setCalculatingQtyForItem({ sectionId: section.id, item })}
-                                title="Geometric Takeoff"
-                              >
-                                <Calculator size={12} />
-                              </button>
-                            </div>
-                          </td>
-                          {viewMode === 'valuation' ? (
-                            <>
-                              <td className="valuation-cell">
+                                {item.isVO && <span className="vo-badge" title="Variation Order">VO</span>}
                                 <SmoothInput
-                                  value={item.qtyCompleted || 0}
-                                  onChange={(val) => updateItem(section.id, item.id, 'qtyCompleted', val)}
-                                  className="inline-input text-accent font-bold"
+                                  type="text"
+                                  value={item.description}
+                                  onChange={(val) => updateItem(section.id, item.id, 'description', val)}
+                                  className="inline-input desc-input-full"
                                 />
-                              </td>
-                              <td className="valuation-cell">
-                                <div className="progress-mini-bar">
-                                  <div className="progress-fill" style={{ width: `${Math.min(100, item.progressPercent || 0)}%` }}></div>
-                                  <span className="percent-text">{Math.round(item.progressPercent || 0)}%</span>
-                                </div>
-                              </td>
-                            </>
-                          ) : (
-                            <td>
-                              <div className="rate-source-toggle">
-                                <button
-                                  className={`toggle-btn shadow-sm ${!item.useBenchmark ? 'active' : ''}`}
-                                  onClick={() => updateItem(section.id, item.id, 'useBenchmark', false)}
-                                >
-                                  Custom
-                                </button>
-                                <button
-                                  className={`toggle-btn shadow-sm ${item.useBenchmark ? 'active' : ''}`}
-                                  onClick={() => {
-                                    updateItem(section.id, item.id, {
-                                      useBenchmark: true,
-                                      rateSource: 'benchmark'
-                                    });
-                                  }}
-                                >
-                                  Benchmark
-                                </button>
+                                <span className="desc-inline-total">₦{(item.total || 0).toLocaleString()}</span>
+                              </div>
+                              <div className="item-intelligence-tags">
+                                {outlier && (
+                                  <div className="outlier-tag">
+                                    <AlertCircle size={10} /> Significant Variance
+                                  </div>
+                                )}
+                                {(() => {
+                                  const resources = calculateResourceRequirement(item.description, item.qty, item.unit);
+                                  if (resources.length === 0) return null;
+                                  return (
+                                    <div className="resource-tag">
+                                      <Zap size={10} className="text-accent" />
+                                      {resources.map(r => `${r.qty} ${r.name.split(' ')[0]}`).join(', ')}
+                                    </div>
+                                  );
+                                })()}
+                                {(() => {
+                                  const bestBid = item.bids?.find(b => b.selected);
+                                  if (!bestBid) return null;
+                                  return (
+                                    <div className="intelligence-tag gold">
+                                      <Trophy size={10} /> {bestBid.subcontractor}
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             </td>
-                          )}
-                          <td className="rate-cell">
-                            <div className="rate-input-wrapper">
-                              <span className="currency-prefix">₦</span>
-                              <SmoothInput
-                                value={(item.useBenchmark ? (item.benchmark * getRegionalModifier(project?.region || 'Lagos')) : item.rate)}
-                                onChange={(val) => updateItem(section.id, item.id, 'rate', val)}
-                                className="inline-input rate-input"
-                                disabled={item.useBenchmark}
-                                source={item.useBenchmark ? 'benchmark' : (item.rateSource || 'manual')}
-                              />
-                              <button
-                                className="btn-analysis-trigger"
-                                title="Open Rate Analysis"
-                                onClick={() => setAnalyzingItem({ sectionId: section.id, item })}
-                              >
-                                <Calculator size={14} />
-                              </button>
-                            </div>
-                          </td>
-                          <td className="total-cell">
-                            ₦{(item.qty * (item.useBenchmark ? (item.benchmark * getRegionalModifier(project?.region || 'Lagos')) : item.rate)).toLocaleString()}
-                          </td>
-                          <td className="actions-cell">
-                            {viewMode === 'valuation' ? (
-                              <button
-                                className={`btn-vo-toggle ${item.isVO ? 'active' : ''}`}
-                                onClick={() => toggleVO(section.id, item.id)}
-                                title={item.isVO ? "Remove VO Tag" : "Tag as Variation Order"}
-                              >
-                                <AlertTriangle size={14} />
-                              </button>
-                            ) : (
-                              <>
+                            <td className="actions-cell">
+                              {viewMode === 'valuation' ? (
                                 <button
-                                  className={`btn-icon-action ${item.bids?.length > 0 ? 'active' : ''}`}
-                                  onClick={() => setBiddingItem({ sectionId: section.id, item })}
-                                  title="Market Bids & Leveling"
+                                  className={`btn-vo-toggle ${item.isVO ? 'active' : ''}`}
+                                  onClick={(e) => { e.stopPropagation(); toggleVO(section.id, item.id); }}
+                                  title={item.isVO ? "Remove VO Tag" : "Tag as Variation Order"}
                                 >
-                                  <Gavel size={14} />
+                                  <AlertTriangle size={14} />
                                 </button>
-                                <button className="btn-icon-danger" onClick={() => onDelete(project.id, section.id, item.id)} title="Delete Item">
-                                  <Trash2 size={14} />
-                                </button>
-                              </>
-                            )}
-                          </td>
-                        </tr>
+                              ) : (
+                                <div className="action-btn-group">
+                                  <button
+                                    className={`btn-icon-action ${item.bids?.length > 0 ? 'active' : ''}`}
+                                    onClick={(e) => { e.stopPropagation(); setBiddingItem({ sectionId: section.id, item }); }}
+                                    title="Market Bids & Leveling"
+                                  >
+                                    <Gavel size={14} />
+                                  </button>
+                                  <button className="btn-icon-danger" onClick={(e) => { e.stopPropagation(); onDelete(project.id, section.id, item.id); }} title="Delete Item">
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                          {/* Collapsible data row */}
+                          {isItemExpanded(item.id) && (
+                            <tr className={`item-data-row ${outlier ? 'outlier-warning' : ''}`}>
+                              <td></td>
+                              <td>
+                                <SmoothInput
+                                  type="text"
+                                  value={item.unit}
+                                  onChange={(val) => updateItem(section.id, item.id, 'unit', val)}
+                                  className="inline-input unit-input"
+                                />
+                              </td>
+                              <td>
+                                <div className="qty-input-wrapper">
+                                  <SmoothInput
+                                    value={item.qty}
+                                    onChange={(val) => updateItem(section.id, item.id, 'qty', val)}
+                                    className="inline-input"
+                                    source={item.qtySource}
+                                  />
+                                  <button
+                                    className="btn-geo-trigger"
+                                    onClick={() => setCalculatingQtyForItem({ sectionId: section.id, item })}
+                                    title="Geometric Takeoff"
+                                  >
+                                    <Calculator size={12} />
+                                  </button>
+                                </div>
+                              </td>
+                              <td></td>
+                              {viewMode === 'valuation' ? (
+                                <>
+                                  <td className="valuation-cell">
+                                    <SmoothInput
+                                      value={item.qtyCompleted || 0}
+                                      onChange={(val) => updateItem(section.id, item.id, 'qtyCompleted', val)}
+                                      className="inline-input text-accent font-bold"
+                                    />
+                                  </td>
+                                  <td className="valuation-cell">
+                                    <div className="progress-mini-bar">
+                                      <div className="progress-fill" style={{ width: `${Math.min(100, item.progressPercent || 0)}%` }}></div>
+                                      <span className="percent-text">{Math.round(item.progressPercent || 0)}%</span>
+                                    </div>
+                                  </td>
+                                </>
+                              ) : (
+                                <td>
+                                  <div className="rate-source-toggle">
+                                    <button
+                                      className={`toggle-btn shadow-sm ${!item.useBenchmark ? 'active' : ''}`}
+                                      onClick={() => updateItem(section.id, item.id, 'useBenchmark', false)}
+                                    >
+                                      Custom
+                                    </button>
+                                    <button
+                                      className={`toggle-btn shadow-sm ${item.useBenchmark ? 'active' : ''}`}
+                                      onClick={() => {
+                                        updateItem(section.id, item.id, {
+                                          useBenchmark: true,
+                                          rateSource: 'benchmark'
+                                        });
+                                      }}
+                                    >
+                                      Benchmark
+                                    </button>
+                                  </div>
+                                </td>
+                              )}
+                              <td className="rate-cell">
+                                <div className="rate-input-wrapper">
+                                  <span className="currency-prefix">₦</span>
+                                  <SmoothInput
+                                    value={(item.useBenchmark ? (item.benchmark * getRegionalModifier(project?.region || 'Lagos')) : item.rate)}
+                                    onChange={(val) => updateItem(section.id, item.id, 'rate', val)}
+                                    className="inline-input rate-input"
+                                    disabled={item.useBenchmark}
+                                    source={item.useBenchmark ? 'benchmark' : (item.rateSource || 'manual')}
+                                  />
+                                  <button
+                                    className="btn-analysis-trigger"
+                                    title="Open Rate Analysis"
+                                    onClick={() => setAnalyzingItem({ sectionId: section.id, item })}
+                                  >
+                                    <Calculator size={14} />
+                                  </button>
+                                </div>
+                              </td>
+                              <td className="total-cell">
+                                ₦{(item.qty * (item.useBenchmark ? (item.benchmark * getRegionalModifier(project?.region || 'Lagos')) : item.rate)).toLocaleString()}
+                              </td>
+                              <td></td>
+                            </tr>
+                          )}
+                        </React.Fragment>
                       );
                     })}
                     {/* Section Subtotal Row */}
@@ -818,9 +842,66 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
         }
 
-        .item-row { border-bottom: 1px solid var(--border-light); transition: all 0.2s; }
-        .item-row:hover { background: #fbfcfe; }
-        .item-row td { padding: 0.75rem 1rem; vertical-align: middle; }
+        .item-desc-row { 
+          cursor: pointer; 
+          transition: background 0.15s; 
+          border-bottom: none;
+        }
+        .item-desc-row:hover { background: #f8fafc; }
+        .item-desc-row td { padding: 0.625rem 1rem; vertical-align: middle; }
+
+        .item-data-row {
+          background: #fafbfc;
+          border-left: 3px solid var(--accent-500);
+        }
+        .item-data-row td { 
+          padding: 0.5rem 1rem; 
+          vertical-align: middle; 
+          border-bottom: 1px solid var(--border-light);
+          font-size: 0.8125rem;
+        }
+
+        .description-cell-full {
+          font-size: 0.8125rem;
+        }
+
+        .desc-full-wrapper {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          width: 100%;
+        }
+
+        .desc-expand-toggle {
+          color: var(--primary-400);
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+        }
+
+        .desc-input-full {
+          flex: 1;
+          font-weight: 600;
+          color: var(--primary-900);
+          font-size: 0.8125rem;
+        }
+
+        .desc-inline-total {
+          font-weight: 800;
+          font-size: 0.75rem;
+          color: var(--accent-600);
+          white-space: nowrap;
+          flex-shrink: 0;
+          background: rgba(37, 99, 235, 0.06);
+          padding: 2px 10px;
+          border-radius: 100px;
+        }
+
+        .action-btn-group {
+          display: flex;
+          gap: 2px;
+          align-items: center;
+        }
 
         .description-cell { color: var(--primary-800); font-weight: 500; font-size: 0.8125rem; }
 
