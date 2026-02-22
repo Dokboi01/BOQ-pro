@@ -615,22 +615,22 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
 
       <style jsx="true">{`
         .workspace-intelligence-container {
-          padding: 1.5rem;
+          padding: 0.5rem 0.75rem;
           display: flex;
           flex-direction: column;
-          gap: 1.5rem;
-          height: calc(100vh - 120px);
-          overflow-y: auto;
+          gap: 0.5rem;
+          height: calc(100vh - 60px);
+          overflow: hidden;
         }
 
         .intelligence-strip {
           background: linear-gradient(135deg, rgba(15, 23, 42, 0.97), rgba(30, 41, 59, 0.97));
           color: white;
-          padding: 0.625rem 1.5rem;
+          padding: 0.5rem 1rem;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          border-radius: 10px;
+          border-radius: 6px;
           border: 1px solid rgba(255,255,255,0.08);
         }
 
@@ -752,12 +752,12 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           background: white;
           padding: 0;
           overflow: hidden;
-          border-radius: 12px;
+          border-radius: 8px;
           flex: 1;
           display: flex;
           flex-direction: column;
-          max-height: calc(100vh - 320px);
           overflow-y: auto;
+          min-height: 0;
         }
 
         .boq-intelligence-table-wrapper::-webkit-scrollbar {
