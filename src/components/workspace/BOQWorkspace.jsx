@@ -231,18 +231,17 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
 
   return (
     <div className="workspace-intelligence-container view-fade-in">
-      {/* Intelligence Header Bar */}
-      <div className="intelligence-banner enterprise-card">
-        <div className="banner-left">
-          <ShieldCheck size={20} className="text-success" />
-          <div>
-            <span className="banner-title">Rate Management Engine</span>
-            <p className="banner-subtitle">Synchronized with Q1 2026 Market Intelligence</p>
-          </div>
+      {/* Compact Intelligence Strip */}
+      <div className="intelligence-strip">
+        <div className="strip-left">
+          <ShieldCheck size={16} className="text-success" />
+          <span className="strip-title">Rate Engine</span>
+          <span className="strip-sep">•</span>
+          <span className="strip-subtitle">Q1 2026 Market Rates</span>
         </div>
-        <div className="banner-metrics">
-          <div className="b-metric">
-            <span className="b-label">REGION</span>
+        <div className="strip-right">
+          <div className="strip-metric">
+            <span className="strip-label">REGION</span>
             <select
               className="region-select"
               value={project?.region || 'Lagos'}
@@ -255,36 +254,46 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
               <option value="Kano">Kano</option>
             </select>
           </div>
-          <div className="b-metric">
-            <span className="b-label">PRICE VOLATILITY</span>
-            <span className="b-val text-warning">MED</span>
+          <div className="strip-metric">
+            <span className="strip-label">VOLATILITY</span>
+            <span className="strip-val text-warning">MED</span>
+          </div>
+          <div className="strip-metric">
+            <span className="strip-label">SECTIONS</span>
+            <span className="strip-val">{sections.length}</span>
+          </div>
+          <div className="strip-metric">
+            <span className="strip-label">ITEMS</span>
+            <span className="strip-val">{sections.reduce((a, s) => a + s.items.length, 0)}</span>
           </div>
         </div>
       </div>
 
       <div className="workspace-header">
-        <div className="search-bar">
-          <Search size={18} />
-          <input
-            type="text"
-            placeholder="Search project items..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <div className="workspace-mode-switcher">
-          <button
-            className={`mode-btn ${viewMode === 'estimation' ? 'active' : ''}`}
-            onClick={() => setViewMode('estimation')}
-          >
-            <Calculator size={14} /> Estimation
-          </button>
-          <button
-            className={`mode-btn ${viewMode === 'valuation' ? 'active' : ''}`}
-            onClick={() => setViewMode('valuation')}
-          >
-            <Activity size={14} /> Site Valuation
-          </button>
+        <div className="header-left">
+          <div className="search-bar">
+            <Search size={16} />
+            <input
+              type="text"
+              placeholder="Search items, units, descriptions…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="workspace-mode-switcher">
+            <button
+              className={`mode-btn ${viewMode === 'estimation' ? 'active' : ''}`}
+              onClick={() => setViewMode('estimation')}
+            >
+              <Calculator size={14} /> Estimation
+            </button>
+            <button
+              className={`mode-btn ${viewMode === 'valuation' ? 'active' : ''}`}
+              onClick={() => setViewMode('valuation')}
+            >
+              <Activity size={14} /> Valuation
+            </button>
+          </div>
         </div>
         <div className="workspace-actions">
           <button
@@ -299,7 +308,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           >
             <Calculator size={16} /> Rate Analysis
           </button>
-          <button className="btn-secondary" onClick={onExport}><Download size={16} /> Export Document</button>
+          <button className="btn-secondary" onClick={onExport}><Download size={16} /> Export</button>
           <button className="btn-primary" onClick={onAddSection}><Plus size={16} /> New Section</button>
         </div>
       </div>
@@ -332,9 +341,9 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                   <td colSpan="7">
                     <div className="section-title" onClick={(e) => e.stopPropagation()}>
                       {section.expanded ? (
-                        <ChevronDown size={14} onClick={(e) => { e.stopPropagation(); toggleSection(section.id); }} style={{ cursor: 'pointer' }} />
+                        <ChevronDown size={14} onClick={(e) => { e.stopPropagation(); toggleSection(section.id); }} style={{ cursor: 'pointer', flexShrink: 0 }} />
                       ) : (
-                        <ChevronRight size={14} onClick={(e) => { e.stopPropagation(); toggleSection(section.id); }} style={{ cursor: 'pointer' }} />
+                        <ChevronRight size={14} onClick={(e) => { e.stopPropagation(); toggleSection(section.id); }} style={{ cursor: 'pointer', flexShrink: 0 }} />
                       )}
                       <SmoothInput
                         type="text"
@@ -342,6 +351,10 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                         onChange={(val) => updateSectionTitle(section.id, val)}
                         className="section-title-input"
                       />
+                      <span className="section-item-count">{section.items.length} item{section.items.length !== 1 ? 's' : ''}</span>
+                      {!section.expanded && (
+                        <span className="section-collapsed-total">₦{section.items.reduce((a, i) => a + (i.total || 0), 0).toLocaleString()}</span>
+                      )}
                     </div>
                   </td>
                   <td className="actions-cell">
@@ -356,11 +369,16 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                       const outlier = !item.useBenchmark && isOutlier(item.rate, item.benchmark);
                       return (
                         <tr key={item.id} className={`item-row ${outlier ? 'outlier-warning' : ''}`}>
-                          <td className="text-subtle">{idx + 1}</td>
+                          <td className="item-num">{String.fromCharCode(65 + filteredSections.indexOf(section))}.{idx + 1}</td>
                           <td className="description-cell">
                             <div className="item-description-wrapper">
                               {item.isVO && <span className="vo-badge" title="Variation Order">VO</span>}
-                              <span className="item-desc-text">{item.description}</span>
+                              <SmoothInput
+                                type="text"
+                                value={item.description}
+                                onChange={(val) => updateItem(section.id, item.id, 'description', val)}
+                                className="inline-input desc-input"
+                              />
                             </div>
                             <div className="item-intelligence-tags">
                               {outlier && (
@@ -389,7 +407,14 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                               })()}
                             </div>
                           </td>
-                          <td>{item.unit}</td>
+                          <td>
+                            <SmoothInput
+                              type="text"
+                              value={item.unit}
+                              onChange={(val) => updateItem(section.id, item.id, 'unit', val)}
+                              className="inline-input unit-input"
+                            />
+                          </td>
                           <td>
                             <div className="qty-input-wrapper">
                               <SmoothInput
@@ -495,10 +520,18 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                         </tr>
                       );
                     })}
+                    {/* Section Subtotal Row */}
+                    <tr className="section-subtotal-row">
+                      <td colSpan="5"></td>
+                      <td colSpan="2" className="section-subtotal-val">
+                        Sub-Total: ₦{section.items.reduce((a, i) => a + (i.total || 0), 0).toLocaleString()}
+                      </td>
+                      <td></td>
+                    </tr>
                     <tr className="add-item-row">
                       <td colSpan="8">
                         <button className="btn-add-inline" onClick={() => addItemToSection(section.id)}>
-                          <Plus size={14} /> Add Work Item to {section.title}
+                          <Plus size={14} /> Add Work Item
                         </button>
                       </td>
                     </tr>
@@ -566,18 +599,25 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           overflow-y: auto;
         }
 
-        .intelligence-banner {
-          background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
-          backdrop-filter: blur(12px);
+        .intelligence-strip {
+          background: linear-gradient(135deg, rgba(15, 23, 42, 0.97), rgba(30, 41, 59, 0.97));
           color: white;
-          padding: 1.25rem 2rem;
+          padding: 0.625rem 1.5rem;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 12px;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+          border-radius: 10px;
+          border: 1px solid rgba(255,255,255,0.08);
         }
+
+        .strip-left { display: flex; align-items: center; gap: 0.5rem; }
+        .strip-title { font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+        .strip-sep { color: rgba(255,255,255,0.25); }
+        .strip-subtitle { font-size: 0.7rem; color: rgba(255,255,255,0.5); }
+        .strip-right { display: flex; gap: 1.25rem; align-items: center; }
+        .strip-metric { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+        .strip-label { font-size: 0.5625rem; color: rgba(255,255,255,0.4); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        .strip-val { font-size: 0.8125rem; font-weight: 900; color: white; }
 
         .smooth-input-container {
           position: relative;
@@ -597,17 +637,15 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         .source-icon.calculated { color: #8b5cf6; }
         .source-icon.benchmark { color: #10b981; }
 
-        .banner-left { display: flex; align-items: center; gap: 1rem; }
-        .banner-title { font-weight: 800; font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.05em; display: block; }
-        .banner-subtitle { font-size: 0.75rem; color: rgba(255,255,255,0.6); margin: 0; }
+        .header-left { display: flex; align-items: center; gap: 0.75rem; flex: 1; }
 
         .region-select {
           background: rgba(255,255,255,0.1);
           border: 1px solid rgba(255,255,255,0.2);
           color: white;
-          font-size: 0.75rem;
+          font-size: 0.7rem;
           font-weight: 800;
-          padding: 2px 8px;
+          padding: 2px 6px;
           border-radius: 4px;
           outline: none;
           cursor: pointer;
@@ -638,10 +676,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           border: 1px solid rgba(59, 130, 246, 0.1);
         }
 
-        .banner-metrics { display: flex; gap: 2rem; }
-        .b-metric { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-        .b-label { font-size: 0.625rem; color: rgba(255,255,255,0.5); font-weight: 700; text-transform: uppercase; }
-        .b-val { font-size: 1rem; font-weight: 900; color: white; }
+        .workspace-actions { display: flex; gap: 0.5rem; }
 
         .boq-intelligence-table tr.item-row:hover {
           background: #f8fafc;
@@ -669,12 +704,13 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         .search-bar {
           display: flex;
           align-items: center;
-          gap: 0.75rem;
+          gap: 0.5rem;
           background: white;
-          padding: 0.5rem 1rem;
+          padding: 0.5rem 0.75rem;
           border-radius: 8px;
           border: 1px solid var(--border-medium);
-          width: 300px;
+          flex: 1;
+          max-width: 340px;
           color: var(--primary-400);
         }
 
@@ -686,7 +722,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           color: var(--primary-900);
         }
 
-        .workspace-actions { display: flex; gap: 0.75rem; }
+        .workspace-actions { display: flex; gap: 0.5rem; }
 
         .boq-intelligence-table-wrapper {
           background: white;
@@ -725,13 +761,17 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
 
         .boq-intelligence-table th {
           background: var(--bg-main);
-          padding: 1rem;
+          padding: 0.75rem 1rem;
           text-align: left;
           color: var(--primary-600);
           font-weight: 700;
           text-transform: uppercase;
-          font-size: 0.6875rem;
+          font-size: 0.625rem;
+          letter-spacing: 0.04em;
           border-bottom: 2px solid var(--border-medium);
+          position: sticky;
+          top: 0;
+          z-index: 2;
         }
 
         .section-header-row {
@@ -783,6 +823,68 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         .item-row td { padding: 0.75rem 1rem; vertical-align: middle; }
 
         .description-cell { color: var(--primary-800); font-weight: 500; font-size: 0.8125rem; }
+
+        .item-num {
+          font-family: 'Inter', monospace;
+          font-size: 0.6875rem;
+          font-weight: 700;
+          color: var(--primary-400);
+          text-align: center;
+          letter-spacing: 0.02em;
+        }
+
+        .desc-input {
+          font-weight: 600;
+          color: var(--primary-900);
+          font-size: 0.8125rem;
+        }
+
+        .unit-input {
+          text-align: center;
+          font-weight: 700;
+          color: var(--primary-600);
+          text-transform: uppercase;
+          font-size: 0.75rem;
+          letter-spacing: 0.03em;
+        }
+
+        .section-item-count {
+          font-size: 0.625rem;
+          font-weight: 600;
+          color: rgba(255,255,255,0.5);
+          background: rgba(255,255,255,0.08);
+          padding: 2px 8px;
+          border-radius: 100px;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+
+        .section-header-row .section-item-count {
+          color: var(--primary-400);
+          background: var(--bg-main);
+          border: 1px solid var(--border-light);
+        }
+
+        .section-collapsed-total {
+          font-size: 0.75rem;
+          font-weight: 800;
+          color: var(--accent-600);
+          margin-left: auto;
+          flex-shrink: 0;
+        }
+
+        .section-subtotal-row {
+          background: #f1f5f9;
+        }
+
+        .section-subtotal-val {
+          text-align: right;
+          font-weight: 800;
+          font-size: 0.8125rem;
+          color: var(--primary-700);
+          padding: 0.5rem 1rem !important;
+          border-bottom: 2px solid var(--border-medium);
+        }
         
         .outlier-warning { background: #fffbeb !important; }
         .outlier-tag { 
