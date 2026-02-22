@@ -18,6 +18,7 @@ import Settings from './components/dashboard/Settings';
 import StructureSelector from './components/dashboard/StructureSelector';
 import DrawingAnalyzer from './components/workspace/DrawingAnalyzer';
 import TenderingHub from './components/workspace/TenderingHub';
+import CalculationMethodology from './components/workspace/CalculationMethodology';
 import {
   BarChart3,
   MapPin,
@@ -718,6 +719,8 @@ function App() {
         return <div className="view-fade-in"><Reports user={user} projects={projects} activeProjectId={activeProjectId} onUpgrade={() => { setView('pricing'); }} /></div>;
       case 'settings':
         return <div className="view-fade-in"><Settings user={user} onUpgrade={() => setView('pricing')} /></div>;
+      case 'methodology':
+        return <div className="view-fade-in"><CalculationMethodology /></div>;
       default:
         return <div className="enterprise-card p-4">Feature development in progress...</div>;
     }

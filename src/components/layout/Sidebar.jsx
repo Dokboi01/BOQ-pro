@@ -9,7 +9,8 @@ import {
   ChevronRight,
   LogOut,
   Building2,
-  Gavel
+  Gavel,
+  BookOpen
 } from 'lucide-react';
 
 const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
@@ -21,6 +22,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
     { id: 'tendering', label: 'Tendering & Bids', icon: Gavel },
     { id: 'library', label: 'Price Library', icon: Database },
     { id: 'reports', label: 'Documents & Export', icon: FileText },
+    { id: 'methodology', label: 'Calculations Guide', icon: BookOpen },
   ];
 
   return (
