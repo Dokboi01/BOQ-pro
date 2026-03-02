@@ -19,6 +19,12 @@ export function AuthProvider({ children }) {
     const [selectedPlan, setSelectedPlan] = useState(null);
     const initializationComplete = useRef(false);
 
+    // Auto-clear auth errors on view changes
+    const navigateTo = (newView) => {
+        setAuthError(null);
+        setView(newView);
+    };
+
     // Check for active session on mount
     useEffect(() => {
         let isMounted = true;
@@ -107,7 +113,7 @@ export function AuthProvider({ children }) {
             subscription.unsubscribe();
             clearTimeout(timer);
         };
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleLogin = async (credentials) => {
         setAuthError(null);
@@ -311,7 +317,7 @@ export function AuthProvider({ children }) {
         user,
         setUser,
         view,
-        setView,
+        setView: navigateTo,  // consumers get auto-clearing navigation
         authError,
         setAuthError,
         pendingUser,

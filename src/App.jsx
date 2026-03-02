@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ToastProvider } from './components/ui/ToastContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProjectsProvider, useProjects } from './context/ProjectsContext';
