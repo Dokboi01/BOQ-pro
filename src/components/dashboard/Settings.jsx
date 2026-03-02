@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../ui/ToastContext';
 import {
   User,
   CreditCard,
@@ -18,6 +19,7 @@ import { Loader2 } from 'lucide-react';
 
 const Settings = ({ user, onUpgrade }) => {
   const [activeTab, setActiveTab] = useState('profile');
+  const toast = useToast();
 
   const tabs = [
     { id: 'profile', label: 'My Profile', icon: User },
@@ -55,7 +57,7 @@ const Settings = ({ user, onUpgrade }) => {
     await saveSetting('supabase_url', supabaseUrl);
     await saveSetting('supabase_anon_key', supabaseKey);
     setIsSaving(false);
-    alert('Cloud settings updated successfully.');
+    toast.success('Cloud settings updated successfully.');
   };
 
   const renderContent = () => {
@@ -76,7 +78,7 @@ const Settings = ({ user, onUpgrade }) => {
                     const input = document.createElement('input');
                     input.type = 'file';
                     input.accept = 'image/*';
-                    input.onchange = () => alert('Avatar upload functionality will be integrated with Supabase storage in the next update.');
+                    input.onchange = () => toast.info('Avatar upload will be integrated with Supabase storage in the next update.');
                     input.click();
                   }}
                 >
@@ -100,7 +102,7 @@ const Settings = ({ user, onUpgrade }) => {
               <div className="form-actions">
                 <button
                   className="btn-primary"
-                  onClick={() => alert('Profile changes saved successfully (Simulation).')}
+                  onClick={() => toast.success('Profile changes saved successfully.')}
                 >
                   Save Changes
                 </button>
@@ -125,7 +127,7 @@ const Settings = ({ user, onUpgrade }) => {
               {user?.plan === 'Free' ? (
                 <button className="btn-upgrade-glow" onClick={onUpgrade}>Upgrade Now</button>
               ) : (
-                <button className="btn-secondary-sm" onClick={() => alert('Billing portal is being synchronized with Paystack/Flutterwave.')}>Manage Billing</button>
+                <button className="btn-secondary-sm" onClick={() => toast.info('Billing portal is being synchronized with Paystack/Flutterwave.')}>Manage Billing</button>
               )}
             </div>
 
@@ -160,7 +162,7 @@ const Settings = ({ user, onUpgrade }) => {
                   <span>Oct 12, 2025</span>
                   <span>₦0.00</span>
                   <span className="badge-success">Paid</span>
-                  <button className="btn-icon" onClick={() => alert('Downloading invoice PDF...')}>
+                  <button className="btn-icon" onClick={() => toast.info('Downloading invoice PDF...')}>
                     <ArrowUpCircle size={14} />
                   </button>
                 </div>
@@ -293,8 +295,8 @@ const Settings = ({ user, onUpgrade }) => {
                       setIsSeeding(true);
                       const result = await seedMarketData();
                       setIsSeeding(false);
-                      if (result === true) alert('✅ Market data seeded successfully! All 43 materials loaded.');
-                      else alert('❌ Seeding failed:\n\n' + (result?.error || 'Unknown error — check browser console (F12)'));
+                      if (result === true) toast.success('Market data seeded successfully! All 43 materials loaded.');
+                      else toast.error('Seeding failed: ' + (result?.error || 'Unknown error — check browser console (F12)'));
                     }}
                     disabled={isSeeding}
                   >

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useToast } from '../ui/ToastContext';
 import {
   BarChart3,
   TrendingUp,
@@ -24,6 +25,7 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
   const [budget, setBudget] = useState(250000000); // ₦250M
   const [activeVizTab, setActiveVizTab] = useState('section');
   const [isApproved, setIsApproved] = useState(false);
+  const toast = useToast();
 
   const calculateTotal = (proj) => {
     if (!proj.sections) return 0;
@@ -487,7 +489,7 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
             onClick={() => {
               if (confirm('Are you sure you want to approve this cost plan? This will finalize the draft for export.')) {
                 setIsApproved(true);
-                alert('Cost plan approved successfully.');
+                toast.success('Cost plan approved successfully.');
               }
             }}
             disabled={isApproved || projects.length === 0}

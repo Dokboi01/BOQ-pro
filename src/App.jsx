@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ToastProvider, useToast } from './components/ui/ToastContext';
 import Hero from './components/landing/Hero';
 import PricingPage from './components/landing/Pricing';
 import Login from './components/auth/Login';
@@ -65,6 +66,7 @@ class ErrorBoundary extends React.Component {
 
 function App() {
   console.log('App Rendering...');
+  const toast = useToast();
   const [user, setUser] = useState(null);
   const [view, setView] = useState('loading');
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -76,6 +78,7 @@ function App() {
   const [pendingUser, setPendingUser] = useState(null);
   const [focusMode, setFocusMode] = useState(false);
   const [showAnalyzer, setShowAnalyzer] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const initializationComplete = React.useRef(false);
 
   // Check for active session on mount
@@ -191,22 +194,6 @@ function App() {
 
     if (error) {
       console.error('❌ Login failed:', error.message);
-
-      // MOCK BYPASS for development/demonstration
-      if (credentials.email === 'guest@boqpro.com') {
-        console.log('✨ Guest Login Bypass Triggered');
-        const mockUser = {
-          id: 'mock-123',
-          email: 'guest@boqpro.com',
-          full_name: 'Guest Engineer',
-          plan: 'pro'
-        };
-        setUser(mockUser);
-        localStorage.setItem('boq_pro_profile', JSON.stringify(mockUser));
-        setView('app');
-        return;
-      }
-
       setAuthError(error.message);
       return;
     }
@@ -342,13 +329,13 @@ function App() {
 
     if (!data) {
       console.error('❌ CRITICAL: No data found for structureId:', structureId);
-      alert('Could not find components for this structure type.');
+      toast.error('Could not find components for this structure type.');
       return;
     }
 
     if (!data.sections) {
       console.error('❌ CRITICAL: Data found but contains no sections:', data);
-      alert('This structure type has no predefined sections.');
+      toast.error('This structure type has no predefined sections.');
       return;
     }
 
@@ -384,6 +371,7 @@ function App() {
 
     console.log('🚀 FINAL NEW PROJECT OBJECT:', newProj);
 
+    setIsCreating(true);
     try {
       const savedId = await saveProject(newProj);
 
@@ -393,8 +381,10 @@ function App() {
 
       if (!savedId) {
         console.warn('⚠️ Project saved locally only (DB save failed). ID:', projectId);
+        toast.warning('Project saved locally only. Cloud sync unavailable.');
       } else {
         console.log('💾 Project saved to database, ID:', savedId);
+        toast.success('Project created successfully!');
       }
 
       // Update local state immediately
@@ -416,6 +406,7 @@ function App() {
       }
     } catch (dbError) {
       console.error('❌ Database operation failed during structure selection:', dbError);
+      toast.error('Database error. Project saved locally as fallback.');
 
       // Fallback: Create project locally so user can still work
       const localId = `local_${Date.now()}`;
@@ -428,6 +419,8 @@ function App() {
       setFocusMode(true);
 
       console.warn('⚠️ Created local-only project due to DB error:', localId);
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -750,8 +743,10 @@ function App() {
           </div>
           <div className="summary-divider"></div>
           <div className="summary-item">
-            <span className="label">VARIANCE</span>
-            <span className={`val ${projects.length > 0 ? 'text-success' : ''}`}>₦0.00</span>
+            <span className="label">SECTIONS</span>
+            <span className={`val ${projects.length > 0 ? 'text-success' : ''}`}>
+              {(() => { const ap = projects.find(p => p.id === activeProjectId) || projects[0]; return ap?.sections?.length || 0; })()}
+            </span>
           </div>
           <div className="summary-item status">
             <ShieldCheck size={14} className="text-success" />
@@ -764,15 +759,15 @@ function App() {
             {projects.length > 0 ? (
               <>
                 <h1>
-                  {projects.find(p => p.id === activeProjectId)?.name || projects[0]?.name || 'Untitiled Project'}
+                  {projects.find(p => p.id === activeProjectId)?.name || projects[0]?.name || 'Untitled Project'}
                   <span className="status-badge">
                     {projects.find(p => p.id === activeProjectId)?.status || projects[0]?.status || 'Draft'}
                   </span>
                 </h1>
                 <div className="meta-row">
-                  <span className="meta-item"><MapPin size={14} /> Lagos - Algiers Sector</span>
+                  <span className="meta-item"><MapPin size={14} /> {(projects.find(p => p.id === activeProjectId) || projects[0])?.region || 'Location not set'}</span>
                   <span className="meta-item"><UserIcon size={14} /> {user?.full_name || 'Practitioner'}</span>
-                  <span className="meta-item"><Calendar size={14} /> Q1 2026</span>
+                  <span className="meta-item"><Calendar size={14} /> {(() => { const d = (projects.find(p => p.id === activeProjectId) || projects[0])?.date; if (!d) return 'No date'; const dt = new Date(d); const q = Math.ceil((dt.getMonth() + 1) / 3); return `Q${q} ${dt.getFullYear()}`; })()}</span>
                 </div>
               </>
             ) : (
@@ -794,7 +789,7 @@ function App() {
               </button>
             )}
             <button className="btn-secondary" onClick={() => setActiveTab('settings')}><SettingsIcon size={16} /> Settings</button>
-            <button className="btn-primary" onClick={handleCreateProject}>Create New Project</button>
+            <button className="btn-primary" onClick={handleCreateProject} disabled={isCreating}>{isCreating ? 'Creating...' : 'Create New Project'}</button>
           </div>
         </header>
 
@@ -1052,7 +1047,9 @@ function App() {
 export default function SafeApp() {
   return (
     <ErrorBoundary>
-      <App />
+      <ToastProvider>
+        <App />
+      </ToastProvider>
     </ErrorBoundary>
   );
 }

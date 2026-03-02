@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useToast } from '../ui/ToastContext';
 import {
   Plus,
   Search,
@@ -29,6 +30,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const toast = useToast();
 
   const defaultMaterials = React.useMemo(() => [
     {
@@ -323,7 +325,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
               <h3>Construction Material Cost Index (CMCI)</h3>
               <p>Industry-standard tracking of cost movements in West Africa</p>
             </div>
-            <button className="btn-secondary small" onClick={() => alert('Index breakdown history will be available in the next update.')}>View Full Index History</button>
+            <button className="btn-secondary small" onClick={() => toast.info('Index breakdown history will be available in the next update.')}>View Full Index History</button>
           </div>
           <div className="index-grid">
             {marketIndices.map((idx, i) => (
@@ -410,7 +412,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
             className="btn-primary"
             onClick={() => {
               if (!activeProject) {
-                alert('Please select or open a project first.');
+                toast.warning('Please select or open a project first.');
                 return;
               }
               const updatedSections = (activeProject.sections || []).map(section => ({
@@ -429,7 +431,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 })
               }));
               onUpdate(activeProject.id, updatedSections);
-              alert(`Applied ${mat.name} benchmark rate of ₦${mat.price.toLocaleString()} to matching items.`);
+              toast.success(`Applied ${mat.name} benchmark rate of ₦${mat.price.toLocaleString()} to matching items.`);
               setSelectedMaterial(null);
             }}
           >
@@ -493,7 +495,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 <option key={cat} value={cat}>{cat} {cat === 'All' ? 'Categories' : ''}</option>
               ))}
             </select>
-            <button className="btn-filter" onClick={() => alert('Regional benchmark selection will be available shortly.')}><MapPin size={14} /> Region: Lagos</button>
+            <button className="btn-filter" onClick={() => toast.info('Regional benchmark selection will be available shortly.')}><MapPin size={14} /> Region: Lagos</button>
           </div>
         </div>
 

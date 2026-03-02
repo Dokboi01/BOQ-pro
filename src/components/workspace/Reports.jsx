@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useToast } from '../ui/ToastContext';
 import {
   FileText,
   Download,
@@ -27,6 +28,7 @@ import 'jspdf-autotable';
 import { generateProjectSummary, getRegionalModifier } from '../../utils/aiService';
 
 const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
+  const toast = useToast();
   const [activeReport, setActiveReport] = useState(null);
   const [projectSummary, setProjectSummary] = useState('');
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
@@ -928,14 +930,14 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
       }, attachments);
 
       if (success) {
-        alert(`Report successfully emailed to ${emailConfig.recipient}`);
+        toast.success(`Report successfully emailed to ${emailConfig.recipient}`);
         setIsEmailModalOpen(false);
       } else {
-        alert('Failed to send email. Check your Resend API key in Settings.');
+        toast.error('Failed to send email. Check your Resend API key in Settings.');
       }
     } catch (error) {
       console.error('Email error:', error);
-      alert('An error occurred while preparing the email.');
+      toast.error('An error occurred while preparing the email.');
     } finally {
       setIsSending(false);
     }
