@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { ToastProvider, useToast } from './components/ui/ToastContext';
+import { ToastProvider } from './components/ui/ToastContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { ProjectsProvider, useProjects } from './context/ProjectsContext';
 import Hero from './components/landing/Hero';
 import PricingPage from './components/landing/Pricing';
 import Login from './components/auth/Login';
@@ -8,10 +10,6 @@ import Onboarding from './components/onboarding/Onboarding';
 import Sidebar from './components/layout/Sidebar';
 import ProjectDashboard from './components/dashboard/ProjectDashboard';
 import EmailVerification from './components/auth/EmailVerification';
-import { STRUCTURE_DATA } from './data/structures';
-import { PLAN_LIMITS, PLAN_NAMES } from './data/plans';
-import { supabase } from './db/supabase';
-import { saveProject, getProjects, getProfile, updateProfile, deleteProject } from './db/database';
 import BOQWorkspace from './components/workspace/BOQWorkspace';
 import MaterialLibrary from './components/workspace/MaterialLibrary';
 import Reports from './components/workspace/Reports';
@@ -21,17 +19,12 @@ import DrawingAnalyzer from './components/workspace/DrawingAnalyzer';
 import TenderingHub from './components/workspace/TenderingHub';
 import CalculationMethodology from './components/workspace/CalculationMethodology';
 import {
-  BarChart3,
   MapPin,
   Calendar,
   User as UserIcon,
   ShieldCheck,
-  Target,
   LogOut,
   Settings as SettingsIcon,
-  CreditCard,
-  FileCheck,
-  Calculator as CalcIcon,
   ChevronRight,
   ChevronLeft,
   Maximize2,
@@ -66,521 +59,28 @@ class ErrorBoundary extends React.Component {
 
 function App() {
   console.log('App Rendering...');
-  const toast = useToast();
-  const [user, setUser] = useState(null);
-  const [view, setView] = useState('loading');
-  const [selectedPlan, setSelectedPlan] = useState(null);
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [authError, setAuthError] = useState(null);
-  const [showSelector, setShowSelector] = useState(false);
-  const [activeProjectId, setActiveProjectId] = useState(null);
-  const [projects, setProjects] = useState([]);
-  const [pendingUser, setPendingUser] = useState(null);
-  const [focusMode, setFocusMode] = useState(false);
-  const [showAnalyzer, setShowAnalyzer] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const initializationComplete = React.useRef(false);
 
-  // Check for active session on mount
-  React.useEffect(() => {
-    let isMounted = true;
-
-    const checkUser = async () => {
-      try {
-        console.log('🔄 INITIALIZING AUTH...');
-
-        // 1. FAST PATH: UI Caching
-        const cachedProfile = localStorage.getItem('boq_pro_profile');
-        if (cachedProfile) {
-          try {
-            const parsed = JSON.parse(cachedProfile);
-            console.log('✨ Using cached profile:', parsed.full_name);
-            setUser(parsed);
-            setView('app');
-          } catch {
-            localStorage.removeItem('boq_pro_profile');
-          }
-        }
-
-        // 2. SESSION CHECK (Silent)
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-
-        if (session) {
-          console.log('✅ Active session found:', session.user.email);
-          const profile = await getProfile(session.user.id);
-          const fullUser = { ...session.user, ...profile };
-          setUser(fullUser);
-          localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
-          initializationComplete.current = true;
-          setView('app');
-        } else {
-          console.log('ℹ️ No active session');
-          localStorage.removeItem('boq_pro_profile');
-          setUser(null);
-          initializationComplete.current = true;
-          if (view === 'loading') setView('landing');
-        }
-      } catch (err) {
-        console.error('❌ Init error:', err);
-        initializationComplete.current = true;
-        setView('landing');
-      }
-    };
-
-    checkUser();
-
-    // 3. AUTH STATE LISTENER (Global)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔐 AUTH EVENT:', event, !!session);
-      if (!isMounted) return;
-
-      if (session) {
-        // Only trigger profile fetch on sign-in related events to avoid loops
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          const profile = await getProfile(session.user.id);
-          const fullUser = { ...session.user, ...profile };
-          setUser(fullUser);
-          localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
-          initializationComplete.current = true;
-
-          if (profile && profile.is_onboarded) {
-            setView('app');
-          } else {
-            setView('onboarding');
-          }
-        }
-      } else if (event === 'SIGNED_OUT') {
-        localStorage.removeItem('boq_pro_profile');
-        setUser(null);
-        setView('landing');
-      }
-    });
-
-    // Fallback if still loading after 5 seconds
-    const timer = setTimeout(() => {
-      if (isMounted && !initializationComplete.current) {
-        console.warn('Initialization timed out, falling back to landing');
-        setView('landing');
-      }
-    }, 5000);
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-      clearTimeout(timer);
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Load projects from Supabase when user is set
-  React.useEffect(() => {
-    if (user) {
-      const loadData = async () => {
-        const storedProjects = await getProjects();
-        setProjects(storedProjects);
-      };
-      loadData();
-    }
-  }, [user]);
-
-  const handleLogin = async (credentials) => {
-    setAuthError(null);
-    console.log('🚀 Attempting login for:', credentials.email);
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: credentials.email,
-      password: credentials.password,
-    });
-
-    if (error) {
-      console.error('❌ Login failed:', error.message);
-      setAuthError(error.message);
-      return;
-    }
-
-    if (data.session) {
-      console.log('✅ Login successful, updating UI...');
-      const profile = await getProfile(data.user.id);
-      const fullUser = { ...data.user, ...profile };
-      setUser(fullUser);
-      localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
-
-      if (profile && profile.is_onboarded) {
-        setView('app');
-      } else {
-        setView('onboarding');
-      }
-    }
-  };
-
-  const handleSignUp = async (data) => {
-    setAuthError(null);
-    console.log('🚀 Attempting Supabase Signup for:', data.email);
-
-    try {
-      // 10s Timeout for Signup - browser default is too long
-      const signupPromise = supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            full_name: data.fullName,
-            company_name: data.companyName,
-            phone_number: data.phoneNumber,
-            plan: selectedPlan || PLAN_NAMES.FREE,
-          }
-        }
-      });
-
-      const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('TIMEOUT'), 10000));
-      const result = await Promise.race([signupPromise, timeoutPromise]);
-
-      if (result === 'TIMEOUT') {
-        setAuthError('Signup is taking too long. This looks like a connection issue with Supabase.');
-        return;
-      }
-
-      const { data: res, error } = result;
-
-      if (error) {
-        console.error('❌ Supabase Signup Error:', error.message);
-        setAuthError(error.message);
-        return;
-      }
-
-      if (res.user && res.session === null) {
-        console.log('📬 Signup successful, email verification required.');
-        setPendingUser(data);
-        setView('verification');
-      } else if (res.user && res.session) {
-        console.log('✨ Signup successful, user logged in directly.');
-        const profile = await getProfile(res.user.id);
-        const fullUser = { ...res.user, ...profile };
-        setUser(fullUser);
-
-        if (profile && profile.is_onboarded) {
-          setView('app');
-        } else {
-          setView('onboarding');
-        }
-      }
-    } catch (err) {
-      console.error('❌ Critical Signup Crash:', err);
-      setAuthError('Could not reach verification server. Please check your internet connection.');
-    }
-  };
-
-  const handleVerify = async (code) => {
-    console.log('Verifying code with Supabase:', code);
-
-    // Supabase native OTP verification
-    const { error } = await supabase.auth.verifyOtp({
-      email: pendingUser?.email,
-      token: code,
-      type: 'signup'
-    });
-
-    if (error) {
-      console.error('Supabase OTP verification failed:', error.message);
-      return false;
-    }
-    return true;
-  };
-
-  const handleResendCode = async () => {
-    if (!pendingUser) return;
-    await supabase.auth.resend({
-      type: 'signup',
-      email: pendingUser.email,
-    });
-  };
-
-  const handleOnboardingComplete = async (data) => {
-    const updatedProfile = await updateProfile({
-      role: data.userType,
-      is_onboarded: true
-    });
-    if (updatedProfile) {
-      setUser(prev => ({ ...prev, ...updatedProfile }));
-      setView('app');
-    }
-  };
-
-  const handleCreateProject = () => {
-    const limits = PLAN_LIMITS[user?.plan] || PLAN_LIMITS[PLAN_NAMES.FREE];
-    if (projects.length >= limits.maxProjects) {
-      setView('pricing');
-      return;
-    }
-    setShowSelector(true);
-  };
-
-  const handleStructureSelect = async (structureId, structureName) => {
-    if (structureId === 'ai-analysis') {
-      setShowSelector(false);
-      setShowAnalyzer(true);
-      return;
-    }
-
-    console.log('Selected structure:', structureId);
-    console.log('Available keys:', Object.keys(STRUCTURE_DATA));
-
-    const data = STRUCTURE_DATA[structureId] || STRUCTURE_DATA['Residential Building'];
-
-    if (!data) {
-      console.error('❌ CRITICAL: No data found for structureId:', structureId);
-      toast.error('Could not find components for this structure type.');
-      return;
-    }
-
-    if (!data.sections) {
-      console.error('❌ CRITICAL: Data found but contains no sections:', data);
-      toast.error('This structure type has no predefined sections.');
-      return;
-    }
-
-    console.log('✅ Structure metadata found:', {
-      icon: data.icon,
-      description: data.description,
-      sectionCount: data.sections.length
-    });
-
-    const newProj = {
-      name: `Project: ${structureName}`,
-      type: structureId,
-      status: 'Draft',
-      sections: data.sections.map(s => {
-        const items = s.items || [];
-        console.log(`📍 Mapping section [${s.title}] with ${items.length} items`);
-
-        return {
-          ...s,
-          expanded: true,
-          items: items.map(item => ({
-            ...item,
-            id: Math.random().toString(36).substr(2, 9), // Use string ID
-            qty: item.qty || 0,
-            rate: item.rate || 0,
-            total: (item.qty || 0) * (item.rate || 0),
-            useBenchmark: true
-          }))
-        };
-      }),
-      date: new Date().toLocaleDateString()
-    };
-
-    console.log('🚀 FINAL NEW PROJECT OBJECT:', newProj);
-
-    setIsCreating(true);
-    try {
-      const savedId = await saveProject(newProj);
-
-      // Use database ID if available, otherwise generate a local ID
-      const projectId = savedId || `local_${Date.now()}`;
-      const finalProj = { ...newProj, id: projectId };
-
-      if (!savedId) {
-        console.warn('⚠️ Project saved locally only (DB save failed). ID:', projectId);
-        toast.warning('Project saved locally only. Cloud sync unavailable.');
-      } else {
-        console.log('💾 Project saved to database, ID:', savedId);
-        toast.success('Project created successfully!');
-      }
-
-      // Update local state immediately
-      setProjects(prev => [finalProj, ...prev]);
-      setActiveProjectId(projectId);
-      setShowSelector(false);
-      setActiveTab('workspace');
-      setFocusMode(true);
-      console.log('✨ Workspace navigation triggered with project:', projectId);
-
-      // Only refresh from DB if save was successful
-      if (savedId) {
-        getProjects().then(updated => {
-          console.log('🔄 Background refresh completed, projects count:', updated.length);
-          if (updated.length > 0) {
-            setProjects(updated);
-          }
-        });
-      }
-    } catch (dbError) {
-      console.error('❌ Database operation failed during structure selection:', dbError);
-      toast.error('Database error. Project saved locally as fallback.');
-
-      // Fallback: Create project locally so user can still work
-      const localId = `local_${Date.now()}`;
-      const fallbackProj = { ...newProj, id: localId };
-
-      setProjects(prev => [fallbackProj, ...prev]);
-      setActiveProjectId(localId);
-      setShowSelector(false);
-      setActiveTab('workspace');
-      setFocusMode(true);
-
-      console.warn('⚠️ Created local-only project due to DB error:', localId);
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
-  const handleAnalysisComplete = async (elements) => {
-    console.log('Analysis complete, elements:', elements);
-
-    // Convert elements to BOQ sections
-    const analyzedSections = elements.map(el => ({
-      id: Math.random().toString(36).substr(2, 9),
-      title: el.title,
-      expanded: true,
-      items: Array.from({ length: 3 }).map((_, idx) => ({
-        id: Math.random().toString(36).substr(2, 9),
-        description: `Identified Component ${idx + 1} from ${el.title}`,
-        unit: 'm³',
-        qty: Math.floor(Math.random() * 50) + 10,
-        rate: 0,
-        total: 0,
-        isAnalyzed: true
-      }))
-    }));
-
-    const newProj = {
-      name: `AI Draft: ${new Date().toLocaleDateString()}`,
-      type: 'AI Drawing Analysis',
-      status: 'Draft',
-      sections: analyzedSections,
-      date: new Date().toLocaleDateString()
-    };
-
-    try {
-      const savedId = await saveProject(newProj);
-      const projectId = savedId || `local_${Date.now()}`;
-      const finalProj = { ...newProj, id: projectId };
-
-      setProjects(prev => [finalProj, ...prev]);
-      setActiveProjectId(projectId);
-      setShowAnalyzer(false);
-      setActiveTab('workspace');
-      setFocusMode(true);
-
-      if (savedId) {
-        getProjects().then(updated => setProjects(updated));
-      }
-    } catch (err) {
-      console.error('Error creating project from analysis:', err);
-    }
-  };
-
-  const handleUpdateProject = async (projectId, updatedSections, region = null) => {
-    // 1. OPTIMISTIC UPDATE: Update local state immediately
-    setProjects(prev => prev.map(p =>
-      p.id === projectId ? {
-        ...p,
-        sections: updatedSections,
-        region: region || p.region || 'Lagos'
-      } : p
-    ));
-
-    // 2. BACKGROUND SAVE: Don't await this for UI update
-    const currentProject = projects.find(p => p.id === projectId);
-    saveProject({
-      id: projectId,
-      sections: updatedSections,
-      region: region || currentProject?.region || 'Lagos'
-    }).catch(err => {
-      console.error('❌ Background save failed:', err);
-      // Optional: Rollback state if critical, but for now we trust the local state
-    });
-  };
-
-  const handleAddSection = async (projectId) => {
-    const project = projects.find(p => p.id === projectId);
-    if (!project) return;
-
-    const newSection = {
-      id: Math.random().toString(36).substr(2, 9),
-      title: 'New Workspace Section',
-      expanded: true,
-      items: []
-    };
-
-    const updatedSections = [...(project.sections || []), newSection];
-    await handleUpdateProject(projectId, updatedSections);
-  };
-
-  const handleDeleteSectionOrItem = async (projectId, sectionId, itemId = null) => {
-    const project = projects.find(p => p.id === projectId);
-    if (!project) return;
-
-    let updatedSections;
-    if (itemId) {
-      // Delete specific item
-      updatedSections = project.sections.map(s => {
-        if (s.id !== sectionId) return s;
-        return { ...s, items: s.items.filter(i => i.id !== itemId) };
-      });
-    } else {
-      // Delete entire section
-      updatedSections = project.sections.filter(s => s.id !== sectionId);
-    }
-
-    await handleUpdateProject(projectId, updatedSections);
-  };
-
-  const handleDeleteProject = async (projectId) => {
-    const success = await deleteProject(projectId);
-    if (success) {
-      setProjects(prev => prev.filter(p => p.id !== projectId));
-      if (activeProjectId === projectId) {
-        setActiveProjectId(null);
-        setActiveTab('dashboard');
-      }
-    } else {
-      alert('Failed to delete project. Please try again.');
-    }
-  };
-
-  const calculateTotalValue = React.useMemo(() => {
-    try {
-      const activeProject = projects.find(p => p.id === activeProjectId) || projects[0];
-      if (!activeProject || !activeProject.sections) return 0;
-
-      return activeProject.sections.reduce((acc, section) => {
-        if (!section || !section.items) return acc;
-        return acc + section.items.reduce((itemAcc, item) => itemAcc + (item.total || 0), 0);
-      }, 0);
-    } catch (err) {
-      console.error('calculateTotalValue error:', err);
-      return 0;
-    }
-  }, [projects, activeProjectId]);
-
-  const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setView('landing');
-  };
-
-  const handleSendMagicLink = async (email) => {
-    setAuthError(null);
-    console.log('🚀 Sending Magic Link to:', email);
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: window.location.origin,
-      },
-    });
-
-    if (error) {
-      console.error('❌ Magic Link failed:', error.message);
-      setAuthError(error.message);
-      return false;
-    }
-
-    console.log('✅ Magic Link triggered successfully');
-    return true;
-  };
-
+  // Consume contexts
+  const {
+    user, view, setView, authError, setAuthError,
+    pendingUser, selectedPlan,
+    handleLogin, handleSignUp, handleVerify, handleResendCode,
+    handleOnboardingComplete, handleSendMagicLink, handleSelectPlan, logout,
+  } = useAuth();
+
+  const {
+    projects, activeProjectId, setActiveProjectId, activeProject,
+    activeTab, setActiveTab,
+    showSelector, setShowSelector,
+    showAnalyzer, setShowAnalyzer,
+    isCreating, focusMode, setFocusMode,
+    calculateTotalValue,
+    handleCreateProject, handleStructureSelect, handleAnalysisComplete,
+    handleUpdateProject, handleAddSection, handleDeleteSectionOrItem,
+    handleDeleteProject,
+  } = useProjects();
+
+  // ── Early returns for auth views ──
   if (view === 'loading') return (
     <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white' }}>
       <div className="loading-spinner"></div>
@@ -591,61 +91,7 @@ function App() {
   if (view === 'landing') return <Hero onGetStarted={() => setView('pricing')} onLogin={() => setView('login')} />;
   if (view === 'pricing') return <PricingPage
     error={authError}
-    onSelectPlan={async (plan) => {
-      setAuthError(null);
-
-      // 1. FAST PATH: Guest/Mock User Bypass
-      if (user && (user.id?.startsWith('mock-') || user.email === 'guest@boqpro.com')) {
-        console.log('✨ Local Plan Selection (Mock User)');
-        const updated = { ...user, plan };
-        setUser(updated);
-        localStorage.setItem('boq_pro_profile', JSON.stringify(updated));
-        setView('app');
-        return;
-      }
-
-      if (user) {
-        try {
-          console.log('📡 Syncing plan selection with database:', plan);
-
-          // Safety race: 4s timeout for real database updates
-          const profilePromise = updateProfile({ plan });
-          const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('TIMEOUT'), 4000));
-
-          const result = await Promise.race([profilePromise, timeoutPromise]);
-
-          if (result === 'TIMEOUT') {
-            console.warn('⚠️ DB Sync timed out, applying locally');
-            setAuthError('Connection sync slow. Plan saved locally.');
-            const localUpdate = { ...user, plan };
-            setUser(localUpdate);
-            localStorage.setItem('boq_pro_profile', JSON.stringify(localUpdate));
-            // Show message for a moment then proceed
-            setTimeout(() => setView('app'), 1500);
-            return;
-          }
-
-          if (result) {
-            setUser(prev => ({ ...prev, ...result }));
-            setView('app');
-          } else {
-            // DB returned null or error
-            console.warn('⚠️ DB update failed, falling back to local');
-            const localUpdate = { ...user, plan };
-            setUser(localUpdate);
-            setView('app');
-          }
-        } catch (err) {
-          console.error('❌ Plan selection crash:', err);
-          const localUpdate = { ...user, plan };
-          setUser(localUpdate);
-          setView('app');
-        }
-      } else {
-        setSelectedPlan(plan);
-        setView('signup');
-      }
-    }}
+    onSelectPlan={handleSelectPlan}
     onBack={() => { setAuthError(null); setView(user ? 'app' : 'landing'); }}
   />;
   if (view === 'login') return <Login
@@ -666,9 +112,8 @@ function App() {
   );
   if (view === 'onboarding') return <Onboarding onComplete={handleOnboardingComplete} />;
 
+  // ── Main App Content Router ──
   const renderContent = () => {
-    const activeProject = projects.find(p => p.id === activeProjectId) || projects[0];
-
     switch (activeTab) {
       case 'dashboard':
         return <ProjectDashboard
@@ -745,7 +190,7 @@ function App() {
           <div className="summary-item">
             <span className="label">SECTIONS</span>
             <span className={`val ${projects.length > 0 ? 'text-success' : ''}`}>
-              {(() => { const ap = projects.find(p => p.id === activeProjectId) || projects[0]; return ap?.sections?.length || 0; })()}
+              {activeProject?.sections?.length || 0}
             </span>
           </div>
           <div className="summary-item status">
@@ -759,15 +204,15 @@ function App() {
             {projects.length > 0 ? (
               <>
                 <h1>
-                  {projects.find(p => p.id === activeProjectId)?.name || projects[0]?.name || 'Untitled Project'}
+                  {activeProject?.name || 'Untitled Project'}
                   <span className="status-badge">
-                    {projects.find(p => p.id === activeProjectId)?.status || projects[0]?.status || 'Draft'}
+                    {activeProject?.status || 'Draft'}
                   </span>
                 </h1>
                 <div className="meta-row">
-                  <span className="meta-item"><MapPin size={14} /> {(projects.find(p => p.id === activeProjectId) || projects[0])?.region || 'Location not set'}</span>
+                  <span className="meta-item"><MapPin size={14} /> {activeProject?.region || 'Location not set'}</span>
                   <span className="meta-item"><UserIcon size={14} /> {user?.full_name || 'Practitioner'}</span>
-                  <span className="meta-item"><Calendar size={14} /> {(() => { const d = (projects.find(p => p.id === activeProjectId) || projects[0])?.date; if (!d) return 'No date'; const dt = new Date(d); const q = Math.ceil((dt.getMonth() + 1) / 3); return `Q${q} ${dt.getFullYear()}`; })()}</span>
+                  <span className="meta-item"><Calendar size={14} /> {(() => { const d = activeProject?.date; if (!d) return 'No date'; const dt = new Date(d); const q = Math.ceil((dt.getMonth() + 1) / 3); return `Q${q} ${dt.getFullYear()}`; })()}</span>
                 </div>
               </>
             ) : (
@@ -1048,7 +493,11 @@ export default function SafeApp() {
   return (
     <ErrorBoundary>
       <ToastProvider>
-        <App />
+        <AuthProvider>
+          <ProjectsProvider>
+            <App />
+          </ProjectsProvider>
+        </AuthProvider>
       </ToastProvider>
     </ErrorBoundary>
   );
