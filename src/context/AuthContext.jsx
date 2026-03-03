@@ -49,20 +49,35 @@ export function AuthProvider({ children }) {
             console.log('🔐 AUTH STATE:', firebaseUser ? firebaseUser.email : 'signed out');
 
             if (firebaseUser) {
-                // User is signed in — fetch or create profile
-                const profile = await getProfile(firebaseUser.uid);
-                const fullUser = {
-                    id: firebaseUser.uid,
-                    email: firebaseUser.email,
-                    ...profile
-                };
-                setUser(fullUser);
-                localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
-                initializationComplete.current = true;
+                try {
+                    // User is signed in — fetch or create profile
+                    const profile = await getProfile(firebaseUser.uid);
+                    const fullUser = {
+                        id: firebaseUser.uid,
+                        email: firebaseUser.email,
+                        ...profile
+                    };
+                    setUser(fullUser);
+                    localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
+                    initializationComplete.current = true;
 
-                if (profile && profile.is_onboarded) {
-                    setView('app');
-                } else {
+                    if (profile && profile.is_onboarded) {
+                        setView('app');
+                    } else {
+                        setView('onboarding');
+                    }
+                } catch (err) {
+                    console.error('⚠️ Firestore profile fetch failed:', err.message);
+                    // Fallback: use basic auth data so user isn't stuck
+                    const basicUser = {
+                        id: firebaseUser.uid,
+                        email: firebaseUser.email,
+                        full_name: firebaseUser.displayName || 'Practitioner',
+                        plan: 'Free'
+                    };
+                    setUser(basicUser);
+                    localStorage.setItem('boq_pro_profile', JSON.stringify(basicUser));
+                    initializationComplete.current = true;
                     setView('onboarding');
                 }
             } else {
@@ -131,19 +146,30 @@ export function AuthProvider({ children }) {
                 displayName: data.fullName
             });
 
-            // Create profile in Firestore
-            await updateProfile({
-                full_name: data.fullName,
-                company_name: data.companyName,
-                phone_number: data.phoneNumber,
-                plan: selectedPlan || 'Free',
-                email: data.email,
-                is_onboarded: false
-            });
+            // Create profile in Firestore (non-blocking — if it fails, user still proceeds)
+            try {
+                await updateProfile({
+                    full_name: data.fullName,
+                    company_name: data.companyName,
+                    phone_number: data.phoneNumber,
+                    plan: selectedPlan || 'Free',
+                    email: data.email,
+                    is_onboarded: false
+                });
+            } catch (profileErr) {
+                console.warn('⚠️ Firestore profile creation failed (will retry later):', profileErr.message);
+            }
 
             console.log('✅ Signup successful:', result.user.email);
             setPendingUser(result.user);
-            await sendEmailVerification(result.user);
+
+            // Send verification email (non-blocking)
+            try {
+                await sendEmailVerification(result.user);
+            } catch (emailErr) {
+                console.warn('⚠️ Verification email failed:', emailErr.message);
+            }
+
             setView('verification');
         } catch (error) {
             console.error('❌ Signup failed:', error.message);
