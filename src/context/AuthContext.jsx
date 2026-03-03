@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
-import { auth } from '../db/firebase';
+import { auth, db } from '../db/firebase';
 import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
@@ -33,7 +33,7 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(initialUser);
     const [view, setView] = useState(initialView);
     const [authError, setAuthError] = useState(null);
-    const [pendingUser] = useState(null);
+    const [pendingUser, setPendingUser] = useState(null);
     const [selectedPlan, setSelectedPlan] = useState(null);
     const initializationComplete = useRef(false);
 
@@ -142,7 +142,9 @@ export function AuthProvider({ children }) {
             });
 
             console.log('✅ Signup successful:', result.user.email);
-            // onAuthStateChanged will handle navigation
+            setPendingUser(result.user);
+            await sendEmailVerification(result.user);
+            setView('verification');
         } catch (error) {
             console.error('❌ Signup failed:', error.message);
             const messages = {
@@ -157,8 +159,8 @@ export function AuthProvider({ children }) {
     const handleVerify = async () => {
         // Firebase handles email verification differently — send verification email
         try {
-            if (auth.currentUser) {
-                await sendEmailVerification(auth.currentUser);
+            if (pendingUser || auth.currentUser) {
+                await sendEmailVerification(pendingUser || auth.currentUser);
             }
             return true;
         } catch (error) {
@@ -237,11 +239,11 @@ export function AuthProvider({ children }) {
     const value = {
         user,
         setUser,
+        pendingUser,
         view,
         setView: navigateTo,
         authError,
         setAuthError,
-        pendingUser,
         selectedPlan,
         handleLogin,
         handleSignUp,

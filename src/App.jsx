@@ -12,6 +12,7 @@ import ProjectDashboard from './components/dashboard/ProjectDashboard';
 import EmailVerification from './components/auth/EmailVerification';
 import BOQWorkspace from './components/workspace/BOQWorkspace';
 import MaterialLibrary from './components/workspace/MaterialLibrary';
+import FirebaseActionHandler from './components/auth/FirebaseActionHandler';
 import Reports from './components/workspace/Reports';
 import Settings from './components/dashboard/Settings';
 import StructureSelector from './components/dashboard/StructureSelector';
@@ -78,6 +79,25 @@ function App() {
     handleUpdateProject, handleAddSection, handleDeleteSectionOrItem,
     handleDeleteProject,
   } = useProjects();
+
+  // ── Intercept Firebase Auth Action URLs (like email verification) ──
+  const searchParams = new URLSearchParams(window.location.search);
+  const actionMode = searchParams.get('mode');
+  const actionCode = searchParams.get('oobCode');
+
+  if (actionMode && actionCode) {
+    return (
+      <FirebaseActionHandler
+        mode={actionMode}
+        actionCode={actionCode}
+        onContinue={() => {
+          // Clear query params and go to app or login
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setView(user ? 'app' : 'login');
+        }}
+      />
+    );
+  }
 
   // ── Early returns for auth views ──
   if (view === 'loading') return (
