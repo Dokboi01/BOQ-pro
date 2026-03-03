@@ -182,7 +182,6 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
         <div className="pipeline-track-pro">
           {[
             { label: 'Cost Planning', status: 'completed' },
-            { label: 'Tendering', status: 'active' },
             { label: 'Selection', status: 'upcoming' },
             { label: 'Post-Contract', status: 'upcoming' }
           ].map((stage, i) => (

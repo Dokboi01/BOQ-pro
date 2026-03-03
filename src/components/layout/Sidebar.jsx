@@ -19,7 +19,6 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Project Dashboard', icon: LayoutDashboard },
     { id: 'workspace', label: 'BOQ Workspace', icon: FileSpreadsheet },
-    { id: 'tendering', label: 'Tendering & Bids', icon: Gavel },
     { id: 'library', label: 'Price Library', icon: Database },
     { id: 'reports', label: 'Documents & Export', icon: FileText },
     { id: 'methodology', label: 'Calculations Guide', icon: BookOpen },
