@@ -129,6 +129,13 @@ function App() {
       onBack={() => setView('signup')}
     />
   );
+  if (view === 'forgot-password') return (
+    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white', flexDirection: 'column', gap: '1rem', fontFamily: 'Inter, sans-serif' }}>
+      <h2>🔑 Password Reset</h2>
+      <p style={{ color: '#94a3b8', maxWidth: '400px', textAlign: 'center' }}>Password reset is handled via Firebase. Please use the Firebase Console or contact support to reset your password.</p>
+      <button onClick={() => setView('login')} style={{ padding: '0.75rem 2rem', background: '#2563eb', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: '1rem' }}>Back to Login</button>
+    </div>
+  );
   if (view === 'onboarding') return <Onboarding onComplete={handleOnboardingComplete} />;
 
   // ── Main App Content Router ──

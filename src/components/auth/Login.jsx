@@ -92,14 +92,6 @@ const Login = ({ error, onLogin, onSendMagicLink, onSwitchToSignUp, onForgotPass
               </>
             )}
           </button>
-
-          <button
-            type="button"
-            className="btn-guest-access"
-            onClick={() => onLogin({ email: 'guest@boqpro.com', password: 'password' })}
-          >
-            Engineer Guest Access (Quick Test)
-          </button>
         </form>
 
         <div className="auth-divider">
@@ -157,8 +149,6 @@ const Login = ({ error, onLogin, onSendMagicLink, onSwitchToSignUp, onForgotPass
 
         .auth-card:hover {
           box-shadow: 0 30px 60px -15px rgba(37, 99, 235, 0.15);
-        }
-          border-radius: var(--radius-2xl);
         }
 
         .auth-header {
