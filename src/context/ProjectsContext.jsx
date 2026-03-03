@@ -121,13 +121,15 @@ export function ProjectsProvider({ children }) {
 
         setIsCreating(true);
         try {
-            const savedId = await saveProject(newProj);
+            // Race saveProject against a 5-second timeout to avoid hanging on Firestore offline
+            const saveTimeout = new Promise((resolve) => setTimeout(() => resolve(null), 5000));
+            const savedId = await Promise.race([saveProject(newProj), saveTimeout]);
             const projectId = savedId || `local_${Date.now()}`;
             const finalProj = { ...newProj, id: projectId };
 
             if (!savedId) {
-                console.warn('⚠️ Project saved locally only (DB save failed). ID:', projectId);
-                toast.warning('Project saved locally only. Cloud sync unavailable.');
+                console.warn('⚠️ Project saved locally only (DB save failed or timed out). ID:', projectId);
+                toast.warning('Project saved locally. Cloud sync will retry later.');
             } else {
                 console.log('💾 Project saved to database, ID:', savedId);
                 toast.success('Project created successfully!');
@@ -142,7 +144,7 @@ export function ProjectsProvider({ children }) {
             if (savedId) {
                 getProjects().then(updated => {
                     if (updated.length > 0) setProjects(updated);
-                });
+                }).catch(() => { }); // Ignore if offline
             }
         } catch (dbError) {
             console.error('❌ Database operation failed during structure selection:', dbError);
