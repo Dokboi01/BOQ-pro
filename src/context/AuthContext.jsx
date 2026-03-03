@@ -174,12 +174,18 @@ export function AuthProvider({ children }) {
     };
 
     const handleOnboardingComplete = async (data) => {
-        const updatedProfile = await updateProfile({
-            role: data.userType,
-            is_onboarded: true
-        });
-        if (updatedProfile) {
-            setUser(prev => ({ ...prev, ...updatedProfile }));
+        try {
+            const updatedProfile = await updateProfile({
+                role: data.userType,
+                is_onboarded: true
+            });
+            if (updatedProfile) {
+                setUser(prev => ({ ...prev, ...updatedProfile }));
+            }
+        } catch (err) {
+            console.error('❌ Onboarding profile update failed:', err);
+        } finally {
+            // Guarantee navigation to dashboard
             setView('app');
         }
     };
@@ -216,10 +222,16 @@ export function AuthProvider({ children }) {
     };
 
     const logout = async () => {
-        await signOut(auth);
-        localStorage.removeItem('boq_pro_profile');
-        setUser(null);
-        setView('landing');
+        try {
+            await signOut(auth);
+        } catch (err) {
+            console.error('❌ Logout error:', err);
+        } finally {
+            // Guarantee local cleanup and navigation
+            localStorage.removeItem('boq_pro_profile');
+            setUser(null);
+            setView('landing');
+        }
     };
 
     const value = {
