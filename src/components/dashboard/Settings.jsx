@@ -14,7 +14,7 @@ import {
   Zap
 } from 'lucide-react';
 import { getSetting, saveSetting } from '../../db/database';
-import { seedMarketData } from '../../db/seed_materials';
+import { seedMarketData } from '../../db/database';
 import { Loader2 } from 'lucide-react';
 
 const Settings = ({ user, onUpgrade }) => {
@@ -30,8 +30,6 @@ const Settings = ({ user, onUpgrade }) => {
   ];
 
   const [apiKey, setApiKey] = useState('');
-  const [supabaseUrl, setSupabaseUrl] = useState('');
-  const [supabaseKey, setSupabaseKey] = useState('');
   const [isSeeding, setIsSeeding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -41,12 +39,6 @@ const Settings = ({ user, onUpgrade }) => {
     const loadSettings = async () => {
       const savedKey = await getSetting('resend_api_key');
       if (savedKey) setApiKey(savedKey);
-
-      const sUrl = await getSetting('supabase_url');
-      if (sUrl) setSupabaseUrl(sUrl);
-
-      const sKey = await getSetting('supabase_anon_key');
-      if (sKey) setSupabaseKey(sKey);
     };
     loadSettings();
   }, []);
@@ -54,10 +46,8 @@ const Settings = ({ user, onUpgrade }) => {
   const handleSaveAPI = async () => {
     setIsSaving(true);
     await saveSetting('resend_api_key', apiKey);
-    await saveSetting('supabase_url', supabaseUrl);
-    await saveSetting('supabase_anon_key', supabaseKey);
     setIsSaving(false);
-    toast.success('Cloud settings updated successfully.');
+    toast.success('API settings saved successfully.');
   };
 
   const renderContent = () => {
@@ -78,7 +68,7 @@ const Settings = ({ user, onUpgrade }) => {
                     const input = document.createElement('input');
                     input.type = 'file';
                     input.accept = 'image/*';
-                    input.onchange = () => toast.info('Avatar upload will be integrated with Supabase storage in the next update.');
+                    input.onchange = () => toast.info('Avatar upload will be integrated with Firebase Storage in a future update.');
                     input.click();
                   }}
                 >
@@ -244,31 +234,12 @@ const Settings = ({ user, onUpgrade }) => {
                 <div className="service-info">
                   <div className="icon-box-sm text-success"><Database size={20} /></div>
                   <div className="text-box">
-                    <h4>Supabase Cloud Storage</h4>
-                    <p>Enables centralized user management and project synchronization across devices.</p>
+                    <h4>Firebase Cloud Backend</h4>
+                    <p>Project data is automatically synced to Firebase Firestore across all your devices.</p>
                   </div>
                 </div>
-                <div className="grid-2 mt-4">
-                  <div className="form-item">
-                    <label>Supabase URL</label>
-                    <input
-                      type="text"
-                      value={supabaseUrl}
-                      onChange={(e) => setSupabaseUrl(e.target.value)}
-                      placeholder="https://xxxx.supabase.co"
-                      className="settings-input"
-                    />
-                  </div>
-                  <div className="form-item">
-                    <label>Anon Public Key</label>
-                    <input
-                      type="password"
-                      value={supabaseKey}
-                      onChange={(e) => setSupabaseKey(e.target.value)}
-                      placeholder="eyJhbGci..."
-                      className="settings-input"
-                    />
-                  </div>
+                <div className="mt-4" style={{ padding: '0.75rem', background: 'rgba(74, 222, 128, 0.1)', borderRadius: '8px', fontSize: '0.8125rem', color: '#4ade80' }}>
+                  ✅ Connected to Firebase — Project: boq-pro-72332
                 </div>
                 <div className="form-actions mt-4">
                   <button

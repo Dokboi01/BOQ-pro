@@ -25,7 +25,7 @@ export function ProjectsProvider({ children }) {
     const [isCreating, setIsCreating] = useState(false);
     const [focusMode, setFocusMode] = useState(false);
 
-    // Load projects from Supabase when user is set
+    // Load projects from Firebase when user is set
     React.useEffect(() => {
         if (user) {
             const loadData = async () => {

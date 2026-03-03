@@ -1,4 +1,5 @@
-import { supabase } from './supabase';
+import { db } from './firebase';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 const materialsToSeed = [
 
@@ -639,25 +640,23 @@ const indicesToSeed = [
 export const seedMarketData = async () => {
     console.log('🚀 Starting Market Data Seed...');
     try {
-        // Seed Materials
-        const { error: matError } = await supabase
-            .from('materials')
-            .upsert(materialsToSeed, { onConflict: 'name' });
-
-        if (matError) {
-            console.error('❌ Materials seed error:', matError.message, '| Code:', matError.code, '| Hint:', matError.hint, '| Details:', matError.details);
-            throw matError;
+        // Seed Materials to Firestore
+        for (const mat of materialsToSeed) {
+            const docId = mat.name.replace(/\s+/g, '_').toLowerCase();
+            await setDoc(doc(db, 'materials', docId), {
+                ...mat,
+                created_at: serverTimestamp()
+            });
         }
         console.log(`✅ ${materialsToSeed.length} materials seeded successfully.`);
 
-        // Seed Indices
-        const { error: idxError } = await supabase
-            .from('market_indices')
-            .upsert(indicesToSeed, { onConflict: 'label' });
-
-        if (idxError) {
-            console.error('❌ Indices seed error:', idxError.message, '| Code:', idxError.code, '| Hint:', idxError.hint, '| Details:', idxError.details);
-            throw idxError;
+        // Seed Indices to Firestore
+        for (const idx of indicesToSeed) {
+            const docId = idx.label.replace(/\s+/g, '_').toLowerCase();
+            await setDoc(doc(db, 'market_indices', docId), {
+                ...idx,
+                created_at: serverTimestamp()
+            });
         }
         console.log(`✅ ${indicesToSeed.length} market indices seeded successfully.`);
 

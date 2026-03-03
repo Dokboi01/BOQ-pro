@@ -1,7 +1,14 @@
 import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
-import { supabase } from '../db/supabase';
+import { auth } from '../db/firebase';
+import {
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged,
+    sendEmailVerification,
+    updateProfile as updateAuthProfile
+} from 'firebase/auth';
 import { getProfile, updateProfile } from '../db/database';
-import { PLAN_NAMES } from '../data/plans';
 
 const AuthContext = createContext(null);
 
@@ -12,10 +19,21 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }) {
-    const [user, setUser] = useState(null);
-    const [view, setView] = useState('loading');
+    // Initialize from cache for instant UI
+    const cachedProfile = localStorage.getItem('boq_pro_profile');
+    let initialUser = null;
+    let initialView = 'loading';
+    if (cachedProfile) {
+        try {
+            initialUser = JSON.parse(cachedProfile);
+            initialView = 'app';
+        } catch { /* ignore */ }
+    }
+
+    const [user, setUser] = useState(initialUser);
+    const [view, setView] = useState(initialView);
     const [authError, setAuthError] = useState(null);
-    const [pendingUser, setPendingUser] = useState(null);
+    const [pendingUser] = useState(null);
     const [selectedPlan, setSelectedPlan] = useState(null);
     const initializationComplete = useRef(false);
 
@@ -25,92 +43,47 @@ export function AuthProvider({ children }) {
         setView(newView);
     };
 
-    // Check for active session on mount
+    // Firebase Auth State Listener
     useEffect(() => {
-        let isMounted = true;
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            console.log('🔐 AUTH STATE:', firebaseUser ? firebaseUser.email : 'signed out');
 
-        const checkUser = async () => {
-            try {
-                console.log('🔄 INITIALIZING AUTH...');
+            if (firebaseUser) {
+                // User is signed in — fetch or create profile
+                const profile = await getProfile(firebaseUser.uid);
+                const fullUser = {
+                    id: firebaseUser.uid,
+                    email: firebaseUser.email,
+                    ...profile
+                };
+                setUser(fullUser);
+                localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
+                initializationComplete.current = true;
 
-                // 1. FAST PATH: UI Caching
-                const cachedProfile = localStorage.getItem('boq_pro_profile');
-                if (cachedProfile) {
-                    try {
-                        const parsed = JSON.parse(cachedProfile);
-                        console.log('✨ Using cached profile:', parsed.full_name);
-                        setUser(parsed);
-                        setView('app');
-                    } catch {
-                        localStorage.removeItem('boq_pro_profile');
-                    }
-                }
-
-                // 2. SESSION CHECK (Silent)
-                const { data: { session }, error } = await supabase.auth.getSession();
-                if (error) throw error;
-
-                if (session) {
-                    console.log('✅ Active session found:', session.user.email);
-                    const profile = await getProfile(session.user.id);
-                    const fullUser = { ...session.user, ...profile };
-                    setUser(fullUser);
-                    localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
-                    initializationComplete.current = true;
+                if (profile && profile.is_onboarded) {
                     setView('app');
                 } else {
-                    console.log('ℹ️ No active session');
-                    localStorage.removeItem('boq_pro_profile');
-                    setUser(null);
-                    initializationComplete.current = true;
-                    setView(prev => prev === 'loading' ? 'landing' : prev);
+                    setView('onboarding');
                 }
-            } catch (err) {
-                console.error('❌ Init error:', err);
-                initializationComplete.current = true;
-                setView('landing');
-            }
-        };
-
-        checkUser();
-
-        // 3. AUTH STATE LISTENER (Global)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log('🔐 AUTH EVENT:', event, !!session);
-            if (!isMounted) return;
-
-            if (session) {
-                if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-                    const profile = await getProfile(session.user.id);
-                    const fullUser = { ...session.user, ...profile };
-                    setUser(fullUser);
-                    localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
-                    initializationComplete.current = true;
-
-                    if (profile && profile.is_onboarded) {
-                        setView('app');
-                    } else {
-                        setView('onboarding');
-                    }
-                }
-            } else if (event === 'SIGNED_OUT') {
+            } else {
+                // User is signed out
                 localStorage.removeItem('boq_pro_profile');
                 setUser(null);
-                setView('landing');
+                initializationComplete.current = true;
+                setView(prev => prev === 'loading' ? 'landing' : prev);
             }
         });
 
-        // Fallback if still loading after 5 seconds
+        // Fallback timeout
         const timer = setTimeout(() => {
-            if (isMounted && !initializationComplete.current) {
-                console.warn('Initialization timed out, falling back to landing');
+            if (!initializationComplete.current) {
+                console.warn('Initialization timed out');
                 setView('landing');
             }
         }, 5000);
 
         return () => {
-            isMounted = false;
-            subscription.unsubscribe();
+            unsubscribe();
             clearTimeout(timer);
         };
     }, []);
@@ -119,109 +92,85 @@ export function AuthProvider({ children }) {
         setAuthError(null);
         console.log('🚀 Attempting login for:', credentials.email);
 
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email: credentials.email,
-            password: credentials.password,
-        });
+        try {
+            const result = await signInWithEmailAndPassword(
+                auth,
+                credentials.email,
+                credentials.password
+            );
 
-        if (error) {
+            console.log('✅ Login successful:', result.user.email);
+            // onAuthStateChanged will handle the rest
+        } catch (error) {
             console.error('❌ Login failed:', error.message);
-            setAuthError(error.message);
-            return;
-        }
-
-        if (data.session) {
-            console.log('✅ Login successful, updating UI...');
-            const profile = await getProfile(data.user.id);
-            const fullUser = { ...data.user, ...profile };
-            setUser(fullUser);
-            localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
-
-            if (profile && profile.is_onboarded) {
-                setView('app');
-            } else {
-                setView('onboarding');
-            }
+            // Map Firebase error codes to friendly messages
+            const messages = {
+                'auth/invalid-credential': 'Invalid email or password.',
+                'auth/user-not-found': 'No account found with this email.',
+                'auth/wrong-password': 'Incorrect password.',
+                'auth/too-many-requests': 'Too many attempts. Please try again later.',
+                'auth/invalid-email': 'Please enter a valid email address.',
+            };
+            setAuthError(messages[error.code] || error.message);
         }
     };
 
     const handleSignUp = async (data) => {
         setAuthError(null);
-        console.log('🚀 Attempting Supabase Signup for:', data.email);
+        console.log('🚀 Attempting signup for:', data.email);
 
         try {
-            const signupPromise = supabase.auth.signUp({
-                email: data.email,
-                password: data.password,
-                options: {
-                    data: {
-                        full_name: data.fullName,
-                        company_name: data.companyName,
-                        phone_number: data.phoneNumber,
-                        plan: selectedPlan || PLAN_NAMES.FREE,
-                    }
-                }
+            const result = await createUserWithEmailAndPassword(
+                auth,
+                data.email,
+                data.password
+            );
+
+            // Update Firebase Auth display name
+            await updateAuthProfile(result.user, {
+                displayName: data.fullName
             });
 
-            const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('TIMEOUT'), 10000));
-            const result = await Promise.race([signupPromise, timeoutPromise]);
+            // Create profile in Firestore
+            await updateProfile({
+                full_name: data.fullName,
+                company_name: data.companyName,
+                phone_number: data.phoneNumber,
+                plan: selectedPlan || 'Free',
+                email: data.email,
+                is_onboarded: false
+            });
 
-            if (result === 'TIMEOUT') {
-                setAuthError('Signup is taking too long. This looks like a connection issue with Supabase.');
-                return;
-            }
-
-            const { data: res, error } = result;
-
-            if (error) {
-                console.error('❌ Supabase Signup Error:', error.message);
-                setAuthError(error.message);
-                return;
-            }
-
-            if (res.user && res.session === null) {
-                console.log('📬 Signup successful, email verification required.');
-                setPendingUser(data);
-                setView('verification');
-            } else if (res.user && res.session) {
-                console.log('✨ Signup successful, user logged in directly.');
-                const profile = await getProfile(res.user.id);
-                const fullUser = { ...res.user, ...profile };
-                setUser(fullUser);
-
-                if (profile && profile.is_onboarded) {
-                    setView('app');
-                } else {
-                    setView('onboarding');
-                }
-            }
-        } catch (err) {
-            console.error('❌ Critical Signup Crash:', err);
-            setAuthError('Could not reach verification server. Please check your internet connection.');
+            console.log('✅ Signup successful:', result.user.email);
+            // onAuthStateChanged will handle navigation
+        } catch (error) {
+            console.error('❌ Signup failed:', error.message);
+            const messages = {
+                'auth/email-already-in-use': 'An account with this email already exists.',
+                'auth/weak-password': 'Password should be at least 6 characters.',
+                'auth/invalid-email': 'Please enter a valid email address.',
+            };
+            setAuthError(messages[error.code] || error.message);
         }
     };
 
-    const handleVerify = async (code) => {
-        console.log('Verifying code with Supabase:', code);
-        const { error } = await supabase.auth.verifyOtp({
-            email: pendingUser?.email,
-            token: code,
-            type: 'signup'
-        });
-
-        if (error) {
-            console.error('Supabase OTP verification failed:', error.message);
+    const handleVerify = async () => {
+        // Firebase handles email verification differently — send verification email
+        try {
+            if (auth.currentUser) {
+                await sendEmailVerification(auth.currentUser);
+            }
+            return true;
+        } catch (error) {
+            console.error('Verification failed:', error.message);
             return false;
         }
-        return true;
     };
 
     const handleResendCode = async () => {
-        if (!pendingUser) return;
-        await supabase.auth.resend({
-            type: 'signup',
-            email: pendingUser.email,
-        });
+        if (auth.currentUser) {
+            await sendEmailVerification(auth.currentUser);
+        }
     };
 
     const handleOnboardingComplete = async (data) => {
@@ -235,70 +184,29 @@ export function AuthProvider({ children }) {
         }
     };
 
-    const handleSendMagicLink = async (email) => {
-        setAuthError(null);
-        console.log('🚀 Sending Magic Link to:', email);
-
-        const { error } = await supabase.auth.signInWithOtp({
-            email,
-            options: {
-                emailRedirectTo: window.location.origin,
-            },
-        });
-
-        if (error) {
-            console.error('❌ Magic Link failed:', error.message);
-            setAuthError(error.message);
-            return false;
-        }
-
-        console.log('✅ Magic Link triggered successfully');
-        return true;
+    const handleSendMagicLink = async () => {
+        // Firebase doesn't natively support magic links in the same way
+        // Redirect to regular login
+        setAuthError('Please use email and password to sign in.');
+        return false;
     };
 
     const handleSelectPlan = async (plan) => {
         setAuthError(null);
 
-        // 1. FAST PATH: Guest/Mock User Bypass
-        if (user && (user.id?.startsWith('mock-') || user.email === 'guest@boqpro.com')) {
-            console.log('✨ Local Plan Selection (Mock User)');
-            const updated = { ...user, plan };
-            setUser(updated);
-            localStorage.setItem('boq_pro_profile', JSON.stringify(updated));
-            setView('app');
-            return;
-        }
-
         if (user) {
             try {
-                console.log('📡 Syncing plan selection with database:', plan);
-                const profilePromise = updateProfile({ plan });
-                const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('TIMEOUT'), 4000));
-                const result = await Promise.race([profilePromise, timeoutPromise]);
-
-                if (result === 'TIMEOUT') {
-                    console.warn('⚠️ DB Sync timed out, applying locally');
-                    setAuthError('Connection sync slow. Plan saved locally.');
-                    const localUpdate = { ...user, plan };
-                    setUser(localUpdate);
-                    localStorage.setItem('boq_pro_profile', JSON.stringify(localUpdate));
-                    setTimeout(() => setView('app'), 1500);
-                    return;
-                }
-
+                const result = await updateProfile({ plan });
                 if (result) {
                     setUser(prev => ({ ...prev, ...result }));
-                    setView('app');
+                    localStorage.setItem('boq_pro_profile', JSON.stringify({ ...user, ...result }));
                 } else {
-                    console.warn('⚠️ DB update failed, falling back to local');
-                    const localUpdate = { ...user, plan };
-                    setUser(localUpdate);
-                    setView('app');
+                    setUser(prev => ({ ...prev, plan }));
                 }
+                setView('app');
             } catch (err) {
-                console.error('❌ Plan selection crash:', err);
-                const localUpdate = { ...user, plan };
-                setUser(localUpdate);
+                console.error('❌ Plan selection error:', err);
+                setUser(prev => ({ ...prev, plan }));
                 setView('app');
             }
         } else {
@@ -308,7 +216,8 @@ export function AuthProvider({ children }) {
     };
 
     const logout = async () => {
-        await supabase.auth.signOut();
+        await signOut(auth);
+        localStorage.removeItem('boq_pro_profile');
         setUser(null);
         setView('landing');
     };
@@ -317,7 +226,7 @@ export function AuthProvider({ children }) {
         user,
         setUser,
         view,
-        setView: navigateTo,  // consumers get auto-clearing navigation
+        setView: navigateTo,
         authError,
         setAuthError,
         pendingUser,

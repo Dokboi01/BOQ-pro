@@ -14,10 +14,10 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "@supabase/supabase-js": "^2.94.0",
     "bcryptjs": "^3.0.3",
     "dexie": "^4.3.0",
     "exceljs": "^4.4.0",
+    "firebase": "^12.10.0",
     "jspdf": "^4.0.0",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.563.0",

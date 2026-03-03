@@ -1,216 +1,225 @@
-import { supabase } from './supabase';
+import { db, auth } from './firebase';
+import {
+    collection,
+    doc,
+    addDoc,
+    getDoc,
+    getDocs,
+    setDoc,
+    updateDoc,
+    deleteDoc,
+    query,
+    where,
+    orderBy,
+    serverTimestamp
+} from 'firebase/firestore';
 
+// ─────────────────────────────────────────────────────────────────────────────
 // Projects Management
+// ─────────────────────────────────────────────────────────────────────────────
 export const saveProject = async (project) => {
     try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const user = auth.currentUser;
         if (!user) {
             console.error('saveProject: No authenticated user found');
             return null;
         }
 
-        // Prepare project data - ensure sections is serializable
         const projectData = {
             name: project.name,
             type: project.type,
             status: project.status || 'Draft',
             date: project.date,
-            user_id: user.id,
-            // Sections must be stored as JSONB - ensure it's a plain object
-            sections: JSON.parse(JSON.stringify(project.sections || []))
+            region: project.region || 'Lagos',
+            user_id: user.uid,
+            sections: JSON.parse(JSON.stringify(project.sections || [])),
+            updated_at: serverTimestamp()
         };
 
-        // If project has an ID, include it for upsert
-        if (project.id) {
-            projectData.id = project.id;
+        if (project.id && !project.id.startsWith('local_')) {
+            // Update existing project
+            const docRef = doc(db, 'projects', project.id);
+            await updateDoc(docRef, projectData);
+            console.log('✅ Project updated, ID:', project.id);
+            return project.id;
+        } else {
+            // Create new project
+            projectData.created_at = serverTimestamp();
+            const docRef = await addDoc(collection(db, 'projects'), projectData);
+            console.log('✅ Project saved, ID:', docRef.id);
+            return docRef.id;
         }
-
-        console.log('💾 Saving project:', projectData.name, 'with', projectData.sections?.length, 'sections');
-
-        const { data, error } = await supabase
-            .from('projects')
-            .upsert(projectData)
-            .select()
-            .single();
-
-        if (error) {
-            console.error('❌ Supabase save error:', error.message, error.details, error.hint);
-            console.error('Full error object:', JSON.stringify(error, null, 2));
-            return null;
-        }
-
-        console.log('✅ Project saved successfully, ID:', data.id);
-        return data.id;
     } catch (err) {
-        console.error('❌ saveProject exception:', err.message);
+        console.error('❌ saveProject error:', err.message);
         return null;
     }
 };
 
 export const getProjects = async () => {
-    const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: false });
+    try {
+        const user = auth.currentUser;
+        if (!user) return [];
 
-    if (error) {
-        console.error('Error fetching projects:', error);
+        const q = query(
+            collection(db, 'projects'),
+            where('user_id', '==', user.uid),
+            orderBy('created_at', 'desc')
+        );
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (err) {
+        console.error('Error fetching projects:', err);
         return [];
     }
-    return data;
 };
 
 export const getProjectById = async (id) => {
-    const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-    if (error) {
-        console.error('Error fetching project:', error);
+    try {
+        const docRef = doc(db, 'projects', id);
+        const snapshot = await getDoc(docRef);
+        if (snapshot.exists()) {
+            return { id: snapshot.id, ...snapshot.data() };
+        }
+        return null;
+    } catch (err) {
+        console.error('Error fetching project:', err);
         return null;
     }
-    return data;
 };
 
 export const deleteProject = async (id) => {
-    const { error } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', id);
-
-    if (error) {
-        console.error('Error deleting project:', error);
+    try {
+        await deleteDoc(doc(db, 'projects', id));
+        return true;
+    } catch (err) {
+        console.error('Error deleting project:', err);
         return false;
     }
-    return true;
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
 // Settings Management
+// ─────────────────────────────────────────────────────────────────────────────
 export const saveSetting = async (key, value) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+    try {
+        const user = auth.currentUser;
+        if (!user) return null;
 
-    const { data, error } = await supabase
-        .from('settings')
-        .upsert({ user_id: user.id, key, value }, { onConflict: 'user_id, key' })
-        .select()
-        .single();
-
-    if (error) {
-        console.error('Error saving setting:', error);
+        const settingId = `${user.uid}_${key}`;
+        await setDoc(doc(db, 'settings', settingId), {
+            user_id: user.uid,
+            key,
+            value,
+            updated_at: serverTimestamp()
+        });
+        return { key, value };
+    } catch (err) {
+        console.error('Error saving setting:', err);
         return null;
     }
-    return data;
 };
 
 export const getSetting = async (key) => {
-    const { data, error } = await supabase
-        .from('settings')
-        .select('value')
-        .eq('key', key)
-        .single();
+    try {
+        const user = auth.currentUser;
+        if (!user) return null;
 
-    if (error) {
-        // Not always an error if it doesn't exist
+        const settingId = `${user.uid}_${key}`;
+        const snapshot = await getDoc(doc(db, 'settings', settingId));
+        if (snapshot.exists()) {
+            return snapshot.data().value;
+        }
+        return null;
+    } catch (err) {
         return null;
     }
-    return data.value;
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
 // Global Market Data
+// ─────────────────────────────────────────────────────────────────────────────
 export const getMaterials = async () => {
-    const { data, error } = await supabase
-        .from('materials')
-        .select('*')
-        .order('name');
-
-    if (error) {
-        console.error('Error fetching materials:', error);
+    try {
+        const snapshot = await getDocs(query(collection(db, 'materials'), orderBy('name')));
+        return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (err) {
+        console.error('Error fetching materials:', err);
         return [];
     }
-    return data;
 };
 
 export const getMarketIndices = async () => {
-    const { data, error } = await supabase
-        .from('market_indices')
-        .select('*');
-
-    if (error) {
-        console.error('Error fetching market indices:', error);
+    try {
+        const snapshot = await getDocs(collection(db, 'market_indices'));
+        return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (err) {
+        console.error('Error fetching market indices:', err);
         return [];
     }
-    return data;
 };
 
-// User Profile Management (Supabase Auth handles the core, we use 'profiles' table for metadata)
+// ─────────────────────────────────────────────────────────────────────────────
+// User Profile Management
+// ─────────────────────────────────────────────────────────────────────────────
 export const getProfile = async (userId = null) => {
-    let targetId = userId;
+    try {
+        const targetId = userId || auth.currentUser?.uid;
+        if (!targetId) return null;
 
-    if (!targetId) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return null;
-        targetId = user.id;
-    }
-
-    const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', targetId)
-        .single();
-
-    if (error) {
-        console.error('Error fetching profile:', error);
+        const snapshot = await getDoc(doc(db, 'profiles', targetId));
+        if (snapshot.exists()) {
+            return { id: snapshot.id, ...snapshot.data() };
+        }
+        return null;
+    } catch (err) {
+        console.error('Error fetching profile:', err);
         return null;
     }
-    return data;
 };
 
 export const updateProfile = async (updates) => {
-    console.log('🔄 updateProfile called with:', updates);
-
     try {
-        // FAST PATH: Check for mock user (Development/Guest)
-        // We'll trust the current session/state if a real check fails but we have mock context
-        const { data: { session } } = await supabase.auth.getSession();
-        let userId = session?.user?.id;
-
-        if (!userId) {
-            console.warn('⚠️ No Supabase session found in updateProfile. Checking for mock user context...');
-            // Fallback: This is useful if App.jsx is handling a guest user locally
-            return { ...updates, id: 'mock-user', full_name: 'Guest User' };
-        }
-
-        console.log('📡 Updating database profile for user:', userId);
-        const { data, error } = await supabase
-            .from('profiles')
-            .update(updates)
-            .eq('id', userId)
-            .select()
-            .single();
-
-        if (error) {
-            console.error('❌ Error updating profile in DB:', error.message);
-            // If it's a connection error, return null so App.jsx can show the connection error message
+        const user = auth.currentUser;
+        if (!user) {
+            console.warn('⚠️ No user in updateProfile');
             return null;
         }
 
-        console.log('✅ Profile updated successfully');
-        return data;
+        const profileRef = doc(db, 'profiles', user.uid);
+        const snapshot = await getDoc(profileRef);
+
+        if (snapshot.exists()) {
+            await updateDoc(profileRef, { ...updates, updated_at: serverTimestamp() });
+        } else {
+            await setDoc(profileRef, {
+                ...updates,
+                email: user.email,
+                created_at: serverTimestamp(),
+                updated_at: serverTimestamp()
+            });
+        }
+
+        const updated = await getDoc(profileRef);
+        return { id: updated.id, ...updated.data() };
     } catch (err) {
-        console.error('❌ updateProfile exception:', err.message);
+        console.error('❌ updateProfile error:', err.message);
         return null;
     }
 };
 
-// Legacy compatibility (to avoid breaking App.jsx immediately)
-export const getUserByEmail = async (email) => {
-    // In Supabase, we usually get the current user, not search by email for others
-    // This is just a placeholder for now
-    const { data } = await supabase.from('profiles').select('*').eq('email', email).single();
-    return data;
+// ─────────────────────────────────────────────────────────────────────────────
+// Market Data Seeding (for Settings page)
+// ─────────────────────────────────────────────────────────────────────────────
+export const seedMarketData = async () => {
+    try {
+        const { seedMarketData: seedFn } = await import('./seed_materials');
+        return await seedFn();
+    } catch (err) {
+        console.error('Seeding failed:', err);
+        return { error: err.message };
+    }
 };
 
-export const verifyPassword = async () => true; // Supabase Auth handles this
+// Legacy compatibility
+export const getUserByEmail = async () => null;
+export const verifyPassword = async () => true;
