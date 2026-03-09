@@ -67,10 +67,12 @@ export function AuthProvider({ children }) {
         }
     };
 
-    // Firebase Auth State Listener
+    // Firebase Auth Initialization & State Listener
     useEffect(() => {
-        // Set persistence to local so Firebase caches auth state across reloads
-        setPersistence(auth, browserLocalPersistence).catch(console.warn);
+        // Set persistence once on mount
+        setPersistence(auth, browserLocalPersistence).catch(err => {
+            console.warn('⚠️ Persistence setup failed:', err.message);
+        });
 
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             console.log('🔐 AUTH STATE:', firebaseUser ? firebaseUser.email : 'signed out');
@@ -131,19 +133,20 @@ export function AuthProvider({ children }) {
             }
         });
 
-        // Fallback timeout
+        // Fallback timeout: only trigger if definitely not initialized AND no user detected
         const timer = setTimeout(() => {
-            if (!initializationComplete.current) {
-                console.warn('Initialization timed out');
+            if (!initializationComplete.current && !auth.currentUser && !user) {
+                console.warn('Initialization timed out - returning to landing');
                 setView('landing');
+                initializationComplete.current = true;
             }
-        }, 5000);
+        }, 8000); // Increased to 8s for slower networks
 
         return () => {
             unsubscribe();
             clearTimeout(timer);
         };
-    }, []);
+    }, [user]); // Re-evaluate if user changes to be safe
 
     const handleLogin = async (credentials) => {
         setAuthError(null);
@@ -185,6 +188,7 @@ export function AuthProvider({ children }) {
             };
             setUser(optimisticUser);
             localStorage.setItem('boq_pro_profile', JSON.stringify(optimisticUser));
+            initializationComplete.current = true; // ⚡ IMPORTANT: Prevents the timeout from kicking us out
             setView('app');
 
             // Hydrate full profile in background (non-blocking)
@@ -234,6 +238,7 @@ export function AuthProvider({ children }) {
 
             console.log('✅ Signup successful:', result.user.email);
             setPendingUser(result.user);
+            initializationComplete.current = true; // ⚡ Prevent timeout on signup path
 
             // Send verification email (non-blocking)
             try {
