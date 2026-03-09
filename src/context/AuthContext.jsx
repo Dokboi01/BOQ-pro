@@ -6,7 +6,9 @@ import {
     signOut,
     onAuthStateChanged,
     sendEmailVerification,
-    updateProfile as updateAuthProfile
+    updateProfile as updateAuthProfile,
+    browserLocalPersistence,
+    setPersistence
 } from 'firebase/auth';
 import { getProfile, updateProfile } from '../db/database';
 
@@ -43,14 +45,55 @@ export function AuthProvider({ children }) {
         setView(newView);
     };
 
+    // Helper: fetch profile in background and hydrate user state
+    const hydrateProfile = async (firebaseUser) => {
+        try {
+            const profile = await getProfile(firebaseUser.uid);
+            if (profile) {
+                const fullUser = {
+                    id: firebaseUser.uid,
+                    email: firebaseUser.email,
+                    ...profile
+                };
+                setUser(fullUser);
+                localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
+                // If not onboarded, redirect to onboarding
+                if (!profile.is_onboarded) {
+                    setView('onboarding');
+                }
+            }
+        } catch (err) {
+            console.warn('⚠️ Background profile fetch failed:', err.message);
+        }
+    };
+
     // Firebase Auth State Listener
     useEffect(() => {
+        // Set persistence to local so Firebase caches auth state across reloads
+        setPersistence(auth, browserLocalPersistence).catch(console.warn);
+
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             console.log('🔐 AUTH STATE:', firebaseUser ? firebaseUser.email : 'signed out');
 
             if (firebaseUser) {
+                // If we already have a cached user, skip blocking on Firestore
+                const cached = localStorage.getItem('boq_pro_profile');
+                if (cached) {
+                    try {
+                        const cachedUser = JSON.parse(cached);
+                        if (cachedUser.id === firebaseUser.uid) {
+                            setUser(cachedUser);
+                            initializationComplete.current = true;
+                            setView(cachedUser.is_onboarded ? 'app' : 'onboarding');
+                            // Silently refresh profile in background
+                            hydrateProfile(firebaseUser);
+                            return;
+                        }
+                    } catch { /* ignore bad cache */ }
+                }
+
+                // No cache hit — do a blocking fetch (first-time login is handled optimistically in handleLogin)
                 try {
-                    // User is signed in — fetch or create profile
                     const profile = await getProfile(firebaseUser.uid);
                     const fullUser = {
                         id: firebaseUser.uid,
@@ -68,7 +111,6 @@ export function AuthProvider({ children }) {
                     }
                 } catch (err) {
                     console.error('⚠️ Firestore profile fetch failed:', err.message);
-                    // Fallback: use basic auth data so user isn't stuck
                     const basicUser = {
                         id: firebaseUser.uid,
                         email: firebaseUser.email,
@@ -107,6 +149,22 @@ export function AuthProvider({ children }) {
         setAuthError(null);
         console.log('🚀 Attempting login for:', credentials.email);
 
+        // Guest bypass — skip Firebase Auth entirely
+        if (credentials.email === 'guest@boqpro.com') {
+            const guestUser = {
+                id: 'guest_user',
+                email: 'guest@boqpro.com',
+                full_name: 'Guest Engineer',
+                plan: 'Professional',
+                is_onboarded: true,
+                role: 'Quantity Surveyor'
+            };
+            setUser(guestUser);
+            localStorage.setItem('boq_pro_profile', JSON.stringify(guestUser));
+            setView('app');
+            return;
+        }
+
         try {
             const result = await signInWithEmailAndPassword(
                 auth,
@@ -115,10 +173,24 @@ export function AuthProvider({ children }) {
             );
 
             console.log('✅ Login successful:', result.user.email);
-            // onAuthStateChanged will handle the rest
+
+            // ⚡ Optimistic navigation — go to app IMMEDIATELY with basic data
+            // Don't wait for Firestore profile fetch
+            const optimisticUser = {
+                id: result.user.uid,
+                email: result.user.email,
+                full_name: result.user.displayName || 'Practitioner',
+                plan: 'Free',
+                is_onboarded: true
+            };
+            setUser(optimisticUser);
+            localStorage.setItem('boq_pro_profile', JSON.stringify(optimisticUser));
+            setView('app');
+
+            // Hydrate full profile in background (non-blocking)
+            hydrateProfile(result.user);
         } catch (error) {
             console.error('❌ Login failed:', error.message);
-            // Map Firebase error codes to friendly messages
             const messages = {
                 'auth/invalid-credential': 'Invalid email or password.',
                 'auth/user-not-found': 'No account found with this email.',

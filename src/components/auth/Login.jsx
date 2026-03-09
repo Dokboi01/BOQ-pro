@@ -92,6 +92,14 @@ const Login = ({ error, onLogin, onSendMagicLink, onSwitchToSignUp, onForgotPass
               </>
             )}
           </button>
+
+          <button
+            type="button"
+            className="btn-guest-access"
+            onClick={() => onLogin({ email: 'guest@boqpro.com', password: 'password' })}
+          >
+            Engineer Guest Access (Quick Test)
+          </button>
         </form>
 
         <div className="auth-divider">
