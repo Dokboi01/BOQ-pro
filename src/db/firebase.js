@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAuTB4STtOhff4ZZrjTy_iw-Z19Ij_hrLg",
@@ -14,5 +14,11 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+
+// Use initializeFirestore instead of getFirestore for advanced configuration
+// experimentalAutoDetectLongPolling: true helps with stable connections in restrictive networks
+export const db = initializeFirestore(app, {
+    experimentalAutoDetectLongPolling: true
+});
+
 export default app;

@@ -64,6 +64,7 @@ export function AuthProvider({ children }) {
             }
         } catch (err) {
             console.warn('⚠️ Background profile fetch failed:', err.message);
+            // Don't change view on background failure - stay on dashboard
         }
     };
 
@@ -113,6 +114,8 @@ export function AuthProvider({ children }) {
                     }
                 } catch (err) {
                     console.error('⚠️ Firestore profile fetch failed:', err.message);
+                    // 🛡️ RESILIENCE: If Firestore fails (offline/network), don't dump to onboarding.
+                    // Instead, use basic Auth data and try to go to the dashboard.
                     const basicUser = {
                         id: firebaseUser.uid,
                         email: firebaseUser.email,
@@ -122,7 +125,10 @@ export function AuthProvider({ children }) {
                     setUser(basicUser);
                     localStorage.setItem('boq_pro_profile', JSON.stringify(basicUser));
                     initializationComplete.current = true;
-                    setView('onboarding');
+
+                    // If we suspect they are already onboarded (or we just don't know), 
+                    // prefer the dashboard over showing onboarding every time.
+                    setView('app');
                 }
             } else {
                 // User is signed out
