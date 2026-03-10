@@ -107,7 +107,7 @@ function App() {
     </div>
   );
 
-  if (view === 'landing') return <Hero onGetStarted={() => setView('pricing')} onLogin={() => setView('login')} />;
+  if (view === 'landing') return <Hero onGetStarted={() => setView(user ? 'app' : 'pricing')} onLogin={() => setView(user ? 'app' : 'login')} />;
   if (view === 'pricing') return <PricingPage
     error={authError}
     onSelectPlan={handleSelectPlan}
