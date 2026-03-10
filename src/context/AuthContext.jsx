@@ -46,6 +46,9 @@ export function AuthProvider({ children }) {
     };
 
     // Helper: fetch profile in background and hydrate user state
+    // NOTE: This should NOT redirect to onboarding — it runs as a background
+    // refresh after login. The onAuthStateChanged listener handles onboarding
+    // redirection during initial load instead.
     const hydrateProfile = async (firebaseUser) => {
         try {
             const profile = await getProfile(firebaseUser.uid);
@@ -57,10 +60,6 @@ export function AuthProvider({ children }) {
                 };
                 setUser(fullUser);
                 localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
-                // If not onboarded, redirect to onboarding
-                if (!profile.is_onboarded) {
-                    setView('onboarding');
-                }
             }
         } catch (err) {
             console.warn('⚠️ Background profile fetch failed:', err.message);
@@ -291,10 +290,21 @@ export function AuthProvider({ children }) {
                 is_onboarded: true
             });
             if (updatedProfile) {
-                setUser(prev => ({ ...prev, ...updatedProfile }));
+                const updatedUser = { ...user, ...updatedProfile, is_onboarded: true };
+                setUser(updatedUser);
+                localStorage.setItem('boq_pro_profile', JSON.stringify(updatedUser));
+            } else {
+                // Even if Firestore update didn't return data, update local state
+                const updatedUser = { ...user, role: data.userType, is_onboarded: true };
+                setUser(updatedUser);
+                localStorage.setItem('boq_pro_profile', JSON.stringify(updatedUser));
             }
         } catch (err) {
             console.error('❌ Onboarding profile update failed:', err);
+            // Still update local state so user isn't stuck
+            const updatedUser = { ...user, role: data.userType, is_onboarded: true };
+            setUser(updatedUser);
+            localStorage.setItem('boq_pro_profile', JSON.stringify(updatedUser));
         } finally {
             // Guarantee navigation to dashboard
             setView('app');
