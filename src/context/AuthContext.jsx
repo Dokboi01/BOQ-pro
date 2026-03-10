@@ -286,22 +286,17 @@ export function AuthProvider({ children }) {
         }
     };
 
-    const handleVerify = async () => {
-        // Firebase handles email verification differently — send verification email
-        try {
-            if (pendingUser || auth.currentUser) {
-                await sendEmailVerification(pendingUser || auth.currentUser);
-            }
-            return true;
-        } catch (error) {
-            console.error('Verification failed:', error.message);
-            return false;
-        }
-    };
 
     const handleResendCode = async () => {
-        if (auth.currentUser) {
-            await sendEmailVerification(auth.currentUser);
+        const targetUser = auth.currentUser || pendingUser;
+        if (targetUser) {
+            try {
+                await sendEmailVerification(targetUser);
+                console.log('📧 Verification email resent to:', targetUser.email);
+            } catch (err) {
+                console.error('❌ Failed to resend verification email:', err.message);
+                setAuthError('Failed to resend email. Please try again later.');
+            }
         }
     };
 
@@ -388,7 +383,6 @@ export function AuthProvider({ children }) {
         selectedPlan,
         handleLogin,
         handleSignUp,
-        handleVerify,
         handleResendCode,
         handleOnboardingComplete,
         handleSendMagicLink,
