@@ -58,7 +58,14 @@ export function AuthProvider({ children }) {
                     email: firebaseUser.email,
                     ...profile
                 };
-                setUser(fullUser);
+                // 🛡️ GUARD: Never let a stale Firestore fetch downgrade is_onboarded
+                // If the user completed onboarding locally, preserve that status
+                setUser(prev => {
+                    if (prev?.is_onboarded && !fullUser.is_onboarded) {
+                        fullUser.is_onboarded = true;
+                    }
+                    return fullUser;
+                });
                 localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
             }
         } catch (err) {
@@ -78,6 +85,14 @@ export function AuthProvider({ children }) {
             console.log('🔐 AUTH STATE:', firebaseUser ? firebaseUser.email : 'signed out');
 
             if (firebaseUser) {
+                // 🛡️ GUARD: If already initialized and on 'app', don't re-navigate
+                // This prevents the loop where setUser -> re-fires listener -> re-navigates to onboarding
+                if (initializationComplete.current) {
+                    // Just silently refresh profile in background
+                    hydrateProfile(firebaseUser);
+                    return;
+                }
+
                 // If we already have a cached user, skip blocking on Firestore
                 const cached = localStorage.getItem('boq_pro_profile');
                 if (cached) {
@@ -151,7 +166,7 @@ export function AuthProvider({ children }) {
             unsubscribe();
             clearTimeout(timer);
         };
-    }, [user]); // Re-evaluate if user changes to be safe
+    }, []); // Subscribe ONCE on mount — never re-subscribe on user changes
 
     const handleLogin = async (credentials) => {
         setAuthError(null);
