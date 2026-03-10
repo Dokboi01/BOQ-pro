@@ -74,7 +74,7 @@ function App() {
   const {
     user, view, setView, authError, setAuthError,
     pendingUser, selectedPlan,
-    handleLogin, handleSignUp, handleVerify, handleResendCode,
+    handleLogin, handleSignUp, handleResendCode,
     handleOnboardingComplete, handleSendMagicLink, handleSelectPlan, logout,
   } = useAuth();
 
@@ -132,12 +132,17 @@ function App() {
   />;
   if (view === 'signup') return <SignUp error={authError} selectedPlan={selectedPlan} onSignUp={handleSignUp} onSwitchToLogin={(target) => { setAuthError(null); setView(target); }} />;
   if (view === 'verification') return (
-    <EmailVerification
-      email={pendingUser?.email}
-      onVerify={handleVerify}
-      onResend={handleResendCode}
-      onBack={() => setView('signup')}
-    />
+    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white', flexDirection: 'column', gap: '1.5rem', textAlign: 'center', padding: '2rem' }}>
+      <div style={{ borderRadius: '50%', background: 'rgba(37, 99, 235, 0.2)', padding: '20px', marginBottom: '10px' }}>
+        <Mail size={48} className="text-accent" />
+      </div>
+      <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>Check your inbox</h2>
+      <p style={{ color: '#94a3b8', maxWidth: '400px', lineHeight: 1.6 }}>We've sent a verification link to<br/><strong style={{ color: 'white' }}>{pendingUser?.email || user?.email}</strong>. Please click the link to activate your account.</p>
+      <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+        <button onClick={handleResendCode} style={{ padding: '0.75rem 1.5rem', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontWeight: 600, cursor: 'pointer' }}>Resend Email</button>
+        <button onClick={() => setView('login')} style={{ padding: '0.75rem 1.5rem', background: '#2563eb', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>Back to Login</button>
+      </div>
+    </div>
   );
   if (view === 'forgot-password') return (
     <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white', flexDirection: 'column', gap: '1rem', fontFamily: 'Inter, sans-serif' }}>
