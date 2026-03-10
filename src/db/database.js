@@ -20,6 +20,12 @@ import {
 export const saveProject = async (project) => {
     try {
         const user = auth.currentUser;
+        console.log('💾 Attempting to save project:', { 
+            projectId: project.id, 
+            userId: user?.uid,
+            is_authenticated: !!user 
+        });
+
         if (!user) {
             console.error('saveProject: No authenticated user found');
             return null;
@@ -130,7 +136,7 @@ export const getSetting = async (key) => {
             return snapshot.data().value;
         }
         return null;
-    } catch (err) {
+    } catch {
         return null;
     }
 };

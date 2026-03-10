@@ -2,6 +2,8 @@ import React from 'react';
 import { ToastProvider } from './components/ui/ToastContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProjectsProvider, useProjects } from './context/ProjectsContext';
+import { analytics } from './db/firebase';
+import { logEvent } from 'firebase/analytics';
 import Hero from './components/landing/Hero';
 import PricingPage from './components/landing/Pricing';
 import Login from './components/auth/Login';
@@ -59,6 +61,14 @@ class ErrorBoundary extends React.Component {
 
 function App() {
   console.log('App Rendering...');
+
+  // Track app load
+  React.useEffect(() => {
+    if (analytics) {
+      logEvent(analytics, 'app_open');
+      console.log('📈 Analytics: app_open logged');
+    }
+  }, []);
 
   // Consume contexts
   const {

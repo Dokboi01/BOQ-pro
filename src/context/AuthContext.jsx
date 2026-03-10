@@ -10,6 +10,8 @@ import {
     browserLocalPersistence,
     setPersistence
 } from 'firebase/auth';
+import { analytics } from '../db/firebase';
+import { logEvent as logAnalyticsEvent } from 'firebase/analytics';
 import { getProfile, updateProfile } from '../db/database';
 
 const AuthContext = createContext(null);
@@ -213,6 +215,11 @@ export function AuthProvider({ children }) {
 
             // Hydrate full profile in background (non-blocking)
             hydrateProfile(result.user);
+
+            // Track login
+            if (analytics) {
+                logAnalyticsEvent(analytics, 'login', { method: 'email' });
+            }
         } catch (error) {
             console.error('❌ Login failed:', error.message);
             const messages = {

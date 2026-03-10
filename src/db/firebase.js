@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { initializeFirestore } from 'firebase/firestore';
+import { getAnalytics } from 'firebase/analytics';
 
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAuTB4STtOhff4ZZrjTy_iw-Z19Ij_hrLg",
@@ -20,5 +21,7 @@ export const auth = getAuth(app);
 export const db = initializeFirestore(app, {
     experimentalAutoDetectLongPolling: true
 });
+
+export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
 export default app;
