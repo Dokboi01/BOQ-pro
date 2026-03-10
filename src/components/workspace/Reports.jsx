@@ -21,7 +21,7 @@ import {
   Zap
 } from 'lucide-react';
 import { hasFeature, PLAN_NAMES } from '../../data/plans';
-import { sendReportEmail } from '../../utils/mailService';
+
 import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -924,17 +924,9 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
         });
       }
 
-      const success = await sendReportEmail(emailConfig.recipient, {
-        name: projectInfo.title,
-        totalValue: calculateGrandTotal()
-      }, attachments);
-
-      if (success) {
-        toast.success(`Report successfully emailed to ${emailConfig.recipient}`);
-        setIsEmailModalOpen(false);
-      } else {
-        toast.error('Failed to send email. Check your Resend API key in Settings.');
-      }
+      // Email service is not currently configured
+      toast.info('Email delivery is not yet configured. Please export and share the document manually.');
+      setIsEmailModalOpen(false);
     } catch (error) {
       console.error('Email error:', error);
       toast.error('An error occurred while preparing the email.');
