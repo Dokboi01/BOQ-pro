@@ -149,15 +149,15 @@ export function AuthProvider({ children }) {
                 localStorage.removeItem('boq_pro_profile');
                 setUser(null);
                 initializationComplete.current = true;
-                setView(prev => prev === 'loading' ? 'login' : prev);
+                setView(prev => prev === 'loading' ? 'landing' : prev);
             }
         });
 
         // Fallback timeout: only trigger if definitely not initialized AND no user detected
         const timer = setTimeout(() => {
             if (!initializationComplete.current && !auth.currentUser && !user) {
-                console.warn('Initialization timed out - returning to login');
-                setView('login');
+                console.warn('Initialization timed out - returning to landing');
+                setView('landing');
                 initializationComplete.current = true;
             }
         }, 8000); // Increased to 8s for slower networks
@@ -366,7 +366,7 @@ export function AuthProvider({ children }) {
             // Guarantee local cleanup and navigation
             localStorage.removeItem('boq_pro_profile');
             setUser(null);
-            setView('login');
+            setView('landing');
         }
     };
 

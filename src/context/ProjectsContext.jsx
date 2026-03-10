@@ -218,15 +218,18 @@ export function ProjectsProvider({ children }) {
             } : p
         ));
 
-        // 2. BACKGROUND SAVE
+        // 2. BACKGROUND SAVE — send full project object so Firestore gets all fields
         const currentProject = projects.find(p => p.id === projectId);
-        saveProject({
-            id: projectId,
-            sections: updatedSections,
-            region: region || currentProject?.region || 'Lagos'
-        }).catch(err => {
-            console.error('❌ Background save failed:', err);
-        });
+        if (currentProject) {
+            saveProject({
+                ...currentProject,
+                id: projectId,
+                sections: updatedSections,
+                region: region || currentProject.region || 'Lagos'
+            }).catch(err => {
+                console.error('❌ Background save failed:', err);
+            });
+        }
     };
 
     const handleAddSection = async (projectId) => {
