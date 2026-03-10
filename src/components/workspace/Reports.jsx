@@ -18,10 +18,15 @@ import {
   History,
   TrendingUp,
   Landmark,
-  Zap
+  Zap,
+  Share2,
+  MessageCircle,
+  Copy,
+  Smartphone,
+  X
 } from 'lucide-react';
 import { hasFeature, PLAN_NAMES } from '../../data/plans';
-
+import { sendReportEmail, shareViaWhatsApp, shareViaNative, copyShareTextToClipboard } from '../../utils/emailService';
 import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -32,9 +37,10 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
   const [activeReport, setActiveReport] = useState(null);
   const [projectSummary, setProjectSummary] = useState('');
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
-  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [emailConfig, setEmailConfig] = useState({ recipient: '', includePDF: true, includeExcel: false });
   const [isSending, setIsSending] = useState(false);
+  const [activeShareTab, setActiveShareTab] = useState('email');
   const [isUnpriced, setIsUnpriced] = useState(false);
 
   const activeProject = projects.find(p => p.id === activeProjectId) || projects[0];
@@ -865,7 +871,6 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
 
       if (emailConfig.includePDF) {
         const doc = new jsPDF();
-        // Recalculate same as handleExportPDF for consistency
         doc.setFontSize(20);
         doc.text('BILL OF QUANTITIES', 105, 15, { align: 'center' });
         doc.setFontSize(10);
@@ -910,7 +915,6 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
       if (emailConfig.includeExcel) {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('BOQ Report');
-        // Simple excel gen for attachment
         worksheet.addRow(['Description', 'Unit', 'Qty', 'Rate', 'Total']).font = { bold: true };
         boqData.forEach(s => {
           worksheet.addRow([s.title]).font = { bold: true };
@@ -924,14 +928,56 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
         });
       }
 
-      // Email service is not currently configured
-      toast.info('Email delivery is not yet configured. Please export and share the document manually.');
-      setIsEmailModalOpen(false);
+      const result = await sendReportEmail(emailConfig.recipient, {
+        name: projectInfo.title,
+        totalValue: calculateGrandTotal()
+      }, attachments);
+
+      if (result.success) {
+        toast.success(`Report emailed to ${emailConfig.recipient}`);
+        setIsShareModalOpen(false);
+        setEmailConfig({ recipient: '', includePDF: true, includeExcel: false });
+      } else {
+        toast.error(result.error || 'Failed to send email.');
+      }
     } catch (error) {
       console.error('Email error:', error);
       toast.error('An error occurred while preparing the email.');
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleWhatsAppShare = () => {
+    shareViaWhatsApp({
+      name: projectInfo.title,
+      client: projectInfo.client,
+      date: projectInfo.date
+    }, boqData);
+    toast.success('Opening WhatsApp...');
+  };
+
+  const handleNativeShare = async () => {
+    const result = await shareViaNative({
+      name: projectInfo.title,
+      client: projectInfo.client,
+      date: projectInfo.date
+    }, boqData);
+    if (result.success) {
+      toast.success('Shared successfully!');
+    } else if (result.error !== 'Share cancelled') {
+      toast.warning(result.error || 'Sharing not available on this device.');
+    }
+  };
+
+  const handleCopySummary = async () => {
+    const result = await copyShareTextToClipboard({
+      name: projectInfo.title,
+      client: projectInfo.client,
+      date: projectInfo.date
+    }, boqData);
+    if (result.success) {
+      toast.success('Project summary copied to clipboard!');
     }
   };
 
@@ -1332,8 +1378,8 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
               <button className="btn-secondary" onClick={handleExportExcel}>
                 <FileSpreadsheet size={16} /> Export to Excel
               </button>
-              <button className="btn-secondary" onClick={() => setIsEmailModalOpen(true)}>
-                <MailIcon size={16} /> Email to Client
+              <button className="btn-secondary" onClick={() => setIsShareModalOpen(true)}>
+                <Share2 size={16} /> Share & Send
               </button>
               <button className="btn-primary-action" onClick={activeReport === 'materials' ? handleExportMaterialsPDF : handleExportPDF}>
                 <Download size={16} /> Export to PDF
@@ -1354,20 +1400,51 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
         </div>
       )}
 
-      {/* Email Modal */}
-      {isEmailModalOpen && (
+      {/* Share & Send Modal */}
+      {isShareModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content email-modal view-fade-in">
-            <div className="modal-header">
-              <div className="title-with-icon">
-                <MailIcon className="text-accent" />
-                <h3>Email Professional Report</h3>
+          <div className="modal-content share-modal view-fade-in">
+            <div className="share-modal-header">
+              <div className="share-title-row">
+                <Share2 size={20} className="text-accent" />
+                <div>
+                  <h3>Share & Send</h3>
+                  <p className="share-subtitle">Send reports or share project summaries</p>
+                </div>
               </div>
-              <button className="btn-close" onClick={() => setIsEmailModalOpen(false)}>×</button>
+              <button className="share-close-btn" onClick={() => setIsShareModalOpen(false)}><X size={18} /></button>
             </div>
-            <div className="modal-body">
-              <p className="modal-desc">Send the project cost breakdown directly to your client's inbox.</p>
 
+            {/* Quick Share Actions */}
+            <div className="share-quick-actions">
+              <button className="share-action-card" onClick={handleWhatsAppShare}>
+                <div className="share-action-icon whatsapp-icon">
+                  <MessageCircle size={20} />
+                </div>
+                <span>WhatsApp</span>
+              </button>
+              <button className="share-action-card" onClick={handleCopySummary}>
+                <div className="share-action-icon copy-icon">
+                  <Copy size={20} />
+                </div>
+                <span>Copy Summary</span>
+              </button>
+              {navigator.share && (
+                <button className="share-action-card" onClick={handleNativeShare}>
+                  <div className="share-action-icon native-icon">
+                    <Smartphone size={20} />
+                  </div>
+                  <span>Share</span>
+                </button>
+              )}
+            </div>
+
+            <div className="share-divider">
+              <span>or send via email</span>
+            </div>
+
+            {/* Email Form */}
+            <div className="share-email-form">
               <div className="form-group">
                 <label>Recipient Email</label>
                 <input
@@ -1386,7 +1463,7 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
                     checked={emailConfig.includePDF}
                     onChange={(e) => setEmailConfig({ ...emailConfig, includePDF: e.target.checked })}
                   />
-                  <span>Include Official PDF Report</span>
+                  <span>Attach PDF Report</span>
                 </label>
                 <label className="checkbox-item">
                   <input
@@ -1394,23 +1471,25 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
                     checked={emailConfig.includeExcel}
                     onChange={(e) => setEmailConfig({ ...emailConfig, includeExcel: e.target.checked })}
                   />
-                  <span>Include Excel Data Summary</span>
+                  <span>Attach Excel Workbook</span>
                 </label>
               </div>
 
               <div className="modal-info-box">
                 <CheckCircle2 size={14} className="text-success" />
-                <span>Reports are generated using your consultant branding.</span>
+                <span>Professional BOQ report with your consultant branding.</span>
               </div>
             </div>
-            <div className="modal-footer">
-              <button className="btn-secondary" onClick={() => setIsEmailModalOpen(false)}>Cancel</button>
+
+            <div className="share-modal-footer">
+              <button className="btn-secondary" onClick={() => setIsShareModalOpen(false)}>Cancel</button>
               <button
                 className="btn-primary-glow"
                 onClick={handleEmailReport}
                 disabled={isSending || !emailConfig.recipient}
               >
-                {isSending ? 'Generating & Sending...' : 'Send Report Now'}
+                <MailIcon size={15} />
+                {isSending ? 'Sending...' : 'Send Email'}
               </button>
             </div>
           </div>
@@ -1963,49 +2042,136 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
           z-index: 1000;
         }
 
-        .modal-content.email-modal {
+        /* ── Share Modal ── */
+        .modal-content.share-modal {
           background: white;
-          width: 480px;
+          width: 520px;
           border-radius: 16px;
           overflow: hidden;
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+          box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.35);
         }
 
-        .modal-header {
-          padding: 1.5rem;
+        .share-modal-header {
+          padding: 1.5rem 1.5rem 1rem;
           display: flex;
           justify-content: space-between;
-          align-items: center;
-          border-bottom: 1px solid var(--border-light);
+          align-items: flex-start;
         }
 
-        .title-with-icon {
+        .share-title-row {
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           gap: 0.75rem;
         }
 
-        .title-with-icon h3 { margin: 0; font-size: 1.125rem; }
+        .share-title-row h3 {
+          margin: 0;
+          font-size: 1.25rem;
+          font-weight: 800;
+          color: var(--primary-900);
+        }
 
-        .btn-close {
+        .share-subtitle {
+          font-size: 0.8125rem;
+          color: var(--primary-500);
+          margin: 2px 0 0;
+        }
+
+        .share-close-btn {
           background: none;
           border: none;
-          font-size: 1.5rem;
           color: var(--primary-400);
           cursor: pointer;
+          padding: 4px;
+          border-radius: 6px;
+          transition: all 0.15s;
         }
 
-        .modal-body {
-          padding: 1.5rem;
+        .share-close-btn:hover {
+          background: var(--bg-main);
+          color: var(--primary-700);
+        }
+
+        /* Quick Share Actions Grid */
+        .share-quick-actions {
+          display: flex;
+          gap: 0.75rem;
+          padding: 0 1.5rem;
+        }
+
+        .share-action-card {
+          flex: 1;
           display: flex;
           flex-direction: column;
-          gap: 1.5rem;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 1rem 0.75rem;
+          background: var(--bg-main);
+          border: 1px solid var(--border-light);
+          border-radius: 12px;
+          cursor: pointer;
+          transition: all 0.2s;
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: var(--primary-600);
         }
 
-        .modal-desc {
-          font-size: 0.875rem;
-          color: var(--primary-500);
-          margin: 0;
+        .share-action-card:hover {
+          border-color: var(--accent-400);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .share-action-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+        }
+
+        .whatsapp-icon {
+          background: linear-gradient(135deg, #25d366, #128c7e);
+        }
+
+        .copy-icon {
+          background: linear-gradient(135deg, #6366f1, #4f46e5);
+        }
+
+        .native-icon {
+          background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        }
+
+        .share-divider {
+          display: flex;
+          align-items: center;
+          margin: 1.25rem 1.5rem;
+          color: var(--primary-400);
+          font-size: 0.6875rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+
+        .share-divider::before,
+        .share-divider::after {
+          content: '';
+          flex: 1;
+          height: 1px;
+          background: var(--border-light);
+        }
+
+        .share-divider span {
+          padding: 0 1rem;
+        }
+
+        .share-email-form {
+          padding: 0 1.5rem 1rem;
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
         }
 
         .form-group {
@@ -2015,10 +2181,11 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
         }
 
         .form-group label {
-          font-size: 0.75rem;
+          font-size: 0.6875rem;
           font-weight: 700;
-          color: var(--primary-700);
+          color: var(--primary-600);
           text-transform: uppercase;
+          letter-spacing: 0.04em;
         }
 
         .modal-input {
@@ -2026,24 +2193,39 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
           border: 1px solid var(--border-medium);
           border-radius: 8px;
           font-size: 0.875rem;
+          transition: all 0.15s;
+          outline: none;
+        }
+
+        .modal-input:focus {
+          border-color: var(--accent-500);
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
 
         .attachment-options {
           display: flex;
           flex-direction: column;
-          gap: 0.75rem;
-          padding: 1rem;
+          gap: 0.625rem;
+          padding: 0.875rem;
           background: var(--bg-main);
           border-radius: 8px;
+          border: 1px solid var(--border-light);
         }
 
         .checkbox-item {
           display: flex;
           align-items: center;
-          gap: 0.75rem;
-          font-size: 0.875rem;
+          gap: 0.625rem;
+          font-size: 0.8125rem;
           font-weight: 500;
           cursor: pointer;
+          color: var(--primary-700);
+        }
+
+        .checkbox-item input[type="checkbox"] {
+          width: 16px;
+          height: 16px;
+          accent-color: var(--accent-600);
         }
 
         .modal-info-box {
@@ -2054,11 +2236,11 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
           color: var(--primary-500);
         }
 
-        .modal-footer {
-          padding: 1.25rem 1.5rem;
+        .share-modal-footer {
+          padding: 1rem 1.5rem;
           display: flex;
           justify-content: flex-end;
-          gap: 1rem;
+          gap: 0.75rem;
           background: var(--bg-main);
           border-top: 1px solid var(--border-light);
         }
@@ -2067,10 +2249,19 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
           background: var(--primary-900);
           color: white;
           border: none;
-          padding: 0.75rem 1.5rem;
+          padding: 0.625rem 1.25rem;
           border-radius: 8px;
           font-weight: 700;
           cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.875rem;
+          transition: all 0.15s;
+        }
+
+        .btn-primary-glow:hover {
+          background: var(--accent-600);
         }
 
         .btn-primary-glow:disabled {
