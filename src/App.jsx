@@ -11,7 +11,6 @@ import SignUp from './components/auth/SignUp';
 import Onboarding from './components/onboarding/Onboarding';
 import Sidebar from './components/layout/Sidebar';
 import ProjectDashboard from './components/dashboard/ProjectDashboard';
-import EmailVerification from './components/auth/EmailVerification';
 import BOQWorkspace from './components/workspace/BOQWorkspace';
 import MaterialLibrary from './components/workspace/MaterialLibrary';
 import FirebaseActionHandler from './components/auth/FirebaseActionHandler';
