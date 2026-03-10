@@ -29,7 +29,9 @@ import {
   ChevronRight,
   ChevronLeft,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Cloud,
+  RefreshCw
 } from 'lucide-react';
 
 // Class-based Error Boundary to catch render errors
@@ -84,6 +86,7 @@ function App() {
     showAnalyzer, setShowAnalyzer,
     isCreating, focusMode, setFocusMode,
     calculateTotalValue,
+    syncStatus, forceSync,
     handleCreateProject, handleStructureSelect, handleAnalysisComplete,
     handleUpdateProject, handleAddSection, handleDeleteSectionOrItem,
     handleDeleteProject,
@@ -229,6 +232,24 @@ function App() {
             <ShieldCheck size={14} className="text-success" />
             <span className="status-text">{user?.plan?.toUpperCase()} PLAN ACTIVE</span>
           </div>
+          <div className="summary-divider"></div>
+          <button
+            className={`sync-indicator sync-${syncStatus.state}`}
+            onClick={forceSync}
+            title={`Sync: ${syncStatus.state}. Click to force sync.`}
+          >
+            {syncStatus.state === 'syncing' ? (
+              <RefreshCw size={13} className="sync-spinning" />
+            ) : (
+              <Cloud size={13} />
+            )}
+            <span className="sync-label">
+              {syncStatus.state === 'synced' && 'Synced'}
+              {syncStatus.state === 'syncing' && 'Syncing'}
+              {syncStatus.state === 'pending' && 'Pending'}
+              {syncStatus.state === 'offline' && 'Offline'}
+            </span>
+          </button>
         </div>
 
         <header className="topbar">
@@ -404,6 +425,52 @@ function App() {
           font-size: 0.75rem;
           font-weight: 700;
           letter-spacing: 0.02em;
+        }
+
+        /* ── Sync Indicator ── */
+        .sync-indicator {
+          display: flex;
+          align-items: center;
+          gap: 0.375rem;
+          padding: 0.3rem 0.75rem;
+          border-radius: 100px;
+          font-size: 0.6875rem;
+          font-weight: 700;
+          letter-spacing: 0.02em;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .sync-synced {
+          background: rgba(74, 222, 128, 0.15);
+          color: #4ade80;
+        }
+        .sync-synced:hover { background: rgba(74, 222, 128, 0.25); }
+
+        .sync-syncing {
+          background: rgba(96, 165, 250, 0.15);
+          color: #60a5fa;
+        }
+
+        .sync-pending {
+          background: rgba(251, 191, 36, 0.15);
+          color: #fbbf24;
+        }
+        .sync-pending:hover { background: rgba(251, 191, 36, 0.25); }
+
+        .sync-offline {
+          background: rgba(148, 163, 184, 0.15);
+          color: #94a3b8;
+        }
+
+        .sync-spinning {
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
 
         .topbar {

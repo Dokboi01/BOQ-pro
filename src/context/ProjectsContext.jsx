@@ -1,9 +1,21 @@
-import React, { createContext, useContext, useState, useMemo } from 'react';
-import { saveProject, getProjects, deleteProject } from '../db/database';
+import React, { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
 import { STRUCTURE_DATA } from '../data/structures';
 import { PLAN_LIMITS, PLAN_NAMES } from '../data/plans';
 import { useAuth } from './AuthContext';
 import { useToast } from '../components/ui/ToastContext';
+import {
+  saveLocal,
+  loadLocal,
+  deleteLocal,
+  syncToCloud,
+  syncDeleteToCloud,
+  pullFromCloud,
+  startAutoSync,
+  stopAutoSync,
+  onSyncStatusChange,
+  onIdChange,
+  processQueue,
+} from '../db/syncEngine';
 
 const ProjectsContext = createContext(null);
 
@@ -24,17 +36,78 @@ export function ProjectsProvider({ children }) {
     const [showAnalyzer, setShowAnalyzer] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [focusMode, setFocusMode] = useState(false);
+    const [syncStatus, setSyncStatus] = useState({ state: 'synced' });
 
-    // Load projects from Firebase when user is set
-    React.useEffect(() => {
-        if (user) {
-            const loadData = async () => {
-                const storedProjects = await getProjects();
-                setProjects(storedProjects);
-            };
-            loadData();
+    // ── Load projects: local first, then cloud ──
+    useEffect(() => {
+        if (!user) {
+            setProjects([]);
+            return;
         }
+
+        let cancelled = false;
+
+        const init = async () => {
+            // 1. Instant load from Dexie
+            const localProjects = await loadLocal();
+            if (!cancelled && localProjects.length > 0) {
+                setProjects(localProjects);
+            }
+
+            // 2. Background pull from cloud and merge
+            const merged = await pullFromCloud();
+            if (!cancelled && merged) {
+                setProjects(merged);
+            } else if (!cancelled && localProjects.length === 0) {
+                // If no local data and pull failed, we still load from local (empty)
+                // but also try loading from cloud directly for first-time users
+                const { getProjects } = await import('../db/database');
+                try {
+                    const cloudData = await getProjects();
+                    if (!cancelled && cloudData.length > 0) {
+                        // Save to local DB for next time
+                        for (const p of cloudData) {
+                            await saveLocal(p);
+                        }
+                        setProjects(cloudData);
+                    }
+                } catch {
+                    // Offline and no local data — that's fine
+                }
+            }
+        };
+
+        init();
+
+        // Start auto-sync (processes queue every 30s, syncs on reconnect)
+        startAutoSync();
+
+        return () => {
+            cancelled = true;
+            stopAutoSync();
+        };
     }, [user]);
+
+    // ── Listen for sync status changes ──
+    useEffect(() => {
+        const unsubscribe = onSyncStatusChange((status) => {
+            setSyncStatus(status);
+        });
+        return unsubscribe;
+    }, []);
+
+    // ── Listen for ID changes (when local_ gets a real cloud ID) ──
+    useEffect(() => {
+        const unsubscribe = onIdChange((oldId, newId) => {
+            setProjects(prev => prev.map(p =>
+                p.id === oldId ? { ...p, id: newId } : p
+            ));
+            if (activeProjectId === oldId) {
+                setActiveProjectId(newId);
+            }
+        });
+        return unsubscribe;
+    }, [activeProjectId]);
 
     const activeProject = useMemo(() => {
         return projects.find(p => p.id === activeProjectId) || projects[0] || null;
@@ -53,6 +126,15 @@ export function ProjectsProvider({ children }) {
         }
     }, [activeProject]);
 
+    const forceSync = useCallback(async () => {
+        const merged = await pullFromCloud();
+        if (merged) {
+            setProjects(merged);
+            toast.success('Synced with cloud!');
+        }
+        await processQueue();
+    }, [toast]);
+
     const handleCreateProject = () => {
         const limits = PLAN_LIMITS[user?.plan] || PLAN_LIMITS[PLAN_NAMES.FREE];
         if (projects.length >= limits.maxProjects) {
@@ -69,26 +151,12 @@ export function ProjectsProvider({ children }) {
             return;
         }
 
-        console.log('Selected structure:', structureId);
         const data = STRUCTURE_DATA[structureId] || STRUCTURE_DATA['Residential Building'];
 
-        if (!data) {
-            console.error('❌ CRITICAL: No data found for structureId:', structureId);
+        if (!data || !data.sections) {
             toast.error('Could not find components for this structure type.');
             return;
         }
-
-        if (!data.sections) {
-            console.error('❌ CRITICAL: Data found but contains no sections:', data);
-            toast.error('This structure type has no predefined sections.');
-            return;
-        }
-
-        console.log('✅ Structure metadata found:', {
-            structureId,
-            sectionCount: data.sections.length,
-            sectionNames: data.sections.map(s => s.title)
-        });
 
         const processedSections = data.sections.map(section => ({
             id: Math.random().toString(36).substr(2, 9),
@@ -108,7 +176,9 @@ export function ProjectsProvider({ children }) {
             }))
         }));
 
+        const projectId = `local_${Date.now()}`;
         const newProj = {
+            id: projectId,
             name: `${structureName || structureId} Project`,
             type: structureId,
             status: 'Active',
@@ -117,55 +187,31 @@ export function ProjectsProvider({ children }) {
             region: 'Lagos'
         };
 
-        console.log('🚀 FINAL NEW PROJECT OBJECT:', newProj);
-
         setIsCreating(true);
         try {
-            // Race saveProject against a 5-second timeout to avoid hanging on Firestore offline
-            const saveTimeout = new Promise((resolve) => setTimeout(() => resolve(null), 5000));
-            const savedId = await Promise.race([saveProject(newProj), saveTimeout]);
-            const projectId = savedId || `local_${Date.now()}`;
-            const finalProj = { ...newProj, id: projectId };
+            // 1. Save locally (instant)
+            await saveLocal(newProj);
 
-            if (!savedId) {
-                console.warn('⚠️ Project saved locally only (DB save failed or timed out). ID:', projectId);
-                toast.warning('Project saved locally. Cloud sync will retry later.');
-            } else {
-                console.log('💾 Project saved to database, ID:', savedId);
-                toast.success('Project created successfully!');
-            }
-
-            setProjects(prev => [finalProj, ...prev]);
+            // 2. Update UI immediately
+            setProjects(prev => [newProj, ...prev]);
             setActiveProjectId(projectId);
             setShowSelector(false);
             setActiveTab('workspace');
             setFocusMode(true);
 
-            if (savedId) {
-                getProjects().then(updated => {
-                    if (updated.length > 0) setProjects(updated);
-                }).catch(() => { }); // Ignore if offline
-            }
-        } catch (dbError) {
-            console.error('❌ Database operation failed during structure selection:', dbError);
-            toast.error('Database error. Project saved locally as fallback.');
+            toast.success('Project created!');
 
-            const localId = `local_${Date.now()}`;
-            const fallbackProj = { ...newProj, id: localId };
-
-            setProjects(prev => [fallbackProj, ...prev]);
-            setActiveProjectId(localId);
-            setShowSelector(false);
-            setActiveTab('workspace');
-            setFocusMode(true);
+            // 3. Background cloud sync
+            syncToCloud(newProj);
+        } catch (err) {
+            console.error('❌ Create project failed:', err);
+            toast.error('Error creating project.');
         } finally {
             setIsCreating(false);
         }
     };
 
     const handleAnalysisComplete = async (elements) => {
-        console.log('Analysis complete, elements:', elements);
-
         const analyzedSections = elements.map(el => ({
             id: Math.random().toString(36).substr(2, 9),
             title: el.title,
@@ -181,54 +227,60 @@ export function ProjectsProvider({ children }) {
             }))
         }));
 
+        const projectId = `local_${Date.now()}`;
         const newProj = {
+            id: projectId,
             name: `AI Draft: ${new Date().toLocaleDateString()}`,
             type: 'AI Drawing Analysis',
             status: 'Draft',
             sections: analyzedSections,
-            date: new Date().toLocaleDateString()
+            date: new Date().toLocaleDateString(),
+            region: 'Lagos'
         };
 
         try {
-            const savedId = await saveProject(newProj);
-            const projectId = savedId || `local_${Date.now()}`;
-            const finalProj = { ...newProj, id: projectId };
-
-            setProjects(prev => [finalProj, ...prev]);
+            await saveLocal(newProj);
+            setProjects(prev => [newProj, ...prev]);
             setActiveProjectId(projectId);
             setShowAnalyzer(false);
             setActiveTab('workspace');
             setFocusMode(true);
-
-            if (savedId) {
-                getProjects().then(updated => setProjects(updated));
-            }
+            syncToCloud(newProj);
         } catch (err) {
             console.error('Error creating project from analysis:', err);
         }
     };
 
     const handleUpdateProject = async (projectId, updatedSections, region = null) => {
-        // 1. OPTIMISTIC UPDATE
-        setProjects(prev => prev.map(p =>
-            p.id === projectId ? {
+        // 1. Optimistic UI update
+        let updatedProject = null;
+        setProjects(prev => prev.map(p => {
+            if (p.id !== projectId) return p;
+            updatedProject = {
                 ...p,
                 sections: updatedSections,
                 region: region || p.region || 'Lagos'
-            } : p
-        ));
+            };
+            return updatedProject;
+        }));
 
-        // 2. BACKGROUND SAVE — send full project object so Firestore gets all fields
-        const currentProject = projects.find(p => p.id === projectId);
-        if (currentProject) {
-            saveProject({
-                ...currentProject,
-                id: projectId,
-                sections: updatedSections,
-                region: region || currentProject.region || 'Lagos'
-            }).catch(err => {
-                console.error('❌ Background save failed:', err);
-            });
+        if (!updatedProject) {
+            // Project not found in state — find from current projects
+            const currentProject = projects.find(p => p.id === projectId);
+            if (currentProject) {
+                updatedProject = {
+                    ...currentProject,
+                    sections: updatedSections,
+                    region: region || currentProject.region || 'Lagos'
+                };
+            }
+        }
+
+        if (updatedProject) {
+            // 2. Save locally (instant)
+            await saveLocal(updatedProject);
+            // 3. Background cloud sync (debounced)
+            syncToCloud(updatedProject);
         }
     };
 
@@ -265,16 +317,21 @@ export function ProjectsProvider({ children }) {
     };
 
     const handleDeleteProject = async (projectId) => {
-        const success = await deleteProject(projectId);
+        // 1. Remove from local DB immediately
+        await deleteLocal(projectId);
+        setProjects(prev => prev.filter(p => p.id !== projectId));
+
+        if (activeProjectId === projectId) {
+            setActiveProjectId(null);
+            setActiveTab('dashboard');
+        }
+
+        // 2. Background cloud delete
+        const success = await syncDeleteToCloud(projectId);
         if (success) {
-            setProjects(prev => prev.filter(p => p.id !== projectId));
-            if (activeProjectId === projectId) {
-                setActiveProjectId(null);
-                setActiveTab('dashboard');
-            }
-            toast.success('Project deleted successfully.');
+            toast.success('Project deleted.');
         } else {
-            toast.error('Failed to delete project. Please try again.');
+            toast.info('Project deleted locally. Cloud sync will complete later.');
         }
     };
 
@@ -294,6 +351,8 @@ export function ProjectsProvider({ children }) {
         focusMode,
         setFocusMode,
         calculateTotalValue,
+        syncStatus,
+        forceSync,
         handleCreateProject,
         handleStructureSelect,
         handleAnalysisComplete,
