@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { STRUCTURE_DATA } from '../data/structures';
 import { PLAN_LIMITS, PLAN_NAMES } from '../data/plans';
 import { useAuth } from './AuthContext';
@@ -16,6 +16,8 @@ import {
   onIdChange,
   processQueue,
 } from '../db/syncEngine';
+import { subscribeToProject } from '../db/realtimeSync';
+import { logActivity } from '../db/collaborationService';
 
 const ProjectsContext = createContext(null);
 
@@ -37,6 +39,7 @@ export function ProjectsProvider({ children }) {
     const [isCreating, setIsCreating] = useState(false);
     const [focusMode, setFocusMode] = useState(false);
     const [syncStatus, setSyncStatus] = useState({ state: 'synced' });
+    const lastRemoteUpdate = useRef(0);
 
     // ── Load projects: local first, then cloud ──
     useEffect(() => {
@@ -107,6 +110,28 @@ export function ProjectsProvider({ children }) {
             }
         });
         return unsubscribe;
+    }, [activeProjectId]);
+
+    // ── Real-time listener for active project (live collaboration) ──
+    useEffect(() => {
+        if (!activeProjectId || activeProjectId.startsWith('local_')) return;
+
+        const unsubscribe = subscribeToProject(activeProjectId, (remoteProject) => {
+            // Throttle: only process remote updates at most once per 2 seconds
+            const now = Date.now();
+            if (now - lastRemoteUpdate.current < 2000) return;
+            lastRemoteUpdate.current = now;
+
+            // Update the project in state with remote data
+            setProjects(prev => prev.map(p =>
+                p.id === remoteProject.id ? { ...p, ...remoteProject } : p
+            ));
+
+            // Also update local Dexie to keep in sync
+            saveLocal(remoteProject);
+        });
+
+        return () => unsubscribe();
     }, [activeProjectId]);
 
     const activeProject = useMemo(() => {
@@ -201,8 +226,9 @@ export function ProjectsProvider({ children }) {
 
             toast.success('Project created!');
 
-            // 3. Background cloud sync
+            // 3. Background cloud sync + activity log
             syncToCloud(newProj);
+            logActivity(projectId, 'project_created', { name: newProj.name, type: newProj.type });
         } catch (err) {
             console.error('❌ Create project failed:', err);
             toast.error('Error creating project.');
@@ -279,8 +305,9 @@ export function ProjectsProvider({ children }) {
         if (updatedProject) {
             // 2. Save locally (instant)
             await saveLocal(updatedProject);
-            // 3. Background cloud sync (debounced)
+            // 3. Background cloud sync (debounced) + activity log
             syncToCloud(updatedProject);
+            logActivity(projectId, 'project_updated', { region: updatedProject.region });
         }
     };
 
@@ -297,6 +324,7 @@ export function ProjectsProvider({ children }) {
 
         const updatedSections = [...(project.sections || []), newSection];
         await handleUpdateProject(projectId, updatedSections);
+        logActivity(projectId, 'section_added', { title: newSection.title });
     };
 
     const handleDeleteSectionOrItem = async (projectId, sectionId, itemId = null) => {

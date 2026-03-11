@@ -39,6 +39,7 @@ export const saveProject = async (project) => {
             region: project.region || 'Lagos',
             user_id: user.uid,
             sections: JSON.parse(JSON.stringify(project.sections || [])),
+            collaborators: project.collaborators || [],
             updated_at: serverTimestamp()
         };
 
@@ -66,13 +67,33 @@ export const getProjects = async () => {
         const user = auth.currentUser;
         if (!user) return [];
 
-        const q = query(
+        // Fetch own projects
+        const ownQuery = query(
             collection(db, 'projects'),
             where('user_id', '==', user.uid),
             orderBy('created_at', 'desc')
         );
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        const ownSnapshot = await getDocs(ownQuery);
+        const ownProjects = ownSnapshot.docs.map(d => ({ id: d.id, ...d.data(), isOwner: true }));
+
+        // Fetch shared projects (where user's email is in collaborators)
+        let sharedProjects = [];
+        try {
+            const allProjectsQuery = query(collection(db, 'projects'));
+            const allSnapshot = await getDocs(allProjectsQuery);
+            sharedProjects = allSnapshot.docs
+                .filter(d => {
+                    const data = d.data();
+                    if (data.user_id === user.uid) return false; // Skip own
+                    const collabs = data.collaborators || [];
+                    return collabs.some(c => c.email === user.email?.toLowerCase());
+                })
+                .map(d => ({ id: d.id, ...d.data(), isOwner: false }));
+        } catch (sharedErr) {
+            console.warn('Could not fetch shared projects:', sharedErr.message);
+        }
+
+        return [...ownProjects, ...sharedProjects];
     } catch (err) {
         console.error('Error fetching projects:', err);
         return [];

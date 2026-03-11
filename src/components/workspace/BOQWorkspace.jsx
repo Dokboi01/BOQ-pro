@@ -1,8 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import RateAnalysisModal from './RateAnalysisModal';
 import GeometricCalculator from './GeometricCalculator';
 import BidManagerModal from './BidManagerModal';
 import { calculateResourceRequirement, getRegionalModifier } from '../../utils/aiService';
+import {
+  inviteCollaborator,
+  removeCollaborator,
+  startPresence,
+  stopPresence,
+  subscribeToPresence,
+  subscribeToActivity,
+} from '../../db/collaborationService';
+import { useToast } from '../ui/ToastContext';
 import {
   Plus,
   Trash2,
@@ -19,10 +28,16 @@ import {
   AlertTriangle,
   Pencil,
   Sparkles,
-  Globe2
+  Globe2,
+  Users,
+  UserPlus,
+  X,
+  History,
+  Send
 } from 'lucide-react';
 
 const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) => {
+  const toast = useToast();
   const [sections, setSections] = useState(project?.sections || []);
   const [analyzingItem, setAnalyzingItem] = useState(null);
   const [calculatingQtyForItem, setCalculatingQtyForItem] = useState(null);
@@ -30,11 +45,65 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('estimation');
 
+  // Collaboration state
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showActivityPanel, setShowActivityPanel] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('editor');
+  const [isInviting, setIsInviting] = useState(false);
+  const [presenceUsers, setPresenceUsers] = useState([]);
+  const [activityLog, setActivityLog] = useState([]);
+
   React.useEffect(() => {
     if (project?.sections) {
       setSections(project.sections);
     }
   }, [project]);
+
+  // Presence subscription
+  useEffect(() => {
+    if (!project?.id) return;
+    startPresence(project.id);
+    const unsubPresence = subscribeToPresence(project.id, setPresenceUsers);
+    return () => {
+      stopPresence(project.id);
+      unsubPresence();
+    };
+  }, [project?.id]);
+
+  // Activity log subscription
+  useEffect(() => {
+    if (!project?.id) return;
+    const unsubActivity = subscribeToActivity(project.id, setActivityLog);
+    return () => unsubActivity();
+  }, [project?.id]);
+
+  const handleInvite = async () => {
+    if (!inviteEmail.trim()) return;
+    setIsInviting(true);
+    const result = await inviteCollaborator(project.id, inviteEmail, inviteRole);
+    if (result.success) {
+      toast.success(`Invited ${inviteEmail} as ${inviteRole}`);
+      setInviteEmail('');
+    } else {
+      toast.error(result.error || 'Failed to invite');
+    }
+    setIsInviting(false);
+  };
+
+  const handleRemoveCollaborator = async (email) => {
+    const result = await removeCollaborator(project.id, email);
+    if (result.success) {
+      toast.success(`Removed ${email}`);
+    }
+  };
+
+  const getInitials = (name) => {
+    if (!name) return '?';
+    return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const AVATAR_COLORS = ['#2563eb', '#7c3aed', '#db2777', '#ea580c', '#16a34a', '#0891b2'];
 
   const toggleSection = (sectionId) => {
     setSections(prev => prev.map(s =>
@@ -182,6 +251,31 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           <div className="ws-stat ws-stat-total"><span className="ws-stat-label">Total</span><span className="ws-stat-val">₦{calculateGrandTotal.toLocaleString()}</span></div>
         </div>
         <div className="ws-toolbar-right">
+          {/* Presence Avatars */}
+          {presenceUsers.length > 0 && (
+            <div className="ws-presence">
+              {presenceUsers.slice(0, 4).map((u, i) => (
+                <div
+                  key={u.id}
+                  className="ws-avatar"
+                  style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}
+                  title={`${u.displayName || u.email} (online)`}
+                >
+                  {getInitials(u.displayName || u.email)}
+                  <span className="ws-avatar-dot" />
+                </div>
+              ))}
+              {presenceUsers.length > 4 && (
+                <div className="ws-avatar ws-avatar-more">+{presenceUsers.length - 4}</div>
+              )}
+            </div>
+          )}
+          <button className="ws-btn ws-btn-ghost" onClick={() => setShowInviteModal(true)} title="Share project">
+            <UserPlus size={14} /> Share
+          </button>
+          <button className="ws-btn ws-btn-ghost" onClick={() => setShowActivityPanel(!showActivityPanel)} title="Activity log">
+            <History size={14} />
+          </button>
           <button className="ws-btn ws-btn-ghost" onClick={() => {
             const firstItem = sections.flatMap(s => s.items)[0];
             if (firstItem) {
@@ -413,6 +507,84 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
             setBiddingItem(null);
           }}
         />
+      )}
+
+      {/* Invite Modal */}
+      {showInviteModal && (
+        <div className="collab-overlay">
+          <div className="collab-modal view-fade-in">
+            <div className="collab-modal-header">
+              <div className="collab-title-row">
+                <Users size={18} className="text-accent" />
+                <h3>Share Project</h3>
+              </div>
+              <button className="collab-close" onClick={() => setShowInviteModal(false)}><X size={16} /></button>
+            </div>
+
+            <div className="collab-modal-body">
+              <div className="collab-invite-row">
+                <input
+                  type="email"
+                  placeholder="colleague@company.com"
+                  className="collab-input"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleInvite()}
+                />
+                <select className="collab-role-select" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}>
+                  <option value="editor">Editor</option>
+                  <option value="viewer">Viewer</option>
+                </select>
+                <button className="collab-invite-btn" onClick={handleInvite} disabled={isInviting || !inviteEmail.trim()}>
+                  <Send size={14} />
+                </button>
+              </div>
+
+              {(project?.collaborators || []).length > 0 && (
+                <div className="collab-list">
+                  <span className="collab-list-label">COLLABORATORS</span>
+                  {project.collaborators.map((c, i) => (
+                    <div key={i} className="collab-person">
+                      <div className="collab-person-avatar" style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}>
+                        {getInitials(c.email)}
+                      </div>
+                      <div className="collab-person-info">
+                        <span className="collab-person-email">{c.email}</span>
+                        <span className="collab-person-role">{c.role}</span>
+                      </div>
+                      <button className="collab-remove-btn" onClick={() => handleRemoveCollaborator(c.email)}>×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Activity Log Panel */}
+      {showActivityPanel && (
+        <div className="activity-panel">
+          <div className="activity-panel-header">
+            <h4><History size={14} /> Activity</h4>
+            <button className="collab-close" onClick={() => setShowActivityPanel(false)}><X size={14} /></button>
+          </div>
+          <div className="activity-list">
+            {activityLog.length === 0 ? (
+              <p className="activity-empty">No activity yet</p>
+            ) : activityLog.map((entry) => (
+              <div key={entry.id} className="activity-entry">
+                <div className="activity-icon">{entry.label?.substring(0, 2) || '📝'}</div>
+                <div className="activity-content">
+                  <span className="activity-text">{entry.label?.substring(3) || entry.action}</span>
+                  <span className="activity-meta">
+                    {entry.userName} · {entry.timestamp instanceof Date ? entry.timestamp.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       <style jsx="true">{`
@@ -734,6 +906,140 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           .ws-table { font-size: 0.75rem; }
           .ws-th-strategy, .ws-th-rate { display: none; }
         }
+
+        /* ── PRESENCE AVATARS ── */
+        .ws-presence {
+          display: flex;
+          align-items: center;
+          margin-right: 0.25rem;
+        }
+        .ws-avatar {
+          width: 26px; height: 26px;
+          border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 0.5rem; font-weight: 800;
+          color: white; position: relative;
+          border: 2px solid #0f172a;
+          margin-left: -6px;
+          cursor: default;
+        }
+        .ws-avatar:first-child { margin-left: 0; }
+        .ws-avatar-dot {
+          position: absolute; bottom: -1px; right: -1px;
+          width: 8px; height: 8px;
+          background: #22c55e; border: 2px solid #0f172a;
+          border-radius: 50%;
+        }
+        .ws-avatar-more {
+          background: #475569;
+          font-size: 0.5rem;
+        }
+
+        /* ── COLLAB MODAL ── */
+        .collab-overlay {
+          position: fixed; inset: 0;
+          background: rgba(0,0,0,0.5);
+          display: flex; align-items: center; justify-content: center;
+          z-index: 1000;
+        }
+        .collab-modal {
+          background: white; width: 440px;
+          border-radius: 14px; overflow: hidden;
+          box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+        }
+        .collab-modal-header {
+          padding: 1.25rem 1.5rem;
+          display: flex; justify-content: space-between; align-items: center;
+          border-bottom: 1px solid #f1f5f9;
+        }
+        .collab-title-row { display: flex; align-items: center; gap: 0.5rem; }
+        .collab-title-row h3 { margin: 0; font-size: 1rem; font-weight: 800; }
+        .collab-close {
+          background: none; border: none; color: #94a3b8;
+          cursor: pointer; padding: 4px; border-radius: 6px;
+        }
+        .collab-close:hover { background: #f1f5f9; color: #1e293b; }
+        .collab-modal-body { padding: 1.25rem 1.5rem; }
+
+        .collab-invite-row {
+          display: flex; gap: 0.5rem; align-items: center;
+        }
+        .collab-input {
+          flex: 1; padding: 0.625rem 0.75rem;
+          border: 1px solid #e2e8f0; border-radius: 8px;
+          font-size: 0.8125rem; outline: none;
+        }
+        .collab-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .collab-role-select {
+          padding: 0.625rem 0.5rem; border: 1px solid #e2e8f0;
+          border-radius: 8px; font-size: 0.75rem; font-weight: 700;
+          background: white; cursor: pointer; outline: none;
+        }
+        .collab-invite-btn {
+          width: 38px; height: 38px;
+          display: flex; align-items: center; justify-content: center;
+          background: #2563eb; color: white; border: none;
+          border-radius: 8px; cursor: pointer; flex-shrink: 0;
+        }
+        .collab-invite-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .collab-invite-btn:hover:not(:disabled) { background: #1d4ed8; }
+
+        .collab-list { margin-top: 1rem; }
+        .collab-list-label {
+          font-size: 0.5625rem; font-weight: 800; color: #94a3b8;
+          text-transform: uppercase; letter-spacing: 0.06em;
+          display: block; margin-bottom: 0.5rem;
+        }
+        .collab-person {
+          display: flex; align-items: center; gap: 0.625rem;
+          padding: 0.5rem 0; border-bottom: 1px solid #f8fafc;
+        }
+        .collab-person-avatar {
+          width: 30px; height: 30px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 0.5625rem; font-weight: 800; color: white; flex-shrink: 0;
+        }
+        .collab-person-info { flex: 1; display: flex; flex-direction: column; }
+        .collab-person-email { font-size: 0.8125rem; font-weight: 600; color: #1e293b; }
+        .collab-person-role {
+          font-size: 0.625rem; font-weight: 700; color: #94a3b8;
+          text-transform: uppercase;
+        }
+        .collab-remove-btn {
+          background: none; border: none; color: #cbd5e1;
+          font-size: 1.125rem; cursor: pointer; padding: 2px 6px; border-radius: 4px;
+        }
+        .collab-remove-btn:hover { background: #fef2f2; color: #ef4444; }
+
+        /* ── ACTIVITY PANEL ── */
+        .activity-panel {
+          position: fixed; right: 0; top: 0; bottom: 0;
+          width: 300px; background: white;
+          box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+          z-index: 100; display: flex; flex-direction: column;
+        }
+        .activity-panel-header {
+          padding: 1rem 1.25rem;
+          display: flex; justify-content: space-between; align-items: center;
+          border-bottom: 1px solid #f1f5f9;
+        }
+        .activity-panel-header h4 {
+          margin: 0; font-size: 0.875rem; font-weight: 800;
+          display: flex; align-items: center; gap: 0.5rem; color: #1e293b;
+        }
+        .activity-list { flex: 1; overflow-y: auto; padding: 0.75rem; }
+        .activity-empty {
+          text-align: center; color: #94a3b8;
+          font-size: 0.8125rem; padding: 2rem 0;
+        }
+        .activity-entry {
+          display: flex; gap: 0.625rem; padding: 0.5rem 0;
+          border-bottom: 1px solid #f8fafc;
+        }
+        .activity-icon { font-size: 0.875rem; flex-shrink: 0; margin-top: 2px; }
+        .activity-content { display: flex; flex-direction: column; flex: 1; }
+        .activity-text { font-size: 0.75rem; font-weight: 600; color: #334155; }
+        .activity-meta { font-size: 0.625rem; color: #94a3b8; margin-top: 1px; }
       `}</style>
     </div>
   );
