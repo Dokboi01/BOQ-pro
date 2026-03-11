@@ -2,16 +2,15 @@ import React, { useState, useEffect } from 'react';
 import RateAnalysisModal from './RateAnalysisModal';
 import GeometricCalculator from './GeometricCalculator';
 import BidManagerModal from './BidManagerModal';
+import CollabModal from './CollabModal';
+import ActivityPanel from './ActivityPanel';
 import { calculateResourceRequirement, getRegionalModifier } from '../../utils/aiService';
 import {
-  inviteCollaborator,
-  removeCollaborator,
   startPresence,
   stopPresence,
   subscribeToPresence,
   subscribeToActivity,
 } from '../../db/collaborationService';
-import { useToast } from '../ui/ToastContext';
 import {
   Plus,
   Trash2,
@@ -29,15 +28,11 @@ import {
   Pencil,
   Sparkles,
   Globe2,
-  Users,
   UserPlus,
-  X,
-  History,
-  Send
+  History
 } from 'lucide-react';
 
 const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) => {
-  const toast = useToast();
   const [sections, setSections] = useState(project?.sections || []);
   const [analyzingItem, setAnalyzingItem] = useState(null);
   const [calculatingQtyForItem, setCalculatingQtyForItem] = useState(null);
@@ -48,9 +43,6 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
   // Collaboration state
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showActivityPanel, setShowActivityPanel] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('editor');
-  const [isInviting, setIsInviting] = useState(false);
   const [presenceUsers, setPresenceUsers] = useState([]);
   const [activityLog, setActivityLog] = useState([]);
 
@@ -77,26 +69,6 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
     const unsubActivity = subscribeToActivity(project.id, setActivityLog);
     return () => unsubActivity();
   }, [project?.id]);
-
-  const handleInvite = async () => {
-    if (!inviteEmail.trim()) return;
-    setIsInviting(true);
-    const result = await inviteCollaborator(project.id, inviteEmail, inviteRole);
-    if (result.success) {
-      toast.success(`Invited ${inviteEmail} as ${inviteRole}`);
-      setInviteEmail('');
-    } else {
-      toast.error(result.error || 'Failed to invite');
-    }
-    setIsInviting(false);
-  };
-
-  const handleRemoveCollaborator = async (email) => {
-    const result = await removeCollaborator(project.id, email);
-    if (result.success) {
-      toast.success(`Removed ${email}`);
-    }
-  };
 
   const getInitials = (name) => {
     if (!name) return '?';
@@ -509,82 +481,19 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         />
       )}
 
-      {/* Invite Modal */}
       {showInviteModal && (
-        <div className="collab-overlay">
-          <div className="collab-modal view-fade-in">
-            <div className="collab-modal-header">
-              <div className="collab-title-row">
-                <Users size={18} className="text-accent" />
-                <h3>Share Project</h3>
-              </div>
-              <button className="collab-close" onClick={() => setShowInviteModal(false)}><X size={16} /></button>
-            </div>
-
-            <div className="collab-modal-body">
-              <div className="collab-invite-row">
-                <input
-                  type="email"
-                  placeholder="colleague@company.com"
-                  className="collab-input"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleInvite()}
-                />
-                <select className="collab-role-select" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}>
-                  <option value="editor">Editor</option>
-                  <option value="viewer">Viewer</option>
-                </select>
-                <button className="collab-invite-btn" onClick={handleInvite} disabled={isInviting || !inviteEmail.trim()}>
-                  <Send size={14} />
-                </button>
-              </div>
-
-              {(project?.collaborators || []).length > 0 && (
-                <div className="collab-list">
-                  <span className="collab-list-label">COLLABORATORS</span>
-                  {project.collaborators.map((c, i) => (
-                    <div key={i} className="collab-person">
-                      <div className="collab-person-avatar" style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}>
-                        {getInitials(c.email)}
-                      </div>
-                      <div className="collab-person-info">
-                        <span className="collab-person-email">{c.email}</span>
-                        <span className="collab-person-role">{c.role}</span>
-                      </div>
-                      <button className="collab-remove-btn" onClick={() => handleRemoveCollaborator(c.email)}>×</button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <CollabModal
+          projectId={project.id}
+          collaborators={project?.collaborators || []}
+          onClose={() => setShowInviteModal(false)}
+        />
       )}
 
-      {/* Activity Log Panel */}
       {showActivityPanel && (
-        <div className="activity-panel">
-          <div className="activity-panel-header">
-            <h4><History size={14} /> Activity</h4>
-            <button className="collab-close" onClick={() => setShowActivityPanel(false)}><X size={14} /></button>
-          </div>
-          <div className="activity-list">
-            {activityLog.length === 0 ? (
-              <p className="activity-empty">No activity yet</p>
-            ) : activityLog.map((entry) => (
-              <div key={entry.id} className="activity-entry">
-                <div className="activity-icon">{entry.label?.substring(0, 2) || '📝'}</div>
-                <div className="activity-content">
-                  <span className="activity-text">{entry.label?.substring(3) || entry.action}</span>
-                  <span className="activity-meta">
-                    {entry.userName} · {entry.timestamp instanceof Date ? entry.timestamp.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <ActivityPanel
+          activityLog={activityLog}
+          onClose={() => setShowActivityPanel(false)}
+        />
       )}
 
       <style jsx="true">{`
