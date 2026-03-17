@@ -102,10 +102,9 @@ export const generateProjectSummary = async (projectData) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // 3. Engineering Drawing Vision Analysis
 // ─────────────────────────────────────────────────────────────────────────────
-export const processEngineeringDrawing = async (base64Image) => {
+export const processEngineeringDrawing = async (base64Image, contextHint = '') => {
     try {
         if (!genAI) {
-            // Smart fallback if no key
             return [
                 { id: 'sec-1', title: 'Substructure & Earthworks', confidence: 98, items: 12 },
                 { id: 'sec-2', title: 'Concrete Frame & Superstructure', confidence: 95, items: 24 },
@@ -114,24 +113,28 @@ export const processEngineeringDrawing = async (base64Image) => {
             ];
         }
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        // Using gemini-2.0-flash for superior vision and reasoning
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
         const prompt = `
-            You are a Senior Quantity Surveyor and Structural Engineer.
+            You are a highly experienced Senior Quantity Surveyor and Structural Engineer.
+            
+            TASK: Analyze this engineering drawing/blueprint and extract specific BOQ construction categories and estimated item counts.
+            
+            USER CONTEXT: ${contextHint || 'None provided. Use your best professional judgment to identify the drawing type.'}
 
-            FIRST, check if this image is a real engineering drawing, blueprint, floor plan, or technical construction plan.
+            INSTRUCTIONS:
+            1. Identify the drawing type (e.g., Foundation Plan, Floor Plan, Section, Elevation).
+            2. Scan for specific structural elements: Columns, Beams, Walls, Slabs, Footings.
+            3. Look for annotations, labels, and dimension lines to estimate the number of distinct work items in each category.
+            4. If it is NOT an engineering drawing, return: {"error": "INVALID_DRAWING", "message": "This file does not appear to be a technical construction drawing."}
 
-            If it is NOT an engineering drawing (e.g. a photo, selfie, landscape, or text document), return exactly this JSON:
-            {"error": "INVALID_DRAWING", "message": "This file does not appear to be a technical engineering drawing."}
-
-            If it IS a valid engineering drawing, identify the major construction categories for a Bill of Quantities (BOQ).
-            Return ONLY a valid JSON array in this format:
+            JSON OUTPUT FORMAT:
             [
-              {"id": "sec-1", "title": "Section Title", "confidence": 95, "items": 10}
+              {"id": "sec-1", "title": "Foundation & Plinth", "confidence": 95, "items": 14, "details": "Detected pad footings and strip foundations"}
             ]
 
-            Look for layers like: Substructure, Superstructure/Frame, Roofing, Finishes, MEP Services, External Works, etc.
-            Return ONLY the JSON — no markdown, no explanation.
+            Return ONLY the valid JSON array — no markdown, no conversational text.
         `;
 
         const imagePart = {

@@ -22,6 +22,7 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
   const [identifiedElements, setIdentifiedElements] = useState([]);
   const [error, setError] = useState(null);
   const [statusMessage, setStatusMessage] = useState('Extracting drawing layers...');
+  const [contextHint, setContextHint] = useState('');
 
   const processingMessages = [
     'Extracting structural nodes...',
@@ -77,7 +78,7 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
       setProgress(40);
 
       // 2. Real AI Analysis
-      const results = await processEngineeringDrawing(b64);
+      const results = await processEngineeringDrawing(b64, contextHint);
 
       clearInterval(progressInterval);
       setProgress(90);
@@ -122,6 +123,18 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
             accept="image/*,.pdf"
             onChange={handleFileUpload}
           />
+          
+          <div className="hint-input-group">
+            <label>Context Hint (Optional)</label>
+            <input 
+              type="text" 
+              placeholder="e.g., First Floor Slab, Foundation Layout..."
+              value={contextHint}
+              onChange={(e) => setContextHint(e.target.value)}
+              className="context-input"
+            />
+          </div>
+
           <label htmlFor="drawing-upload" className="btn-primary">
             Select Engineering Drawing
           </label>
@@ -191,6 +204,7 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
                 </div>
               </div>
               <p>{el.items} items identified in this layer</p>
+              {el.details && <p className="details-text">{el.details}</p>}
             </div>
             <CheckCircle2 className="text-success" size={20} />
           </div>
@@ -323,9 +337,45 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 1rem;
+          gap: 1.5rem;
           margin-bottom: 2.5rem;
           transition: all 0.3s;
+        }
+
+        .hint-input-group {
+          width: 100%;
+          text-align: left;
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .hint-input-group label {
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: var(--primary-600);
+        }
+
+        .context-input {
+          width: 100%;
+          padding: 0.75rem 1rem;
+          border-radius: 8px;
+          border: 1.5px solid var(--border-medium);
+          font-size: 0.875rem;
+          background: white;
+          transition: all 0.2s;
+        }
+
+        .context-input:focus {
+          border-color: var(--accent-500);
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+          outline: none;
+        }
+
+        .details-text {
+          margin-top: 0.25rem !important;
+          color: var(--accent-600) !important;
+          font-weight: 500;
         }
 
         .drop-area:hover {
