@@ -546,6 +546,81 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
             </tr>
           </tfoot>
         </table>
+
+        {/* Professional Foldable Notes & Assumptions */}
+        <div className={`notes-accordion mt-6 ${isNotesExpanded ? 'expanded' : ''}`}>
+          <button 
+            className="notes-header" 
+            onClick={() => setIsNotesExpanded(!isNotesExpanded)}
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <ClipboardList size={18} className="text-blue-600" />
+              </div>
+              <h3 className="text-xs font-black uppercase tracking-widest text-slate-800">Project Notes & Assumptions</h3>
+            </div>
+            <div className={`chevron-wrap ${isNotesExpanded ? 'active' : ''}`}>
+              <ChevronDown size={20} className="chevron-icon" />
+            </div>
+          </button>
+
+          <div className="notes-content">
+            <div className="meta-grid">
+              <div className="meta-col">
+                <label>General Project Notes</label>
+                <textarea 
+                  value={project?.notes || ''}
+                  onChange={(e) => onUpdate(project.id, sections, project.region, { notes: e.target.value })}
+                  placeholder="Add project specific instructions or contextual notes here..."
+                  rows={4}
+                />
+              </div>
+              <div className="meta-col">
+                <label>Technical Assumptions</label>
+                <textarea 
+                  value={project?.assumptions || ''}
+                  onChange={(e) => onUpdate(project.id, sections, project.region, { assumptions: e.target.value })}
+                  placeholder="State any technical assumptions (e.g. soil bearing capacity, material grades)..."
+                  rows={4}
+                />
+              </div>
+            </div>
+
+            <div className="meta-grid mt-6">
+              <div className="meta-col">
+                <label>Exclusions</label>
+                <textarea 
+                  value={project?.exclusions || ''}
+                  onChange={(e) => onUpdate(project.id, sections, project.region, { exclusions: e.target.value })}
+                  placeholder="List items specifically excluded from this Bill of Quantities..."
+                  rows={4}
+                />
+              </div>
+              <div className="meta-col">
+                <div className="signatures-grid">
+                  <div className="sig-box">
+                    <span>Prepared By:</span>
+                    <input 
+                      type="text" 
+                      value={project?.preparedBy || ''} 
+                      onChange={(e) => onUpdate(project.id, sections, project.region, { preparedBy: e.target.value })}
+                      placeholder="Engineer / QS Name"
+                    />
+                  </div>
+                  <div className="sig-box mt-4">
+                    <span>Checked By:</span>
+                    <input 
+                      type="text" 
+                      value={project?.checkedBy || ''} 
+                      onChange={(e) => onUpdate(project.id, sections, project.region, { checkedBy: e.target.value })}
+                      placeholder="Reviewer / Principal"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Modals */}
@@ -608,79 +683,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         />
       )}
 
-      {/* Professional Foldable Notes & Assumptions */}
-      <div className="notes-accordion mt-6">
-        <button 
-          className="notes-header" 
-          onClick={() => setIsNotesExpanded(!isNotesExpanded)}
-        >
-          <div className="flex items-center gap-2">
-            <ClipboardList size={18} className="text-secondary-500" />
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Project Notes & Assumptions</h3>
-          </div>
-          <ChevronDown 
-            size={20} 
-            className={`transition-transform duration-300 ${isNotesExpanded ? 'rotate-180' : ''}`} 
-          />
-        </button>
 
-        <div className={`notes-content transition-all duration-300 ease-in-out overflow-hidden ${isNotesExpanded ? 'max-h-[1000px] opacity-100 py-6' : 'max-h-0 opacity-0 py-0'}`}>
-          <div className="meta-grid">
-            <div className="meta-col">
-              <label>General Project Notes</label>
-              <textarea 
-                value={project?.notes || ''}
-                onChange={(e) => onUpdate(project.id, project.sections, project.region, { notes: e.target.value })}
-                placeholder="Add project specific instructions or contextual notes here..."
-                rows={4}
-              />
-            </div>
-            <div className="meta-col">
-              <label>Technical Assumptions</label>
-              <textarea 
-                value={project?.assumptions || ''}
-                onChange={(e) => onUpdate(project.id, project.sections, project.region, { assumptions: e.target.value })}
-                placeholder="State any technical assumptions (e.g. soil bearing capacity, material grades)..."
-                rows={4}
-              />
-            </div>
-          </div>
-
-          <div className="meta-grid mt-6">
-            <div className="meta-col">
-              <label>Exclusions</label>
-              <textarea 
-                value={project?.exclusions || ''}
-                onChange={(e) => onUpdate(project.id, project.sections, project.region, { exclusions: e.target.value })}
-                placeholder="List items specifically excluded from this Bill of Quantities..."
-                rows={4}
-              />
-            </div>
-            <div className="meta-col">
-              <div className="signatures-grid">
-                <div className="sig-box">
-                  <span>Prepared By:</span>
-                  <input 
-                    type="text" 
-                    value={project?.preparedBy || ''} 
-                    onChange={(e) => onUpdate(project.id, project.sections, project.region, { preparedBy: e.target.value })}
-                    placeholder="Engineer / QS Name"
-                  />
-                </div>
-                <div className="sig-box mt-4">
-                  <span>Checked By:</span>
-                  <input 
-                    type="text" 
-                    value={project?.checkedBy || ''} 
-                    onChange={(e) => onUpdate(project.id, project.sections, project.region, { checkedBy: e.target.value })}
-                    placeholder="Reviewer / Principal"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <style jsx="true">{`
         /* ═══════════════════════════════════════════ */
@@ -1249,9 +1252,42 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         }
 
         .notes-content {
-          padding-left: 1.75rem;
-          padding-right: 1.75rem;
+          max-height: 0;
+          opacity: 0;
+          overflow: hidden;
+          padding: 0 2rem;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          border-top: 1px solid transparent;
+          background: white;
+        }
+
+        .notes-accordion.expanded .notes-content {
+          max-height: 2000px;
+          opacity: 1;
+          padding: 2.5rem 2rem;
           border-top: 1px solid #e2e8f0;
+        }
+
+        .chevron-wrap {
+          transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          color: #94a3b8;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: transparent;
+        }
+
+        .chevron-wrap.active {
+          transform: rotate(180deg);
+          color: #2563eb;
+          background: #eff6ff;
+        }
+
+        .chevron-icon {
+           /* no base rotate here, let wrap handle it */
         }
 
         .signatures-grid {
