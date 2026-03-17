@@ -1,22 +1,83 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
+import { getSetting } from '../db/database';
 
 /**
  * BOQ Pro – AI Intelligence Engine (Powered by Google Gemini)
  * Replaces OpenAI. Uses gemini-2.0-flash for text and gemini-1.5-flash for vision.
  */
 
-// Initialise Gemini client once from the hardcoded env variable
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+// Initialise base clients with environment defaults
+const GEMINI_ENV_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const OPENAI_ENV_KEY = import.meta.env.VITE_OPENAI_API_KEY;
+const OPENAI_ENV_MODEL = import.meta.env.VITE_OPENAI_MODEL || 'gpt-4o';
+
+/**
+ * Retrieves the preferred AI configuration from settings.
+ * Returns provider ('gemini' or 'openai') and the appropriate API key.
+ */
+const getAIConfig = async () => {
+    // 1. Get preferred provider and model from database
+    const dbProvider = await getSetting('preferred_ai_provider');
+    const dbModel = await getSetting('openai_model');
+    
+    // Default provider logic: 
+    // If user has chosen one, use it. 
+    // Otherwise, if OpenAI env key exists, use OpenAI. 
+    // Else fallback to Gemini.
+    const preferredProvider = dbProvider || (OPENAI_ENV_KEY ? 'openai' : 'gemini');
+    const preferredModel = dbModel || OPENAI_ENV_MODEL;
+    
+    // 2. Get API keys from database (takes priority over env)
+    const dbGeminiKey = await getSetting('gemini_api_key');
+    const dbOpenAIKey = await getSetting('openai_api_key');
+
+    const config = {
+        provider: preferredProvider,
+        model: preferredModel,
+        geminiKey: dbGeminiKey || GEMINI_ENV_KEY,
+        openaiKey: dbOpenAIKey || OPENAI_ENV_KEY
+    };
+
+    return config;
+};
 
 /**
  * Helper – runs a text prompt through Gemini 2.0 Flash
  */
-const runTextPrompt = async (prompt) => {
-    if (!genAI) throw new Error('Gemini API key not configured.');
+const runGeminiPrompt = async (prompt, key) => {
+    if (!key) throw new Error('Gemini API key not configured.');
+    const genAI = new GoogleGenerativeAI(key);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     const result = await model.generateContent(prompt);
     return result.response.text();
+};
+
+/**
+ * Helper – runs a text prompt through OpenAI GPT-4o
+ */
+const runOpenAIPrompt = async (prompt, key, modelName = 'gpt-4o') => {
+    if (!key) throw new Error('OpenAI API key not configured.');
+    const openai = new OpenAI({ apiKey: key, dangerouslyAllowBrowser: true });
+    const response = await openai.chat.completions.create({
+        model: modelName,
+        messages: [{ role: 'user', content: prompt }],
+    });
+    return response.choices[0].message.content;
+};
+
+/**
+ * Unified text prompt runner
+ */
+const runPrompt = async (prompt) => {
+    const { provider, model, geminiKey, openaiKey } = await getAIConfig();
+    
+    if (provider === 'openai' && openaiKey) {
+        return await runOpenAIPrompt(prompt, openaiKey, model);
+    }
+    
+    // Default to Gemini
+    return await runGeminiPrompt(prompt, geminiKey);
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -24,9 +85,12 @@ const runTextPrompt = async (prompt) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const generateAIInsight = async (item, context = {}) => {
     try {
-        if (!genAI) {
+        const { provider, geminiKey, openaiKey } = await getAIConfig();
+        const activeKey = provider === 'openai' ? openaiKey : geminiKey;
+
+        if (!activeKey) {
             return {
-                summary: "AI Insight running in Demo Mode. Gemini API key not found in environment.",
+                summary: `AI Insight running in Demo Mode. ${provider === 'openai' ? 'OpenAI' : 'Gemini'} API key not found in environment or settings.`,
                 recommendation: "Benchmark alignment suggested.",
                 confidence: 70
             };
@@ -46,7 +110,7 @@ export const generateAIInsight = async (item, context = {}) => {
             Mention any price volatility risk for this material or trade.
         `;
 
-        const text = await runTextPrompt(prompt);
+        const text = await runPrompt(prompt);
 
         return {
             summary: text.trim(),
@@ -56,9 +120,9 @@ export const generateAIInsight = async (item, context = {}) => {
             confidence: 95
         };
     } catch (err) {
-        console.error('[GEMINI] Rate insight failed:', err.message);
+        console.error('[AI] Rate insight failed:', err.message);
         return {
-            summary: "Unable to reach Gemini AI engine. Please check your internet connection.",
+            summary: "Unable to reach AI engine. Please check your internet connection.",
             recommendation: "Manual review required.",
             confidence: 0
         };
@@ -70,8 +134,11 @@ export const generateAIInsight = async (item, context = {}) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const generateProjectSummary = async (projectData) => {
     try {
-        if (!genAI) {
-            return "Professional AI summary unavailable — Gemini API key not found. For this project, we observe a standard cost distribution with a primary focus on civil works.";
+        const { provider, geminiKey, openaiKey } = await getAIConfig();
+        const activeKey = provider === 'openai' ? openaiKey : geminiKey;
+
+        if (!activeKey) {
+            return `Professional AI summary unavailable — ${provider === 'openai' ? 'OpenAI' : 'Gemini'} API key not found. For this project, we observe a standard cost distribution with a primary focus on civil works.`;
         }
 
         const sectionsDesc = projectData.sections
@@ -91,10 +158,10 @@ export const generateProjectSummary = async (projectData) => {
             Keep it concise and formal — fit for a QS report.
         `;
 
-        const text = await runTextPrompt(prompt);
+        const text = await runPrompt(prompt);
         return text.trim();
     } catch (err) {
-        console.error('[GEMINI] Project summary failed:', err.message);
+        console.error('[AI] Project summary failed:', err.message);
         return "Unable to generate AI summary. Please review project totals manually.";
     }
 };
@@ -104,7 +171,61 @@ export const generateProjectSummary = async (projectData) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const processEngineeringDrawing = async (base64Image, contextHint = '') => {
     try {
-        if (!genAI) {
+        const { provider, model, geminiKey, openaiKey } = await getAIConfig();
+
+        if (provider === 'openai' && openaiKey) {
+            const openai = new OpenAI({ apiKey: openaiKey, dangerouslyAllowBrowser: true });
+            const prompt = `
+                You are a highly experienced Senior Quantity Surveyor and Structural Engineer.
+                
+                TASK: Analyze this engineering drawing/blueprint and extract specific BOQ construction categories and estimated item counts.
+                
+                USER CONTEXT: ${contextHint || 'None provided. Use your best professional judgment to identify the drawing type.'}
+
+                Return a valid JSON array of objects with this schema:
+                [
+                  {
+                    "category": "Structural Element Category (e.g., Slab, Beam, Column, Foundation)",
+                    "item": "Specific name or notation (e.g., Suspended Slab S1, Floor Beam FB5)",
+                    "description": "Details including dimensions (e.g., 150mm thick) and reinforcement (e.g., Y12 BRS mesh)",
+                    "quantity": Number,
+                    "structuralDetails": {
+                        "dimensions": "Width x Depth or Thickness",
+                        "reinforcement": "e.g., 4Y16, Y10@200",
+                        "notations": ["B1", "S1", "C2"]
+                    }
+                  }
+                ]
+                Return ONLY the valid JSON array.
+            `;
+
+            const response = await openai.chat.completions.create({
+                model: model === 'gpt-4o' ? 'gpt-4o' : model, // Use specific model if provided
+                messages: [
+                    {
+                        role: "user",
+                        content: [
+                            { type: "text", text: prompt },
+                            {
+                                type: "image_url",
+                                image_url: {
+                                    url: `data:image/png;base64,${base64Image}`,
+                                },
+                            },
+                        ],
+                    },
+                ],
+                response_format: { type: "json_object" }
+            });
+
+            const content = response.choices[0].message.content;
+            const parsed = JSON.parse(content);
+            // OpenAI might return { results: [...] } or just the array if handled correctly
+            return Array.isArray(parsed) ? parsed : (parsed.items || parsed.elements || parsed.results || []);
+        }
+
+        // Falling back to Gemini or demo mode
+        if (!geminiKey) {
             return [
                 { id: 'sec-1', title: 'Substructure & Earthworks', confidence: 98, items: 12 },
                 { id: 'sec-2', title: 'Concrete Frame & Superstructure', confidence: 95, items: 24 },
@@ -113,8 +234,8 @@ export const processEngineeringDrawing = async (base64Image, contextHint = '') =
             ];
         }
 
-        // Switching back to 1.5-flash for vision stability in this environment
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const genAI = new GoogleGenerativeAI(geminiKey);
+        const geminiModel = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
         const prompt = `
             You are a highly experienced Senior Quantity Surveyor and Structural Engineer.
@@ -150,23 +271,17 @@ export const processEngineeringDrawing = async (base64Image, contextHint = '') =
         const imagePart = {
             inlineData: {
                 data: base64Image,
-                mimeType: 'image/png' // Standardize on PNG or JPEG; 1.5 flash handles both well
+                mimeType: 'image/png'
             }
         };
 
-        const result = await model.generateContent([prompt, imagePart]);
+        const result = await geminiModel.generateContent([prompt, imagePart]);
         const content = result.response.text();
 
-        // Robust JSON extraction - handle both arrays and objects
         const jsonMatch = content.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
-        if (!jsonMatch) {
-            console.error('[GEMINI] No JSON found in response:', content);
-            throw new Error('AI returned an unparseable response.');
-        }
+        if (!jsonMatch) throw new Error('AI returned an unparseable response.');
 
         const parsed = JSON.parse(jsonMatch[0]);
-
-        // Handle error objects returned by AI
         if (parsed.error === 'INVALID_DRAWING') {
             const err = new Error(parsed.message);
             err.code = 'INVALID_DRAWING';
@@ -175,7 +290,7 @@ export const processEngineeringDrawing = async (base64Image, contextHint = '') =
 
         return parsed;
     } catch (err) {
-        console.error('[GEMINI] Drawing analysis failed:', err);
+        console.error('[AI] Drawing analysis failed:', err);
         throw err;
     }
 };
@@ -185,8 +300,10 @@ export const processEngineeringDrawing = async (base64Image, contextHint = '') =
 // ─────────────────────────────────────────────────────────────────────────────
 export const processStructuralFile = async (fileContent, fileName = 'structural_design.csv') => {
     try {
-        if (!genAI) {
-            // Intelligent placeholder for demo mode
+        const { provider, geminiKey, openaiKey } = await getAIConfig();
+        const activeKey = provider === 'openai' ? openaiKey : geminiKey;
+
+        if (!activeKey) {
             return [
                 {
                     id: 'ext-sec-1',
@@ -199,8 +316,6 @@ export const processStructuralFile = async (fileContent, fileName = 'structural_
                 }
             ];
         }
-
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
         const prompt = `
             You are a Senior Structural Engineer and expert Quantity Surveyor specializing in Bill of Quantities (BOQ) preparation for Nigerian construction projects.
@@ -234,8 +349,7 @@ export const processStructuralFile = async (fileContent, fileName = 'structural_
             Return ONLY the JSON array.
         `;
 
-        const result = await model.generateContent(prompt);
-        const content = result.response.text();
+        const content = await runPrompt(prompt);
 
         // Strip markdown code fences if present
         const jsonStr = content.replace(/```json|```/g, '').trim();
@@ -243,7 +357,7 @@ export const processStructuralFile = async (fileContent, fileName = 'structural_
 
         return parsed;
     } catch (err) {
-        console.error('[GEMINI] Structural file analysis failed:', err.message);
+        console.error('[AI] Structural file analysis failed:', err.message);
         throw err;
     }
 };
