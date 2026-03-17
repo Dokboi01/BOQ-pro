@@ -412,6 +412,59 @@ const BREAKDOWNS = [
         labor: [labour('pipelayer', 0.5), labour('general', 0.5)],
         plant: [plant('excavator', 0.1)],
     },
+    {
+        keywords: ['abutment', 'pier', 'pier cap', 'bridge column'],
+        materials: [
+            mat('Structural Concrete (Grade C35/45)', 1, 'm³', 155000),
+            mat('High Tensile Steel (Y25)', 150, 'kg', 1250),
+            mat('Formwork (F3 Finish)', 4, 'm²', 18500),
+            mat('Curing Compound', 0.5, 'L', 4500),
+        ],
+        labor: [labour('concreteMixer', 2), labour('steel_fixer', 2.5), labour('carpenter', 2)],
+        plant: [plant('concreteMixer', 0.5), plant('vibrator', 0.5), plant('crane', 0.2)],
+    },
+    {
+        keywords: ['girder', 'pre-stressed', 'post-tensioned', 'bridge deck'],
+        materials: [
+            mat('High Grade Concrete (C40/50)', 1, 'm³', 185000),
+            mat('Pre-stressing Strand (15.2mm)', 10, 'kg', 3500),
+            mat('Anchorages & Couplers', 0.1, 'Nr', 45000),
+            mat('Grout for ducts', 0.05, 'm³', 125000),
+        ],
+        labor: [labour('concreteMixer', 3), labour('steel_fixer', 3), labour('welder', 1)],
+        plant: [plant('crane', 0.5), plant('generator', 0.5)],
+    },
+    {
+        keywords: ['rigid pavement', 'concrete road', 'pavement slab'],
+        materials: [
+            mat('Pavement Concrete (Grade C30)', 1, 'm³', 85000),
+            mat('Reinforcement Mesh (A252)', 1.05, 'm²', 4500),
+            mat('Dowels (25mm MS)', 2, 'Nr', 8500),
+            mat('Expansion Joint Filler', 0.5, 'm', 4500),
+        ],
+        labor: [labour('concreteMixer', 1.5), labour('general', 3)],
+        plant: [plant('concreteMixer', 0.5), plant('vibrator', 0.5), plant('roller', 0.1)],
+    },
+    {
+        keywords: ['kerb', 'precast kerb', 'edge tool'],
+        materials: [
+            mat('Precast Concrete Kerb (Type S3)', 1.05, 'm', 8500),
+            mat('Concrete Bedding (1:3:6)', 0.05, 'm³', 65000),
+            mat('Cement Mortar for Joints', 0.01, 'm³', 95000),
+        ],
+        labor: [labour('mason', 0.5), labour('general', 0.3)],
+        plant: [],
+    },
+    {
+        keywords: ['solar street light', 'lighting pole'],
+        materials: [
+            mat('Solar Light Assembly (200W)', 1, 'Nr', 450000),
+            mat('Galvanized Steel Pole (8m)', 1, 'Nr', 125000),
+            mat('Concrete for Base (0.5m³)', 0.5, 'm³', 65000),
+        ],
+        labor: [labour('electrician', 1), labour('general', 2)],
+        plant: [plant('excavator', 0.1), plant('crane', 0.1)],
+    },
 
     // ══════════════════════════════════════════════════════════
     // PILING
@@ -571,26 +624,6 @@ const STRUCTURE_DEFAULTS = {
         labor: [labour('concreteMixer', 1.5), labour('steel_fixer', 1), labour('general', 2)],
         plant: [plant('concreteMixer', 0.3), plant('vibrator', 0.3)],
     },
-    'Road Construction': {
-        materials: [
-            mat('Laterite (Filling)', 1.2, 'm³', 12000),
-            mat('Granite (20mm)', 0.5, 'm³', 35000),
-            mat('Diesel (plant fuel)', 10, 'L', 1100),
-        ],
-        labor: [labour('road_ganger', 0.5), labour('driver', 1), labour('general', 1)],
-        plant: [plant('gradingMachine', 0.3), plant('roller', 0.3)],
-    },
-    'Bridge / Flyover': {
-        materials: [
-            mat('OPC Cement (50kg)', 10, 'Bags', 12500),
-            mat('Sharp Sand', 0.5, 'm³', 22000),
-            mat('Granite (10mm)', 1.0, 'm³', 36500),
-            mat('Reinforcement Steel (25mm)', 120, 'kg', 1130),
-            mat('Admixture (waterproofing)', 0.5, 'L', 4500),
-        ],
-        labor: [labour('concreteMixer', 2), labour('steel_fixer', 2), labour('general', 3)],
-        plant: [plant('concreteMixer', 0.5), plant('vibrator', 0.5), plant('crane', 0.2)],
-    },
     'Box Culvert': {
         materials: [
             mat('OPC Cement (50kg)', 9, 'Bags', 12500),
@@ -631,6 +664,26 @@ const STRUCTURE_DEFAULTS = {
         ],
         labor: [labour('mason', 2), labour('plumber', 1), labour('general', 3)],
         plant: [plant('concreteMixer', 0.5), plant('vibrator', 0.5)],
+    },
+    'Road Construction': {
+        materials: [
+            mat('Crushed Rock Base', 1.4, 'm³', 28000),
+            mat('Asphaltic Concrete', 1.05, 'Tonne', 55000),
+            mat('Concrete Kerbs (Precast)', 1.05, 'm', 8500),
+            mat('Solar Street Light System', 1, 'Nr', 450000),
+        ],
+        labor: [labour('road_ganger', 1), labour('driver', 2), labour('general', 5)],
+        plant: [plant('gradingMachine', 0.5), plant('roller', 0.5), plant('asphaltLayer', 0.5)],
+    },
+    'Bridge / Flyover': {
+        materials: [
+            mat('Structural Concrete (C40/50)', 1, 'm³', 185000),
+            mat('Pre-stressing Steel/Cables', 120, 'kg', 2500),
+            mat('Elastomeric Bearings', 1, 'Nr', 350000),
+            mat('Steel Railings', 1, 'm', 85000),
+        ],
+        labor: [labour('concreteMixer', 3), labour('steel_fixer', 3), labour('welder', 2), labour('general', 10)],
+        plant: [plant('crane', 1), plant('pileRig', 0.5), plant('concreteMixer', 1), plant('vibrator', 1)],
     },
 };
 

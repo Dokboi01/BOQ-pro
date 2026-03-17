@@ -226,8 +226,18 @@ export const STRUCTURE_DATA = {
                 ]
             },
             {
+                id: 'rigid_pavement',
+                title: '300. RIGID PAVEMENT (CONCRETE ROAD)',
+                items: [
+                    { description: 'Concrete Grade C30/37 in Pavement Slab (200mm)', unit: 'm³', qty: 0, rate: 85000, benchmark: 85000 },
+                    { description: 'High Yield Reinforcement in Slabs (Y12)', unit: 'kg', qty: 0, rate: 1200, benchmark: 1200 },
+                    { description: 'Expansion Joint with Bituminous Filler', unit: 'm', qty: 0, rate: 4500, benchmark: 4500 },
+                    { description: 'Dowellation with 25mm Mild Steel Bars', unit: 'Nr', qty: 0, rate: 8500, benchmark: 8500 }
+                ]
+            },
+            {
                 id: 'pavement',
-                title: '400. PAVEMENT & SURFACING',
+                title: '400. FLEXIBLE PAVEMENT & SURFACING',
                 items: [
                     { description: 'Crushed Rock Base Course (200mm)', unit: 'm³', qty: 0, rate: 28000, benchmark: 28000 },
                     { description: 'Asphaltic Concrete Binder Course (60mm)', unit: 'm²', qty: 0, rate: 14500, benchmark: 14500 },
@@ -272,29 +282,32 @@ export const STRUCTURE_DATA = {
                 ]
             },
             {
-                id: 'concrete',
-                title: 'SERIES 1700. STRUCTURAL CONCRETE',
+                id: 'substructure',
+                title: 'SERIES 1700. SUBSTRUCTURE (ABUTMENTS & PIERS)',
                 items: [
-                    { description: 'Concrete Grade C35/45 in Abutments', unit: 'm³', qty: 0, rate: 155000, benchmark: 155000 },
-                    { description: 'Concrete Grade C35/45 in Bridge Deck', unit: 'm³', qty: 0, rate: 165000, benchmark: 165000 },
-                    { description: 'Formwork to F3 Finish', unit: 'm²', qty: 0, rate: 18500, benchmark: 18500 },
-                    { description: 'Post Tensioning Cables and Stressing', unit: 'Tonne', qty: 0, rate: 2500000, benchmark: 2500000 }
+                    { description: 'Mass Concrete in Blinding (Grade C15)', unit: 'm³', qty: 0, rate: 65000, benchmark: 65000 },
+                    { description: 'Reinforced Concrete Grade C35/45 in Abutments', unit: 'm³', qty: 0, rate: 155000, benchmark: 155000 },
+                    { description: 'Reinforced Concrete Grade C35/45 in Piers', unit: 'm³', qty: 0, rate: 165000, benchmark: 165000 },
+                    { description: 'Reinforcement Steel in Substructure (Y20, Y25)', unit: 'Tonne', qty: 0, rate: 1250000, benchmark: 1250000 }
                 ]
             },
             {
-                id: 'bearings',
-                title: 'SERIES 1800. BEARINGS & EXPANSION JOINTS',
+                id: 'superstructure',
+                title: 'SERIES 1800. SUPERSTRUCTURE (GIRDERS & DECK)',
                 items: [
-                    { description: 'Elastomeric Bridge Bearings', unit: 'Nr', qty: 0, rate: 185000, benchmark: 185000 },
-                    { description: 'Expansion Joint (Asphaltic Plug Type)', unit: 'm', qty: 0, rate: 95000, benchmark: 95000 }
+                    { description: 'Pre-stressed Concrete Girders (Post-tensioned)', unit: 'Nr', qty: 0, rate: 4500000, benchmark: 4500000 },
+                    { description: 'Reinforced Concrete Bridge Deck (Grade C40)', unit: 'm³', qty: 0, rate: 185000, benchmark: 185000 },
+                    { description: 'Approach Slab Concrete (Grade C30)', unit: 'm³', qty: 0, rate: 95000, benchmark: 95000 },
+                    { description: 'Bridge Bearings (Pot/Elastomeric Type)', unit: 'Nr', qty: 0, rate: 350000, benchmark: 350000 }
                 ]
             },
             {
-                id: 'parapets',
-                title: 'SERIES 1900. PARAPETS & SAFETY BARRIERS',
+                id: 'ancillary',
+                title: 'SERIES 1900. ANCILLARY BRIDGE WORKS',
                 items: [
-                    { description: 'Reinforced Concrete Parapet (1.2m high)', unit: 'm', qty: 0, rate: 45000, benchmark: 45000 },
-                    { description: 'Steel Safety Barriers', unit: 'm', qty: 0, rate: 35000, benchmark: 35000 }
+                    { description: 'Expansion Joints (Heavy Duty)', unit: 'm', qty: 0, rate: 145000, benchmark: 145000 },
+                    { description: 'Bridge Parapet Railings (Steel)', unit: 'm', qty: 0, rate: 85000, benchmark: 85000 },
+                    { description: 'Bridge Lighting and Warning Signs', unit: 'Sum', qty: 1, rate: 2500000, benchmark: 2500000 }
                 ]
             }
         ]
