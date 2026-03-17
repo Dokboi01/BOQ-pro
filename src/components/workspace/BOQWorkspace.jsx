@@ -4,7 +4,8 @@ import GeometricCalculator from './GeometricCalculator';
 import BidManagerModal from './BidManagerModal';
 import CollabModal from './CollabModal';
 import ActivityPanel from './ActivityPanel';
-import { calculateResourceRequirement, getRegionalModifier } from '../../utils/aiService';
+import StructuralAnalyzer from './StructuralAnalyzer';
+import { getRegionalModifier } from '../../utils/aiService';
 import {
   startPresence,
   stopPresence,
@@ -29,7 +30,8 @@ import {
   Sparkles,
   Globe2,
   UserPlus,
-  History
+  History,
+  Database
 } from 'lucide-react';
 
 const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) => {
@@ -39,6 +41,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
   const [biddingItem, setBiddingItem] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('estimation');
+  const [showStructuralAnalyzer, setShowStructuralAnalyzer] = useState(false);
 
   // Collaboration state
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -127,6 +130,76 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
       breakdown: breakdown
     });
     setAnalyzingItem(null);
+  };
+
+  const handleStructuralImport = (importedSections) => {
+    // Append the new sections to the existing ones
+    // We clean the sections to ensure IDs don't collide if they were generated statically
+    const newSections = importedSections.map(section => ({
+      ...section,
+      id: section.id || `ext-${Date.now()}-${Math.random()}`,
+      items: section.items.map(item => ({
+        ...item,
+        id: item.id || Date.now() + Math.random(),
+        rate: 0,
+        total: 0,
+        benchmark: 0,
+        useBenchmark: false,
+        rateSource: 'manual'
+      }))
+    }));
+
+    const updated = [...sections, ...newSections];
+    setSections(updated);
+    onUpdate(project.id, updated);
+    setShowStructuralAnalyzer(false);
+  };
+
+  const autoRateProject = () => {
+    // Logic to match items with standard benchmarks
+    // Simplified: matching key terms like "Concrete", "Reinforcement", "Block"
+    const regionMod = getRegionalModifier(project?.region || 'Lagos');
+    const benchmarks = {
+      'concrete': 75000,
+      'reinforcement': 1250000,
+      'steel': 1250000,
+      'formwork': 12500,
+      'block': 650,
+      'plaster': 4500,
+      'render': 4500,
+      'paint': 3500,
+      'excavation': 8500,
+      'earthwork': 8500
+    };
+
+    const updated = sections.map(section => ({
+      ...section,
+      items: section.items.map(item => {
+        if (item.rate > 0) return item;
+
+        const desc = item.description.toLowerCase();
+        let matchedRate = 0;
+        for (const [key, rate] of Object.entries(benchmarks)) {
+          if (desc.includes(key)) {
+            matchedRate = rate * regionMod;
+            break;
+          }
+        }
+
+        if (matchedRate > 0) {
+          return {
+            ...item,
+            rate: matchedRate,
+            total: item.qty * matchedRate,
+            rateSource: 'benchmark'
+          };
+        }
+        return item;
+      })
+    }));
+
+    setSections(updated);
+    onUpdate(project.id, updated);
   };
 
   const toggleVO = (sectionId, itemId) => {
@@ -255,6 +328,12 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
             }
           }}>
             <Calculator size={14} /> Rate Analysis
+          </button>
+          <button className="ws-btn ws-btn-ghost" onClick={() => setShowStructuralAnalyzer(true)} title="Import Structural File">
+            <Database size={14} /> Import Design
+          </button>
+          <button className="ws-btn ws-btn-ghost" onClick={autoRateProject} title="Auto-Assign Rates">
+            <Zap size={14} className="text-accent-500" /> Auto-Rate
           </button>
           <button className="ws-btn ws-btn-ghost" onClick={onExport}><Download size={14} /> Export</button>
           <button className="ws-btn ws-btn-primary" onClick={onAddSection}><Plus size={14} /> Section</button>
@@ -478,6 +557,13 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
             });
             setBiddingItem(null);
           }}
+        />
+      )}
+
+      {showStructuralAnalyzer && (
+        <StructuralAnalyzer
+          onClose={() => setShowStructuralAnalyzer(false)}
+          onComplete={handleStructuralImport}
         />
       )}
 

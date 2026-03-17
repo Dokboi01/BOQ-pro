@@ -162,7 +162,75 @@ export const processEngineeringDrawing = async (base64Image) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4. Market Outlook (static — can be AI-powered later)
+// 4. Structural Design File Analysis (Excel/CSV/Text)
+// ─────────────────────────────────────────────────────────────────────────────
+export const processStructuralFile = async (fileContent, fileName = 'structural_design.csv') => {
+    try {
+        if (!genAI) {
+            // Intelligent placeholder for demo mode
+            return [
+                {
+                    id: 'ext-sec-1',
+                    title: 'Structural Frames (AI Extracted)',
+                    items: [
+                        { id: Date.now() + 1, description: 'Reinforced Concrete Columns (C1-C12)', unit: 'm³', qty: 4.5, rate: 0, total: 0, qtySource: 'ai-extracted' },
+                        { id: Date.now() + 2, description: 'Superstructure Beams (B1-B24)', unit: 'm³', qty: 12.8, rate: 0, total: 0, qtySource: 'ai-extracted' },
+                        { id: Date.now() + 3, description: 'Floor Slab Panels (S1-S8)', unit: 'm²', qty: 145, rate: 0, total: 0, qtySource: 'ai-extracted' }
+                    ]
+                }
+            ];
+        }
+
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+
+        const prompt = `
+            You are a Senior Structural Engineer and expert Quantity Surveyor specializing in Bill of Quantities (BOQ) preparation for Nigerian construction projects.
+            
+            INPUT: This is raw text or CSV data exported from structural design software (Prota Structure, Orion, Tekla, etc.).
+            FILE NAME: ${fileName}
+            FILE CONTENT:
+            ${fileContent.substring(0, 10000)}
+            
+            YOUR OBJECTIVE:
+            1. Parse the structural data and identify all load-bearing members.
+            2. Extract "Member Marks" (e.g., C1-C10, FB1, 1S1), Their Dimensions, and Quantities.
+            3. CRITICAL: Distinguish between different material trades (Concrete Volume, Formwork Area, and Reinforcement Tonnage).
+            4. Group items into logical BOQ sections based on construction sequence:
+               - "Substructure (Foundations/Footings)"
+               - "Superstructure - Vertical Frames (Columns/Walls)"
+               - "Superstructure - Horizontal Frames (Beams/Slabs)"
+            
+            JSON FORMAT REQUIREMENTS:
+            - Return ONLY a valid JSON array of sections.
+            - Each section: { id, title, items: [] }
+            - Each item: { id, description, unit, qty, qtySource: "ai-extracted" }
+            
+            QS STANDARDS:
+            - Concrete -> Unit: "m³" or "cum"
+            - Formwork -> Unit: "m²"
+            - Reinforcement -> Unit: "ton" or "kg"
+            
+            Ensure descriptions are descriptive (e.g., "Reinforced Concrete in Columns - Grade 30").
+            DO NOT include summary totals if they are already broken down.
+            Return ONLY the JSON array.
+        `;
+
+        const result = await model.generateContent(prompt);
+        const content = result.response.text();
+
+        // Strip markdown code fences if present
+        const jsonStr = content.replace(/```json|```/g, '').trim();
+        const parsed = JSON.parse(jsonStr);
+
+        return parsed;
+    } catch (err) {
+        console.error('[GEMINI] Structural file analysis failed:', err.message);
+        throw err;
+    }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. Market Outlook (static — can be AI-powered later)
 // ─────────────────────────────────────────────────────────────────────────────
 export const getMarketOutlook = async () => {
     return {
