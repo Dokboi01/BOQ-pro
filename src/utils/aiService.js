@@ -113,8 +113,8 @@ export const processEngineeringDrawing = async (base64Image, contextHint = '') =
             ];
         }
 
-        // Using gemini-2.0-flash for superior vision and reasoning
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        // Switching back to 1.5-flash for vision stability in this environment
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
         const prompt = `
             You are a highly experienced Senior Quantity Surveyor and Structural Engineer.
@@ -140,17 +140,23 @@ export const processEngineeringDrawing = async (base64Image, contextHint = '') =
         const imagePart = {
             inlineData: {
                 data: base64Image,
-                mimeType: 'image/jpeg'
+                mimeType: 'image/png' // Standardize on PNG or JPEG; 1.5 flash handles both well
             }
         };
 
         const result = await model.generateContent([prompt, imagePart]);
         const content = result.response.text();
 
-        // Strip markdown code fences if present
-        const jsonStr = content.replace(/```json|```/g, '').trim();
-        const parsed = JSON.parse(jsonStr);
+        // Robust JSON extraction - handle both arrays and objects
+        const jsonMatch = content.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+        if (!jsonMatch) {
+            console.error('[GEMINI] No JSON found in response:', content);
+            throw new Error('AI returned an unparseable response.');
+        }
 
+        const parsed = JSON.parse(jsonMatch[0]);
+
+        // Handle error objects returned by AI
         if (parsed.error === 'INVALID_DRAWING') {
             const err = new Error(parsed.message);
             err.code = 'INVALID_DRAWING';
@@ -159,7 +165,7 @@ export const processEngineeringDrawing = async (base64Image, contextHint = '') =
 
         return parsed;
     } catch (err) {
-        console.error('[GEMINI VISION] Drawing analysis failed:', err.message);
+        console.error('[GEMINI] Drawing analysis failed:', err);
         throw err;
     }
 };

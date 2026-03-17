@@ -24,16 +24,15 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
   const [statusMessage, setStatusMessage] = useState('Extracting drawing layers...');
   const [contextHint, setContextHint] = useState('');
 
-  const processingMessages = [
-    'Extracting structural nodes...',
-    'Identifying material layers...',
-    'Mapping reinforcement bars...',
-    'Analyzing concrete volumes...',
-    'Finalizing structural breakdown...',
-    'Almost there! Verifying BOQ metrics...'
-  ];
-
   useEffect(() => {
+    const processingMessages = [
+      'Extracting structural nodes...',
+      'Identifying material layers...',
+      'Mapping reinforcement bars...',
+      'Analyzing concrete volumes...',
+      'Finalizing structural breakdown...',
+      'Almost there! Verifying BOQ metrics...'
+    ];
     let msgIndex = 0;
     let msgInterval;
     if (step === 'processing') {
@@ -91,8 +90,12 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
       console.error('Analysis failed:', err);
       if (err.code === 'INVALID_DRAWING') {
         setError(err.message);
+      } else if (err.message?.includes('API key')) {
+        setError('Gemini API key is invalid or not configured correctly.');
+      } else if (err.message?.includes('unparseable')) {
+        setError('AI returned a malformed response. Please try again with a clearer image.');
       } else {
-        setError('AI Analysis failed. Please ensure the file is a clear drawing and your API configuration is correct.');
+        setError(`Analysis failed: ${err.message || 'Unknown error'}. Please ensure your API config is correct.`);
       }
       setStep('upload');
     }
