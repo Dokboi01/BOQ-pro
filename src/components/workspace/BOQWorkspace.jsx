@@ -5,7 +5,8 @@ import BidManagerModal from './BidManagerModal';
 import CollabModal from './CollabModal';
 import ActivityPanel from './ActivityPanel';
 import StructuralAnalyzer from './StructuralAnalyzer';
-import { getRegionalModifier } from '../../utils/aiService';
+import { getRegionalModifier, generateAIInsight } from '../../utils/aiService';
+import { getMaterials } from '../../db/database';
 import {
   startPresence,
   stopPresence,
@@ -155,21 +156,25 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
     setShowStructuralAnalyzer(false);
   };
 
-  const autoRateProject = () => {
-    // Logic to match items with standard benchmarks
-    // Simplified: matching key terms like "Concrete", "Reinforcement", "Block"
+  const autoRateProject = async () => {
+    // 1. Fetch real-time benchmarks from the database
+    const dbMaterials = await getMaterials();
     const regionMod = getRegionalModifier(project?.region || 'Lagos');
-    const benchmarks = {
+    
+    // 2. Map database materials to a searchable dictionary
+    const benchmarkMap = {};
+    dbMaterials.forEach(mat => {
+      const key = mat.name.toLowerCase().split(' ')[0]; // Use first word as key
+      benchmarkMap[key] = mat.price;
+    });
+
+    // Fallback static benchmarks for common items not in DB
+    const fallbacks = {
       'concrete': 75000,
       'reinforcement': 1250000,
       'steel': 1250000,
       'formwork': 12500,
-      'block': 650,
-      'plaster': 4500,
-      'render': 4500,
-      'paint': 3500,
-      'excavation': 8500,
-      'earthwork': 8500
+      'excavation': 8500
     };
 
     const updated = sections.map(section => ({
@@ -179,10 +184,22 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
 
         const desc = item.description.toLowerCase();
         let matchedRate = 0;
-        for (const [key, rate] of Object.entries(benchmarks)) {
+        
+        // Try DB matches first
+        for (const [key, price] of Object.entries(benchmarkMap)) {
           if (desc.includes(key)) {
-            matchedRate = rate * regionMod;
+            matchedRate = price * regionMod;
             break;
+          }
+        }
+
+        // Try fallbacks if no DB match
+        if (matchedRate === 0) {
+          for (const [key, price] of Object.entries(fallbacks)) {
+            if (desc.includes(key)) {
+              matchedRate = price * regionMod;
+              break;
+            }
           }
         }
 
@@ -191,7 +208,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
             ...item,
             rate: matchedRate,
             total: item.qty * matchedRate,
-            rateSource: 'benchmark'
+            rateSource: 'calculated'
           };
         }
         return item;
@@ -199,7 +216,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
     }));
 
     setSections(updated);
-    onUpdate(project.id, updated);
+    onUpdate(project.id, updated, project?.region);
   };
 
   const toggleVO = (sectionId, itemId) => {
