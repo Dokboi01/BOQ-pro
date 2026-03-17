@@ -76,10 +76,13 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
     title: activeProject?.name || 'Untitled Project',
     phase: activeProject?.type || 'General',
     ref: activeProject?.id ? `BOQ-${activeProject.id}` : 'N/A',
-    client: user?.organization || 'Private Client',
-    location: 'Lagos - Algiers Sector',
-    preparedBy: user?.full_name || 'BOQ Pro Professional',
-    date: activeProject?.date || new Date().toLocaleDateString()
+    client: activeProject?.clientName || user?.organization || 'Private Client',
+    location: activeProject?.region || 'Lagos - Algiers Sector',
+    preparedBy: activeProject?.preparedBy || user?.full_name || 'BOQ Pro Professional',
+    checkedBy: activeProject?.checkedBy || 'Senior QA/QC',
+    date: activeProject?.date || new Date().toLocaleDateString(),
+    notes: activeProject?.notes || '',
+    assumptions: activeProject?.assumptions || '1. All rates are inclusive of 7.5% VAT.\n2. Valid for 30 days.'
   };
 
   const boqData = React.useMemo(() => activeProject?.sections || [], [activeProject]);

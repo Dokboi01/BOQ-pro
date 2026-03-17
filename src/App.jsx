@@ -16,7 +16,7 @@ import MaterialLibrary from './components/workspace/MaterialLibrary';
 import FirebaseActionHandler from './components/auth/FirebaseActionHandler';
 import Reports from './components/workspace/Reports';
 import Settings from './components/dashboard/Settings';
-import StructureSelector from './components/dashboard/StructureSelector';
+import ProjectWizard from './components/dashboard/ProjectWizard';
 import DrawingAnalyzer from './components/workspace/DrawingAnalyzer';
 import CalculationMethodology from './components/workspace/CalculationMethodology';
 import {
@@ -87,7 +87,7 @@ function App() {
     isCreating, focusMode, setFocusMode,
     calculateTotalValue,
     syncStatus, forceSync,
-    handleCreateProject, handleStructureSelect, handleAnalysisComplete,
+    handleCreateProject, handleCompleteWizard, handleAnalysisComplete,
     handleUpdateProject, handleAddSection, handleDeleteSectionOrItem,
     handleDeleteProject,
   } = useProjects();
@@ -293,8 +293,8 @@ function App() {
 
         {renderContent()}
 
-        {showSelector && <StructureSelector
-          onSelect={handleStructureSelect}
+        {showSelector && <ProjectWizard
+          onSelect={handleCompleteWizard}
           onClose={() => setShowSelector(false)}
         />}
 

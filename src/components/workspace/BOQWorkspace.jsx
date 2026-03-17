@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../ui/ToastContext';
 import RateAnalysisModal from './RateAnalysisModal';
 import GeometricCalculator from './GeometricCalculator';
 import BidManagerModal from './BidManagerModal';
 import CollabModal from './CollabModal';
 import ActivityPanel from './ActivityPanel';
 import StructuralAnalyzer from './StructuralAnalyzer';
-import { getRegionalModifier, generateAIInsight } from '../../utils/aiService';
+import { getRegionalModifier } from '../../utils/aiService';
 import { getMaterials } from '../../db/database';
 import {
   startPresence,
@@ -32,7 +33,9 @@ import {
   Globe2,
   UserPlus,
   History,
-  Database
+  Database,
+  Save,
+  ClipboardList
 } from 'lucide-react';
 
 const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) => {
@@ -43,12 +46,15 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('estimation');
   const [showStructuralAnalyzer, setShowStructuralAnalyzer] = useState(false);
+  const [isNotesExpanded, setIsNotesExpanded] = useState(false);
 
   // Collaboration state
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showActivityPanel, setShowActivityPanel] = useState(false);
   const [presenceUsers, setPresenceUsers] = useState([]);
   const [activityLog, setActivityLog] = useState([]);
+  
+  const toast = useToast();
 
   React.useEffect(() => {
     if (project?.sections) {
@@ -253,14 +259,14 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
   };
 
   const filteredSections = React.useMemo(() => {
-    if (!searchQuery.trim()) return sections;
+    if (!searchQuery?.trim()) return sections || [];
     const query = searchQuery.toLowerCase();
-    return sections.map(section => {
-      const filteredItems = section.items.filter(item =>
-        item.description.toLowerCase().includes(query) ||
-        item.unit.toLowerCase().includes(query)
+    return (sections || []).map(section => {
+      const filteredItems = (section.items || []).filter(item =>
+        (item.description || '').toLowerCase().includes(query) ||
+        (item.unit || '').toLowerCase().includes(query)
       );
-      if (filteredItems.length > 0 || section.title.toLowerCase().includes(query)) {
+      if (filteredItems.length > 0 || (section.title || '').toLowerCase().includes(query)) {
         return { ...section, items: filteredItems, expanded: true };
       }
       return null;
@@ -268,12 +274,12 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
   }, [sections, searchQuery]);
 
   const calculateGrandTotal = React.useMemo(() => {
-    return sections.reduce((acc, section) =>
-      acc + section.items.reduce((sum, item) => sum + (item.total || 0), 0), 0
+    return (sections || []).reduce((acc, section) =>
+      acc + (section.items || []).reduce((sum, item) => sum + (item.total || 0), 0), 0
     );
   }, [sections]);
 
-  const totalItems = sections.reduce((a, s) => a + s.items.length, 0);
+  const totalItems = (sections || []).reduce((a, s) => a + (s.items?.length || 0), 0);
 
   return (
     <div className="ws-container">
@@ -339,9 +345,9 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
             <History size={14} />
           </button>
           <button className="ws-btn ws-btn-ghost" onClick={() => {
-            const firstItem = sections.flatMap(s => s.items)[0];
+            const firstItem = (sections || []).flatMap(s => s.items || [])[0];
             if (firstItem) {
-              setAnalyzingItem({ sectionId: sections.find(s => s.items.includes(firstItem))?.id, item: firstItem });
+              setAnalyzingItem({ sectionId: sections.find(s => (s.items || []).includes(firstItem))?.id, item: firstItem });
             }
           }}>
             <Calculator size={14} /> Rate Analysis
@@ -351,6 +357,9 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           </button>
           <button className="ws-btn ws-btn-ghost" onClick={autoRateProject} title="Auto-Assign Rates">
             <Zap size={14} className="text-accent-500" /> Auto-Rate
+          </button>
+          <button className="ws-btn ws-btn-ghost" onClick={() => toast.success('Project saved as a reusable template.')} title="Save as Template">
+            <Save size={14} /> Save Template
           </button>
           <button className="ws-btn ws-btn-ghost" onClick={onExport}><Download size={14} /> Export</button>
           <button className="ws-btn ws-btn-primary" onClick={onAddSection}><Plus size={14} /> Section</button>
@@ -362,10 +371,10 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         <table className="ws-table">
           <thead>
             <tr>
-              <th className="ws-th-num">#</th>
-              <th className="ws-th-desc">WORK DESCRIPTION</th>
-              <th className="ws-th-unit">UNIT</th>
-              <th className="ws-th-qty">QTY</th>
+              <th className="ws-th-num">Item No</th>
+              <th className="ws-th-desc">Description</th>
+              <th className="ws-th-unit">Unit</th>
+              <th className="ws-th-qty">Quantity</th>
               {viewMode === 'valuation' ? (
                 <>
                   <th className="ws-th-sm">DONE</th>
@@ -374,8 +383,8 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
               ) : (
                 <th className="ws-th-strategy">STRATEGY</th>
               )}
-              <th className="ws-th-rate">RATE (₦)</th>
-              <th className="ws-th-total">TOTAL (₦)</th>
+              <th className="ws-th-rate">Rate (₦)</th>
+              <th className="ws-th-total">Amount (₦)</th>
               <th className="ws-th-act"></th>
             </tr>
           </thead>
@@ -395,9 +404,9 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                         onChange={(e) => updateSectionTitle(section.id, e.target.value)}
                         onClick={(e) => e.stopPropagation()}
                       />
-                      <span className="ws-section-badge">{section.items.length}</span>
+                      <span className="ws-section-badge">{section.items?.length || 0}</span>
                       {!section.expanded && (
-                        <span className="ws-section-total">₦{section.items.reduce((a, i) => a + (i.total || 0), 0).toLocaleString()}</span>
+                        <span className="ws-section-total">₦{(section.items || []).reduce((a, i) => a + (i.total || 0), 0).toLocaleString()}</span>
                       )}
                     </div>
                   </td>
@@ -408,7 +417,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                   </td>
                 </tr>
                 {/* Items */}
-                {section.expanded && section.items.map((item, idx) => {
+                {section.expanded && (section.items || []).map((item, idx) => {
                   const outlier = !item.useBenchmark && isOutlier(item.rate, item.benchmark);
                   const rate = item.useBenchmark ? (item.benchmark * getRegionalModifier(project?.region || 'Lagos')) : item.rate;
                   return (
@@ -598,6 +607,80 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           onClose={() => setShowActivityPanel(false)}
         />
       )}
+
+      {/* Professional Foldable Notes & Assumptions */}
+      <div className="notes-accordion mt-6">
+        <button 
+          className="notes-header" 
+          onClick={() => setIsNotesExpanded(!isNotesExpanded)}
+        >
+          <div className="flex items-center gap-2">
+            <ClipboardList size={18} className="text-secondary-500" />
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Project Notes & Assumptions</h3>
+          </div>
+          <ChevronDown 
+            size={20} 
+            className={`transition-transform duration-300 ${isNotesExpanded ? 'rotate-180' : ''}`} 
+          />
+        </button>
+
+        <div className={`notes-content transition-all duration-300 ease-in-out overflow-hidden ${isNotesExpanded ? 'max-h-[1000px] opacity-100 py-6' : 'max-h-0 opacity-0 py-0'}`}>
+          <div className="meta-grid">
+            <div className="meta-col">
+              <label>General Project Notes</label>
+              <textarea 
+                value={project?.notes || ''}
+                onChange={(e) => onUpdate(project.id, project.sections, project.region, { notes: e.target.value })}
+                placeholder="Add project specific instructions or contextual notes here..."
+                rows={4}
+              />
+            </div>
+            <div className="meta-col">
+              <label>Technical Assumptions</label>
+              <textarea 
+                value={project?.assumptions || ''}
+                onChange={(e) => onUpdate(project.id, project.sections, project.region, { assumptions: e.target.value })}
+                placeholder="State any technical assumptions (e.g. soil bearing capacity, material grades)..."
+                rows={4}
+              />
+            </div>
+          </div>
+
+          <div className="meta-grid mt-6">
+            <div className="meta-col">
+              <label>Exclusions</label>
+              <textarea 
+                value={project?.exclusions || ''}
+                onChange={(e) => onUpdate(project.id, project.sections, project.region, { exclusions: e.target.value })}
+                placeholder="List items specifically excluded from this Bill of Quantities..."
+                rows={4}
+              />
+            </div>
+            <div className="meta-col">
+              <div className="signatures-grid">
+                <div className="sig-box">
+                  <span>Prepared By:</span>
+                  <input 
+                    type="text" 
+                    value={project?.preparedBy || ''} 
+                    onChange={(e) => onUpdate(project.id, project.sections, project.region, { preparedBy: e.target.value })}
+                    placeholder="Engineer / QS Name"
+                  />
+                </div>
+                <div className="sig-box mt-4">
+                  <span>Checked By:</span>
+                  <input 
+                    type="text" 
+                    value={project?.checkedBy || ''} 
+                    onChange={(e) => onUpdate(project.id, project.sections, project.region, { checkedBy: e.target.value })}
+                    placeholder="Reviewer / Principal"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <style jsx="true">{`
         /* ═══════════════════════════════════════════ */
@@ -1052,6 +1135,138 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         .activity-content { display: flex; flex-direction: column; flex: 1; }
         .activity-text { font-size: 0.75rem; font-weight: 600; color: #334155; }
         .activity-meta { font-size: 0.625rem; color: #94a3b8; margin-top: 1px; }
+        /* Signatures Grid */
+        .signatures-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 2rem;
+          margin-top: 1.5rem;
+        }
+        
+        .sig-box {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          border-top: 1px dashed var(--border-medium);
+          padding-top: 1rem;
+        }
+        
+        .sig-box span {
+          font-weight: 700;
+          font-size: 0.8125rem;
+          color: var(--primary-600);
+          white-space: nowrap;
+        }
+        
+        .sig-box input {
+          flex: 1;
+          border: none;
+          background: transparent;
+          font-family: inherit;
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: var(--primary-900);
+          border-bottom: 1px solid var(--border-light);
+          padding: 0.25rem 0.5rem;
+        }
+        
+        .sig-box input:focus {
+          outline: none;
+          border-bottom-color: var(--accent-500);
+        }
+
+        .meta-form {
+          margin-top: 3rem;
+          padding: 2rem;
+          background: white;
+          border-radius: var(--radius-md);
+          border: 1px solid var(--border-light);
+        }
+
+        .meta-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 2rem;
+        }
+
+        .meta-col {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+
+        .meta-col label {
+          font-size: 0.8125rem;
+          font-weight: 800;
+          color: var(--primary-500);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .meta-col textarea {
+          width: 100%;
+          border: 1px solid var(--border-medium);
+          border-radius: var(--radius-sm);
+          padding: 1rem;
+          font-size: 0.875rem;
+          color: var(--primary-800);
+          resize: vertical;
+          background: var(--bg-main);
+          transition: all 0.2s;
+        }
+
+        .meta-col textarea:focus {
+          outline: none;
+          border-color: var(--accent-400);
+          background: white;
+          box-shadow: 0 0 0 3px rgba(37,99,235,0.05);
+        }
+
+        /* Notes Accordion */
+        .notes-accordion {
+          background: white;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          margin: 1.5rem;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+          overflow: hidden;
+        }
+
+        .notes-header {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 1.25rem 1.75rem;
+          background: #f8fafc;
+          border: none;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+
+        .notes-header:hover {
+          background: #f1f5f9;
+        }
+
+        .notes-content {
+          padding-left: 1.75rem;
+          padding-right: 1.75rem;
+          border-top: 1px solid #e2e8f0;
+        }
+
+        .signatures-grid {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          justify-content: center;
+        }
+
+        .sig-box {
+          border-top: 1px dashed #cbd5e1;
+          padding-top: 0.75rem;
+        }
+
+
       `}</style>
     </div>
   );

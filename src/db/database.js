@@ -175,6 +175,41 @@ export const getMaterials = async () => {
     }
 };
 
+export const addMaterial = async (materialData) => {
+    try {
+        const docRef = await addDoc(collection(db, 'materials'), {
+            ...materialData,
+            created_at: serverTimestamp(),
+            updated_at: serverTimestamp()
+        });
+        return { id: docRef.id, ...materialData };
+    } catch (err) {
+        console.error('Error adding material:', err);
+        throw err;
+    }
+};
+
+export const updateMaterial = async (id, updates) => {
+    try {
+        const docRef = doc(db, 'materials', id);
+        await updateDoc(docRef, { ...updates, updated_at: serverTimestamp() });
+        return true;
+    } catch (err) {
+        console.error('Error updating material:', err);
+        throw err;
+    }
+};
+
+export const deleteMaterial = async (id) => {
+    try {
+        await deleteDoc(doc(db, 'materials', id));
+        return true;
+    } catch (err) {
+        console.error('Error deleting material:', err);
+        throw err;
+    }
+};
+
 export const getMarketIndices = async () => {
     try {
         const snapshot = await getDocs(collection(db, 'market_indices'));

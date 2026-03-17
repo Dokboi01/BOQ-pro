@@ -17,7 +17,10 @@ import {
   Info,
   Lock,
   Trash2,
-  Sparkles
+  Sparkles,
+  Search,
+  Filter,
+  ArrowUpDown
 } from 'lucide-react';
 import { PLAN_LIMITS, PLAN_NAMES } from '../../data/plans';
 
@@ -25,6 +28,9 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
   const [budget, setBudget] = useState(250000000); // ₦250M
   const [activeVizTab, setActiveVizTab] = useState('section');
   const [isApproved, setIsApproved] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState('All');
+  const [sortBy, setSortBy] = useState('newest');
   const toast = useToast();
 
   const calculateTotal = (proj) => {
@@ -44,6 +50,26 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
 
   const limits = PLAN_LIMITS[user?.plan] || PLAN_LIMITS[PLAN_NAMES.FREE];
   const isLimitReached = projects.length >= limits.maxProjects;
+
+  const filteredProjects = React.useMemo(() => {
+    let result = projects.filter(p => {
+      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesType = filterType === 'All' || p.type === filterType;
+      return matchesSearch && matchesType;
+    });
+
+    if (sortBy === 'newest') {
+      // Assuming project.date is sortable or created_at exists. If not, array order is usually newest first.
+      return result; 
+    } else if (sortBy === 'oldest') {
+      return [...result].reverse();
+    } else if (sortBy === 'value-high') {
+      return [...result].sort((a,b) => calculateTotal(b) - calculateTotal(a));
+    } else if (sortBy === 'value-low') {
+      return [...result].sort((a,b) => calculateTotal(a) - calculateTotal(b));
+    }
+    return result;
+  }, [projects, searchQuery, filterType, sortBy]);
 
   const costBreakdown = React.useMemo(() => {
     if (projects.length === 0) return [];
@@ -228,7 +254,32 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
       <section className="projects-section">
         <div className="section-header">
           <h3>My Projects</h3>
-          {projects.length > 0 && <button className="btn-primary-sm" onClick={onCreateProject} disabled={isLimitReached}>{isLimitReached ? 'Limit Reached' : '+ New Project'}</button>}
+          <div className="dashboard-controls-row">
+            <div className="search-bar">
+              <Search size={16} />
+              <input 
+                type="text" 
+                placeholder="Search projects..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="control-select">
+              <option value="All">All Types</option>
+              <option value="Building">Building</option>
+              <option value="Road">Road</option>
+              <option value="Drainage">Drainage</option>
+              <option value="Foundation">Foundation</option>
+              <option value="Coastal / Marine">Coastal</option>
+            </select>
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="control-select">
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="value-high">Highest Value</option>
+              <option value="value-low">Lowest Value</option>
+            </select>
+            {projects.length > 0 && <button className="btn-primary-sm" onClick={onCreateProject} disabled={isLimitReached}>{isLimitReached ? 'Limit Reached' : '+ New Project'}</button>}
+          </div>
         </div>
 
         {projects.length === 0 ? (
@@ -244,7 +295,7 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
           </div>
         ) : (
           <div className="projects-grid">
-            {projects.map(project => (
+            {filteredProjects.map(project => (
               <div
                 key={project.id}
                 className="project-card enterprise-card"
@@ -751,6 +802,20 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
 
         .divider { height: 1px; background: var(--border-light); margin: 1rem 0 2rem; }
 
+        .dashboard-controls-row { display: flex; gap: 0.75rem; align-items: center; }
+        .search-bar { display: flex; align-items: center; gap: 0.5rem; background: white; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); padding: 0.4rem 0.75rem; width: 220px; }
+        .search-bar input { border: none; outline: none; background: transparent; width: 100%; font-size: 0.8125rem; color: var(--primary-900); }
+        .control-select { 
+          padding: 0.5rem 0.75rem; 
+          border: 1px solid var(--border-medium); 
+          border-radius: var(--radius-sm); 
+          font-size: 0.8125rem; 
+          background: white; 
+          color: var(--primary-700); 
+          outline: none; 
+          cursor: pointer;
+        }
+        
         /* Portfolio Analytics */
         .portfolio-analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
         .portfolio-mini-card { padding: 1.25rem; display: flex; align-items: center; gap: 1rem; }

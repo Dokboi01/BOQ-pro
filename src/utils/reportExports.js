@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
-import { getRegionalModifier } from './aiService';
+import 'jspdf-autotable';
 
 export const exportToExcel = async (projectInfo, boqData, isUnpriced, calculateGrandTotal) => {
   const workbook = new ExcelJS.Workbook();
@@ -97,10 +97,18 @@ export const exportToExcel = async (projectInfo, boqData, isUnpriced, calculateG
     grandRow.getCell(6).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE68A' } }; // Light Gold/Yellow
   }
 
-  // --- 6. SIGNATURES ---
+  // --- 6. NOTES & ASSUMPTIONS ---
+  worksheet.addRow([]);
+  const notesTitleRow = worksheet.addRow(['', 'PROJECT NOTES & ASSUMPTIONS']);
+  notesTitleRow.font = { bold: true, underline: true };
+  worksheet.addRow(['', projectInfo.notes || 'No generic notes.']);
+  worksheet.addRow(['', projectInfo.assumptions || 'No special assumptions.']);
+  worksheet.addRow([]);
+
+  // --- 7. SIGNATURES ---
   worksheet.addRow([]);
   worksheet.addRow(['', '_________________________', '', '', '', '_________________________']);
-  const labelRow = worksheet.addRow(['', 'QS PREPARED BY', '', '', '', 'CLIENT AUTHORISED SIGNATORY']);
+  const labelRow = worksheet.addRow(['', `PREPARED BY: ${projectInfo.preparedBy.toUpperCase()}`, '', '', '', `CHECKED BY: ${projectInfo.checkedBy.toUpperCase()}`]);
   labelRow.font = { size: 9, bold: true };
 
   const buffer = await workbook.xlsx.writeBuffer();
@@ -264,19 +272,50 @@ export const exportToPDF = (projectInfo, boqData, isUnpriced, calculateGrandTota
     doc.text(`₦${calculateGrandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, pageWidth - margin - 8, sumFinalY + 12, { align: 'right' });
   }
 
-  // SIGNATURES
+  // NOTES & ASSUMPTIONS PAGE
   doc.addPage();
+  doc.setFontSize(16);
+  doc.setTextColor(15, 23, 42);
+  doc.text('PROJECT NOTES & ASSUMPTIONS', pageWidth / 2, 22, { align: 'center' });
+  doc.setFontSize(10);
+  doc.setTextColor(51, 65, 85);
+  doc.text('NOTES:', margin, 40);
+  doc.text(doc.splitTextToSize(projectInfo.notes || 'No generic notes provided.', contentWidth), margin, 48);
+  
+  const notesHeight = doc.getTextDimensions(doc.splitTextToSize(projectInfo.notes || 'N/A', contentWidth)).h;
+  
+  doc.text('ASSUMPTIONS & EXCLUSIONS:', margin, 55 + notesHeight);
+  doc.text(doc.splitTextToSize(projectInfo.assumptions || 'No specific assumptions.', contentWidth), margin, 63 + notesHeight);
+
+  // SIGNATURES PAGE
+  doc.addPage();
+  doc.setFontSize(16);
+  doc.setTextColor(15, 23, 42);
   doc.text('FORM OF CERTIFICATION', pageWidth / 2, 22, { align: 'center' });
   doc.setFontSize(10);
   doc.setTextColor(51, 65, 85);
-  doc.text('I/We certify that the rates and prices in this Bill of Quantities have been determined in accordance with professional standards...', margin, 45, { maxWidth: contentWidth });
+  doc.text('I/We certify that the rates and prices in this Bill of Quantities have been determined in accordance with professional engineering and estimating standards, based on the conditions and scope communicated.', margin, 45, { maxWidth: contentWidth });
+  
+  doc.setDrawColor(15, 23, 42);
+  doc.line(margin, 100, margin + 60, 100);
+  doc.setFontSize(9);
+  doc.setTextColor(15, 23, 42);
+  doc.setFont('helvetica', 'bold');
+  doc.text('PREPARED BY', margin, 105);
+  doc.setFont('helvetica', 'normal');
+  doc.text(projectInfo.preparedBy, margin, 110);
+  
+  doc.line(pageWidth - margin - 60, 100, pageWidth - margin, 100);
+  doc.setFont('helvetica', 'bold');
+  doc.text('CHECKED BY', pageWidth - margin - 60, 105);
+  doc.setFont('helvetica', 'normal');
+  doc.text(projectInfo.checkedBy, pageWidth - margin - 60, 110);
   doc.save(`${projectInfo.title.replace(/\s+/g, '_')}_BEME.pdf`);
 };
 
-export const exportMaterialsToPDF = (projectInfo, materialData, boqData) => {
+export const exportMaterialsToPDF = (projectInfo, materialData) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.width;
-  const pageHeight = doc.internal.pageSize.height;
   const margin = 14;
   const contentWidth = pageWidth - margin * 2;
 

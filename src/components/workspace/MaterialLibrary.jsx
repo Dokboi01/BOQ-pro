@@ -20,7 +20,7 @@ import {
   Lock
 } from 'lucide-react';
 import { hasFeature, PLAN_NAMES } from '../../data/plans';
-import { getMaterials, getMarketIndices } from '../../db/database';
+import { getMaterials, getMarketIndices, addMaterial, updateMaterial, deleteMaterial } from '../../db/database';
 import { Loader2 } from 'lucide-react';
 
 const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
@@ -30,6 +30,8 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [isManageMode, setIsManageMode] = useState(false);
+  const [editingMaterial, setEditingMaterial] = useState(null);
   const toast = useToast();
 
   const defaultMaterials = React.useMemo(() => [
@@ -279,6 +281,91 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
     return ['All', ...Array.from(cats)];
   }, [materials]);
 
+  const handleSaveMaterial = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const newMat = {
+      name: formData.get('name'),
+      category: formData.get('category'),
+      price: Number(formData.get('price')),
+      unit: formData.get('unit'),
+      benchmark: Number(formData.get('price')), // simplified
+      trend: 'stable',
+      delta: '0.0%',
+      history: [Number(formData.get('price'))],
+      usage: formData.get('usage'),
+      lastUpdated: new Date().toLocaleDateString()
+    };
+
+    try {
+      if (editingMaterial?.id && typeof editingMaterial.id === 'string') {
+        await updateMaterial(editingMaterial.id, newMat);
+        setMaterials(prev => prev.map(m => m.id === editingMaterial.id ? { ...m, ...newMat } : m));
+        toast.success('Material updated successfully!');
+      } else {
+        const added = await addMaterial(newMat);
+        setMaterials(prev => [added, ...prev]);
+        toast.success('Material added successfully!');
+      }
+      setEditingMaterial(null);
+    } catch {
+      toast.error('Failed to save material.');
+    }
+  };
+
+  const handleDeleteMaterial = async (id) => {
+    if (typeof id !== 'string') {
+        toast.error('Cannot delete default system materials.');
+        return;
+    }
+    if (window.confirm('Delete this material?')) {
+        try {
+            await deleteMaterial(id);
+            setMaterials(prev => prev.filter(m => m.id !== id));
+            toast.success('Material deleted.');
+        } catch {
+            toast.error('Failed to delete.');
+        }
+    }
+  };
+
+  const renderManageModal = () => (
+    <div className="detail-modal-overlay" onClick={() => setEditingMaterial(null)}>
+      <form className="detail-modal enterprise-card" onClick={e => e.stopPropagation()} onSubmit={handleSaveMaterial}>
+        <div className="modal-header">
+          <h3>{editingMaterial?.id ? 'Edit Material' : 'Add New Material'}</h3>
+          <button type="button" className="close-btn" onClick={() => setEditingMaterial(null)}>×</button>
+        </div>
+        <div className="modal-body form-grid">
+           <div className="form-group">
+             <label>Name</label>
+             <input type="text" name="name" defaultValue={editingMaterial?.name || ''} required />
+           </div>
+           <div className="form-group">
+             <label>Category</label>
+             <input type="text" name="category" defaultValue={editingMaterial?.category || ''} required />
+           </div>
+           <div className="form-group">
+             <label>Unit</label>
+             <input type="text" name="unit" defaultValue={editingMaterial?.unit || ''} required />
+           </div>
+           <div className="form-group">
+             <label>Rate (₦)</label>
+             <input type="number" name="price" defaultValue={editingMaterial?.price || ''} required />
+           </div>
+           <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+             <label>Usage Notes</label>
+             <textarea name="usage" defaultValue={editingMaterial?.usage || ''} rows={3} />
+           </div>
+        </div>
+        <div className="modal-footer">
+          <button type="button" className="btn-secondary" onClick={() => setEditingMaterial(null)}>Cancel</button>
+          <button type="submit" className="btn-primary">Save Material</button>
+        </div>
+      </form>
+    </div>
+  );
+
   const renderIntelligenceDashboard = () => {
     const isLocked = !hasFeature(user?.plan, 'material-intelligence');
 
@@ -453,14 +540,16 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
       {/* Header */}
       <div className="library-header-premium">
         <div className="title-group">
-          <h2>Material Price Intelligence</h2>
-          <p>Evidence-based market benchmarks for professional quantity surveying</p>
+          <h2>Material Price Intelligence & Rate Library</h2>
+          <p>Evidence-based market benchmarks and custom rates for professional quantity surveying</p>
         </div>
         <div className="header-actions">
-          <div className="update-badge">
-            <Calendar size={14} />
-            <span>Next Index Refresh: 14 Feb 2026</span>
-          </div>
+          <button
+            className="btn-secondary"
+            onClick={() => setIsManageMode(!isManageMode)}
+          >
+            {isManageMode ? 'Exit Manage Mode' : 'Manage Custom Rates'}
+          </button>
           <button
             className="btn-primary-action"
             onClick={!hasFeature(user?.plan, 'material-intelligence') ? onUpgrade : undefined}
@@ -495,7 +584,11 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 <option key={cat} value={cat}>{cat} {cat === 'All' ? 'Categories' : ''}</option>
               ))}
             </select>
-            <button className="btn-filter" onClick={() => toast.info('Regional benchmark selection will be available shortly.')}><MapPin size={14} /> Region: Lagos</button>
+            {isManageMode && (
+               <button className="btn-primary" onClick={() => setEditingMaterial({})}>
+                 <Plus size={14} /> Add Material
+               </button>
+            )}
           </div>
         </div>
 
@@ -521,18 +614,24 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
               </div>
               <div className="card-footer-l">
                 <div className="last-sync">Updated {mat.lastUpdated}</div>
-                <div className="view-link">
-                  Analysis <ArrowRight size={14} />
-                </div>
+                {isManageMode ? (
+                  <div className="manage-actions" style={{display: 'flex', gap: '0.5rem'}}>
+                     <button className="btn-icon" onClick={(e) => { e.stopPropagation(); setEditingMaterial(mat); }}><Edit2 size={13}/></button>
+                     <button className="btn-icon text-danger" onClick={(e) => { e.stopPropagation(); handleDeleteMaterial(mat.id); }}>X</button>
+                  </div>
+                ) : (
+                  <div className="view-link">
+                    Analysis <ArrowRight size={14} />
+                  </div>
+                )}
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {selectedMaterial && renderDetailModal(selectedMaterial)}
-
-      {selectedMaterial && renderDetailModal(selectedMaterial)}
+      {editingMaterial && renderManageModal()}
+      {!editingMaterial && selectedMaterial && renderDetailModal(selectedMaterial)}
 
       <style jsx="true">{`
                 .loading-overlay-simple {
@@ -609,6 +708,24 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 .locked-overlay p { font-size: 0.875rem; color: var(--primary-600); max-width: 300px; }
                 .mt-4 { margin-top: 1rem; }
                 .mb-4 { margin-bottom: 1rem; }
+
+                /* Form Grid for Manage Modal */
+                .form-grid {
+                   display: grid;
+                   grid-template-columns: 1fr 1fr;
+                   gap: 1rem;
+                   padding: 1.5rem 2rem;
+                }
+                .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+                .form-group label { font-size: 0.8125rem; font-weight: 700; color: var(--primary-600); }
+                .form-group input, .form-group textarea {
+                   padding: 0.6rem 0.8rem;
+                   border: 1px solid var(--border-medium);
+                   border-radius: var(--radius-sm);
+                   font-size: 0.875rem;
+                }
+                .btn-icon { background: transparent; border: none; cursor: pointer; color: var(--primary-500); padding: 4px; border-radius: 4px; }
+                .btn-icon:hover { background: var(--bg-main); color: var(--primary-900); }
 
                 .dashboard-grid-mini {
                     display: flex;

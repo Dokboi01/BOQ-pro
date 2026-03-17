@@ -1,478 +1,400 @@
 // BOQ Pro - Enhanced Structure Types with Comprehensive Components
 // Migrated from HTML version with full component details
 
-export const STRUCTURE_TYPES = {
-    RESIDENTIAL: 'Residential Building',
-    COMMERCIAL: 'Commercial Building',
-    ROAD: 'Road Construction',
-    BRIDGE: 'Bridge / Flyover',
-    CULVERT: 'Box Culvert',
-    RETAINING_WALL: 'Retaining Wall',
-    WAREHOUSE: 'Industrial Warehouse',
-    SWIMMING_POOL: 'Swimming Pool'
+export const STRUCTURE_CATEGORIES = {
+    BUILDING: 'Building',
+    ROAD: 'Road',
+    BRIDGE: 'Bridge',
+    DRAINAGE: 'Drainage',
+    COASTAL: 'Coastal / Marine', // Changed from Coastal / Marine Structure to match request
+    FOUNDATION: 'Foundation Works'
 };
 
 export const STRUCTURE_DATA = {
-    [STRUCTURE_TYPES.RESIDENTIAL]: {
+    [STRUCTURE_CATEGORIES.BUILDING]: {
         icon: '🏠',
-        description: 'Bungalows, Duplexes, Apartments',
-        sections: [
-            {
-                id: 'substructure',
-                title: 'A. SUBSTRUCTURE',
-                items: [
-                    { description: 'Site Clearance and Removal of Debris', unit: 'm²', qty: 0, rate: 500, benchmark: 500 },
-                    { description: 'Excavation in Ordinary Soil for Foundation', unit: 'm³', qty: 0, rate: 1800, benchmark: 1800 },
-                    { description: 'Anti-termite Treatment (Aldrex or equivalent)', unit: 'm²', qty: 0, rate: 1500, benchmark: 1500 },
-                    { description: 'Hardcore Filling and Compaction (150mm thick)', unit: 'm³', qty: 0, rate: 7500, benchmark: 7500 },
-                    { description: 'Sharp Sand Filling and Compaction (50mm thick)', unit: 'm³', qty: 0, rate: 5500, benchmark: 5500 },
-                    { description: 'Concrete Blinding (1:3:6 mix, 50mm thick)', unit: 'm²', qty: 0, rate: 2250, benchmark: 2250 },
-                    { description: 'Strip Foundation Concrete (1:2:4 mix)', unit: 'm³', qty: 0, rate: 73500, benchmark: 73500 },
-                    { description: 'Column Base Concrete (1:2:4 mix)', unit: 'm³', qty: 0, rate: 77500, benchmark: 77500 },
-                    { description: 'Reinforced Concrete Raft Foundation (300mm)', unit: 'm³', qty: 0, rate: 84000, benchmark: 84000 },
-                    { description: 'High Yield Steel Reinforcement (Y12, Y16)', unit: 'kg', qty: 0, rate: 1170, benchmark: 1170 },
-                    { description: 'Damp Proof Membrane (polythene sheet)', unit: 'm²', qty: 0, rate: 1650, benchmark: 1650 },
-                    { description: 'Ground Floor Slab Concrete (1:2:4, 150mm)', unit: 'm³', qty: 0, rate: 75000, benchmark: 75000 },
-                    { description: 'BRC Mesh Reinforcement (A142)', unit: 'm²', qty: 0, rate: 2350, benchmark: 2350 }
+        subtypes: {
+            'Bungalow': {
+                description: 'Single-story professional residential estimate',
+                sections: [
+                    { id: 'preliminaries', title: '1. PRELIMINARIES', items: [
+                        { description: 'Mobilization and demobilization of plant and equipment', unit: 'Sum', qty: 1, rate: 250000 },
+                        { description: 'Temporary site office and storage', unit: 'Sum', qty: 1, rate: 150000 },
+                        { description: 'Signboard and safety precautions', unit: 'Sum', qty: 1, rate: 75000 }
+                    ]},
+                    { id: 'substructure', title: '2. SUBSTRUCTURE (Earthworks)', items: [
+                        { description: 'Clear site of all bushes, shrubs, and remove top soil', unit: 'm²', qty: 150, rate: 500 },
+                        { description: 'Excavation to foundation trenches not exceeding 1.5m deep', unit: 'm³', qty: 45, rate: 2200 },
+                        { description: 'Cart away surplus excavated material from site', unit: 'm³', qty: 20, rate: 1500 },
+                        { description: 'Laterite filling in layers of 150mm and compacting', unit: 'm³', qty: 60, rate: 8500 },
+                        { description: 'Hardcore filling of broken stones or blocks', unit: 'm³', qty: 30, rate: 12000 },
+                        { description: 'Anti-termite treatment (Aldrex or similar)', unit: 'm²', qty: 120, rate: 850 }
+                    ]},
+                    { id: 'concrete_works', title: '3. CONCRETE WORKS', items: [
+                        { description: 'Mass concrete (1:4:8) in blinding to foundation', unit: 'm³', qty: 4.5, rate: 65000 },
+                        { description: 'Reinforced concrete (1:2:4) in strip foundation footing', unit: 'm³', qty: 12.8, rate: 95000 },
+                        { description: 'Reinforced concrete (1:2:4) in floor slab (150mm thick)', unit: 'm³', qty: 18.5, rate: 92000 },
+                        { description: 'Concrete Grade 25 in lintels and columns', unit: 'm³', qty: 3.2, rate: 105000 }
+                    ]},
+                    { id: 'reinforcement', title: '4. REINFORCEMENT', items: [
+                        { description: 'High yield reinforcement bars (Y12) in foundation', unit: 'kg', qty: 450, rate: 1250 },
+                        { description: 'High yield reinforcement bars (Y10) in floor slab (mesh)', unit: 'kg', qty: 320, rate: 1250 },
+                        { description: 'Binding wire', unit: 'kg', qty: 15, rate: 1100 }
+                    ]},
+                    { id: 'blockwork', title: '5. BLOCKWORK', items: [
+                        { description: '225mm hollow sandcrete blocks in foundation', unit: 'm²', qty: 55, rate: 18500 },
+                        { description: '225mm hollow sandcrete blocks in superstructure', unit: 'm²', qty: 210, rate: 16500 },
+                        { description: '150mm hollow sandcrete blocks in internal partitions', unit: 'm²', qty: 45, rate: 14000 },
+                        { description: 'Damp Proof Course (DPC) - 3-ply roofing felt', unit: 'm', qty: 85, rate: 1200 }
+                    ]},
+                    { id: 'roofing', title: '6. ROOFING WORKS', items: [
+                        { description: 'Hardwood timber (50x150mm) for rafters', unit: 'm', qty: 120, rate: 2500 },
+                        { description: 'Hardwood timber (50x75mm) for purlins', unit: 'm', qty: 180, rate: 1200 },
+                        { description: 'Longspan Aluminum Roofing Sheets (0.55mm thick)', unit: 'm²', qty: 185, rate: 8500 },
+                        { description: 'Aluminum ridges and flashing', unit: 'm', qty: 35, rate: 3500 }
+                    ]},
+                    { id: 'finishes', title: '7. FINISHES (Plastering & Tiling)', items: [
+                        { description: 'Internal plastering (12mm thick, 1:4 cement/sand)', unit: 'm²', qty: 420, rate: 3500 },
+                        { description: 'External rendering (15mm thick, 1:3 cement/sand)', unit: 'm²', qty: 165, rate: 4200 },
+                        { description: 'Vitrified floor tiles (600x600mm) in rooms', unit: 'm²', qty: 110, rate: 12500 },
+                        { description: 'Ceramic wall tiles (300x600mm) in bathrooms', unit: 'm²', qty: 45, rate: 9500 },
+                        { description: 'Screeding to floor surfaces', unit: 'm²', qty: 120, rate: 2200 }
+                    ]},
+                    { id: 'painting', title: '8. PAINTING', items: [
+                        { description: 'First grade emulsion paint to internal walls', unit: 'm²', qty: 420, rate: 1800 },
+                        { description: 'Texcote or similar to external walls', unit: 'm²', qty: 165, rate: 2800 },
+                        { description: 'Gloss paint to metal works and doors', unit: 'm²', qty: 25, rate: 3200 }
+                    ]},
+                    { id: 'mep', title: '9. MEP (Electrical & Plumbing)', items: [
+                        { description: 'Electrical conduits and piping (concealed)', unit: 'Sum', qty: 1, rate: 450000 },
+                        { description: 'Main distribution board and circuit breakers', unit: 'Nr', qty: 1, rate: 125000 },
+                        { description: 'Plumbing pipework (PVC/PPR)', unit: 'Sum', qty: 1, rate: 550000 },
+                        { description: 'Sanitary fittings (WC, Wash hand basins, etc.)', unit: 'Set', qty: 4, rate: 185000 }
+                    ]}
                 ]
             },
-            {
-                id: 'superstructure',
-                title: 'B. SUPERSTRUCTURE',
-                items: [
-                    { description: '225mm Sandcrete Block Wall', unit: 'm²', qty: 0, rate: 18000, benchmark: 18000 },
-                    { description: '150mm Sandcrete Block Wall (partitions)', unit: 'm²', qty: 0, rate: 15500, benchmark: 15500 },
-                    { description: 'Reinforced Concrete Columns (225x225mm)', unit: 'm³', qty: 0, rate: 87000, benchmark: 87000 },
-                    { description: 'Reinforced Concrete Beams (225x450mm)', unit: 'm³', qty: 0, rate: 87000, benchmark: 87000 },
-                    { description: 'Reinforced Concrete Shear Wall (225mm thick)', unit: 'm³', qty: 0, rate: 95000, benchmark: 95000 },
-                    { description: 'Reinforced Concrete Lintels', unit: 'm', qty: 0, rate: 7000, benchmark: 7000 },
-                    { description: 'Suspended Slab Concrete (1:2:4, 150mm)', unit: 'm³', qty: 0, rate: 93000, benchmark: 93000 },
-                    { description: 'Reinforced Concrete Staircase', unit: 'Sum', qty: 1, rate: 400000, benchmark: 400000 },
-                    { description: 'High Yield Steel Reinforcement', unit: 'kg', qty: 0, rate: 1200, benchmark: 1200 },
-                    { description: 'Formwork to Columns, Beams and Slabs', unit: 'm²', qty: 0, rate: 10000, benchmark: 10000 }
+            'Duplex': {
+                description: 'Two-story luxury residential estimate',
+                sections: [
+                    { id: 'preliminaries', title: '1. PRELIMINARIES', items: [
+                        { description: 'Mobilization & Demobilization', unit: 'Sum', qty: 1, rate: 350000 },
+                        { description: 'Water and electricity for the works', unit: 'Sum', qty: 1, rate: 250000 },
+                        { description: 'Insurance and bonds', unit: 'Sum', qty: 1, rate: 500000 }
+                    ]},
+                    { id: 'substructure', title: '2. SUBSTRUCTURE', items: [
+                        { description: 'Excavation to foundation trenches', unit: 'm³', qty: 65, rate: 2500 },
+                        { description: 'Imported Laterite fill in floor area', unit: 'm³', qty: 80, rate: 9500 },
+                        { description: 'Hardcore filling of broken stones', unit: 'm³', qty: 45, rate: 14000 },
+                        { description: 'Mass Blinding Grade 15', unit: 'm³', qty: 5.5, rate: 68000 }
+                    ]},
+                    { id: 'concrete', title: '3. CONCRETE WORKS', items: [
+                        { description: 'Concrete Grade 25 in base footing', unit: 'm³', qty: 18, rate: 95000 },
+                        { description: 'Concrete Grade 25 in Ground Beam', unit: 'm³', qty: 12, rate: 98000 },
+                        { description: 'Reinforced concrete in Columns (Superstructure)', unit: 'm³', qty: 8.5, rate: 115000 },
+                        { description: 'Reinforced concrete in Suspended Slab (150mm)', unit: 'm³', qty: 24, rate: 125000 },
+                        { description: 'Reinforced concrete in Beams', unit: 'm³', qty: 15, rate: 118000 }
+                    ]},
+                    { id: 'reinforcement', title: '4. REINFORCEMENT', items: [
+                        { description: 'High yield reinforcement Y16', unit: 'kg', qty: 850, rate: 1300 },
+                        { description: 'High yield reinforcement Y12', unit: 'kg', qty: 1200, rate: 1300 },
+                        { description: 'High yield reinforcement Y20 (for beams)', unit: 'kg', qty: 450, rate: 1350 },
+                        { description: 'R8 mild steel links', unit: 'kg', qty: 320, rate: 1250 }
+                    ]},
+                    { id: 'blockwork', title: '5. BLOCKWORK', items: [
+                        { description: '225mm hollow sandcrete blocks', unit: 'm²', qty: 450, rate: 17500 },
+                        { description: '150mm hollow sandcrete blocks (partitions)', unit: 'm²', qty: 120, rate: 15000 }
+                    ]},
+                    { id: 'roofing', title: '6. ROOFING', items: [
+                        { description: 'Stone coated roofing tiles (0.55mm)', unit: 'm²', qty: 240, rate: 14500 },
+                        { description: 'Hardwood roof structure complete (trusses)', unit: 'Sum', qty: 1, rate: 2800000 }
+                    ]}
                 ]
             },
-            {
-                id: 'roofing',
-                title: 'C. ROOFING',
-                items: [
-                    { description: 'Hardwood Roof Trusses', unit: 'm²', qty: 0, rate: 14000, benchmark: 14000 },
-                    { description: 'Treated Hardwood Purlins (50x75mm)', unit: 'm', qty: 0, rate: 2650, benchmark: 2650 },
-                    { description: 'Long Span Aluminum Roofing Sheets (0.55mm)', unit: 'm²', qty: 0, rate: 8300, benchmark: 8300 },
-                    { description: 'Aluminum Ridge Capping', unit: 'm', qty: 0, rate: 3700, benchmark: 3700 },
-                    { description: 'Fascia Board (225mm wide)', unit: 'm', qty: 0, rate: 6700, benchmark: 6700 },
-                    { description: 'POP Ceiling with Decorative Mouldings', unit: 'm²', qty: 0, rate: 18500, benchmark: 18500 },
-                    { description: 'PVC Rain Water Gutter and Fittings', unit: 'm', qty: 0, rate: 5350, benchmark: 5350 }
+            'High-rise Building': {
+                description: 'Sky-scrapers and high-density residential towers',
+                sections: [
+                    { id: 'substructure', title: '1. DEEP FOUNDATION & RETENTION', items: [
+                        { description: 'Bored Piles dia 800mm (40m depth)', unit: 'm', qty: 1200, rate: 285000 },
+                        { description: 'Diaphragm Wall (Concrete Grade 40)', unit: 'm²', qty: 1500, rate: 450000 },
+                        { description: 'Ground Anchors and shoring', unit: 'Nr', qty: 45, rate: 850000 }
+                    ]},
+                    { id: 'frame', title: '2. STRUCTURAL FRAME', items: [
+                        { description: 'Post-tensioned Concrete Slabs', unit: 'm³', qty: 2400, rate: 185000 },
+                        { description: 'High Strength Concrete Grade 50 for Columns', unit: 'm³', qty: 850, rate: 165000 },
+                        { description: 'Climbing formwork system', unit: 'm²', qty: 4500, rate: 25000 }
+                    ]},
+                    { id: 'cladding', title: '3. EXTERNAL ENVELOPE', items: [
+                        { description: 'Unitized Curtain Wall System', unit: 'm²', qty: 4200, rate: 195000 },
+                        { description: 'Aluminum Cladding Panels', unit: 'm²', qty: 1500, rate: 85000 }
+                    ]}
                 ]
             },
-            {
-                id: 'finishes',
-                title: 'D. FINISHES',
-                items: [
-                    { description: 'Internal Cement Sand Plaster (12mm thick)', unit: 'm²', qty: 0, rate: 8000, benchmark: 8000 },
-                    { description: 'External Cement Sand Render (18mm thick)', unit: 'm²', qty: 0, rate: 9000, benchmark: 9000 },
-                    { description: 'Floor Screeding (25mm thick)', unit: 'm²', qty: 0, rate: 6000, benchmark: 6000 },
-                    { description: 'Vitrified Floor Tiles (600x600mm)', unit: 'm²', qty: 0, rate: 17000, benchmark: 17000 },
-                    { description: 'Ceramic Wall Tiles (Kitchen/Bathroom)', unit: 'm²', qty: 0, rate: 13500, benchmark: 13500 },
-                    { description: 'Floor Tile Skirting (100mm high)', unit: 'm', qty: 0, rate: 2000, benchmark: 2000 },
-                    { description: 'Emulsion Paint to Internal Walls (3 coats)', unit: 'm²', qty: 0, rate: 2700, benchmark: 2700 },
-                    { description: 'Texcote/Weather Shield to External Walls', unit: 'm²', qty: 0, rate: 4000, benchmark: 4000 }
+            'Commercial Building': {
+                description: 'Plazas, Malls, Multi-use Complexes',
+                sections: [
+                    { id: 'substructure', title: '1. SUBSTRUCTURE & PILING', items: [
+                        { description: 'Mobilization of piling rig', unit: 'Sum', qty: 1, rate: 2500000 },
+                        { description: 'Bored Pile Foundation (600mm dia)', unit: 'm', qty: 240, rate: 135000 },
+                        { description: 'Excavation for Pad Foundation', unit: 'm³', qty: 150, rate: 3800 },
+                        { description: 'Concrete Grade 30 in Ground Beams', unit: 'm³', qty: 45, rate: 105000 }
+                    ]},
+                    { id: 'superstructure', title: '2. SUPERSTRUCTURE CONCRETE', items: [
+                        { description: 'Concrete Grade 35 in Columns', unit: 'm³', qty: 85, rate: 115000 },
+                        { description: 'Concrete Grade 35 in Slabs', unit: 'm³', qty: 160, rate: 125000 },
+                        { description: 'Formwork to columns and beams', unit: 'm²', qty: 450, rate: 15000 }
+                    ]},
+                    { id: 'finishing_mep', title: '3. FINISHES & SERVICES', items: [
+                        { description: 'Glass curtain walling', unit: 'm²', qty: 320, rate: 185000 },
+                        { description: 'Granite floor finishes', unit: 'm²', qty: 450, rate: 35000 },
+                        { description: 'HVAC Central Air Conditioning', unit: 'Sum', qty: 1, rate: 25000000 },
+                        { description: 'Passenger elevators (2 Nr)', unit: 'Nr', qty: 2, rate: 18000000 }
+                    ]}
                 ]
             },
-            {
-                id: 'doors_windows',
-                title: 'E. DOORS & WINDOWS',
-                items: [
-                    { description: 'Flush Door with Frame (900x2100mm)', unit: 'Nr', qty: 0, rate: 55000, benchmark: 55000 },
-                    { description: 'Panel Door with Frame (900x2100mm)', unit: 'Nr', qty: 0, rate: 80000, benchmark: 80000 },
-                    { description: 'Steel Security Door', unit: 'Nr', qty: 0, rate: 145000, benchmark: 145000 },
-                    { description: 'Aluminum Sliding Window with Netting', unit: 'm²', qty: 0, rate: 23000, benchmark: 23000 },
-                    { description: 'Aluminum Casement Window', unit: 'm²', qty: 0, rate: 32500, benchmark: 32500 },
-                    { description: 'Steel Burglary Proofing to Windows', unit: 'm²', qty: 0, rate: 13000, benchmark: 13000 },
-                    { description: 'Door Locks and Handles', unit: 'Nr', qty: 0, rate: 10000, benchmark: 10000 }
+            'Hospital': {
+                description: 'State-of-the-art medical facility estimate',
+                sections: [
+                    { id: 'specialized', title: '1. SPECIALIZED CLINICAL WORKS', items: [
+                        { description: 'Lead lining for X-ray rooms', unit: 'm²', qty: 120, rate: 85000 },
+                        { description: 'Medical Gas Copper Piping', unit: 'm', qty: 450, rate: 12500 },
+                        { description: 'Vinyl Antimicrobial Flooring', unit: 'm²', qty: 850, rate: 22000 }
+                    ]},
+                    { id: 'mep_hospital', title: '2. HOSPITAL MEP', items: [
+                        { description: 'HEPA filtration HVAC units', unit: 'Nr', qty: 15, rate: 4500000 },
+                        { description: 'Uninterruptible Power Supply (UPS) for surgery', unit: 'Sum', qty: 1, rate: 12000000 }
+                    ]}
                 ]
             },
-            {
-                id: 'mande',
-                title: 'F. M&E SERVICES',
-                items: [
-                    { description: 'Electrical Installation (Piping, Wiring & Fittings)', unit: 'Sum', qty: 1, rate: 3350000, benchmark: 3350000 },
-                    { description: 'Plumbing & Sanitary Installation (Complete)', unit: 'Sum', qty: 1, rate: 2500000, benchmark: 2500000 },
-                    { description: 'Septic Tank (2-chamber, concrete/blockwork)', unit: 'Nr', qty: 1, rate: 500000, benchmark: 500000 },
-                    { description: 'Soak Away Pit (filled with core stones)', unit: 'Nr', qty: 1, rate: 265000, benchmark: 265000 },
-                    { description: 'Overhead Water Tank (2000L) with Steel Stand', unit: 'Nr', qty: 1, rate: 395000, benchmark: 395000 },
-                    { description: 'Borehole Drilling and Pump Installation', unit: 'Nr', qty: 1, rate: 800000, benchmark: 800000 }
-                ]
-            },
-            {
-                id: 'external',
-                title: 'G. EXTERNAL WORKS',
-                items: [
-                    { description: 'Fence Wall (225mm block, 2.4m high inc. foundation)', unit: 'm', qty: 0, rate: 50000, benchmark: 50000 },
-                    { description: 'Steel Gate (sliding/swing designer type)', unit: 'Nr', qty: 1, rate: 395000, benchmark: 395000 },
-                    { description: 'Interlocking Paving Stones (60mm thick)', unit: 'm²', qty: 0, rate: 11000, benchmark: 11000 },
-                    { description: 'Concrete Drainage Channels (600x600mm)', unit: 'm', qty: 0, rate: 18500, benchmark: 18500 },
-                    { description: 'Landscaping and Ornamental Grass Planting', unit: 'm²', qty: 0, rate: 4000, benchmark: 4000 }
+            'Warehouse': {
+                description: 'Industrial Steel Portal Frame Shed',
+                sections: [
+                    { id: 'steel_frame', title: '1. STRUCTURAL STEELWORK', items: [
+                        { description: 'Hot rolled steel portal frames (Grade S355)', unit: 'Tonne', qty: 45, rate: 1650000 },
+                        { description: 'Cold rolled Z-purlins and eaves beams', unit: 'kg', qty: 8500, rate: 1400 },
+                        { description: 'Steel erection and site welding', unit: 'Tonne', qty: 45, rate: 350000 }
+                    ]},
+                    { id: 'foundation_warehouse', title: '2. INDUSTRIAL FLOORING', items: [
+                        { description: 'Massive concrete slab Grade 35 (250mm)', unit: 'm³', qty: 450, rate: 110000 },
+                        { description: 'Power floated finish with floor hardener', unit: 'm²', qty: 1800, rate: 6500 }
+                    ]}
                 ]
             }
-        ]
+        }
     },
-
-    [STRUCTURE_TYPES.COMMERCIAL]: {
-        icon: '🏢',
-        description: 'Offices, Shops, Warehouses',
-        sections: [
-            {
-                id: 'substructure',
-                title: 'A. SUBSTRUCTURE',
-                items: [
-                    { description: 'Site Clearance, Demolition and Removal of Debris', unit: 'm²', qty: 0, rate: 1100, benchmark: 1100 },
-                    { description: 'Excavation for Pad Foundation and Basement', unit: 'm³', qty: 0, rate: 3500, benchmark: 3500 },
-                    { description: 'Bored Pile Foundation (600mm dia, 15m deep)', unit: 'm', qty: 0, rate: 130000, benchmark: 130000 },
-                    { description: 'Pile Cap Reinforced Concrete (1:2:4)', unit: 'm³', qty: 0, rate: 84000, benchmark: 84000 },
-                    { description: 'Ground Beam Concrete (Grade 30)', unit: 'm³', qty: 0, rate: 93000, benchmark: 93000 },
-                    { description: 'Raft Foundation Concrete Slab (300mm thick)', unit: 'm³', qty: 0, rate: 84000, benchmark: 84000 },
-                    { description: 'Vibrated Hardcore Filling (200mm thick)', unit: 'm³', qty: 0, rate: 12000, benchmark: 12000 },
-                    { description: 'Double Layer Damp Proof Membrane', unit: 'm²', qty: 0, rate: 2500, benchmark: 2500 },
-                    { description: 'Reinforced Ground Floor Slab (175mm thick)', unit: 'm³', qty: 0, rate: 90000, benchmark: 90000 }
-                ]
-            },
-            {
-                id: 'superstructure',
-                title: 'B. SUPERSTRUCTURE',
-                items: [
-                    { description: 'Reinforced Concrete Columns (Grade 35)', unit: 'm³', qty: 0, rate: 104000, benchmark: 104000 },
-                    { description: 'Reinforced Concrete Beams (Grade 30)', unit: 'm³', qty: 0, rate: 93000, benchmark: 93000 },
-                    { description: 'Suspended Floor Slabs (225mm thick)', unit: 'm³', qty: 0, rate: 93000, benchmark: 93000 },
-                    { description: 'Reinforced Concrete Ribbed/Waffle Slab', unit: 'm³', qty: 0, rate: 115000, benchmark: 115000 },
-                    { description: 'Reinforced Concrete Shear Wall (Lift shafts)', unit: 'm³', qty: 0, rate: 110000, benchmark: 110000 },
-                    { description: '225mm Hollow Sandcrete Block Wall', unit: 'm²', qty: 0, rate: 21000, benchmark: 21000 },
-                    { description: 'Aluminum/Glass Curtain Wall (Double Glazed)', unit: 'm²', qty: 0, rate: 145000, benchmark: 145000 },
-                    { description: 'Fire Exit Staircase (Concrete)', unit: 'Nr', qty: 0, rate: 630000, benchmark: 630000 },
-                    { description: 'High Yield Steel Reinforcement', unit: 'Tonne', qty: 0, rate: 1100000, benchmark: 1100000 }
-                ]
-            },
-            {
-                id: 'roofing',
-                title: 'C. ROOFING',
-                items: [
-                    { description: 'Hot Rolled Steel Roof Trusses (fabricated)', unit: 'Tonne', qty: 0, rate: 1550000, benchmark: 1550000 },
-                    { description: 'Galvanized Steel Purlins (C-section)', unit: 'm', qty: 0, rate: 4350, benchmark: 4350 },
-                    { description: 'Stone Coated/Industrial Aluminum Roofing (0.70mm)', unit: 'm²', qty: 0, rate: 12000, benchmark: 12000 },
-                    { description: 'Reinforced Concrete Parapet Wall and Coping', unit: 'm', qty: 0, rate: 23500, benchmark: 23500 },
-                    { description: 'APP Bituminous Waterproofing Membrane (4mm)', unit: 'm²', qty: 0, rate: 9500, benchmark: 9500 }
-                ]
-            },
-            {
-                id: 'finishes',
-                title: 'D. FINISHES',
-                items: [
-                    { description: 'Cement Sand Plastering/Rendering (18-25mm)', unit: 'm²', qty: 0, rate: 8800, benchmark: 8800 },
-                    { description: 'Heavy Duty Floor Screeding (50mm)', unit: 'm²', qty: 0, rate: 9000, benchmark: 9000 },
-                    { description: 'Heavy Duty Porcelain Floor Tiles (600x600)', unit: 'm²', qty: 0, rate: 19500, benchmark: 19500 },
-                    { description: 'Ceramic Wall Tiles (Toilets/Lobbies)', unit: 'm²', qty: 0, rate: 14000, benchmark: 14000 },
-                    { description: 'Acoustic Ceiling Tiles with Aluminum Grid', unit: 'm²', qty: 0, rate: 26500, benchmark: 26500 },
-                    { description: 'Premium Gloss/Emulsion Paint (Internal)', unit: 'm²', qty: 0, rate: 4300, benchmark: 4300 },
-                    { description: 'Acrylic Weather Shield Paint (External)', unit: 'm²', qty: 0, rate: 6000, benchmark: 6000 }
-                ]
-            },
-            {
-                id: 'doors_windows',
-                title: 'E. DOORS & WINDOWS',
-                items: [
-                    { description: 'Heavy Duty Aluminum Framed Glass Entrance Doors', unit: 'Nr', qty: 0, rate: 210000, benchmark: 210000 },
-                    { description: 'UL Listed Fire Rated Steel Doors (90 mins)', unit: 'Nr', qty: 0, rate: 295000, benchmark: 295000 },
-                    { description: 'Motorized Steel Roller Shutter (Warehouses/Shops)', unit: 'm²', qty: 0, rate: 60000, benchmark: 60000 },
-                    { description: 'Fixed Aluminum/Glass Windows with 6mm Tinted Glass', unit: 'm²', qty: 0, rate: 36500, benchmark: 36500 }
-                ]
-            },
-            {
-                id: 'mande',
-                title: 'F. M&E SERVICES',
-                items: [
-                    { description: 'Complete Electrical Installation (Industrial Grade)', unit: 'Sum', qty: 1, rate: 8500000, benchmark: 8500000 },
-                    { description: 'HVAC System Installation (Central Air)', unit: 'Sum', qty: 1, rate: 12000000, benchmark: 12000000 },
-                    { description: 'Fire Alarm & Detection System', unit: 'Sum', qty: 1, rate: 3500000, benchmark: 3500000 },
-                    { description: 'Plumbing & Sanitary Installation', unit: 'Sum', qty: 1, rate: 4500000, benchmark: 4500000 },
-                    { description: 'Elevator Installation (6-person capacity)', unit: 'Nr', qty: 0, rate: 18000000, benchmark: 18000000 },
-                    { description: 'Water Treatment Plant', unit: 'Nr', qty: 1, rate: 2500000, benchmark: 2500000 }
-                ]
-            }
-        ]
-    },
-
-    [STRUCTURE_TYPES.ROAD]: {
+    [STRUCTURE_CATEGORIES.ROAD]: {
         icon: '🛣️',
-        description: 'Roads, Highways, Access Routes',
-        sections: [
-            {
-                id: 'prelims',
-                title: '100. PRELIMINARIES',
-                items: [
-                    { description: 'Mobilization & Demobilization', unit: 'Sum', qty: 1, rate: 2500000, benchmark: 2500000 },
-                    { description: 'Site Survey & Setting Out', unit: 'km', qty: 0, rate: 450000, benchmark: 450000 },
-                    { description: 'Temporary Site Facilities', unit: 'Sum', qty: 1, rate: 850000, benchmark: 850000 }
+        subtypes: {
+            'Flexible Pavement': {
+                description: 'Professional Asphaltic Road Construction',
+                sections: [
+                    { id: 'preliminaries', title: '1. PRELIMINARIES', items: [
+                        { description: 'Site setup, mobilization & staff camp', unit: 'Sum', qty: 1, rate: 5000000 },
+                        { description: 'Survey and setting out', unit: 'km', qty: 1.5, rate: 850000 }
+                    ]},
+                    { id: 'earthworks', title: '2. EARTHWORKS', items: [
+                        { description: 'Site Clearing and Grubbing', unit: 'm²', qty: 15000, rate: 450 },
+                        { description: 'Removal of topsoil (200mm)', unit: 'm³', qty: 3000, rate: 1500 },
+                        { description: 'Excavation of unsuitable material (soft spots)', unit: 'm³', qty: 850, rate: 2500 },
+                        { description: 'Embankment Fill with borrowed laterite', unit: 'm³', qty: 12000, rate: 8500 },
+                        { description: 'Compaction and subgrade preparation', unit: 'm²', qty: 12000, rate: 650 }
+                    ]},
+                    { id: 'pavement', title: '3. PAVEMENT STRUCTURE', items: [
+                        { description: 'Capping Layer (Selected fill 300mm)', unit: 'm³', qty: 3600, rate: 12000 },
+                        { description: 'Sub-base (Stone base 200mm)', unit: 'm³', qty: 2400, rate: 28000 },
+                        { description: 'Base Course (Stone base 200mm)', unit: 'm³', qty: 2400, rate: 32000 },
+                        { description: 'Prime Coat (MC1 Cutback Bitumen)', unit: 'm²', qty: 12000, rate: 1200 },
+                        { description: 'Tack Coat (S125 Bitumen Emulsion)', unit: 'm²', qty: 12000, rate: 850 }
+                    ]},
+                    { id: 'surfacing', title: '4. ASPHALTIC SURFACING', items: [
+                        { description: 'Asphaltic Concrete Binder Course (60mm)', unit: 'm²', qty: 12000, rate: 16500 },
+                        { description: 'Asphaltic Concrete Wearing Course (40mm)', unit: 'm²', qty: 12000, rate: 12500 }
+                    ]},
+                    { id: 'ancillary', title: '5. ANCILLARY WORKS', items: [
+                        { description: 'Concrete Kerbs (Standard 150x300mm)', unit: 'm', qty: 3000, rate: 8500 },
+                        { description: 'Road Marking (Thermo-plastic)', unit: 'm', qty: 4500, rate: 4500 },
+                        { description: 'Road Signage (Warning/Directional)', unit: 'Nr', qty: 25, rate: 125000 }
+                    ]}
                 ]
             },
-            {
-                id: 'earthworks',
-                title: '200. EARTHWORKS',
-                items: [
-                    { description: 'Site Clearance and removal of vegetable soil', unit: 'm²', qty: 0, rate: 450, benchmark: 450 },
-                    { description: 'Scarification of existing pavement', unit: 'm²', qty: 0, rate: 350, benchmark: 350 },
-                    { description: 'Borrow Fill G15 Material in subgrade', unit: 'm³', qty: 0, rate: 8500, benchmark: 8500 },
-                    { description: 'Compaction of Subgrade to 95% MDD', unit: 'm²', qty: 0, rate: 850, benchmark: 850 },
-                    { description: 'Cut to Spoil (Mechanical Excavation)', unit: 'm³', qty: 0, rate: 2500, benchmark: 2500 }
+            'CRCP': {
+                description: 'Continuously Reinforced Concrete Pavement (Smart Road)',
+                sections: [
+                    { id: 'preliminaries', title: '1. PRELIMINARIES', items: [
+                        { description: 'Mobilization of heavy plant and paving machine', unit: 'Sum', qty: 1, rate: 12000000 },
+                        { description: 'Laboratory equipment and quality control', unit: 'Sum', qty: 1, rate: 5000000 }
+                    ]},
+                    { id: 'earthworks', title: '2. EARTHWORKS', items: [
+                        { description: 'Site Clearing', unit: 'm²', qty: 20000, rate: 500 },
+                        { description: 'Removal of unsuitable soil', unit: 'm³', qty: 1500, rate: 2800 },
+                        { description: 'Imported Laterite Fill', unit: 'm³', qty: 18000, rate: 9500 },
+                        { description: 'Sharp sand filling (Sub-base layer)', unit: 'm³', qty: 4500, rate: 6500 }
+                    ]},
+                    { id: 'pavement_prep', title: '3. PAVEMENT PREPARATION', items: [
+                        { description: 'Crushed Rock Stone Base (200mm)', unit: 'm³', qty: 4000, rate: 35000 },
+                        { description: 'MC1 application (Internal sealing)', unit: 'm²', qty: 20000, rate: 1200 }
+                    ]},
+                    { id: 'reinforcement', title: '4. REINFORCEMENT (CRCP)', items: [
+                        { description: 'High yield reinforcement Y16 (Main bars)', unit: 'kg', qty: 125000, rate: 1400 },
+                        { description: 'High yield reinforcement Y12 (Transverse)', unit: 'kg', qty: 85000, rate: 1400 },
+                        { description: 'Chair supports and tie bars', unit: 'Nr', qty: 5000, rate: 4500 }
+                    ]},
+                    { id: 'concrete', title: '5. CONCRETE PAVEMENT', items: [
+                        { description: 'Concrete Grade 40 (Machine Laid)', unit: 'm³', qty: 6000, rate: 115000 },
+                        { description: 'Surface finishing and textures', unit: 'm²', qty: 20000, rate: 2500 },
+                        { description: 'Curing compounds and protection', unit: 'm²', qty: 20000, rate: 850 }
+                    ]},
+                    { id: 'ancillary', title: '6. ANCILLARY', items: [
+                        { description: 'Edge protection Kerbs', unit: 'm', qty: 4000, rate: 9500 },
+                        { description: 'Road Markings', unit: 'm', qty: 6000, rate: 5500 }
+                    ]}
                 ]
             },
-            {
-                id: 'rigid_pavement',
-                title: '300. RIGID PAVEMENT (CONCRETE ROAD)',
-                items: [
-                    { description: 'Concrete Grade C30/37 in Pavement Slab (200mm)', unit: 'm³', qty: 0, rate: 85000, benchmark: 85000 },
-                    { description: 'High Yield Reinforcement in Slabs (Y12)', unit: 'kg', qty: 0, rate: 1200, benchmark: 1200 },
-                    { description: 'Expansion Joint with Bituminous Filler', unit: 'm', qty: 0, rate: 4500, benchmark: 4500 },
-                    { description: 'Dowellation with 25mm Mild Steel Bars', unit: 'Nr', qty: 0, rate: 8500, benchmark: 8500 }
-                ]
-            },
-            {
-                id: 'pavement',
-                title: '400. FLEXIBLE PAVEMENT & SURFACING',
-                items: [
-                    { description: 'Crushed Rock Base Course (200mm)', unit: 'm³', qty: 0, rate: 28000, benchmark: 28000 },
-                    { description: 'Asphaltic Concrete Binder Course (60mm)', unit: 'm²', qty: 0, rate: 14500, benchmark: 14500 },
-                    { description: 'Asphaltic Concrete Wearing Course (40mm)', unit: 'm²', qty: 0, rate: 11000, benchmark: 11000 },
-                    { description: 'Prime Coat (MC-30 emulsion)', unit: 'm²', qty: 0, rate: 850, benchmark: 850 },
-                    { description: 'Tack Coat (RC-70)', unit: 'm²', qty: 0, rate: 650, benchmark: 650 }
-                ]
-            },
-            {
-                id: 'drainage',
-                title: '500. DRAINAGE WORKS',
-                items: [
-                    { description: 'U-Drain Construction (600x600mm)', unit: 'm', qty: 0, rate: 18500, benchmark: 18500 },
-                    { description: 'Precast Concrete Pipes (900mm dia)', unit: 'm', qty: 0, rate: 25000, benchmark: 25000 },
-                    { description: 'Catch Pit Construction', unit: 'Nr', qty: 0, rate: 125000, benchmark: 125000 },
-                    { description: 'Manhole Construction (1200mm dia)', unit: 'Nr', qty: 0, rate: 185000, benchmark: 185000 }
-                ]
-            },
-            {
-                id: 'ancillary',
-                title: '700. ANCILLARY WORKS',
-                items: [
-                    { description: 'Road Marking (Thermoplastic)', unit: 'm²', qty: 0, rate: 8500, benchmark: 8500 },
-                    { description: 'Road Signs and Posts', unit: 'Nr', qty: 0, rate: 45000, benchmark: 45000 },
-                    { description: 'Speed Bumps (Concrete)', unit: 'Nr', qty: 0, rate: 65000, benchmark: 65000 },
-                    { description: 'Street Light installation', unit: 'Nr', qty: 0, rate: 250000, benchmark: 250000 }
+            'Dual Carriageway': {
+                description: 'Major split-highway project estimate',
+                sections: [
+                    { id: 'median', title: '1. MEDIAN & DRAINAGE', items: [
+                        { description: 'Concrete Median Barriers', unit: 'm', qty: 4500, rate: 45000 },
+                        { description: 'Central Reserve Drainage (U-Drain)', unit: 'm', qty: 4500, rate: 22000 }
+                    ]},
+                    { id: 'lighting', title: '2. ROAD LIGHTING', items: [
+                        { description: 'Solar LED Streetlight Poles', unit: 'Nr', qty: 120, rate: 450000 },
+                        { description: 'Underground cabling for lighting', unit: 'm', qty: 5000, rate: 1500 }
+                    ]}
                 ]
             }
-        ]
+        }
     },
-
-    [STRUCTURE_TYPES.BRIDGE]: {
+    [STRUCTURE_CATEGORIES.BRIDGE]: {
         icon: '🌉',
-        description: 'River Crossings, Flyovers',
-        sections: [
-            {
-                id: 'piling',
-                title: 'SERIES 1600. PILING & EMBEDDED RETAINING WALLS',
-                items: [
-                    { description: 'Bored Cast-in-place Piles (800mm dia)', unit: 'm', qty: 0, rate: 250000, benchmark: 250000 },
-                    { description: 'Reinforcement Steel in Piles (High Tensile)', unit: 'Tonne', qty: 0, rate: 1450000, benchmark: 1450000 }
+        subtypes: {
+            'Beam Bridge': {
+                description: 'Multi-span concrete beam bridge',
+                sections: [
+                    { id: 'piling', title: '1. PILE FOUNDATION', items: [
+                        { description: 'Bored Cast-in-place Piles (1000mm dia)', unit: 'm', qty: 450, rate: 350000 },
+                        { description: 'Reinforcement for piles', unit: 'kg', qty: 65000, rate: 1350 },
+                        { description: 'Integrity testing for piles', unit: 'Nr', qty: 24, rate: 250000 }
+                    ]},
+                    { id: 'pile_cap', title: '2. PILE CAPS & COLUMNS', items: [
+                        { description: 'Concrete Grade 35 in Pile Cap', unit: 'm³', qty: 320, rate: 125000 },
+                        { description: 'Concrete Grade 35 in Piers/Columns', unit: 'm³', qty: 185, rate: 165000 },
+                        { description: 'Reinforcement Y20/Y25/Y32', unit: 'kg', qty: 45000, rate: 1400 }
+                    ]},
+                    { id: 'superstructure', title: '3. SUPERSTRUCTURE', items: [
+                        { description: 'Pre-stressed I-Girders (30m span)', unit: 'Nr', qty: 12, rate: 8500000 },
+                        { description: 'Concrete Grade 40 in Deck Slab', unit: 'm³', qty: 450, rate: 185000 },
+                        { description: 'Expansion joints (Modular)', unit: 'm', qty: 24, rate: 650000 },
+                        { description: 'Elastomeric Bearings', unit: 'Nr', qty: 48, rate: 350000 }
+                    ]},
+                    { id: 'ancillary', title: '4. ANCILLARY', items: [
+                        { description: 'Parapet Railings (Galvanized)', unit: 'm', qty: 120, rate: 125000 },
+                        { description: 'Approach slabs', unit: 'm³', qty: 85, rate: 115000 },
+                        { description: 'Asphalt wearing course on deck', unit: 'm²', qty: 1200, rate: 18500 }
+                    ]}
                 ]
             },
-            {
-                id: 'substructure',
-                title: 'SERIES 1700. SUBSTRUCTURE (ABUTMENTS & PIERS)',
-                items: [
-                    { description: 'Mass Concrete in Blinding (Grade C15)', unit: 'm³', qty: 0, rate: 65000, benchmark: 65000 },
-                    { description: 'Reinforced Concrete Grade C35/45 in Abutments', unit: 'm³', qty: 0, rate: 155000, benchmark: 155000 },
-                    { description: 'Reinforced Concrete Grade C35/45 in Piers', unit: 'm³', qty: 0, rate: 165000, benchmark: 165000 },
-                    { description: 'Reinforcement Steel in Substructure (Y20, Y25)', unit: 'Tonne', qty: 0, rate: 1250000, benchmark: 1250000 }
-                ]
-            },
-            {
-                id: 'superstructure',
-                title: 'SERIES 1800. SUPERSTRUCTURE (GIRDERS & DECK)',
-                items: [
-                    { description: 'Pre-stressed Concrete Girders (Post-tensioned)', unit: 'Nr', qty: 0, rate: 4500000, benchmark: 4500000 },
-                    { description: 'Reinforced Concrete Bridge Deck (Grade C40)', unit: 'm³', qty: 0, rate: 185000, benchmark: 185000 },
-                    { description: 'Approach Slab Concrete (Grade C30)', unit: 'm³', qty: 0, rate: 95000, benchmark: 95000 },
-                    { description: 'Bridge Bearings (Pot/Elastomeric Type)', unit: 'Nr', qty: 0, rate: 350000, benchmark: 350000 }
-                ]
-            },
-            {
-                id: 'ancillary',
-                title: 'SERIES 1900. ANCILLARY BRIDGE WORKS',
-                items: [
-                    { description: 'Expansion Joints (Heavy Duty)', unit: 'm', qty: 0, rate: 145000, benchmark: 145000 },
-                    { description: 'Bridge Parapet Railings (Steel)', unit: 'm', qty: 0, rate: 85000, benchmark: 85000 },
-                    { description: 'Bridge Lighting and Warning Signs', unit: 'Sum', qty: 1, rate: 2500000, benchmark: 2500000 }
+            'Arch Bridge': {
+                description: 'Reinforced concrete arch span',
+                sections: [
+                    { id: 'arch_ribs', title: '1. ARCH RIBS', items: [
+                        { description: 'High Precision Formwork for Ribs', unit: 'm²', qty: 850, rate: 45000 },
+                        { description: 'Concrete Grade 45 in ribs', unit: 'm³', qty: 320, rate: 165000 }
+                    ]}
                 ]
             }
-        ]
+        }
     },
-
-    [STRUCTURE_TYPES.CULVERT]: {
+    [STRUCTURE_CATEGORIES.DRAINAGE]: {
         icon: '🚰',
-        description: 'Box & Pipe Culverts',
-        sections: [
-            {
-                id: 'excavation',
-                title: 'Section 1: EXCAVATION & EARTHWORKS',
-                items: [
-                    { description: 'Excavation in soft material 0-1.5m deep', unit: 'm³', qty: 0, rate: 4500, benchmark: 4500 },
-                    { description: 'Excavation in hard material 1.5-3.0m deep', unit: 'm³', qty: 0, rate: 8500, benchmark: 8500 },
-                    { description: 'Dewatering and Pumping', unit: 'Sum', qty: 1, rate: 350000, benchmark: 350000 }
+        subtypes: {
+            'Box Culvert': {
+                description: 'Triple-Cell Concrete Box Culvert',
+                sections: [
+                    { id: 'excavation', title: '1. EXCAVATION & PREPS', items: [
+                        { description: 'Setting out and profiling', unit: 'Sum', qty: 1, rate: 150000 },
+                        { description: 'Excavation for culvert foundation (2m deep)', unit: 'm³', qty: 450, rate: 3500 },
+                        { description: 'Dewatering and pumping', unit: 'Day', qty: 10, rate: 75000 },
+                        { description: 'Concrete blinding Grade 15 (100mm)', unit: 'm³', qty: 25, rate: 65000 }
+                    ]},
+                    { id: 'concrete', title: '2. CONCRETE & REINFORCEMENT', items: [
+                        { description: 'Concrete Grade 30 in Base Slab', unit: 'm³', qty: 85, rate: 115000 },
+                        { description: 'Concrete Grade 30 in Walls & Top Slab', unit: 'm³', qty: 120, rate: 125000 },
+                        { description: 'High yield reinforcement Y12/Y16', unit: 'kg', qty: 18000, rate: 1400 },
+                        { description: 'Formwork to sides and soffits', unit: 'm²', qty: 420, rate: 15000 }
+                    ]},
+                    { id: 'ancillary', title: '3. ANCILLARY', items: [
+                        { description: 'Stone pitching to wingwalls', unit: 'm²', qty: 85, rate: 25000 },
+                        { description: 'Excavated material backfilling', unit: 'm³', qty: 320, rate: 1500 }
+                    ]}
                 ]
             },
-            {
-                id: 'foundation',
-                title: 'Section 2: FOUNDATION WORKS',
-                items: [
-                    { description: 'Lean Concrete Foundation (1:3:6)', unit: 'm³', qty: 0, rate: 65000, benchmark: 65000 },
-                    { description: 'Bottom Slab Reinforced Concrete (Grade 30)', unit: 'm³', qty: 0, rate: 95000, benchmark: 95000 },
-                    { description: 'Reinforcement Steel in Base Slab', unit: 'kg', qty: 0, rate: 1200, benchmark: 1200 }
-                ]
-            },
-            {
-                id: 'walls',
-                title: 'Section 3: WALLS & TOP SLAB',
-                items: [
-                    { description: 'RC Walls with Steel Reinforcement', unit: 'm³', qty: 0, rate: 105000, benchmark: 105000 },
-                    { description: 'RC Top Slab with Reinforcement', unit: 'm³', qty: 0, rate: 105000, benchmark: 105000 },
-                    { description: 'Formwork to Inner/Outer Faces', unit: 'm²', qty: 0, rate: 12500, benchmark: 12500 }
-                ]
-            },
-            {
-                id: 'headwalls',
-                title: 'Section 4: HEADWALLS & WINGWALLS',
-                items: [
-                    { description: 'RC Headwalls (incl. Reinforcement)', unit: 'm³', qty: 0, rate: 95000, benchmark: 95000 },
-                    { description: 'RC Wingwalls', unit: 'm³', qty: 0, rate: 95000, benchmark: 95000 },
-                    { description: 'Apron Slab (500mm thick)', unit: 'm²', qty: 0, rate: 45000, benchmark: 45000 }
-                ]
-            },
-            {
-                id: 'backfill',
-                title: 'Section 5: BACKFILLING & PROTECTION',
-                items: [
-                    { description: 'Selected Granular Backfill Material', unit: 'm³', qty: 0, rate: 8500, benchmark: 8500 },
-                    { description: 'Compaction in 200mm Layers', unit: 'm³', qty: 0, rate: 2500, benchmark: 2500 },
-                    { description: 'Rip-Rap Stone Protection', unit: 'm³', qty: 0, rate: 15000, benchmark: 15000 }
+            'U-Drain': {
+                description: 'Open concrete line drain',
+                sections: [
+                    { id: 'u_construction', title: '1. DRAIN CONSTRUCTION', items: [
+                        { description: 'Excavation for drain trench', unit: 'm³', qty: 150, rate: 2800 },
+                        { description: 'Concrete Grade 25 in walls/base', unit: 'm³', qty: 45, rate: 85000 },
+                        { description: 'Precast concrete slabs cover', unit: 'm', qty: 200, rate: 6500 }
+                    ]}
                 ]
             }
-        ]
+        }
     },
-
-    [STRUCTURE_TYPES.RETAINING_WALL]: {
-        icon: '🏗️',
-        description: 'Gravity, Cantilever, Gabion Walls',
-        sections: [
-            {
-                id: 'foundation',
-                title: 'A. FOUNDATION WORKS',
-                items: [
-                    { description: 'Excavation for Foundation', unit: 'm³', qty: 0, rate: 5500, benchmark: 5500 },
-                    { description: 'Blinding Concrete (1:3:6)', unit: 'm³', qty: 0, rate: 65000, benchmark: 65000 },
-                    { description: 'Foundation Base Slab Concrete (Grade 30)', unit: 'm³', qty: 0, rate: 95000, benchmark: 95000 },
-                    { description: 'Reinforcement in Base Slab', unit: 'kg', qty: 0, rate: 1200, benchmark: 1200 }
+    [STRUCTURE_CATEGORIES.FOUNDATION]: {
+        icon: '👇',
+        subtypes: {
+            'Raft Foundation': {
+                description: 'Standard Reinforced Solid Raft',
+                sections: [
+                    { id: 'earthworks', title: '1. EARTHWORKS', items: [
+                        { description: 'Excavation to reduced level', unit: 'm³', qty: 120, rate: 2800 },
+                        { description: 'Sand filling and consolidation', unit: 'm³', qty: 65, rate: 7500 },
+                        { description: 'Hardcore of broken stones', unit: 'm³', qty: 45, rate: 14000 }
+                    ]},
+                    { id: 'concrete', title: '2. CONCRETE', items: [
+                        { description: 'Blinding concrete 50mm', unit: 'm³', qty: 8.5, rate: 65000 },
+                        { description: 'Reinforced Concrete Grade 25 in Raft', unit: 'm³', qty: 65, rate: 105000 },
+                        { description: 'Reinforcement Y12 in mesh', unit: 'kg', qty: 2500, rate: 1350 }
+                    ]}
                 ]
             },
-            {
-                id: 'wall',
-                title: 'B. RETAINING WALL STRUCTURE',
-                items: [
-                    { description: 'RC Wall Stem with Reinforcement', unit: 'm³', qty: 0, rate: 110000, benchmark: 110000 },
-                    { description: 'Formwork to Both Faces', unit: 'm²', qty: 0, rate: 15000, benchmark: 15000 },
-                    { description: 'Counterfort/Buttress (if applicable)', unit: 'm³', qty: 0, rate: 105000, benchmark: 105000 }
-                ]
-            },
-            {
-                id: 'drainage',
-                title: 'C. DRAINAGE SYSTEM',
-                items: [
-                    { description: 'Weep Holes (100mm PVC pipes)', unit: 'Nr', qty: 0, rate: 2500, benchmark: 2500 },
-                    { description: 'Filter Layer (Gravel 50mm thick)', unit: 'm³', qty: 0, rate: 12000, benchmark: 12000 },
-                    { description: 'Geotextile Filter Fabric', unit: 'm²', qty: 0, rate: 3500, benchmark: 3500 }
-                ]
-            },
-            {
-                id: 'backfill',
-                title: 'D. BACKFILLING & FINISHING',
-                items: [
-                    { description: 'Selected Granular Backfill', unit: 'm³', qty: 0, rate: 8500, benchmark: 8500 },
-                    { description: 'Compaction in Layers', unit: 'm³', qty: 0, rate: 2500, benchmark: 2500 },
-                    { description: 'Coping/Capping to Top of Wall', unit: 'm', qty: 0, rate: 12500, benchmark: 12500 },
-                    { description: 'Rendering/Texcoat to Exposed Face', unit: 'm²', qty: 0, rate: 5500, benchmark: 5500 }
+            'Pile Foundation': {
+                description: 'Deep foundation for heavy structures',
+                sections: [
+                    { id: 'piling_only', title: '1. PILING WORKS', items: [
+                        { description: 'Driven RC Piles (350x350mm)', unit: 'm', qty: 850, rate: 45000 },
+                        { description: 'Pile head treatment and hacking', unit: 'Nr', qty: 45, rate: 15000 }
+                    ]}
                 ]
             }
-        ]
+        }
     },
-    [STRUCTURE_TYPES.WAREHOUSE]: {
-        icon: '🏭',
-        description: 'Industrial Sheds, Factory Buildings',
-        sections: [
-            {
-                id: 'substructure',
-                title: 'A. SUBSTRUCTURE',
-                items: [
-                    { description: 'Site Clearance and Topsoil Stripping', unit: 'm²', qty: 0, rate: 600, benchmark: 600 },
-                    { description: 'Machine Excavation for Pad Footings', unit: 'm³', qty: 0, rate: 2500, benchmark: 2500 },
-                    { description: 'Reinforced Concrete Pad Foundation (Grade 25)', unit: 'm³', qty: 0, rate: 82000, benchmark: 82000 },
-                    { description: 'Reinforced Concrete Ground Beams (Grade 25)', unit: 'm³', qty: 0, rate: 85000, benchmark: 85000 },
-                    { description: '150mm Massive Industrial Floor Slab (Power Floated)', unit: 'm²', qty: 0, rate: 18500, benchmark: 18500 },
-                    { description: 'Reinforced Steel in Foundation (Y12/Y16)', unit: 'kg', qty: 0, rate: 1150, benchmark: 1150 }
+    [STRUCTURE_CATEGORIES.COASTAL]: {
+        icon: '🌊',
+        subtypes: {
+            'Shore Protection': {
+                description: 'Coastal Revetment with Rock Armour',
+                sections: [
+                    { id: 'prep', title: '1. PREPARATION', items: [
+                        { description: 'Site mobilization for marine craft', unit: 'Sum', qty: 1, rate: 15000000 },
+                        { description: 'Dredging to required depth', unit: 'm³', qty: 5000, rate: 8500 }
+                    ]},
+                    { id: 'revetment', title: '2. REVETMENT', items: [
+                        { description: 'Geotextile Filter Membrane', unit: 'm²', qty: 3500, rate: 4500 },
+                        { description: 'Quarry Run Rock (Core layer)', unit: 'Tonne', qty: 1200, rate: 22000 },
+                        { description: 'Rock Armour (2-4 Tonne stone)', unit: 'Tonne', qty: 2500, rate: 35000 }
+                    ]}
                 ]
             },
-            {
-                id: 'superstructure',
-                title: 'B. STEEL STRUCTURE',
-                items: [
-                    { description: 'Fabricated Steel Portal Frames (Universal Beams)', unit: 'Tonne', qty: 0, rate: 1850000, benchmark: 1850000 },
-                    { description: 'Steel Eaves Beams and Purlins (Cold Rolled)', unit: 'm', qty: 0, rate: 5500, benchmark: 5500 },
-                    { description: 'Steel Bracing Members (Angles/Channels)', unit: 'kg', qty: 0, rate: 1450, benchmark: 1450 },
-                    { description: 'Holding Down Bolts (M24/M30)', unit: 'Nr', qty: 0, rate: 12500, benchmark: 12500 },
-                    { description: 'High Yield Steel Connection Bolts', unit: 'Nr', qty: 0, rate: 1500, benchmark: 1500 }
-                ]
-            },
-            {
-                id: 'cladding',
-                title: 'C. CLADDING & ROOFING',
-                items: [
-                    { description: 'Industrial Profiled Aluminum Wall Cladding', unit: 'm²', qty: 0, rate: 9500, benchmark: 9500 },
-                    { description: 'Industrial Profiled Aluminum Roofing (0.70mm)', unit: 'm²', qty: 0, rate: 11000, benchmark: 11000 },
-                    { description: 'Translucent Roof Sheets (Skylights)', unit: 'm²', qty: 0, rate: 14500, benchmark: 14500 },
-                    { description: 'Insulation Layer (Glasswool/Rockwool)', unit: 'm²', qty: 0, rate: 4500, benchmark: 4500 }
+            'Jetty': {
+                description: 'Structural landing berth estimate',
+                sections: [
+                    { id: 'jetty_piling', title: '1. MARINE PILES', items: [
+                        { description: 'Anticorrosive coated steel piles', unit: 'm', qty: 450, rate: 650000 },
+                        { description: 'Welding of pile caps and bracing', unit: 'Sum', qty: 1, rate: 4500000 }
+                    ]}
                 ]
             }
-        ]
-    },
-    [STRUCTURE_TYPES.SWIMMING_POOL]: {
-        icon: '🏊',
-        description: 'Private & Commercial Pools',
-        sections: [
-            {
-                id: 'construction',
-                title: 'A. EXCAVATION & CONCRETE',
-                items: [
-                    { description: 'Excavation for Pool Basin', unit: 'm³', qty: 0, rate: 4500, benchmark: 4500 },
-                    { description: 'RC Base Slab (Grade 30 with Waterproofer)', unit: 'm³', qty: 0, rate: 125000, benchmark: 125000 },
-                    { description: 'RC Walls (Grade 30 with Waterproofer)', unit: 'm³', qty: 0, rate: 135000, benchmark: 135000 },
-                    { description: 'Double Layer Y12 Reinforcement', unit: 'kg', qty: 0, rate: 1250, benchmark: 1250 },
-                    { description: 'Waterproof Rendering to Pool Basin', unit: 'm²', qty: 0, rate: 12500, benchmark: 12500 }
-                ]
-            },
-            {
-                id: 'finishes',
-                title: 'B. FINISHES & MEP',
-                items: [
-                    { description: 'Blue Vitreous Mosaic Pool Tiles', unit: 'm²', qty: 0, rate: 28500, benchmark: 28500 },
-                    { description: 'Non-Slip Coping Stones to Perimeter', unit: 'm', qty: 0, rate: 18500, benchmark: 18500 },
-                    { description: 'Pool Pump and Filtration System', unit: 'Sum', qty: 1, rate: 1850000, benchmark: 1850000 },
-                    { description: 'Underwater LED Lights (IP68)', unit: 'Nr', qty: 0, rate: 45000, benchmark: 45000 }
-                ]
-            }
-        ]
+        }
     }
 };

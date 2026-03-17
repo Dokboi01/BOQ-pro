@@ -169,33 +169,44 @@ export function ProjectsProvider({ children }) {
         setShowSelector(true);
     };
 
-    const handleStructureSelect = async (structureId, structureName) => {
+    const handleStructureSelect = async (structureId, structureName, manualSections = null) => {
         if (structureId === 'ai-analysis') {
             setShowSelector(false);
             setShowAnalyzer(true);
             return;
         }
 
-        const data = STRUCTURE_DATA[structureId] || STRUCTURE_DATA['Residential Building'];
+        let sectionsToProcess = manualSections;
 
-        if (!data || !data.sections) {
+        if (!sectionsToProcess) {
+            // Fallback for old calls or cases where sections aren't passed
+            // Search through categories for the structure name if simple ID is used
+            for (const cat of Object.values(STRUCTURE_DATA)) {
+                if (cat.subtypes && cat.subtypes[structureId]) {
+                    sectionsToProcess = cat.subtypes[structureId].sections;
+                    break;
+                }
+            }
+        }
+
+        if (!sectionsToProcess) {
             toast.error('Could not find components for this structure type.');
             return;
         }
 
-        const processedSections = data.sections.map(section => ({
+        const processedSections = sectionsToProcess.map(section => ({
             id: Math.random().toString(36).substr(2, 9),
             title: section.title,
             expanded: true,
-            items: section.items.map(item => ({
+            items: (section.items || []).map(item => ({
                 id: Math.random().toString(36).substr(2, 9),
                 description: item.description,
                 unit: item.unit,
-                qty: item.qty,
-                rate: 0,
-                benchmark: item.benchmark || 0,
+                qty: item.qty || 0,
+                rate: item.rate || 0,
+                benchmark: item.benchmark || item.rate || 0,
                 useBenchmark: false,
-                total: 0,
+                total: (item.qty || 0) * (item.rate || 0),
                 isVO: false,
                 breakdown: item.breakdown || null
             }))
@@ -231,6 +242,62 @@ export function ProjectsProvider({ children }) {
             logActivity(projectId, 'project_created', { name: newProj.name, type: newProj.type });
         } catch (err) {
             console.error('❌ Create project failed:', err);
+            toast.error('Error creating project.');
+        } finally {
+            setIsCreating(false);
+        }
+    };
+
+    const handleCompleteWizard = async (projectConfig) => {
+        const processedSections = (projectConfig.sections || []).map(section => ({
+            id: Math.random().toString(36).substr(2, 9),
+            title: section.title,
+            expanded: true,
+            items: (section.items || []).map(item => ({
+                id: Math.random().toString(36).substr(2, 9),
+                description: item.description,
+                unit: item.unit,
+                qty: item.qty || 0,
+                rate: item.rate || 0,
+                benchmark: item.benchmark || item.rate || 0,
+                useBenchmark: false,
+                total: (item.qty || 0) * (item.rate || 0),
+                isVO: false,
+                breakdown: item.breakdown || null
+            }))
+        }));
+
+        const projectId = `local_${Date.now()}`;
+        const newProj = {
+            id: projectId,
+            name: projectConfig.name || `${projectConfig.subtype || projectConfig.type} Project`,
+            clientName: projectConfig.clientName || '',
+            type: projectConfig.type,
+            subtype: projectConfig.subtype,
+            status: 'Active',
+            sections: processedSections,
+            date: new Date().toLocaleDateString(),
+            region: projectConfig.region || 'Lagos',
+            notes: projectConfig.notes || '',
+            assumptions: projectConfig.assumptions || '',
+            exclusions: projectConfig.exclusions || '',
+            preparedBy: user?.displayName || user?.email || 'Engineer',
+            checkedBy: ''
+        };
+
+        setIsCreating(true);
+        try {
+            await saveLocal(newProj);
+            setProjects(prev => [newProj, ...prev]);
+            setActiveProjectId(projectId);
+            setShowSelector(false);
+            setActiveTab('workspace');
+            setFocusMode(true);
+            toast.success('Project created successfully!');
+            syncToCloud(newProj);
+            logActivity(projectId, 'project_created', { name: newProj.name, type: newProj.type });
+        } catch (err) {
+            console.error('❌ Create wizard project failed:', err);
             toast.error('Error creating project.');
         } finally {
             setIsCreating(false);
@@ -277,13 +344,14 @@ export function ProjectsProvider({ children }) {
         }
     };
 
-    const handleUpdateProject = async (projectId, updatedSections, region = null) => {
+    const handleUpdateProject = async (projectId, updatedSections, region = null, additionalUpdates = {}) => {
         // 1. Optimistic UI update
         let updatedProject = null;
         setProjects(prev => prev.map(p => {
             if (p.id !== projectId) return p;
             updatedProject = {
                 ...p,
+                ...additionalUpdates,
                 sections: updatedSections,
                 region: region || p.region || 'Lagos'
             };
@@ -296,6 +364,7 @@ export function ProjectsProvider({ children }) {
             if (currentProject) {
                 updatedProject = {
                     ...currentProject,
+                    ...additionalUpdates,
                     sections: updatedSections,
                     region: region || currentProject.region || 'Lagos'
                 };
@@ -382,6 +451,7 @@ export function ProjectsProvider({ children }) {
         syncStatus,
         forceSync,
         handleCreateProject,
+        handleCompleteWizard,
         handleStructureSelect,
         handleAnalysisComplete,
         handleUpdateProject,
