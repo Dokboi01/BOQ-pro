@@ -89,17 +89,42 @@ const BREAKDOWNS = [
         plant: [plant('concreteMixer', 0.2), plant('vibrator', 0.2)],
     },
     {
-        keywords: ['grade 30', 'grade c30', 'grade 35', 'grade c35', 'grade c35/45', 'grade c35/45', 'high performance', 'hpc', 'raft foundation', 'pile cap', 'ground beam', 'reinforced concrete', 'rc slab', 'suspended slab', 'floor slab', 'bridge deck', 'abutment'],
+        keywords: ['grade 30', 'grade c30', 'grade 35', 'grade c35', 'grade c35/45', 'grade 35/45', 'high performance', 'hpc', 'raft foundation', 'pile cap', 'ground beam', 'reinforced concrete', 'rc slab', 'suspended slab', 'floor slab', 'bridge deck', 'abutment', 'pool basin', 'pool walls', 'shear wall'],
         materials: [
-            mat('OPC Cement (50kg)', 8, 'Bags', 12500),
+            mat('OPC Cement (50kg)', 8.5, 'Bags', 12500), // Slightly higher for grade 30+
             mat('Sharp Sand', 0.4, 'm³', 22000),
             mat('Granite (10mm)', 0.85, 'm³', 36500),
             mat('Water (potable)', 250, 'L', 50),
             mat('Admixture (plasticiser)', 0.5, 'L', 3500),
+            mat('Waterproofing Admixture', 0.5, 'kg', 8500), // Added for pool/raft
             mat('Curing Membrane', 0.5, 'L', 4500),
         ],
         labor: [labour('concreteMixer', 1.5), labour('steel_fixer', 1), labour('general', 2)],
         plant: [plant('concreteMixer', 0.3), plant('vibrator', 0.3), plant('generator', 0.1)],
+    },
+    {
+        keywords: ['ribbed slab', 'waffle slab', 'trough slab'],
+        materials: [
+            mat('OPC Cement (50kg)', 8, 'Bags', 12500),
+            mat('Sharp Sand', 0.4, 'm³', 22000),
+            mat('Granite (10mm)', 0.85, 'm³', 36500),
+            mat('Polystyrene / Hollow Pot Ribs', 2.5, 'Nr', 4500), // Ribbed specific
+            mat('Water', 200, 'L', 50),
+        ],
+        labor: [labour('concreteMixer', 1.5), labour('carpenter', 2), labour('steel_fixer', 1), labour('general', 3)],
+        plant: [plant('concreteMixer', 0.3), plant('vibrator', 0.3), plant('formwork', 1.5)],
+    },
+    {
+        keywords: ['industrial floor', 'power float', 'hardener'],
+        materials: [
+            mat('OPC Cement (50kg)', 7.5, 'Bags', 12500),
+            mat('Sharp Sand', 0.45, 'm³', 22000),
+            mat('Granite (20mm)', 0.9, 'm³', 35000),
+            mat('Floor Hardener (Non-metallic)', 3.5, 'kg', 1200),
+            mat('BRC Mesh (A142)', 1.05, 'm²', 2350),
+        ],
+        labor: [labour('concreteMixer', 1), labour('general', 2), labour('concreteMixer', 1)], // Additional finisher
+        plant: [plant('concreteMixer', 0.3), plant('vibrator', 0.2), plant('roller', 0.1)],
     },
     {
         keywords: ['column', 'beam', 'lintel'],
@@ -418,6 +443,16 @@ const BREAKDOWNS = [
         labor: [labour('welder', 2), labour('general', 1)],
         plant: [plant('crane', 0.3), plant('generator', 0.5)],
     },
+    {
+        keywords: ['portal frame', 'universal beam', 'cold rolled', 'purlin'],
+        materials: [
+            mat('Heavy Structural Steel (UB/UC)', 1050, 'kg', 1550), // Higher grade for portals
+            mat('High Strength Bolts (Grade 8.8)', 12, 'Nr', 1200),
+            mat('Welding & Fabrication Gas', 1, 'Sum', 2500),
+        ],
+        labor: [labour('welder', 2.5), labour('general', 1.5)],
+        plant: [plant('crane', 0.5), plant('generator', 0.5)],
+    },
 
     // ══════════════════════════════════════════════════════════
     // MEP — PLUMBING
@@ -576,6 +611,26 @@ const STRUCTURE_DEFAULTS = {
         ],
         labor: [labour('concreteMixer', 1.5), labour('steel_fixer', 1.5), labour('general', 2)],
         plant: [plant('concreteMixer', 0.3), plant('vibrator', 0.3)],
+    },
+    'Industrial Warehouse': {
+        materials: [
+            mat('Structural Steel (Plate/Section)', 1050, 'kg', 1450),
+            mat('Industrial Aluminum Sheets', 1.1, 'm²', 4500),
+            mat('OPC Cement (50kg)', 6, 'Bags', 12500),
+        ],
+        labor: [labour('welder', 2), labour('driver', 1), labour('general', 2)],
+        plant: [plant('crane', 0.5), plant('excavator', 0.2)],
+    },
+    'Swimming Pool': {
+        materials: [
+            mat('OPC Cement (50kg)', 10, 'Bags', 12500),
+            mat('Sharp Sand', 0.4, 'm³', 22000),
+            mat('Granite (10mm)', 0.85, 'm³', 36500),
+            mat('Waterproof Admixed Rendering', 1, 'm²', 8500),
+            mat('Mosaic Tiles (Blue)', 1.05, 'm²', 15500),
+        ],
+        labor: [labour('mason', 2), labour('plumber', 1), labour('general', 3)],
+        plant: [plant('concreteMixer', 0.5), plant('vibrator', 0.5)],
     },
 };
 

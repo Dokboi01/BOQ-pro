@@ -7,7 +7,9 @@ export const STRUCTURE_TYPES = {
     ROAD: 'Road Construction',
     BRIDGE: 'Bridge / Flyover',
     CULVERT: 'Box Culvert',
-    RETAINING_WALL: 'Retaining Wall'
+    RETAINING_WALL: 'Retaining Wall',
+    WAREHOUSE: 'Industrial Warehouse',
+    SWIMMING_POOL: 'Swimming Pool'
 };
 
 export const STRUCTURE_DATA = {
@@ -27,6 +29,7 @@ export const STRUCTURE_DATA = {
                     { description: 'Concrete Blinding (1:3:6 mix, 50mm thick)', unit: 'm²', qty: 0, rate: 2250, benchmark: 2250 },
                     { description: 'Strip Foundation Concrete (1:2:4 mix)', unit: 'm³', qty: 0, rate: 73500, benchmark: 73500 },
                     { description: 'Column Base Concrete (1:2:4 mix)', unit: 'm³', qty: 0, rate: 77500, benchmark: 77500 },
+                    { description: 'Reinforced Concrete Raft Foundation (300mm)', unit: 'm³', qty: 0, rate: 84000, benchmark: 84000 },
                     { description: 'High Yield Steel Reinforcement (Y12, Y16)', unit: 'kg', qty: 0, rate: 1170, benchmark: 1170 },
                     { description: 'Damp Proof Membrane (polythene sheet)', unit: 'm²', qty: 0, rate: 1650, benchmark: 1650 },
                     { description: 'Ground Floor Slab Concrete (1:2:4, 150mm)', unit: 'm³', qty: 0, rate: 75000, benchmark: 75000 },
@@ -41,6 +44,7 @@ export const STRUCTURE_DATA = {
                     { description: '150mm Sandcrete Block Wall (partitions)', unit: 'm²', qty: 0, rate: 15500, benchmark: 15500 },
                     { description: 'Reinforced Concrete Columns (225x225mm)', unit: 'm³', qty: 0, rate: 87000, benchmark: 87000 },
                     { description: 'Reinforced Concrete Beams (225x450mm)', unit: 'm³', qty: 0, rate: 87000, benchmark: 87000 },
+                    { description: 'Reinforced Concrete Shear Wall (225mm thick)', unit: 'm³', qty: 0, rate: 95000, benchmark: 95000 },
                     { description: 'Reinforced Concrete Lintels', unit: 'm', qty: 0, rate: 7000, benchmark: 7000 },
                     { description: 'Suspended Slab Concrete (1:2:4, 150mm)', unit: 'm³', qty: 0, rate: 93000, benchmark: 93000 },
                     { description: 'Reinforced Concrete Staircase', unit: 'Sum', qty: 1, rate: 400000, benchmark: 400000 },
@@ -140,6 +144,7 @@ export const STRUCTURE_DATA = {
                     { description: 'Reinforced Concrete Columns (Grade 35)', unit: 'm³', qty: 0, rate: 104000, benchmark: 104000 },
                     { description: 'Reinforced Concrete Beams (Grade 30)', unit: 'm³', qty: 0, rate: 93000, benchmark: 93000 },
                     { description: 'Suspended Floor Slabs (225mm thick)', unit: 'm³', qty: 0, rate: 93000, benchmark: 93000 },
+                    { description: 'Reinforced Concrete Ribbed/Waffle Slab', unit: 'm³', qty: 0, rate: 115000, benchmark: 115000 },
                     { description: 'Reinforced Concrete Shear Wall (Lift shafts)', unit: 'm³', qty: 0, rate: 110000, benchmark: 110000 },
                     { description: '225mm Hollow Sandcrete Block Wall', unit: 'm²', qty: 0, rate: 21000, benchmark: 21000 },
                     { description: 'Aluminum/Glass Curtain Wall (Double Glazed)', unit: 'm²', qty: 0, rate: 145000, benchmark: 145000 },
@@ -387,6 +392,72 @@ export const STRUCTURE_DATA = {
                     { description: 'Compaction in Layers', unit: 'm³', qty: 0, rate: 2500, benchmark: 2500 },
                     { description: 'Coping/Capping to Top of Wall', unit: 'm', qty: 0, rate: 12500, benchmark: 12500 },
                     { description: 'Rendering/Texcoat to Exposed Face', unit: 'm²', qty: 0, rate: 5500, benchmark: 5500 }
+                ]
+            }
+        ]
+    },
+    [STRUCTURE_TYPES.WAREHOUSE]: {
+        icon: '🏭',
+        description: 'Industrial Sheds, Factory Buildings',
+        sections: [
+            {
+                id: 'substructure',
+                title: 'A. SUBSTRUCTURE',
+                items: [
+                    { description: 'Site Clearance and Topsoil Stripping', unit: 'm²', qty: 0, rate: 600, benchmark: 600 },
+                    { description: 'Machine Excavation for Pad Footings', unit: 'm³', qty: 0, rate: 2500, benchmark: 2500 },
+                    { description: 'Reinforced Concrete Pad Foundation (Grade 25)', unit: 'm³', qty: 0, rate: 82000, benchmark: 82000 },
+                    { description: 'Reinforced Concrete Ground Beams (Grade 25)', unit: 'm³', qty: 0, rate: 85000, benchmark: 85000 },
+                    { description: '150mm Massive Industrial Floor Slab (Power Floated)', unit: 'm²', qty: 0, rate: 18500, benchmark: 18500 },
+                    { description: 'Reinforced Steel in Foundation (Y12/Y16)', unit: 'kg', qty: 0, rate: 1150, benchmark: 1150 }
+                ]
+            },
+            {
+                id: 'superstructure',
+                title: 'B. STEEL STRUCTURE',
+                items: [
+                    { description: 'Fabricated Steel Portal Frames (Universal Beams)', unit: 'Tonne', qty: 0, rate: 1850000, benchmark: 1850000 },
+                    { description: 'Steel Eaves Beams and Purlins (Cold Rolled)', unit: 'm', qty: 0, rate: 5500, benchmark: 5500 },
+                    { description: 'Steel Bracing Members (Angles/Channels)', unit: 'kg', qty: 0, rate: 1450, benchmark: 1450 },
+                    { description: 'Holding Down Bolts (M24/M30)', unit: 'Nr', qty: 0, rate: 12500, benchmark: 12500 },
+                    { description: 'High Yield Steel Connection Bolts', unit: 'Nr', qty: 0, rate: 1500, benchmark: 1500 }
+                ]
+            },
+            {
+                id: 'cladding',
+                title: 'C. CLADDING & ROOFING',
+                items: [
+                    { description: 'Industrial Profiled Aluminum Wall Cladding', unit: 'm²', qty: 0, rate: 9500, benchmark: 9500 },
+                    { description: 'Industrial Profiled Aluminum Roofing (0.70mm)', unit: 'm²', qty: 0, rate: 11000, benchmark: 11000 },
+                    { description: 'Translucent Roof Sheets (Skylights)', unit: 'm²', qty: 0, rate: 14500, benchmark: 14500 },
+                    { description: 'Insulation Layer (Glasswool/Rockwool)', unit: 'm²', qty: 0, rate: 4500, benchmark: 4500 }
+                ]
+            }
+        ]
+    },
+    [STRUCTURE_TYPES.SWIMMING_POOL]: {
+        icon: '🏊',
+        description: 'Private & Commercial Pools',
+        sections: [
+            {
+                id: 'construction',
+                title: 'A. EXCAVATION & CONCRETE',
+                items: [
+                    { description: 'Excavation for Pool Basin', unit: 'm³', qty: 0, rate: 4500, benchmark: 4500 },
+                    { description: 'RC Base Slab (Grade 30 with Waterproofer)', unit: 'm³', qty: 0, rate: 125000, benchmark: 125000 },
+                    { description: 'RC Walls (Grade 30 with Waterproofer)', unit: 'm³', qty: 0, rate: 135000, benchmark: 135000 },
+                    { description: 'Double Layer Y12 Reinforcement', unit: 'kg', qty: 0, rate: 1250, benchmark: 1250 },
+                    { description: 'Waterproof Rendering to Pool Basin', unit: 'm²', qty: 0, rate: 12500, benchmark: 12500 }
+                ]
+            },
+            {
+                id: 'finishes',
+                title: 'B. FINISHES & MEP',
+                items: [
+                    { description: 'Blue Vitreous Mosaic Pool Tiles', unit: 'm²', qty: 0, rate: 28500, benchmark: 28500 },
+                    { description: 'Non-Slip Coping Stones to Perimeter', unit: 'm', qty: 0, rate: 18500, benchmark: 18500 },
+                    { description: 'Pool Pump and Filtration System', unit: 'Sum', qty: 1, rate: 1850000, benchmark: 1850000 },
+                    { description: 'Underwater LED Lights (IP68)', unit: 'Nr', qty: 0, rate: 45000, benchmark: 45000 }
                 ]
             }
         ]
