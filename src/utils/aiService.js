@@ -123,15 +123,25 @@ export const processEngineeringDrawing = async (base64Image, contextHint = '') =
             
             USER CONTEXT: ${contextHint || 'None provided. Use your best professional judgment to identify the drawing type.'}
 
-            INSTRUCTIONS:
-            1. Identify the drawing type (e.g., Foundation Plan, Floor Plan, Section, Elevation).
-            2. Scan for specific structural elements: Columns, Beams, Walls, Slabs, Footings.
-            3. Look for annotations, labels, and dimension lines to estimate the number of distinct work items in each category.
-            4. If it is NOT an engineering drawing, return: {"error": "INVALID_DRAWING", "message": "This file does not appear to be a technical construction drawing."}
+            Focus on:
+            1. **Identification**: Precisely name structural members (e.g., "FB1", "C2", "S1", "Pad Footing PF1").
+            2. **Quantification**: Identify counts of columns, beams, or slab panels based on visible labels or annotations.
+            3. **Technical Specs**: Extract reinforcement details (e.g., "4Y16", "Y12 @ 200cc"), concrete grades, and member dimensions (e.g., "225x450mm").
+            4. **Context**: Use the Context Hint to differentiate between General Arrangements, Foundation Plans, or Slab Details.
 
-            JSON OUTPUT FORMAT:
+            Return a valid JSON array of objects with this schema:
             [
-              {"id": "sec-1", "title": "Foundation & Plinth", "confidence": 95, "items": 14, "details": "Detected pad footings and strip foundations"}
+              {
+                "category": "Structural Element Category (e.g., Slab, Beam, Column, Foundation)",
+                "item": "Specific name or notation (e.g., Suspended Slab S1, Floor Beam FB5)",
+                "description": "Details including dimensions (e.g., 150mm thick) and reinforcement (e.g., Y12 BRS mesh)",
+                "quantity": Number (The estimated count or total occurrence),
+                "structuralDetails": {
+                    "dimensions": "Width x Depth or Thickness",
+                    "reinforcement": "e.g., 4Y16, Y10@200",
+                    "notations": ["B1", "S1", "C2"]
+                }
+              }
             ]
 
             Return ONLY the valid JSON array — no markdown, no conversational text.

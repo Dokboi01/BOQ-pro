@@ -198,18 +198,39 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
       <div className="results-list">
         {identifiedElements.map(el => (
           <div key={el.id} className="identified-card">
-            <div className="card-info">
-              <div className="title-row">
-                <h4>{el.title}</h4>
-                <div className="confidence-badge">
-                  <Cpu size={12} />
-                  {el.confidence}% Confidence
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <h4 className="font-semibold text-gray-100">{el.item}</h4>
+                    <span className="text-sm font-medium bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/30">
+                      {el.category}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-400 mb-2">{el.description}</p>
+                  
+                  {el.structuralDetails && (
+                    <div className="grid grid-cols-2 gap-2 mb-2 p-2 bg-white/5 rounded border border-white/10">
+                      {el.structuralDetails.dimensions && (
+                        <div className="text-[11px]">
+                          <span className="text-gray-500 block uppercase tracking-wider">Dimensions</span>
+                          <span className="text-gray-200 font-mono">{el.structuralDetails.dimensions}</span>
+                        </div>
+                      )}
+                      {el.structuralDetails.reinforcement && (
+                        <div className="text-[11px]">
+                          <span className="text-gray-500 block uppercase tracking-wider">Reinforcement</span>
+                          <span className="text-gray-200 font-mono">{el.structuralDetails.reinforcement}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>Quantity Detected: <span className="text-gray-300 font-medium">{el.quantity}</span></span>
+                    <button className="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1">
+                      Add to BOQ <Plus className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <p>{el.items} items identified in this layer</p>
-              {el.details && <p className="details-text">{el.details}</p>}
-            </div>
-            <CheckCircle2 className="text-success" size={20} />
           </div>
         ))}
       </div>
