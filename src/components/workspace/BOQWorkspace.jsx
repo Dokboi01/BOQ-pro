@@ -47,13 +47,14 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
   const [viewMode, setViewMode] = useState('estimation');
   const [showStructuralAnalyzer, setShowStructuralAnalyzer] = useState(false);
   const [isNotesExpanded, setIsNotesExpanded] = useState(false);
+  const [isProjectNoteExpanded, setIsProjectNoteExpanded] = useState(() => Boolean(project?.notes?.trim()));
 
   // Collaboration state
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showActivityPanel, setShowActivityPanel] = useState(false);
   const [presenceUsers, setPresenceUsers] = useState([]);
   const [activityLog, setActivityLog] = useState([]);
-  
+
   const toast = useToast();
 
   React.useEffect(() => {
@@ -61,6 +62,10 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
       setSections(project.sections);
     }
   }, [project]);
+
+  useEffect(() => {
+    setIsProjectNoteExpanded(Boolean(project?.notes?.trim()));
+  }, [project?.id]);
 
   // Presence subscription
   useEffect(() => {
@@ -166,7 +171,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
     // 1. Fetch real-time benchmarks from the database
     const dbMaterials = await getMaterials();
     const regionMod = getRegionalModifier(project?.region || 'Lagos');
-    
+
     // 2. Map database materials to a searchable dictionary
     const benchmarkMap = {};
     dbMaterials.forEach(mat => {
@@ -190,7 +195,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
 
         const desc = item.description.toLowerCase();
         let matchedRate = 0;
-        
+
         // Try DB matches first
         for (const [key, price] of Object.entries(benchmarkMap)) {
           if (desc.includes(key)) {
@@ -549,8 +554,8 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
 
         {/* Professional Foldable Notes & Assumptions */}
         <div className={`notes-accordion mt-6 ${isNotesExpanded ? 'expanded' : ''}`}>
-          <button 
-            className="notes-header" 
+          <button
+            className="notes-header"
             onClick={() => setIsNotesExpanded(!isNotesExpanded)}
           >
             <div className="flex items-center gap-3">
@@ -566,18 +571,28 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
 
           <div className="notes-content">
             <div className="meta-grid">
-              <div className="meta-col">
-                <label>General Project Notes</label>
-                <textarea 
-                  value={project?.notes || ''}
-                  onChange={(e) => onUpdate(project.id, sections, project.region, { notes: e.target.value })}
-                  placeholder="Add project specific instructions or contextual notes here..."
-                  rows={4}
-                />
+              <div className={`meta-col note-panel ${isProjectNoteExpanded ? 'expanded' : ''}`}>
+                <button
+                  type="button"
+                  className="note-panel-header"
+                  onClick={() => setIsProjectNoteExpanded(prev => !prev)}
+                  aria-expanded={isProjectNoteExpanded}
+                >
+                  <span className="note-panel-title">General Project Notes</span>
+                  <ChevronDown size={16} className="note-panel-chevron" />
+                </button>
+                <div className="note-panel-content">
+                  <textarea
+                    value={project?.notes || ''}
+                    onChange={(e) => onUpdate(project.id, sections, project.region, { notes: e.target.value })}
+                    placeholder="Add project specific instructions or contextual notes here..."
+                    rows={4}
+                  />
+                </div>
               </div>
               <div className="meta-col">
                 <label>Technical Assumptions</label>
-                <textarea 
+                <textarea
                   value={project?.assumptions || ''}
                   onChange={(e) => onUpdate(project.id, sections, project.region, { assumptions: e.target.value })}
                   placeholder="State any technical assumptions (e.g. soil bearing capacity, material grades)..."
@@ -589,7 +604,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
             <div className="meta-grid mt-6">
               <div className="meta-col">
                 <label>Exclusions</label>
-                <textarea 
+                <textarea
                   value={project?.exclusions || ''}
                   onChange={(e) => onUpdate(project.id, sections, project.region, { exclusions: e.target.value })}
                   placeholder="List items specifically excluded from this Bill of Quantities..."
@@ -600,18 +615,18 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                 <div className="signatures-grid">
                   <div className="sig-box">
                     <span>Prepared By:</span>
-                    <input 
-                      type="text" 
-                      value={project?.preparedBy || ''} 
+                    <input
+                      type="text"
+                      value={project?.preparedBy || ''}
                       onChange={(e) => onUpdate(project.id, sections, project.region, { preparedBy: e.target.value })}
                       placeholder="Engineer / QS Name"
                     />
                   </div>
                   <div className="sig-box mt-4">
                     <span>Checked By:</span>
-                    <input 
-                      type="text" 
-                      value={project?.checkedBy || ''} 
+                    <input
+                      type="text"
+                      value={project?.checkedBy || ''}
                       onChange={(e) => onUpdate(project.id, sections, project.region, { checkedBy: e.target.value })}
                       placeholder="Reviewer / Principal"
                     />
@@ -1223,6 +1238,61 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           border-color: var(--accent-400);
           background: white;
           box-shadow: 0 0 0 3px rgba(37,99,235,0.05);
+        }
+
+        .note-panel {
+          gap: 0;
+        }
+
+        .note-panel-header {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.5rem;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 10px;
+          padding: 0.75rem 1rem;
+          cursor: pointer;
+          transition: background 0.2s, border-color 0.2s;
+        }
+
+        .note-panel-header:hover {
+          background: #f1f5f9;
+          border-color: #cbd5e1;
+        }
+
+        .note-panel-title {
+          font-size: 0.8125rem;
+          font-weight: 800;
+          color: var(--primary-500);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .note-panel-chevron {
+          color: #64748b;
+          transition: transform 0.25s ease, color 0.25s ease;
+        }
+
+        .note-panel.expanded .note-panel-chevron {
+          transform: rotate(180deg);
+          color: #2563eb;
+        }
+
+        .note-panel-content {
+          max-height: 0;
+          opacity: 0;
+          overflow: hidden;
+          transition: max-height 0.3s ease, opacity 0.2s ease, padding-top 0.3s ease;
+          padding-top: 0;
+        }
+
+        .note-panel.expanded .note-panel-content {
+          max-height: 320px;
+          opacity: 1;
+          padding-top: 0.75rem;
         }
 
         /* Notes Accordion */
