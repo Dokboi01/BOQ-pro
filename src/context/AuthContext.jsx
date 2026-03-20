@@ -16,6 +16,8 @@ import { getProfile, updateProfile } from '../db/database';
 import AuthContext from './auth-context';
 import { useToast } from '../components/ui/useToast';
 
+const PUBLIC_VIEWS = new Set(['landing', 'pricing', 'login', 'signup', 'forgot-password']);
+
 export function AuthProvider({ children }) {
     const toast = useToast();
 
@@ -158,8 +160,10 @@ export function AuthProvider({ children }) {
                 // User is signed out
                 localStorage.removeItem('boq_pro_profile');
                 setUser(null);
+                setPendingUser(null);
+                setVerificationEmailStatus('idle');
                 initializationComplete.current = true;
-                setView(prev => prev === 'loading' ? 'landing' : prev);
+                setView(prev => PUBLIC_VIEWS.has(prev) ? prev : 'landing');
             }
         });
 
