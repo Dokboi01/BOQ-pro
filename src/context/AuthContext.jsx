@@ -30,7 +30,7 @@ export function AuthProvider({ children }) {
     if (cachedProfile) {
         try {
             initialUser = JSON.parse(cachedProfile);
-            initialView = 'landing';
+            initialView = initialUser?.is_onboarded === false ? 'onboarding' : 'app';
         } catch { /* ignore */ }
     }
 
@@ -55,7 +55,7 @@ export function AuthProvider({ children }) {
         try {
             const profile = await getProfile(firebaseUser.uid);
             if (profile) {
-                const fullUser = {
+                let fullUser = {
                     id: firebaseUser.uid,
                     email: firebaseUser.email,
                     ...profile
@@ -64,11 +64,14 @@ export function AuthProvider({ children }) {
                 // If the user completed onboarding locally, preserve that status
                 setUser(prev => {
                     if (prev?.is_onboarded && !fullUser.is_onboarded) {
-                        fullUser.is_onboarded = true;
+                        const sameRole = prev?.role && fullUser.role && prev.role === fullUser.role;
+                        if (sameRole) {
+                            fullUser = { ...fullUser, is_onboarded: true };
+                        }
                     }
+                    localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
                     return fullUser;
                 });
-                localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
             }
         } catch (err) {
             console.warn('⚠️ Background profile fetch failed:', err.message);
@@ -103,7 +106,7 @@ export function AuthProvider({ children }) {
                         if (cachedUser.id === firebaseUser.uid) {
                             setUser(cachedUser);
                             initializationComplete.current = true;
-                            setView('landing');
+                            setView(cachedUser?.is_onboarded === false ? 'onboarding' : 'app');
                             // Silently refresh profile in background
                             hydrateProfile(firebaseUser);
                             return;
@@ -124,7 +127,7 @@ export function AuthProvider({ children }) {
                     initializationComplete.current = true;
 
                     if (profile && profile.is_onboarded) {
-                        setView('landing');
+                        setView('app');
                     } else {
                         setView('onboarding');
                     }
@@ -144,7 +147,7 @@ export function AuthProvider({ children }) {
 
                     // If we suspect they are already onboarded (or we just don't know), 
                     // prefer the landing page — user will navigate from there.
-                    setView('landing');
+                    setView('app');
                 }
             } else {
                 // User is signed out
@@ -206,7 +209,7 @@ export function AuthProvider({ children }) {
                 email: result.user.email,
                 full_name: result.user.displayName || 'Practitioner',
                 plan: 'Free',
-                is_onboarded: true
+                is_onboarded: false
             };
             setUser(optimisticUser);
             localStorage.setItem('boq_pro_profile', JSON.stringify(optimisticUser));

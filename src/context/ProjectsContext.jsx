@@ -4,17 +4,17 @@ import { PLAN_LIMITS, PLAN_NAMES } from '../data/plans';
 import { useAuth } from './AuthContext';
 import { useToast } from '../components/ui/ToastContext';
 import {
-  saveLocal,
-  loadLocal,
-  deleteLocal,
-  syncToCloud,
-  syncDeleteToCloud,
-  pullFromCloud,
-  startAutoSync,
-  stopAutoSync,
-  onSyncStatusChange,
-  onIdChange,
-  processQueue,
+    saveLocal,
+    loadLocal,
+    deleteLocal,
+    syncToCloud,
+    syncDeleteToCloud,
+    pullFromCloud,
+    startAutoSync,
+    stopAutoSync,
+    onSyncStatusChange,
+    onIdChange,
+    processQueue,
 } from '../db/syncEngine';
 import { subscribeToProject } from '../db/realtimeSync';
 import { logActivity } from '../db/collaborationService';
@@ -201,6 +201,8 @@ export function ProjectsProvider({ children }) {
             items: (section.items || []).map(item => ({
                 id: Math.random().toString(36).substr(2, 9),
                 description: item.description,
+                subcategory: item.subcategory || '',
+                materials: Array.isArray(item.materials) ? item.materials : [],
                 unit: item.unit,
                 qty: item.qty || 0,
                 rate: item.rate || 0,
@@ -256,6 +258,8 @@ export function ProjectsProvider({ children }) {
             items: (section.items || []).map(item => ({
                 id: Math.random().toString(36).substr(2, 9),
                 description: item.description,
+                subcategory: item.subcategory || '',
+                materials: Array.isArray(item.materials) ? item.materials : [],
                 unit: item.unit,
                 qty: item.qty || 0,
                 rate: item.rate || 0,
@@ -312,6 +316,8 @@ export function ProjectsProvider({ children }) {
             items: Array.from({ length: 3 }).map((_, idx) => ({
                 id: Math.random().toString(36).substr(2, 9),
                 description: `Identified Component ${idx + 1} from ${el.title}`,
+                subcategory: 'Analyzed Item',
+                materials: [],
                 unit: 'm³',
                 qty: Math.floor(Math.random() * 50) + 10,
                 rate: 0,

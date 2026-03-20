@@ -6,6 +6,7 @@ import BidManagerModal from './BidManagerModal';
 import CollabModal from './CollabModal';
 import ActivityPanel from './ActivityPanel';
 import StructuralAnalyzer from './StructuralAnalyzer';
+import ProjectNotesAccordion from './ProjectNotesAccordion';
 import { getRegionalModifier } from '../../utils/aiService';
 import { getMaterials } from '../../db/database';
 import {
@@ -26,16 +27,12 @@ import {
   AlertCircle,
   Zap,
   Gavel,
-  Trophy,
   AlertTriangle,
-  Pencil,
-  Sparkles,
-  Globe2,
+  Copy,
   UserPlus,
   History,
   Database,
-  Save,
-  ClipboardList
+  Save
 } from 'lucide-react';
 
 const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) => {
@@ -46,14 +43,13 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('estimation');
   const [showStructuralAnalyzer, setShowStructuralAnalyzer] = useState(false);
-  const [isNotesExpanded, setIsNotesExpanded] = useState(false);
 
   // Collaboration state
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showActivityPanel, setShowActivityPanel] = useState(false);
   const [presenceUsers, setPresenceUsers] = useState([]);
   const [activityLog, setActivityLog] = useState([]);
-  
+
   const toast = useToast();
 
   React.useEffect(() => {
@@ -148,6 +144,8 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
       items: section.items.map(item => ({
         ...item,
         id: item.id || Date.now() + Math.random(),
+        subcategory: item.subcategory || '',
+        materials: Array.isArray(item.materials) ? item.materials : [],
         rate: 0,
         total: 0,
         benchmark: 0,
@@ -166,7 +164,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
     // 1. Fetch real-time benchmarks from the database
     const dbMaterials = await getMaterials();
     const regionMod = getRegionalModifier(project?.region || 'Lagos');
-    
+
     // 2. Map database materials to a searchable dictionary
     const benchmarkMap = {};
     dbMaterials.forEach(mat => {
@@ -190,7 +188,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
 
         const desc = item.description.toLowerCase();
         let matchedRate = 0;
-        
+
         // Try DB matches first
         for (const [key, price] of Object.entries(benchmarkMap)) {
           if (desc.includes(key)) {
@@ -241,6 +239,8 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           qty: 0,
           rate: 0,
           total: 0,
+          subcategory: 'Custom Item',
+          materials: [],
           benchmark: 0,
           useBenchmark: false,
           rateSource: 'manual',
@@ -248,6 +248,29 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         }]
       };
     });
+    setSections(updated);
+    onUpdate(project.id, updated);
+  };
+
+  const duplicateItem = (sectionId, itemId) => {
+    const updated = sections.map((section) => {
+      if (section.id !== sectionId) return section;
+      const index = (section.items || []).findIndex((itm) => itm.id === itemId);
+      if (index < 0) return section;
+
+      const sourceItem = section.items[index];
+      const duplicate = {
+        ...sourceItem,
+        id: Date.now() + Math.random(),
+        description: `${sourceItem.description} (Copy)`,
+        materials: Array.isArray(sourceItem.materials) ? [...sourceItem.materials] : []
+      };
+
+      const nextItems = [...section.items];
+      nextItems.splice(index + 1, 0, duplicate);
+      return { ...section, items: nextItems };
+    });
+
     setSections(updated);
     onUpdate(project.id, updated);
   };
@@ -264,7 +287,9 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
     return (sections || []).map(section => {
       const filteredItems = (section.items || []).filter(item =>
         (item.description || '').toLowerCase().includes(query) ||
-        (item.unit || '').toLowerCase().includes(query)
+        (item.unit || '').toLowerCase().includes(query) ||
+        (item.subcategory || '').toLowerCase().includes(query) ||
+        (item.materials || []).join(' ').toLowerCase().includes(query)
       );
       if (filteredItems.length > 0 || (section.title || '').toLowerCase().includes(query)) {
         return { ...section, items: filteredItems, expanded: true };
@@ -276,6 +301,13 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
   const calculateGrandTotal = React.useMemo(() => {
     return (sections || []).reduce((acc, section) =>
       acc + (section.items || []).reduce((sum, item) => sum + (item.total || 0), 0), 0
+    );
+  }, [sections]);
+
+  const totalQuantity = React.useMemo(() => {
+    return (sections || []).reduce(
+      (acc, section) => acc + (section.items || []).reduce((sum, item) => sum + (Number(item.qty) || 0), 0),
+      0
     );
   }, [sections]);
 
@@ -316,6 +348,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           </div>
           <div className="ws-stat"><span className="ws-stat-label">Sections</span><span className="ws-stat-val">{sections.length}</span></div>
           <div className="ws-stat"><span className="ws-stat-label">Items</span><span className="ws-stat-val">{totalItems}</span></div>
+          <div className="ws-stat"><span className="ws-stat-label">Total Qty</span><span className="ws-stat-val">{totalQuantity.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
           <div className="ws-stat ws-stat-total"><span className="ws-stat-label">Total</span><span className="ws-stat-val">₦{calculateGrandTotal.toLocaleString()}</span></div>
         </div>
         <div className="ws-toolbar-right">
@@ -389,154 +422,203 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
             </tr>
           </thead>
           <tbody>
-            {filteredSections.map((section, sIdx) => (
-              <React.Fragment key={section.id}>
-                {/* Section Header */}
-                <tr className="ws-section-row" onClick={() => toggleSection(section.id)}>
-                  <td colSpan={viewMode === 'valuation' ? 8 : 7} className="ws-section-cell">
-                    <div className="ws-section-inner">
-                      {section.expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                      <span className="ws-section-letter">{String.fromCharCode(65 + sIdx)}</span>
-                      <input
-                        type="text"
-                        className="ws-section-title-input"
-                        value={section.title}
-                        onChange={(e) => updateSectionTitle(section.id, e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <span className="ws-section-badge">{section.items?.length || 0}</span>
-                      {!section.expanded && (
-                        <span className="ws-section-total">₦{(section.items || []).reduce((a, i) => a + (i.total || 0), 0).toLocaleString()}</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="ws-act-cell">
-                    <button className="ws-btn-icon ws-btn-danger" onClick={(e) => { e.stopPropagation(); onDelete(project.id, section.id); }}>
-                      <Trash2 size={13} />
-                    </button>
-                  </td>
-                </tr>
-                {/* Items */}
-                {section.expanded && (section.items || []).map((item, idx) => {
-                  const outlier = !item.useBenchmark && isOutlier(item.rate, item.benchmark);
-                  const rate = item.useBenchmark ? (item.benchmark * getRegionalModifier(project?.region || 'Lagos')) : item.rate;
-                  return (
-                    <tr key={item.id} className={`ws-item-row ${outlier ? 'ws-outlier' : ''}`}>
-                      <td className="ws-num">{String.fromCharCode(65 + sIdx)}.{idx + 1}</td>
-                      <td className="ws-desc">
-                        <div className="ws-desc-inner">
-                          {item.isVO && <span className="ws-vo">VO</span>}
-                          <input
-                            type="text"
-                            className="ws-input ws-desc-input"
-                            value={item.description}
-                            onChange={(e) => updateItem(section.id, item.id, 'description', e.target.value)}
-                          />
-                          {outlier && <AlertCircle size={11} className="ws-outlier-icon" title="Rate variance detected" />}
-                        </div>
-                      </td>
-                      <td className="ws-unit-cell">
+            {filteredSections.map((section, sIdx) => {
+              const sectionSubtotal = (section.items || []).reduce((a, i) => a + (i.total || 0), 0);
+              const sectionQty = (section.items || []).reduce((a, i) => a + (Number(i.qty) || 0), 0);
+
+              return (
+                <React.Fragment key={section.id}>
+                  {/* Section Header */}
+                  <tr className="ws-section-row" onClick={() => toggleSection(section.id)}>
+                    <td colSpan={viewMode === 'valuation' ? 8 : 7} className="ws-section-cell">
+                      <div className="ws-section-inner">
+                        {section.expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                        <span className="ws-section-letter">{String.fromCharCode(65 + sIdx)}</span>
                         <input
                           type="text"
-                          className="ws-input ws-unit-input"
-                          value={item.unit}
-                          onChange={(e) => updateItem(section.id, item.id, 'unit', e.target.value)}
+                          className="ws-section-title-input"
+                          value={section.title}
+                          onChange={(e) => updateSectionTitle(section.id, e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
                         />
-                      </td>
-                      <td className="ws-qty-cell">
-                        <div className="ws-qty-wrap">
-                          <input
-                            type="number"
-                            className="ws-input ws-qty-input"
-                            value={item.qty || ''}
-                            onChange={(e) => updateItem(section.id, item.id, 'qty', Number(e.target.value))}
-                          />
-                          <button className="ws-geo-btn" onClick={() => setCalculatingQtyForItem({ sectionId: section.id, item })} title="Geometric Takeoff">
-                            <Calculator size={10} />
-                          </button>
-                        </div>
-                      </td>
-                      {viewMode === 'valuation' ? (
-                        <>
-                          <td>
-                            <input type="number" className="ws-input ws-sm-input" value={item.qtyCompleted || ''}
-                              onChange={(e) => updateItem(section.id, item.id, 'qtyCompleted', Number(e.target.value))} />
-                          </td>
-                          <td>
-                            <div className="ws-progress-bar">
-                              <div className="ws-progress-fill" style={{ width: `${Math.min(100, item.progressPercent || 0)}%` }}></div>
-                              <span>{Math.round(item.progressPercent || 0)}%</span>
-                            </div>
-                          </td>
-                        </>
-                      ) : (
-                        <td>
-                          <div className="ws-strategy-toggle">
-                            <button className={`ws-strat-btn ${!item.useBenchmark ? 'active' : ''}`}
-                              onClick={() => updateItem(section.id, item.id, 'useBenchmark', false)}>C</button>
-                            <button className={`ws-strat-btn ${item.useBenchmark ? 'active' : ''}`}
-                              onClick={() => updateItem(section.id, item.id, { useBenchmark: true, rateSource: 'benchmark' })}>B</button>
+                        <span className="ws-section-meta">QTY {sectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                        <span className="ws-section-badge">{section.items?.length || 0}</span>
+                        {!section.expanded && (
+                          <span className="ws-section-total">₦{sectionSubtotal.toLocaleString()}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="ws-act-cell">
+                      <button className="ws-btn-icon ws-btn-danger" onClick={(e) => { e.stopPropagation(); onDelete(project.id, section.id); }}>
+                        <Trash2 size={13} />
+                      </button>
+                    </td>
+                  </tr>
+                  {/* Items */}
+                  {section.expanded && (section.items || []).map((item, idx) => {
+                    const currentSubcategory = (item.subcategory || 'General').trim() || 'General';
+                    const previousSubcategory = idx > 0
+                      ? (((section.items || [])[idx - 1]?.subcategory || 'General').trim() || 'General')
+                      : null;
+                    const showSubcategoryHeader = idx === 0 || currentSubcategory !== previousSubcategory;
+                    const outlier = !item.useBenchmark && isOutlier(item.rate, item.benchmark);
+                    const rate = item.useBenchmark ? (item.benchmark * getRegionalModifier(project?.region || 'Lagos')) : item.rate;
+                    return (
+                      <React.Fragment key={item.id}>
+                        {showSubcategoryHeader && (
+                          <tr className="ws-subcategory-row">
+                            <td colSpan={viewMode === 'valuation' ? 9 : 8} className="ws-subcategory-cell">
+                              <div className="ws-subcategory-inner">
+                                <span className="ws-subcategory-label">Subcategory</span>
+                                <span className="ws-subcategory-title">{currentSubcategory}</span>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                        <tr className={`ws-item-row ${outlier ? 'ws-outlier' : ''}`}>
+                        <td className="ws-num">{String.fromCharCode(65 + sIdx)}.{idx + 1}</td>
+                        <td className="ws-desc">
+                          <div className="ws-desc-inner">
+                            {item.isVO && <span className="ws-vo">VO</span>}
+                            <input
+                              type="text"
+                              className="ws-input ws-desc-input"
+                              value={item.description}
+                              onChange={(e) => updateItem(section.id, item.id, 'description', e.target.value)}
+                            />
+                            {outlier && <AlertCircle size={11} className="ws-outlier-icon" title="Rate variance detected" />}
+                          </div>
+                          <div className="ws-item-meta-row">
+                            <input
+                              type="text"
+                              className="ws-input ws-meta-input"
+                              value={item.subcategory || ''}
+                              onChange={(e) => updateItem(section.id, item.id, 'subcategory', e.target.value)}
+                              placeholder="Subcategory"
+                            />
+                            <input
+                              type="text"
+                              className="ws-input ws-meta-input"
+                              value={(item.materials || []).join(', ')}
+                              onChange={(e) => {
+                                const parsed = e.target.value
+                                  .split(',')
+                                  .map((entry) => entry.trim())
+                                  .filter(Boolean);
+                                updateItem(section.id, item.id, 'materials', parsed);
+                              }}
+                              placeholder="Materials (comma separated)"
+                            />
                           </div>
                         </td>
-                      )}
-                      <td className="ws-rate-cell">
-                        <div className="ws-rate-wrap">
+                        <td className="ws-unit-cell">
                           <input
-                            type="number"
-                            className="ws-input ws-rate-input"
-                            value={rate || ''}
-                            onChange={(e) => updateItem(section.id, item.id, 'rate', Number(e.target.value))}
-                            disabled={item.useBenchmark}
+                            type="text"
+                            className="ws-input ws-unit-input"
+                            value={item.unit}
+                            onChange={(e) => updateItem(section.id, item.id, 'unit', e.target.value)}
                           />
-                          <button className="ws-analysis-btn" onClick={() => setAnalyzingItem({ sectionId: section.id, item })} title="Rate Analysis">
-                            <Calculator size={11} />
-                          </button>
-                        </div>
-                      </td>
-                      <td className="ws-total-cell">₦{(item.total || 0).toLocaleString()}</td>
-                      <td className="ws-act-cell">
-                        {viewMode === 'valuation' ? (
-                          <button className={`ws-btn-icon ${item.isVO ? 'ws-vo-active' : ''}`}
-                            onClick={() => toggleVO(section.id, item.id)} title="Variation Order">
-                            <AlertTriangle size={12} />
-                          </button>
-                        ) : (
-                          <div className="ws-act-group">
-                            <button className={`ws-btn-icon ${item.bids?.length > 0 ? 'ws-bid-active' : ''}`}
-                              onClick={() => setBiddingItem({ sectionId: section.id, item })} title="Bids">
-                              <Gavel size={12} />
-                            </button>
-                            <button className="ws-btn-icon ws-btn-danger"
-                              onClick={() => onDelete(project.id, section.id, item.id)} title="Delete">
-                              <Trash2 size={12} />
+                        </td>
+                        <td className="ws-qty-cell">
+                          <div className="ws-qty-wrap">
+                            <input
+                              type="number"
+                              className="ws-input ws-qty-input"
+                              value={item.qty || ''}
+                              onChange={(e) => updateItem(section.id, item.id, 'qty', Number(e.target.value))}
+                            />
+                            <button className="ws-geo-btn" onClick={() => setCalculatingQtyForItem({ sectionId: section.id, item })} title="Geometric Takeoff">
+                              <Calculator size={10} />
                             </button>
                           </div>
+                        </td>
+                        {viewMode === 'valuation' ? (
+                          <>
+                            <td>
+                              <input type="number" className="ws-input ws-sm-input" value={item.qtyCompleted || ''}
+                                onChange={(e) => updateItem(section.id, item.id, 'qtyCompleted', Number(e.target.value))} />
+                            </td>
+                            <td>
+                              <div className="ws-progress-bar">
+                                <div className="ws-progress-fill" style={{ width: `${Math.min(100, item.progressPercent || 0)}%` }}></div>
+                                <span>{Math.round(item.progressPercent || 0)}%</span>
+                              </div>
+                            </td>
+                          </>
+                        ) : (
+                          <td>
+                            <div className="ws-strategy-toggle">
+                              <button className={`ws-strat-btn ${!item.useBenchmark ? 'active' : ''}`}
+                                onClick={() => updateItem(section.id, item.id, 'useBenchmark', false)}>C</button>
+                              <button className={`ws-strat-btn ${item.useBenchmark ? 'active' : ''}`}
+                                onClick={() => updateItem(section.id, item.id, { useBenchmark: true, rateSource: 'benchmark' })}>B</button>
+                            </div>
+                          </td>
                         )}
-                      </td>
-                    </tr>
-                  );
-                })}
-                {/* Section Footer */}
-                {section.expanded && (
-                  <>
-                    <tr className="ws-subtotal-row">
-                      <td colSpan={viewMode === 'valuation' ? 6 : 5}></td>
-                      <td colSpan="2" className="ws-subtotal-val">
-                        Sub-Total: ₦{section.items.reduce((a, i) => a + (i.total || 0), 0).toLocaleString()}
-                      </td>
-                      <td></td>
-                    </tr>
-                    <tr className="ws-add-row">
-                      <td colSpan={viewMode === 'valuation' ? 9 : 8}>
-                        <button className="ws-add-btn" onClick={() => addItemToSection(section.id)}>
-                          <Plus size={13} /> Add Item
-                        </button>
-                      </td>
-                    </tr>
-                  </>
-                )}
-              </React.Fragment>
-            ))}
+                        <td className="ws-rate-cell">
+                          <div className="ws-rate-wrap">
+                            <input
+                              type="number"
+                              className="ws-input ws-rate-input"
+                              value={rate || ''}
+                              onChange={(e) => updateItem(section.id, item.id, 'rate', Number(e.target.value))}
+                              disabled={item.useBenchmark}
+                            />
+                            <button className="ws-analysis-btn" onClick={() => setAnalyzingItem({ sectionId: section.id, item })} title="Rate Analysis">
+                              <Calculator size={11} />
+                            </button>
+                          </div>
+                        </td>
+                        <td className="ws-total-cell">₦{(item.total || 0).toLocaleString()}</td>
+                        <td className="ws-act-cell">
+                          {viewMode === 'valuation' ? (
+                            <button className={`ws-btn-icon ${item.isVO ? 'ws-vo-active' : ''}`}
+                              onClick={() => toggleVO(section.id, item.id)} title="Variation Order">
+                              <AlertTriangle size={12} />
+                            </button>
+                          ) : (
+                            <div className="ws-act-group">
+                              <button className={`ws-btn-icon ${item.bids?.length > 0 ? 'ws-bid-active' : ''}`}
+                                onClick={() => setBiddingItem({ sectionId: section.id, item })} title="Bids">
+                                <Gavel size={12} />
+                              </button>
+                              <button className="ws-btn-icon"
+                                onClick={() => duplicateItem(section.id, item.id)} title="Duplicate Item">
+                                <Copy size={12} />
+                              </button>
+                              <button className="ws-btn-icon ws-btn-danger"
+                                onClick={() => onDelete(project.id, section.id, item.id)} title="Delete">
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                      </React.Fragment>
+                    );
+                  })}
+                  {/* Section Footer */}
+                  {section.expanded && (
+                    <>
+                      <tr className="ws-subtotal-row">
+                        <td colSpan={viewMode === 'valuation' ? 6 : 5}></td>
+                        <td colSpan="2" className="ws-subtotal-val">
+                          Sub-Total Qty: {sectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })} | Cost: ₦{sectionSubtotal.toLocaleString()}
+                        </td>
+                        <td></td>
+                      </tr>
+                      <tr className="ws-add-row">
+                        <td colSpan={viewMode === 'valuation' ? 9 : 8}>
+                          <button className="ws-add-btn" onClick={() => addItemToSection(section.id)}>
+                            <Plus size={13} /> Add Custom Item
+                          </button>
+                        </td>
+                      </tr>
+                    </>
+                  )}
+                </React.Fragment>
+              )
+            })}
           </tbody>
           <tfoot>
             <tr className="ws-grand-total">
@@ -547,80 +629,10 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           </tfoot>
         </table>
 
-        {/* Professional Foldable Notes & Assumptions */}
-        <div className={`notes-accordion mt-6 ${isNotesExpanded ? 'expanded' : ''}`}>
-          <button 
-            className="notes-header" 
-            onClick={() => setIsNotesExpanded(!isNotesExpanded)}
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <ClipboardList size={18} className="text-blue-600" />
-              </div>
-              <h3 className="text-xs font-black uppercase tracking-widest text-slate-800">Project Notes & Assumptions</h3>
-            </div>
-            <div className={`chevron-wrap ${isNotesExpanded ? 'active' : ''}`}>
-              <ChevronDown size={20} className="chevron-icon" />
-            </div>
-          </button>
-
-          <div className="notes-content">
-            <div className="meta-grid">
-              <div className="meta-col">
-                <label>General Project Notes</label>
-                <textarea 
-                  value={project?.notes || ''}
-                  onChange={(e) => onUpdate(project.id, sections, project.region, { notes: e.target.value })}
-                  placeholder="Add project specific instructions or contextual notes here..."
-                  rows={4}
-                />
-              </div>
-              <div className="meta-col">
-                <label>Technical Assumptions</label>
-                <textarea 
-                  value={project?.assumptions || ''}
-                  onChange={(e) => onUpdate(project.id, sections, project.region, { assumptions: e.target.value })}
-                  placeholder="State any technical assumptions (e.g. soil bearing capacity, material grades)..."
-                  rows={4}
-                />
-              </div>
-            </div>
-
-            <div className="meta-grid mt-6">
-              <div className="meta-col">
-                <label>Exclusions</label>
-                <textarea 
-                  value={project?.exclusions || ''}
-                  onChange={(e) => onUpdate(project.id, sections, project.region, { exclusions: e.target.value })}
-                  placeholder="List items specifically excluded from this Bill of Quantities..."
-                  rows={4}
-                />
-              </div>
-              <div className="meta-col">
-                <div className="signatures-grid">
-                  <div className="sig-box">
-                    <span>Prepared By:</span>
-                    <input 
-                      type="text" 
-                      value={project?.preparedBy || ''} 
-                      onChange={(e) => onUpdate(project.id, sections, project.region, { preparedBy: e.target.value })}
-                      placeholder="Engineer / QS Name"
-                    />
-                  </div>
-                  <div className="sig-box mt-4">
-                    <span>Checked By:</span>
-                    <input 
-                      type="text" 
-                      value={project?.checkedBy || ''} 
-                      onChange={(e) => onUpdate(project.id, sections, project.region, { checkedBy: e.target.value })}
-                      placeholder="Reviewer / Principal"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ProjectNotesAccordion
+          project={project}
+          onChange={(updates) => onUpdate(project.id, sections, project.region, updates)}
+        />
       </div>
 
       {/* Modals */}
@@ -847,9 +859,49 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           padding: 1px 7px; border-radius: 100px;
           flex-shrink: 0;
         }
+        .ws-section-meta {
+          font-size: 0.625rem;
+          font-weight: 700;
+          color: #475569;
+          background: rgba(148, 163, 184, 0.15);
+          padding: 2px 6px;
+          border-radius: 999px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
         .ws-section-total {
           font-size: 0.75rem; font-weight: 800; color: #2563eb;
           margin-left: auto; flex-shrink: 0;
+        }
+
+        .ws-subcategory-row {
+          background: linear-gradient(90deg, #f8fafc, #eef2ff);
+        }
+
+        .ws-subcategory-cell {
+          padding: 0.35rem 0.625rem !important;
+          border-top: 1px solid #e2e8f0;
+          border-bottom: 1px solid #eef2f7;
+        }
+
+        .ws-subcategory-inner {
+          display: flex;
+          align-items: center;
+          gap: 0.55rem;
+        }
+
+        .ws-subcategory-label {
+          font-size: 0.56rem;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+
+        .ws-subcategory-title {
+          font-size: 0.72rem;
+          font-weight: 800;
+          color: #1e293b;
         }
 
         /* ── ITEM ROW ── */
@@ -869,6 +921,12 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         }
 
         .ws-desc-inner { display: flex; align-items: center; gap: 0.375rem; }
+        .ws-item-meta-row {
+          display: grid;
+          grid-template-columns: 160px 1fr;
+          gap: 0.375rem;
+          margin-top: 0.2rem;
+        }
         .ws-vo {
           font-size: 0.5rem; font-weight: 900;
           background: #fef3c7; color: #92400e;
@@ -892,6 +950,13 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         .ws-input:focus { background: white; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,0.08); }
 
         .ws-desc-input { font-weight: 600; }
+        .ws-meta-input {
+          border-color: #e2e8f0;
+          background: #f8fafc;
+          font-size: 0.6875rem;
+          color: #475569;
+          padding: 0.22rem 0.35rem;
+        }
         .ws-unit-input { text-align: center; font-weight: 700; text-transform: uppercase; font-size: 0.6875rem; color: #64748b; letter-spacing: 0.04em; }
         .ws-qty-input { text-align: right; font-weight: 600; }
         .ws-rate-input { text-align: right; font-weight: 600; }
@@ -1003,6 +1068,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           .ws-search { width: 100%; }
           .ws-table { font-size: 0.75rem; }
           .ws-th-strategy, .ws-th-rate { display: none; }
+          .ws-item-meta-row { grid-template-columns: 1fr; }
         }
 
         /* ── PRESENCE AVATARS ── */
@@ -1225,12 +1291,118 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           box-shadow: 0 0 0 3px rgba(37,99,235,0.05);
         }
 
+        .note-panel {
+          gap: 0;
+        }
+
+        .note-panel-header {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.5rem;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 10px;
+          padding: 0.75rem 1rem;
+          cursor: pointer;
+          transition: background 0.2s, border-color 0.2s;
+        }
+
+        .note-panel-header:hover {
+          background: #f1f5f9;
+          border-color: #cbd5e1;
+        }
+
+        .note-panel-title {
+          font-size: 0.8125rem;
+          font-weight: 800;
+          color: var(--primary-500);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .note-panel-chevron {
+          color: #64748b;
+          transition: transform 0.25s ease, color 0.25s ease;
+        }
+
+        .note-panel.expanded .note-panel-chevron {
+          transform: rotate(180deg);
+          color: #2563eb;
+        }
+
+        .note-panel-content {
+          max-height: 0;
+          opacity: 0;
+          overflow: hidden;
+          transition: max-height 0.3s ease, opacity 0.2s ease, padding-top 0.3s ease;
+          padding-top: 0;
+        }
+
+        .note-panel.expanded .note-panel-content {
+          max-height: 320px;
+          opacity: 1;
+          padding-top: 0.75rem;
+        }
+
         /* Notes Accordion */
+        .notes-launcher-row {
+          display: flex;
+          justify-content: flex-end;
+          margin: 0 1.5rem;
+        }
+
+        .notes-launcher-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.45rem;
+          border: 1px solid #cbd5e1;
+          border-radius: 999px;
+          background: #f8fafc;
+          color: #334155;
+          padding: 0.45rem 0.8rem;
+          font-size: 0.75rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .notes-launcher-btn:hover {
+          border-color: #93c5fd;
+          color: #1d4ed8;
+          background: #eff6ff;
+        }
+
+        .notes-panel-controls {
+          display: flex;
+          justify-content: flex-end;
+          margin: 0 1.5rem 0.5rem;
+        }
+
+        .notes-hide-btn {
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          background: #ffffff;
+          color: #475569;
+          padding: 0.35rem 0.65rem;
+          font-size: 0.75rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .notes-hide-btn:hover {
+          border-color: #cbd5e1;
+          background: #f8fafc;
+          color: #334155;
+        }
+
         .notes-accordion {
           background: white;
           border: 1px solid #e2e8f0;
           border-radius: 12px;
-          margin: 1.5rem;
+          margin: 0 1.5rem 1.5rem;
           box-shadow: 0 1px 3px rgba(0,0,0,0.05);
           overflow: hidden;
         }

@@ -30,15 +30,27 @@ const Settings = ({ user, onUpgrade }) => {
   ];
 
   const [apiKey, setApiKey] = useState('');
+  const [openaiKey, setOpenaiKey] = useState('');
+  const [openaiModel, setOpenaiModel] = useState('gpt-4o');
+  const [aiProvider, setAiProvider] = useState('gemini');
   const [isSeeding, setIsSeeding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingOpenAI, setIsSavingOpenAI] = useState(false);
 
   const geminiConnected = !!import.meta.env.VITE_GEMINI_API_KEY;
+  const openaiConnected = !!import.meta.env.VITE_OPENAI_API_KEY;
 
   useEffect(() => {
     const loadSettings = async () => {
-      const savedKey = await getSetting('resend_api_key');
-      if (savedKey) setApiKey(savedKey);
+      const savedResendKey = await getSetting('resend_api_key');
+      const savedOpenAIKey = await getSetting('openai_api_key');
+      const savedModel = await getSetting('openai_model');
+      const savedProvider = await getSetting('preferred_ai_provider');
+      
+      if (savedResendKey) setApiKey(savedResendKey);
+      if (savedOpenAIKey) setOpenaiKey(savedOpenAIKey);
+      if (savedModel) setOpenaiModel(savedModel);
+      if (savedProvider) setAiProvider(savedProvider);
     };
     loadSettings();
   }, []);
@@ -47,7 +59,16 @@ const Settings = ({ user, onUpgrade }) => {
     setIsSaving(true);
     await saveSetting('resend_api_key', apiKey);
     setIsSaving(false);
-    toast.success('API settings saved successfully.');
+    toast.success('Resend API settings saved.');
+  };
+
+  const handleSaveOpenAI = async () => {
+    setIsSavingOpenAI(true);
+    await saveSetting('openai_api_key', openaiKey);
+    await saveSetting('openai_model', openaiModel);
+    await saveSetting('preferred_ai_provider', aiProvider);
+    setIsSavingOpenAI(false);
+    toast.success('AI configuration saved successfully.');
   };
 
   const renderContent = () => {
@@ -228,6 +249,80 @@ const Settings = ({ user, onUpgrade }) => {
                     ✓ Gemini API key loaded from environment — no configuration needed.
                   </div>
                 )}
+              </div>
+
+              <div className="api-card enterprise-card mt-6" style={{ background: openaiKey || openaiConnected ? 'linear-gradient(135deg, #f0f9ff, #e0f2fe)' : undefined, borderColor: openaiKey || openaiConnected ? '#7dd3fc' : undefined }}>
+                <div className="service-info">
+                  <div className="icon-box-sm" style={{ background: openaiKey || openaiConnected ? '#bae6fd' : '#f1f5f9' }}>
+                    <Zap size={20} style={{ color: openaiKey || openaiConnected ? '#0284c7' : '#94a3b8' }} />
+                  </div>
+                  <div className="text-box">
+                    <h4>OpenAI (GPT-4o)</h4>
+                    <p>Alternative engine for Professional AI Insights and Vision Analysis.</p>
+                  </div>
+                  <div style={{ marginLeft: 'auto' }}>
+                    <span style={{
+                      padding: '0.35rem 0.85rem',
+                      borderRadius: '100px',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      background: openaiKey || openaiConnected ? '#0284c7' : '#ef4444',
+                      color: 'white'
+                    }}>
+                      {openaiKey || openaiConnected ? '✓ Ready' : '✗ No Key'}
+                    </span>
+                  </div>
+                </div>
+                {openaiConnected && (
+                  <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'rgba(2,132,199,0.08)', borderRadius: '8px', fontSize: '0.8125rem', color: '#0369a1', fontWeight: 600 }}>
+                    ✓ OpenAI API key loaded from environment — global access active.
+                  </div>
+                )}
+                
+                <div className="form-item mt-4">
+                  <label>OpenAI API Key</label>
+                  <input
+                    type="password"
+                    value={openaiKey}
+                    onChange={(e) => setOpenaiKey(e.target.value)}
+                    placeholder="sk-xxxxxxxxxxxxxxxxxxxx"
+                    className="settings-input"
+                  />
+                </div>
+
+                <div className="form-item mt-4">
+                  <label>OpenAI Model ID</label>
+                  <input
+                    type="text"
+                    value={openaiModel}
+                    onChange={(e) => setOpenaiModel(e.target.value)}
+                    placeholder="gpt-4o, gpt-4-turbo, etc."
+                    className="settings-input"
+                  />
+                  <p className="input-hint">Specify the OpenAI model version you want to use.</p>
+                </div>
+
+                <div className="form-item mt-4">
+                  <label>Default AI Provider</label>
+                  <select 
+                    value={aiProvider} 
+                    onChange={(e) => setAiProvider(e.target.value)}
+                    className="settings-input"
+                  >
+                    <option value="gemini">Google Gemini (Default)</option>
+                    <option value="openai">OpenAI GPT-4o</option>
+                  </select>
+                </div>
+
+                <div className="form-actions mt-4">
+                  <button
+                    className="btn-primary"
+                    onClick={handleSaveOpenAI}
+                    disabled={isSavingOpenAI}
+                  >
+                    {isSavingOpenAI ? 'Saving...' : 'Save AI Config'}
+                  </button>
+                </div>
               </div>
 
               <div className="api-card enterprise-card mt-6">
