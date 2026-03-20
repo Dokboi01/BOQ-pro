@@ -456,10 +456,26 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                   </tr>
                   {/* Items */}
                   {section.expanded && (section.items || []).map((item, idx) => {
+                    const currentSubcategory = (item.subcategory || 'General').trim() || 'General';
+                    const previousSubcategory = idx > 0
+                      ? (((section.items || [])[idx - 1]?.subcategory || 'General').trim() || 'General')
+                      : null;
+                    const showSubcategoryHeader = idx === 0 || currentSubcategory !== previousSubcategory;
                     const outlier = !item.useBenchmark && isOutlier(item.rate, item.benchmark);
                     const rate = item.useBenchmark ? (item.benchmark * getRegionalModifier(project?.region || 'Lagos')) : item.rate;
                     return (
-                      <tr key={item.id} className={`ws-item-row ${outlier ? 'ws-outlier' : ''}`}>
+                      <React.Fragment key={item.id}>
+                        {showSubcategoryHeader && (
+                          <tr className="ws-subcategory-row">
+                            <td colSpan={viewMode === 'valuation' ? 9 : 8} className="ws-subcategory-cell">
+                              <div className="ws-subcategory-inner">
+                                <span className="ws-subcategory-label">Subcategory</span>
+                                <span className="ws-subcategory-title">{currentSubcategory}</span>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                        <tr className={`ws-item-row ${outlier ? 'ws-outlier' : ''}`}>
                         <td className="ws-num">{String.fromCharCode(65 + sIdx)}.{idx + 1}</td>
                         <td className="ws-desc">
                           <div className="ws-desc-inner">
@@ -578,6 +594,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                           )}
                         </td>
                       </tr>
+                      </React.Fragment>
                     );
                   })}
                   {/* Section Footer */}
@@ -855,6 +872,36 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         .ws-section-total {
           font-size: 0.75rem; font-weight: 800; color: #2563eb;
           margin-left: auto; flex-shrink: 0;
+        }
+
+        .ws-subcategory-row {
+          background: linear-gradient(90deg, #f8fafc, #eef2ff);
+        }
+
+        .ws-subcategory-cell {
+          padding: 0.35rem 0.625rem !important;
+          border-top: 1px solid #e2e8f0;
+          border-bottom: 1px solid #eef2f7;
+        }
+
+        .ws-subcategory-inner {
+          display: flex;
+          align-items: center;
+          gap: 0.55rem;
+        }
+
+        .ws-subcategory-label {
+          font-size: 0.56rem;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+
+        .ws-subcategory-title {
+          font-size: 0.72rem;
+          font-weight: 800;
+          color: #1e293b;
         }
 
         /* ── ITEM ROW ── */

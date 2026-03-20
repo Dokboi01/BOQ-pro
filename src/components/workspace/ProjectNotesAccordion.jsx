@@ -1,8 +1,17 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ChevronDown, ClipboardList } from 'lucide-react';
 
-const ProjectNotesAccordion = ({ project, onChange }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+const ProjectNotesAccordion = ({
+    project,
+    onChange,
+    title = 'Project Notes & Assumptions',
+    defaultExpanded = false
+}) => {
+    const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+    const filledFields = useMemo(
+        () => [project?.notes, project?.assumptions, project?.exclusions, project?.preparedBy, project?.checkedBy].filter(Boolean).length,
+        [project]
+    );
 
     return (
         <div className={`project-notes-accordion ${isExpanded ? 'expanded' : ''}`}>
@@ -11,9 +20,17 @@ const ProjectNotesAccordion = ({ project, onChange }) => {
                     <span className="project-notes-icon">
                         <ClipboardList size={16} />
                     </span>
-                    <span className="project-notes-title">Project Notes & Assumptions</span>
+                    <div className="project-notes-heading">
+                        <span className="project-notes-title">{title}</span>
+                        <span className="project-notes-subtitle">
+                            Notes, assumptions, exclusions, and sign-off details
+                        </span>
+                    </div>
                 </div>
-                <ChevronDown size={16} className="project-notes-chevron" />
+                <div className="project-notes-header-meta">
+                    <span className="project-notes-count">{filledFields}/5 filled</span>
+                    <ChevronDown size={16} className="project-notes-chevron" />
+                </div>
             </button>
 
             <div className="project-notes-content">
@@ -104,6 +121,13 @@ const ProjectNotesAccordion = ({ project, onChange }) => {
           gap: 0.55rem;
         }
 
+        .project-notes-heading {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.15rem;
+        }
+
         .project-notes-icon {
           width: 28px;
           height: 28px;
@@ -116,11 +140,33 @@ const ProjectNotesAccordion = ({ project, onChange }) => {
         }
 
         .project-notes-title {
-          font-size: 0.76rem;
+          font-size: 0.82rem;
           font-weight: 800;
+          letter-spacing: 0.01em;
+          color: #0f172a;
+        }
+
+        .project-notes-subtitle {
+          font-size: 0.68rem;
+          color: #64748b;
+          font-weight: 600;
+        }
+
+        .project-notes-header-meta {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.6rem;
+        }
+
+        .project-notes-count {
+          font-size: 0.62rem;
+          font-weight: 800;
+          color: #475569;
           text-transform: uppercase;
           letter-spacing: 0.08em;
-          color: #334155;
+          padding: 0.32rem 0.5rem;
+          border-radius: 999px;
+          background: #e2e8f0;
         }
 
         .project-notes-chevron {
