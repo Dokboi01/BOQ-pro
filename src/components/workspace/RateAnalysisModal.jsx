@@ -210,11 +210,20 @@ const RateAnalysisModal = ({ item, structureType, onClose, onSave }) => {
   const labTotal = breakdown.labor.reduce((acc, row) => acc + getLineTotal('labor', row), 0);
   const plaTotal = breakdown.plant.reduce((acc, row) => acc + getLineTotal('plant', row), 0);
   const transTotal = breakdown.transport.reduce((acc, row) => acc + getLineTotal('transport', row), 0);
+  const itemQuantity = Math.max(Number(item?.qty) || 0, 0);
 
   const primeCost = matTotal + labTotal + plaTotal + transTotal;
   const overheadsVal = (Number(breakdown.overheads || 0) / 100) * primeCost;
   const profitVal = (Number(breakdown.profit || 0) / 100) * (primeCost + overheadsVal);
   const unitRate = primeCost + overheadsVal + profitVal;
+  const totalMaterialAmount = matTotal * itemQuantity;
+  const totalLaborAmount = labTotal * itemQuantity;
+  const totalPlantAmount = plaTotal * itemQuantity;
+  const totalTransportAmount = transTotal * itemQuantity;
+  const totalPrimeCost = primeCost * itemQuantity;
+  const totalOverheadsAmount = overheadsVal * itemQuantity;
+  const totalProfitAmount = profitVal * itemQuantity;
+  const totalAmount = unitRate * itemQuantity;
 
   const sections = [
     { key: 'materials', step: 1, label: 'Material Cost', icon: Package, color: '#059669', mode: 'materials', total: matTotal },
@@ -230,7 +239,7 @@ const RateAnalysisModal = ({ item, structureType, onClose, onSave }) => {
           <div className="header-info">
             <div className="item-badge">Professional Rate Build-Up</div>
             <h3>{item.description}</h3>
-            <span className="unit-label">Analysis per 1.00 {item.unit}</span>
+            <span className="unit-label">Analysis per 1.00 {item.unit} | BOQ Qty: {itemQuantity.toLocaleString()} {item.unit}</span>
           </div>
           <button className="btn-close" onClick={onClose}><X size={20} /></button>
         </header>
@@ -262,8 +271,11 @@ const RateAnalysisModal = ({ item, structureType, onClose, onSave }) => {
 
           <div className="formula-banner">
             <div className="formula-label"><TrendingUp size={14} /> QS Rate Formula</div>
-            <div className="formula-text">
-              Rate = Materials with waste + Labour by output + Plant by output + Transport + Overheads% + Profit%
+            <div className="formula-stack">
+              <div className="formula-text">
+                Rate = Materials with waste + Labour by output + Plant by output + Transport + Overheads% + Profit%
+              </div>
+              <div className="formula-subtext">Amount = Quantity x Unit Rate</div>
             </div>
           </div>
 
@@ -287,7 +299,7 @@ const RateAnalysisModal = ({ item, structureType, onClose, onSave }) => {
                     {isCollapsed ? <ChevronRight size={14} className="toggle-chevron" /> : <ChevronDown size={14} className="toggle-chevron" />}
                   </div>
                   <div className="head-right">
-                    <span className="subtotal" style={{ color }}>₦{total.toLocaleString()}</span>
+                    <span className="subtotal" style={{ color }}>NGN {total.toLocaleString()} / {item.unit}</span>
                     <button className="btn-icon-small" onClick={(e) => { e.stopPropagation(); addRow(key); }}><Plus size={14} /></button>
                   </div>
                 </div>
@@ -309,10 +321,10 @@ const RateAnalysisModal = ({ item, structureType, onClose, onSave }) => {
                       <span>Item Description</span>
                       <span>{mode === 'output' ? 'Crew' : 'Qty'}</span>
                       <span>Unit</span>
-                      <span>Rate (₦)</span>
+                      <span>Rate (NGN)</span>
                       {mode === 'materials' && <span>Waste %</span>}
                       {mode === 'output' && <span>Output/day</span>}
-                      <span>Amount (₦)</span>
+                      <span>Unit Cost (NGN/{item.unit})</span>
                       <span></span>
                     </div>
 
@@ -330,7 +342,7 @@ const RateAnalysisModal = ({ item, structureType, onClose, onSave }) => {
                           {mode === 'output' && (
                             <input type="number" className="output-input" value={row.output || ''} onChange={(e) => updateBreakdown(key, row.id, 'output', Math.max(Number(e.target.value) || 1, 0.001))} />
                           )}
-                          <span className="line-total">₦{lineTotal.toLocaleString()}</span>
+                          <span className="line-total">NGN {lineTotal.toLocaleString()}</span>
                           <button className="btn-remove" onClick={() => removeRow(key, row.id)}><Trash2 size={12} /></button>
                         </div>
                       );
@@ -342,14 +354,25 @@ const RateAnalysisModal = ({ item, structureType, onClose, onSave }) => {
           })}
 
           <div className="prime-cost-bar">
-            <div className="pc-label">Prime Cost (Steps 1-4)</div>
+            <div className="pc-label">Prime Cost Per Unit (Steps 1-4)</div>
             <div className="pc-breakdown">
-              <span className="pc-chip" style={{ background: 'rgba(5,150,105,0.1)', color: '#059669' }}>Mat: ₦{matTotal.toLocaleString()}</span>
-              <span className="pc-chip" style={{ background: 'rgba(217,119,6,0.1)', color: '#d97706' }}>Lab: ₦{labTotal.toLocaleString()}</span>
-              <span className="pc-chip" style={{ background: 'rgba(124,58,237,0.1)', color: '#7c3aed' }}>Plt: ₦{plaTotal.toLocaleString()}</span>
-              <span className="pc-chip" style={{ background: 'rgba(2,132,199,0.1)', color: '#0284c7' }}>Trn: ₦{transTotal.toLocaleString()}</span>
+              <span className="pc-chip" style={{ background: 'rgba(5,150,105,0.1)', color: '#059669' }}>Mat: NGN {matTotal.toLocaleString()}</span>
+              <span className="pc-chip" style={{ background: 'rgba(217,119,6,0.1)', color: '#d97706' }}>Lab: NGN {labTotal.toLocaleString()}</span>
+              <span className="pc-chip" style={{ background: 'rgba(124,58,237,0.1)', color: '#7c3aed' }}>Plt: NGN {plaTotal.toLocaleString()}</span>
+              <span className="pc-chip" style={{ background: 'rgba(2,132,199,0.1)', color: '#0284c7' }}>Trn: NGN {transTotal.toLocaleString()}</span>
             </div>
-            <div className="pc-total">₦{primeCost.toLocaleString()}</div>
+            <div className="pc-total">NGN {primeCost.toLocaleString()} / {item.unit}</div>
+          </div>
+
+          <div className="prime-cost-bar quantity-bar">
+            <div className="pc-label">Quantity-Scaled Amount Preview</div>
+            <div className="pc-breakdown">
+              <span className="pc-chip" style={{ background: 'rgba(5,150,105,0.1)', color: '#059669' }}>Mat x Qty: NGN {totalMaterialAmount.toLocaleString()}</span>
+              <span className="pc-chip" style={{ background: 'rgba(217,119,6,0.1)', color: '#d97706' }}>Lab x Qty: NGN {totalLaborAmount.toLocaleString()}</span>
+              <span className="pc-chip" style={{ background: 'rgba(124,58,237,0.1)', color: '#7c3aed' }}>Plt x Qty: NGN {totalPlantAmount.toLocaleString()}</span>
+              <span className="pc-chip" style={{ background: 'rgba(2,132,199,0.1)', color: '#0284c7' }}>Trn x Qty: NGN {totalTransportAmount.toLocaleString()}</span>
+            </div>
+            <div className="pc-total">Prime Cost Amount: NGN {totalPrimeCost.toLocaleString()}</div>
           </div>
 
           <section className="analysis-summary">
@@ -363,11 +386,12 @@ const RateAnalysisModal = ({ item, structureType, onClose, onSave }) => {
                 <input type="number" className="percent-input" value={breakdown.overheads} onChange={(e) => setBreakdown((prev) => ({ ...prev, overheads: Number(e.target.value) || 0 }))} />
                 <span className="percent-sign">%</span>
               </div>
-              <span className="summary-val">₦{overheadsVal.toLocaleString()}</span>
+              <span className="summary-val">NGN {overheadsVal.toLocaleString()} / {item.unit}</span>
             </div>
             <div className="overhead-hint">
               Site supervision, preliminaries, security, temporary works and admin support.
             </div>
+            <div className="summary-amount-note">Amount at current quantity: NGN {totalOverheadsAmount.toLocaleString()}</div>
             <div className="summary-row">
               <div className="summary-label">
                 <span className="step-badge" style={{ background: '#ea580c' }}>6</span>
@@ -378,18 +402,27 @@ const RateAnalysisModal = ({ item, structureType, onClose, onSave }) => {
                 <input type="number" className="percent-input" value={breakdown.profit} onChange={(e) => setBreakdown((prev) => ({ ...prev, profit: Number(e.target.value) || 0 }))} />
                 <span className="percent-sign">%</span>
               </div>
-              <span className="summary-val">₦{profitVal.toLocaleString()}</span>
+              <span className="summary-val">NGN {profitVal.toLocaleString()} / {item.unit}</span>
             </div>
             <div className="overhead-hint">
               Use higher margins for volatile, remote or risk-heavy work packages.
             </div>
+            <div className="summary-amount-note">Amount at current quantity: NGN {totalProfitAmount.toLocaleString()}</div>
 
             <div className="final-rate-row">
               <div>
                 <span className="final-label">Computed Unit Rate</span>
                 <span className="final-unit">per {item.unit}</span>
               </div>
-              <span className="rate-val">₦{unitRate.toLocaleString()}</span>
+              <span className="rate-val">NGN {unitRate.toLocaleString()}</span>
+            </div>
+
+            <div className="final-rate-row total-amount-row">
+              <div>
+                <span className="final-label">BOQ Amount</span>
+                <span className="final-unit">{itemQuantity.toLocaleString()} x NGN {unitRate.toLocaleString()} per {item.unit}</span>
+              </div>
+              <span className="rate-val">NGN {totalAmount.toLocaleString()}</span>
             </div>
           </section>
         </div>
@@ -397,7 +430,7 @@ const RateAnalysisModal = ({ item, structureType, onClose, onSave }) => {
         <footer className="analysis-footer">
           <button className="btn-secondary" onClick={onClose}>Cancel</button>
           <button className="btn-primary-glow" onClick={() => onSave(unitRate, breakdown)}>
-            <CheckCircle size={18} /> Apply Rate - ₦{unitRate.toLocaleString()}/{item.unit}
+            <CheckCircle size={18} /> Apply Rate - NGN {unitRate.toLocaleString()}/{item.unit}
           </button>
         </footer>
       </div>
@@ -447,7 +480,9 @@ const RateAnalysisModal = ({ item, structureType, onClose, onSave }) => {
           gap: 1rem;
         }
         .formula-label { display: flex; align-items: center; gap: 0.375rem; font-weight: 800; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; color: #93c5fd; }
+        .formula-stack { display: flex; flex-direction: column; gap: 0.2rem; }
         .formula-text { font-size: 0.75rem; font-weight: 600; color: rgba(255,255,255,0.85); font-family: 'SF Mono', 'Fira Code', monospace; }
+        .formula-subtext { font-size: 0.7rem; font-weight: 700; color: #bfdbfe; }
 
         .step-badge {
           display: inline-flex;
@@ -542,6 +577,10 @@ const RateAnalysisModal = ({ item, structureType, onClose, onSave }) => {
           flex-direction: column;
           gap: 0.5rem;
         }
+        .quantity-bar {
+          background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+          border-color: #cbd5e1;
+        }
         .pc-label { font-weight: 800; font-size: 0.6875rem; color: #1e3a8a; text-transform: uppercase; letter-spacing: 0.05em; }
         .pc-breakdown { display: flex; flex-wrap: wrap; gap: 0.375rem; }
         .pc-chip { font-size: 0.6875rem; font-weight: 700; padding: 3px 10px; border-radius: 100px; white-space: nowrap; }
@@ -562,8 +601,10 @@ const RateAnalysisModal = ({ item, structureType, onClose, onSave }) => {
         .summary-val { font-weight: 800; color: #1e293b; min-width: 100px; text-align: right; }
         .percent-sign { font-size: 0.75rem; color: #94a3b8; font-weight: 700; }
         .overhead-hint { font-size: 0.625rem; color: #94a3b8; padding-left: 2.5rem; margin-top: -0.25rem; font-style: italic; }
+        .summary-amount-note { font-size: 0.6875rem; color: #475569; padding-left: 2.5rem; margin-top: -0.1rem; font-weight: 700; }
 
         .final-rate-row { border-top: 2px solid #cbd5e1; padding-top: 1rem; margin-top: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
+        .total-amount-row { border-top-color: #93c5fd; }
         .final-label { font-weight: 900; color: #0f172a; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; display: block; }
         .final-unit { font-size: 0.625rem; color: #64748b; }
         .rate-val { font-size: 1.5rem; font-weight: 900; color: #2563eb; letter-spacing: -0.02em; }
