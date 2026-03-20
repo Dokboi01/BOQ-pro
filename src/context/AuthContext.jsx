@@ -55,7 +55,7 @@ export function AuthProvider({ children }) {
         try {
             const profile = await getProfile(firebaseUser.uid);
             if (profile) {
-                const fullUser = {
+                let fullUser = {
                     id: firebaseUser.uid,
                     email: firebaseUser.email,
                     ...profile
@@ -64,11 +64,14 @@ export function AuthProvider({ children }) {
                 // If the user completed onboarding locally, preserve that status
                 setUser(prev => {
                     if (prev?.is_onboarded && !fullUser.is_onboarded) {
-                        fullUser.is_onboarded = true;
+                        const sameRole = prev?.role && fullUser.role && prev.role === fullUser.role;
+                        if (sameRole) {
+                            fullUser = { ...fullUser, is_onboarded: true };
+                        }
                     }
+                    localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
                     return fullUser;
                 });
-                localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
             }
         } catch (err) {
             console.warn('⚠️ Background profile fetch failed:', err.message);
@@ -206,7 +209,7 @@ export function AuthProvider({ children }) {
                 email: result.user.email,
                 full_name: result.user.displayName || 'Practitioner',
                 plan: 'Free',
-                is_onboarded: true
+                is_onboarded: false
             };
             setUser(optimisticUser);
             localStorage.setItem('boq_pro_profile', JSON.stringify(optimisticUser));

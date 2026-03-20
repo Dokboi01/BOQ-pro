@@ -23,6 +23,7 @@ import {
   MapPin,
   Calendar,
   User as UserIcon,
+  Mail,
   ShieldCheck,
   LogOut,
   Settings as SettingsIcon,

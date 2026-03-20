@@ -10,6 +10,23 @@ let listeners = [];
 let debounceTimers = {};
 let autoSyncInterval = null;
 
+function getLocalUserId() {
+  if (auth.currentUser?.uid) return auth.currentUser.uid;
+
+  try {
+    const cached = localStorage.getItem('boq_pro_profile');
+    if (!cached) return null;
+    const parsed = JSON.parse(cached);
+    return parsed?.id || null;
+  } catch {
+    return null;
+  }
+}
+
+function canSyncToCloud() {
+  return navigator.onLine && !!auth.currentUser;
+}
+
 function notifyListeners() {
   listeners.forEach(fn => fn(getSyncStatus()));
 }
@@ -38,7 +55,7 @@ function setSyncState(state) {
  * Save a project to local Dexie DB
  */
 export async function saveLocal(project) {
-  const userId = auth.currentUser?.uid;
+  const userId = getLocalUserId();
   if (!userId) return;
 
   const record = {
@@ -55,7 +72,7 @@ export async function saveLocal(project) {
  * Load all projects for the current user from local DB
  */
 export async function loadLocal() {
-  const userId = auth.currentUser?.uid;
+  const userId = getLocalUserId();
   if (!userId) return [];
 
   try {
@@ -97,7 +114,7 @@ async function addToQueue(action, projectId, payload) {
  * Process all queued sync operations
  */
 export async function processQueue() {
-  if (!navigator.onLine || !auth.currentUser) return;
+  if (!canSyncToCloud()) return;
 
   const queue = await localDB.syncQueue.toArray();
   if (queue.length === 0) {
@@ -165,7 +182,12 @@ export function syncToCloud(project) {
   debounceTimers[project.id] = setTimeout(async () => {
     delete debounceTimers[project.id];
 
-    if (!navigator.onLine || !auth.currentUser) {
+    if (!auth.currentUser) {
+      setSyncState('synced');
+      return;
+    }
+
+    if (!canSyncToCloud()) {
       await addToQueue('save', project.id, project);
       return;
     }
@@ -200,7 +222,12 @@ export function syncToCloud(project) {
  * Sync a delete operation to cloud
  */
 export async function syncDeleteToCloud(projectId) {
-  if (!navigator.onLine || !auth.currentUser) {
+  if (!auth.currentUser) {
+    setSyncState('synced');
+    return true;
+  }
+
+  if (!canSyncToCloud()) {
     await addToQueue('delete', projectId, null);
     return false;
   }
@@ -222,7 +249,7 @@ export async function syncDeleteToCloud(projectId) {
  * Cloud wins on conflict (by updated_at timestamp)
  */
 export async function pullFromCloud() {
-  if (!navigator.onLine || !auth.currentUser) return null;
+  if (!canSyncToCloud()) return null;
 
   setSyncState('syncing');
 
