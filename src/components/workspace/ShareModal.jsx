@@ -8,6 +8,20 @@ import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const toBase64 = (bufferLike) => {
+  const bytes = bufferLike instanceof Uint8Array ? bufferLike : new Uint8Array(bufferLike);
+  const chunkSize = 0x8000;
+  let binary = '';
+
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+
+  return btoa(binary);
+};
+
 const ShareModal = ({ isOpen, onClose, projectInfo, boqData, calculateGrandTotal }) => {
   const toast = useToast();
   const [emailConfig, setEmailConfig] = useState({ recipient: '', includePDF: true, includeExcel: false });
@@ -37,9 +51,27 @@ const ShareModal = ({ isOpen, onClose, projectInfo, boqData, calculateGrandTotal
   };
 
   const handleEmailReport = async () => {
+    const recipient = emailConfig.recipient.trim();
+
+    if (!EMAIL_REGEX.test(recipient)) {
+      toast.error('Enter a valid email address before sending.');
+      return;
+    }
+
+    if (!emailConfig.includePDF && !emailConfig.includeExcel) {
+      toast.error('Select at least one attachment to send.');
+      return;
+    }
+
+    if (!boqData.length) {
+      toast.error('There is no BOQ data to send yet.');
+      return;
+    }
+
     setIsSending(true);
     try {
       const attachments = [];
+      const safeProjectTitle = (projectInfo.title || 'BOQ_Report').replace(/[^\w.-]+/g, '_');
 
       if (emailConfig.includePDF) {
         const doc = new jsPDF();
@@ -77,9 +109,9 @@ const ShareModal = ({ isOpen, onClose, projectInfo, boqData, calculateGrandTotal
           styles: { fontSize: 8 }
         });
 
-        const pdfBase64 = doc.output('datauristring').split(',')[1];
+        const pdfBase64 = toBase64(doc.output('arraybuffer'));
         attachments.push({
-          filename: `${projectInfo.title}_BOQ.pdf`,
+          filename: `${safeProjectTitle}_BOQ.pdf`,
           content: pdfBase64
         });
       }
@@ -93,20 +125,20 @@ const ShareModal = ({ isOpen, onClose, projectInfo, boqData, calculateGrandTotal
           s.items.forEach(i => worksheet.addRow([i.description, i.unit, i.qty, i.rate, i.total]));
         });
         const buffer = await workbook.xlsx.writeBuffer();
-        const excelBase64 = btoa(new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+        const excelBase64 = toBase64(buffer);
         attachments.push({
-          filename: `${projectInfo.title}_BOQ.xlsx`,
+          filename: `${safeProjectTitle}_BOQ.xlsx`,
           content: excelBase64
         });
       }
 
-      const result = await sendReportEmail(emailConfig.recipient, {
+      const result = await sendReportEmail(recipient, {
         name: projectInfo.title,
         totalValue: calculateGrandTotal()
       }, attachments);
 
       if (result.success) {
-        toast.success(`Report emailed to ${emailConfig.recipient}`);
+        toast.success(`Report emailed to ${recipient}`);
         onClose();
         setEmailConfig({ recipient: '', includePDF: true, includeExcel: false });
       } else {
