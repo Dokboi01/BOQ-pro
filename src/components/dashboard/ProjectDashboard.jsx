@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useToast } from '../ui/ToastContext';
+import { useToast } from '../ui/useToast';
 import {
   BarChart3,
   TrendingUp,
@@ -51,27 +51,30 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
   const limits = PLAN_LIMITS[user?.plan] || PLAN_LIMITS[PLAN_NAMES.FREE];
   const isLimitReached = projects.length >= limits.maxProjects;
 
-  const filteredProjects = React.useMemo(() => {
-    let result = projects.filter(p => {
+  const filteredProjects = (() => {
+    const result = projects.filter(p => {
       const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesType = filterType === 'All' || p.type === filterType;
       return matchesSearch && matchesType;
     });
 
-    if (sortBy === 'newest') {
-      // Assuming project.date is sortable or created_at exists. If not, array order is usually newest first.
-      return result; 
-    } else if (sortBy === 'oldest') {
+    if (sortBy === 'oldest') {
       return [...result].reverse();
-    } else if (sortBy === 'value-high') {
-      return [...result].sort((a,b) => calculateTotal(b) - calculateTotal(a));
-    } else if (sortBy === 'value-low') {
-      return [...result].sort((a,b) => calculateTotal(a) - calculateTotal(b));
     }
-    return result;
-  }, [projects, searchQuery, filterType, sortBy]);
 
-  const costBreakdown = React.useMemo(() => {
+    if (sortBy === 'value-high') {
+      return [...result].sort((a, b) => calculateTotal(b) - calculateTotal(a));
+    }
+
+    if (sortBy === 'value-low') {
+      return [...result].sort((a, b) => calculateTotal(a) - calculateTotal(b));
+    }
+
+    // Default to the current array order, which is already newest-first in the app.
+    return result;
+  })();
+
+  const costBreakdown = (() => {
     if (projects.length === 0) return [];
     const activeProject = projects[0];
     if (!activeProject.sections) return [];
@@ -95,7 +98,7 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
       { label: 'Other Costs', amount: others, color: 'var(--accent-400)', percent: Math.round((others / total) * 100), trend: 'down' },
     ];
     return result;
-  }, [projects]);
+  })();
 
   const riskFlags = projects.length > 0 ? [
     { level: 'high', message: 'Material cost exceeds 65% of total — review supplier rates.', icon: ShieldAlert },

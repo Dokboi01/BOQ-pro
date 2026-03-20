@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Share2, X, MessageCircle, Copy, Smartphone, CheckCircle2, Mail as MailIcon 
 } from 'lucide-react';
-import { useToast } from '../ui/ToastContext';
+import { useToast } from '../ui/useToast';
 import { sendReportEmail, shareViaWhatsApp, shareViaNative, copyShareTextToClipboard } from '../../utils/emailService';
 import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';

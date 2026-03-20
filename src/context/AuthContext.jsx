@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { auth } from '../db/firebase';
 import {
     signInWithEmailAndPassword,
@@ -13,14 +13,7 @@ import {
 import { analytics } from '../db/firebase';
 import { logEvent as logAnalyticsEvent } from 'firebase/analytics';
 import { getProfile, updateProfile } from '../db/database';
-
-const AuthContext = createContext(null);
-
-export function useAuth() {
-    const ctx = useContext(AuthContext);
-    if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
-    return ctx;
-}
+import AuthContext from './auth-context';
 
 export function AuthProvider({ children }) {
     // Initialize from cache for instant UI
@@ -40,6 +33,11 @@ export function AuthProvider({ children }) {
     const [pendingUser, setPendingUser] = useState(null);
     const [selectedPlan, setSelectedPlan] = useState(null);
     const initializationComplete = useRef(false);
+    const userRef = useRef(initialUser);
+
+    useEffect(() => {
+        userRef.current = user;
+    }, [user]);
 
     // Auto-clear auth errors on view changes
     const navigateTo = (newView) => {
@@ -160,7 +158,7 @@ export function AuthProvider({ children }) {
 
         // Fallback timeout: only trigger if definitely not initialized AND no user detected
         const timer = setTimeout(() => {
-            if (!initializationComplete.current && !auth.currentUser && !user) {
+            if (!initializationComplete.current && !auth.currentUser && !userRef.current) {
                 console.warn('Initialization timed out - returning to landing');
                 setView('landing');
                 initializationComplete.current = true;
@@ -395,3 +393,5 @@ export function AuthProvider({ children }) {
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
+
+export default AuthProvider;

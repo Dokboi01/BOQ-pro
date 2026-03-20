@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { STRUCTURE_DATA } from '../data/structures';
 import { PLAN_LIMITS, PLAN_NAMES } from '../data/plans';
-import { useAuth } from './AuthContext';
-import { useToast } from '../components/ui/ToastContext';
+import { useAuth } from './useAuth';
+import { useToast } from '../components/ui/useToast';
 import {
     saveLocal,
     loadLocal,
@@ -18,14 +18,7 @@ import {
 } from '../db/syncEngine';
 import { subscribeToProject } from '../db/realtimeSync';
 import { logActivity } from '../db/collaborationService';
-
-const ProjectsContext = createContext(null);
-
-export function useProjects() {
-    const ctx = useContext(ProjectsContext);
-    if (!ctx) throw new Error('useProjects must be used within a ProjectsProvider');
-    return ctx;
-}
+import ProjectsContext from './projects-context';
 
 export function ProjectsProvider({ children }) {
     const { user, setView } = useAuth();
@@ -467,3 +460,5 @@ export function ProjectsProvider({ children }) {
 
     return <ProjectsContext.Provider value={value}>{children}</ProjectsContext.Provider>;
 }
+
+export default ProjectsProvider;

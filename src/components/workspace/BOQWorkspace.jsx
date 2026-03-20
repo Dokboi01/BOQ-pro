@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useToast } from '../ui/ToastContext';
+import { useToast } from '../ui/useToast';
 import RateAnalysisModal from './RateAnalysisModal';
 import GeometricCalculator from './GeometricCalculator';
 import BidManagerModal from './BidManagerModal';

@@ -1,7 +1,9 @@
 import React from 'react';
 import { ToastProvider } from './components/ui/ToastContext';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { ProjectsProvider, useProjects } from './context/ProjectsContext';
+import { AuthProvider } from './context/AuthContext';
+import { useAuth } from './context/useAuth';
+import { ProjectsProvider } from './context/ProjectsContext';
+import { useProjects } from './context/useProjects';
 import { analytics } from './db/firebase';
 import { logEvent } from 'firebase/analytics';
 import Hero from './components/landing/Hero';

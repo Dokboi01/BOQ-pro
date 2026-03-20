@@ -1,12 +1,5 @@
-import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
-
-const ToastContext = createContext(null);
-
-export const useToast = () => {
-    const ctx = useContext(ToastContext);
-    if (!ctx) throw new Error('useToast must be used within a ToastProvider');
-    return ctx;
-};
+import React, { useState, useCallback, useRef } from 'react';
+import ToastContext from './toast-context';
 
 const TOAST_ICONS = {
     success: '✅',
