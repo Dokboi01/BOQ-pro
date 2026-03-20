@@ -21,22 +21,23 @@ const getAIConfig = async () => {
     const dbProvider = await getSetting('preferred_ai_provider');
     const dbModel = await getSetting('openai_model');
     
-    // Default provider logic: 
-    // If user has chosen one, use it. 
-    // Otherwise, if OpenAI env key exists, use OpenAI. 
-    // Else fallback to Gemini.
-    const preferredProvider = dbProvider || (OPENAI_ENV_KEY ? 'openai' : 'gemini');
-    const preferredModel = dbModel || OPENAI_ENV_MODEL;
-    
-    // 2. Get API keys from database (takes priority over env)
     const dbGeminiKey = await getSetting('gemini_api_key');
     const dbOpenAIKey = await getSetting('openai_api_key');
+    const geminiKey = dbGeminiKey || GEMINI_ENV_KEY;
+    const openaiKey = dbOpenAIKey || OPENAI_ENV_KEY;
+
+    // OpenAI is the default provider. If its key is unavailable, fall back automatically.
+    const preferredProvider = dbProvider || 'openai';
+    const provider = preferredProvider === 'openai'
+        ? (openaiKey ? 'openai' : geminiKey ? 'gemini' : 'openai')
+        : (geminiKey ? 'gemini' : openaiKey ? 'openai' : 'gemini');
+    const preferredModel = dbModel || OPENAI_ENV_MODEL;
 
     const config = {
-        provider: preferredProvider,
+        provider,
         model: preferredModel,
-        geminiKey: dbGeminiKey || GEMINI_ENV_KEY,
-        openaiKey: dbOpenAIKey || OPENAI_ENV_KEY
+        geminiKey,
+        openaiKey
     };
 
     return config;

@@ -26,6 +26,7 @@ import {
   Calendar,
   User as UserIcon,
   Mail,
+  AlertCircle,
   ShieldCheck,
   LogOut,
   Settings as SettingsIcon,
@@ -77,7 +78,7 @@ function App() {
   // Consume contexts
   const {
     user, view, setView, authError, setAuthError,
-    pendingUser, selectedPlan,
+    pendingUser, selectedPlan, verificationEmailStatus,
     handleLogin, handleSignUp, handleResendCode,
     handleOnboardingComplete, handleSendMagicLink, handleSelectPlan, logout,
   } = useAuth();
@@ -141,8 +142,30 @@ function App() {
       <div style={{ borderRadius: '50%', background: 'rgba(37, 99, 235, 0.2)', padding: '20px', marginBottom: '10px' }}>
         <Mail size={48} className="text-accent" />
       </div>
-      <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>Check your inbox</h2>
-      <p style={{ color: '#94a3b8', maxWidth: '400px', lineHeight: 1.6 }}>We've sent a verification link to<br/><strong style={{ color: 'white' }}>{pendingUser?.email || user?.email}</strong>. Please click the link to activate your account.</p>
+      <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>
+        {verificationEmailStatus === 'failed' ? 'Verification email not sent yet' : 'Check your inbox'}
+      </h2>
+      <p style={{ color: '#94a3b8', maxWidth: '420px', lineHeight: 1.6 }}>
+        {verificationEmailStatus === 'failed'
+          ? <>Your account was created for <strong style={{ color: 'white' }}>{pendingUser?.email || user?.email}</strong>, but the verification email did not go out. Use <strong style={{ color: 'white' }}>Resend Email</strong> to try again.</>
+          : <>We've sent a verification link to<br/><strong style={{ color: 'white' }}>{pendingUser?.email || user?.email}</strong>. Please click the link to activate your account.</>}
+      </p>
+      {authError && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '0.75rem',
+          maxWidth: '460px',
+          padding: '0.875rem 1rem',
+          borderRadius: '14px',
+          background: 'rgba(248, 113, 113, 0.12)',
+          border: '1px solid rgba(248, 113, 113, 0.28)',
+          color: '#fecaca'
+        }}>
+          <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+          <span style={{ textAlign: 'left', lineHeight: 1.5 }}>{authError}</span>
+        </div>
+      )}
       <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
         <button onClick={handleResendCode} style={{ padding: '0.75rem 1.5rem', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontWeight: 600, cursor: 'pointer' }}>Resend Email</button>
         <button onClick={() => setView('login')} style={{ padding: '0.75rem 1.5rem', background: '#2563eb', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>Back to Login</button>

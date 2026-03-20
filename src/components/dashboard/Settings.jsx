@@ -31,8 +31,8 @@ const Settings = ({ user, onUpgrade }) => {
 
   const [apiKey, setApiKey] = useState('');
   const [openaiKey, setOpenaiKey] = useState('');
-  const [openaiModel, setOpenaiModel] = useState('gpt-4o');
-  const [aiProvider, setAiProvider] = useState('gemini');
+  const [openaiModel, setOpenaiModel] = useState(import.meta.env.VITE_OPENAI_MODEL || 'gpt-4o');
+  const [aiProvider, setAiProvider] = useState('openai');
   const [isSeeding, setIsSeeding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingOpenAI, setIsSavingOpenAI] = useState(false);
@@ -51,6 +51,7 @@ const Settings = ({ user, onUpgrade }) => {
       if (savedOpenAIKey) setOpenaiKey(savedOpenAIKey);
       if (savedModel) setOpenaiModel(savedModel);
       if (savedProvider) setAiProvider(savedProvider);
+      else setAiProvider('openai');
     };
     loadSettings();
   }, []);
@@ -229,7 +230,7 @@ const Settings = ({ user, onUpgrade }) => {
                   </div>
                   <div className="text-box">
                     <h4>Google Gemini AI</h4>
-                    <p>Powers AI Rate Analysis, Project Summaries, and Drawing Analysis.</p>
+                    <p>Fallback engine for AI Rate Analysis, Project Summaries, and Drawing Analysis.</p>
                   </div>
                   <div style={{ marginLeft: 'auto' }}>
                     <span style={{
@@ -257,8 +258,8 @@ const Settings = ({ user, onUpgrade }) => {
                     <Zap size={20} style={{ color: openaiKey || openaiConnected ? '#0284c7' : '#94a3b8' }} />
                   </div>
                   <div className="text-box">
-                    <h4>OpenAI (GPT-4o)</h4>
-                    <p>Alternative engine for Professional AI Insights and Vision Analysis.</p>
+                    <h4>OpenAI (Default)</h4>
+                    <p>Primary engine for Professional AI Insights and Vision Analysis in local and Vercel deployments.</p>
                   </div>
                   <div style={{ marginLeft: 'auto' }}>
                     <span style={{
@@ -296,10 +297,10 @@ const Settings = ({ user, onUpgrade }) => {
                     type="text"
                     value={openaiModel}
                     onChange={(e) => setOpenaiModel(e.target.value)}
-                    placeholder="gpt-4o, gpt-4-turbo, etc."
+                    placeholder="gpt-4o, gpt-4.1, etc."
                     className="settings-input"
                   />
-                  <p className="input-hint">Specify the OpenAI model version you want to use.</p>
+                  <p className="input-hint">Specify the OpenAI model version to use by default in local and Vercel environments.</p>
                 </div>
 
                 <div className="form-item mt-4">
@@ -309,8 +310,8 @@ const Settings = ({ user, onUpgrade }) => {
                     onChange={(e) => setAiProvider(e.target.value)}
                     className="settings-input"
                   >
-                    <option value="gemini">Google Gemini (Default)</option>
-                    <option value="openai">OpenAI GPT-4o</option>
+                    <option value="openai">OpenAI (Default)</option>
+                    <option value="gemini">Google Gemini (Fallback)</option>
                   </select>
                 </div>
 

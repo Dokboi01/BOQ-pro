@@ -1,75 +1,49 @@
 # BOQ Pro - Professional Bill of Quantities Management
 
-## 🚀 Live Demo
+## Live Demo
 
 [View Live Application](#) *(Link will be available after Vercel deployment)*
 
-## 📋 Overview
+## Overview
 
 BOQ Pro is a professional-grade Bill of Quantities management platform designed for civil engineering practitioners. Built with modern cloud infrastructure and premium UI/UX design.
 
 ### Key Features
 
-- ✅ **Cloud-Native Architecture** - Powered by Supabase for real-time data synchronization
-- ✅ **Premium Authentication** - Glassmorphism design with elegant verification flow
-- ✅ **Professional Price Intelligence** - Live market data and benchmark application
-- ✅ **Project Management** - Create, save, load, and delete projects with ease
-- ✅ **Material Library** - Cloud-synced benchmarks and market indices
-- ✅ **Export Capabilities** - Generate Excel and PDF reports
-- ✅ **Row Level Security** - Enterprise-grade data protection
+- Cloud-native architecture for project workflows
+- Professional authentication and verification flow
+- AI-assisted rate analysis, summaries, and drawing review
+- Project creation, storage, and collaboration tools
+- Export capabilities for Excel and PDF reports
+- Electron support for desktop packaging
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-- **Frontend**: React 19 + Vite
-- **Backend**: Supabase (PostgreSQL + Auth)
-- **UI**: Custom CSS with Glassmorphism
-- **Email**: Resend API for professional communications
-- **Desktop**: Electron support for cross-platform deployment
+- Frontend: React 19 + Vite
+- AI: OpenAI by default, Gemini as fallback
+- Email: Resend
+- Data: Firebase + local sync
+- Desktop: Electron
 
-## 🎨 UI Highlights
+## Deployment
 
-- Dark-themed premium interface
-- Responsive design for all devices
-- Smooth animations and micro-interactions
-- Inline error handling with professional feedback
-- Consultant-grade visual design
+This application is set up for GitHub to Vercel deployment. OpenAI is the default AI provider for deployed environments.
 
-## 📧 Email & Authentication
+### Vercel Environment Variables
 
-- Dual verification methods (Magic Link + 6-digit code)
-- Professional email branding
-- Rate limit handling and workarounds
-- Comprehensive setup documentation
+- `VITE_OPENAI_API_KEY` - Required. Primary AI provider for BOQ analysis and drawing workflows.
+- `VITE_OPENAI_MODEL` - Optional. Defaults to `gpt-4o`.
+- `VITE_GEMINI_API_KEY` - Optional. Used only as a fallback if OpenAI is unavailable.
+- `RESEND_API_KEY` - Required if you want report emails from the `/api/send-report` endpoint.
+- `RESEND_FROM_EMAIL` - Optional sender address for Resend.
 
-## 🔒 Security
+### Vercel Setup
 
-- Row Level Security (RLS) on all database tables
-- Secure session management
-- Environment variable protection
-- Professional-grade authentication flow
+1. Import the GitHub repository into Vercel.
+2. Add the environment variables above in the Vercel project settings.
+3. Redeploy the project so the new OpenAI defaults are available in production.
 
-## 🚀 Deployment
-
-This application is deployed on Vercel with automatic CI/CD from the main branch.
-
-### Environment Variables Required
-
-- `VITE_SUPABASE_URL` - Your Supabase project URL
-- `VITE_SUPABASE_ANON_KEY` - Your Supabase anonymous key
-
-## 💼 For Investors
-
-BOQ Pro represents a significant opportunity in the civil engineering software market:
-
-- **Market Need**: Traditional BOQ tools are outdated and lack cloud capabilities
-- **Modern Solution**: Cloud-native platform with professional UI/UX
-- **Scalability**: Built on Supabase infrastructure for unlimited growth
-- **Cross-Platform**: Web + Electron desktop app for maximum reach
-- **Professional Grade**: Enterprise-ready security and features
-
----
-
-## 📞 Contact
+## Contact
 
 For investment inquiries or technical questions, please reach out through the repository.
 
