@@ -47,6 +47,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
   const [viewMode, setViewMode] = useState('estimation');
   const [showStructuralAnalyzer, setShowStructuralAnalyzer] = useState(false);
   const [isNotesExpanded, setIsNotesExpanded] = useState(false);
+  const [showNotesPanel, setShowNotesPanel] = useState(false);
   const [isProjectNoteExpanded, setIsProjectNoteExpanded] = useState(() => Boolean(project?.notes?.trim()));
 
   // Collaboration state
@@ -62,10 +63,6 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
       setSections(project.sections);
     }
   }, [project]);
-
-  useEffect(() => {
-    setIsProjectNoteExpanded(Boolean(project?.notes?.trim()));
-  }, [project?.id]);
 
   // Presence subscription
   useEffect(() => {
@@ -553,89 +550,119 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         </table>
 
         {/* Professional Foldable Notes & Assumptions */}
-        <div className={`notes-accordion mt-6 ${isNotesExpanded ? 'expanded' : ''}`}>
-          <button
-            className="notes-header"
-            onClick={() => setIsNotesExpanded(!isNotesExpanded)}
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <ClipboardList size={18} className="text-blue-600" />
-              </div>
-              <h3 className="text-xs font-black uppercase tracking-widest text-slate-800">Project Notes & Assumptions</h3>
-            </div>
-            <div className={`chevron-wrap ${isNotesExpanded ? 'active' : ''}`}>
-              <ChevronDown size={20} className="chevron-icon" />
-            </div>
-          </button>
-
-          <div className="notes-content">
-            <div className="meta-grid">
-              <div className={`meta-col note-panel ${isProjectNoteExpanded ? 'expanded' : ''}`}>
-                <button
-                  type="button"
-                  className="note-panel-header"
-                  onClick={() => setIsProjectNoteExpanded(prev => !prev)}
-                  aria-expanded={isProjectNoteExpanded}
-                >
-                  <span className="note-panel-title">General Project Notes</span>
-                  <ChevronDown size={16} className="note-panel-chevron" />
-                </button>
-                <div className="note-panel-content">
-                  <textarea
-                    value={project?.notes || ''}
-                    onChange={(e) => onUpdate(project.id, sections, project.region, { notes: e.target.value })}
-                    placeholder="Add project specific instructions or contextual notes here..."
-                    rows={4}
-                  />
-                </div>
-              </div>
-              <div className="meta-col">
-                <label>Technical Assumptions</label>
-                <textarea
-                  value={project?.assumptions || ''}
-                  onChange={(e) => onUpdate(project.id, sections, project.region, { assumptions: e.target.value })}
-                  placeholder="State any technical assumptions (e.g. soil bearing capacity, material grades)..."
-                  rows={4}
-                />
-              </div>
-            </div>
-
-            <div className="meta-grid mt-6">
-              <div className="meta-col">
-                <label>Exclusions</label>
-                <textarea
-                  value={project?.exclusions || ''}
-                  onChange={(e) => onUpdate(project.id, sections, project.region, { exclusions: e.target.value })}
-                  placeholder="List items specifically excluded from this Bill of Quantities..."
-                  rows={4}
-                />
-              </div>
-              <div className="meta-col">
-                <div className="signatures-grid">
-                  <div className="sig-box">
-                    <span>Prepared By:</span>
-                    <input
-                      type="text"
-                      value={project?.preparedBy || ''}
-                      onChange={(e) => onUpdate(project.id, sections, project.region, { preparedBy: e.target.value })}
-                      placeholder="Engineer / QS Name"
-                    />
-                  </div>
-                  <div className="sig-box mt-4">
-                    <span>Checked By:</span>
-                    <input
-                      type="text"
-                      value={project?.checkedBy || ''}
-                      onChange={(e) => onUpdate(project.id, sections, project.region, { checkedBy: e.target.value })}
-                      placeholder="Reviewer / Principal"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
+        {!showNotesPanel ? (
+          <div className="notes-launcher-row mt-6">
+            <button
+              type="button"
+              className="notes-launcher-btn"
+              onClick={() => {
+                setShowNotesPanel(true);
+                setIsNotesExpanded(true);
+              }}
+            >
+              <ClipboardList size={15} />
+              Project Notes
+            </button>
           </div>
-        </div>
+        ) : (
+          <>
+            <div className="notes-panel-controls mt-6">
+              <button
+                type="button"
+                className="notes-hide-btn"
+                onClick={() => {
+                  setShowNotesPanel(false);
+                  setIsNotesExpanded(false);
+                }}
+              >
+                Hide Notes Panel
+              </button>
+            </div>
+            <div className={`notes-accordion ${isNotesExpanded ? 'expanded' : ''}`}>
+              <button
+                className="notes-header"
+                onClick={() => setIsNotesExpanded(!isNotesExpanded)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-50 rounded-lg">
+                    <ClipboardList size={18} className="text-blue-600" />
+                  </div>
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-800">Project Notes & Assumptions</h3>
+                </div>
+                <div className={`chevron-wrap ${isNotesExpanded ? 'active' : ''}`}>
+                  <ChevronDown size={20} className="chevron-icon" />
+                </div>
+              </button>
+
+              <div className="notes-content">
+                <div className="meta-grid">
+                  <div className={`meta-col note-panel ${isProjectNoteExpanded ? 'expanded' : ''}`}>
+                    <button
+                      type="button"
+                      className="note-panel-header"
+                      onClick={() => setIsProjectNoteExpanded(prev => !prev)}
+                      aria-expanded={isProjectNoteExpanded}
+                    >
+                      <span className="note-panel-title">General Project Notes</span>
+                      <ChevronDown size={16} className="note-panel-chevron" />
+                    </button>
+                    <div className="note-panel-content">
+                      <textarea
+                        value={project?.notes || ''}
+                        onChange={(e) => onUpdate(project.id, sections, project.region, { notes: e.target.value })}
+                        placeholder="Add project specific instructions or contextual notes here..."
+                        rows={4}
+                      />
+                    </div>
+                  </div>
+                  <div className="meta-col">
+                    <label>Technical Assumptions</label>
+                    <textarea
+                      value={project?.assumptions || ''}
+                      onChange={(e) => onUpdate(project.id, sections, project.region, { assumptions: e.target.value })}
+                      placeholder="State any technical assumptions (e.g. soil bearing capacity, material grades)..."
+                      rows={4}
+                    />
+                  </div>
+                </div>
+
+                <div className="meta-grid mt-6">
+                  <div className="meta-col">
+                    <label>Exclusions</label>
+                    <textarea
+                      value={project?.exclusions || ''}
+                      onChange={(e) => onUpdate(project.id, sections, project.region, { exclusions: e.target.value })}
+                      placeholder="List items specifically excluded from this Bill of Quantities..."
+                      rows={4}
+                    />
+                  </div>
+                  <div className="meta-col">
+                    <div className="signatures-grid">
+                      <div className="sig-box">
+                        <span>Prepared By:</span>
+                        <input
+                          type="text"
+                          value={project?.preparedBy || ''}
+                          onChange={(e) => onUpdate(project.id, sections, project.region, { preparedBy: e.target.value })}
+                          placeholder="Engineer / QS Name"
+                        />
+                      </div>
+                      <div className="sig-box mt-4">
+                        <span>Checked By:</span>
+                        <input
+                          type="text"
+                          value={project?.checkedBy || ''}
+                          onChange={(e) => onUpdate(project.id, sections, project.region, { checkedBy: e.target.value })}
+                          placeholder="Reviewer / Principal"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Modals */}
@@ -1296,11 +1323,62 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         }
 
         /* Notes Accordion */
+        .notes-launcher-row {
+          display: flex;
+          justify-content: flex-end;
+          margin: 0 1.5rem;
+        }
+
+        .notes-launcher-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.45rem;
+          border: 1px solid #cbd5e1;
+          border-radius: 999px;
+          background: #f8fafc;
+          color: #334155;
+          padding: 0.45rem 0.8rem;
+          font-size: 0.75rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .notes-launcher-btn:hover {
+          border-color: #93c5fd;
+          color: #1d4ed8;
+          background: #eff6ff;
+        }
+
+        .notes-panel-controls {
+          display: flex;
+          justify-content: flex-end;
+          margin: 0 1.5rem 0.5rem;
+        }
+
+        .notes-hide-btn {
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          background: #ffffff;
+          color: #475569;
+          padding: 0.35rem 0.65rem;
+          font-size: 0.75rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .notes-hide-btn:hover {
+          border-color: #cbd5e1;
+          background: #f8fafc;
+          color: #334155;
+        }
+
         .notes-accordion {
           background: white;
           border: 1px solid #e2e8f0;
           border-radius: 12px;
-          margin: 1.5rem;
+          margin: 0 1.5rem 1.5rem;
           box-shadow: 0 1px 3px rgba(0,0,0,0.05);
           overflow: hidden;
         }

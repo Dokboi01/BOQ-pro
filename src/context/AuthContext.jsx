@@ -30,7 +30,7 @@ export function AuthProvider({ children }) {
     if (cachedProfile) {
         try {
             initialUser = JSON.parse(cachedProfile);
-            initialView = 'landing';
+            initialView = initialUser?.is_onboarded === false ? 'onboarding' : 'app';
         } catch { /* ignore */ }
     }
 
@@ -103,7 +103,7 @@ export function AuthProvider({ children }) {
                         if (cachedUser.id === firebaseUser.uid) {
                             setUser(cachedUser);
                             initializationComplete.current = true;
-                            setView('landing');
+                            setView(cachedUser?.is_onboarded === false ? 'onboarding' : 'app');
                             // Silently refresh profile in background
                             hydrateProfile(firebaseUser);
                             return;
@@ -124,7 +124,7 @@ export function AuthProvider({ children }) {
                     initializationComplete.current = true;
 
                     if (profile && profile.is_onboarded) {
-                        setView('landing');
+                        setView('app');
                     } else {
                         setView('onboarding');
                     }
@@ -144,7 +144,7 @@ export function AuthProvider({ children }) {
 
                     // If we suspect they are already onboarded (or we just don't know), 
                     // prefer the landing page — user will navigate from there.
-                    setView('landing');
+                    setView('app');
                 }
             } else {
                 // User is signed out
