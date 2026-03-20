@@ -638,6 +638,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
       {/* Modals */}
       {analyzingItem && (
         <RateAnalysisModal
+          key={analyzingItem.item.id}
           item={analyzingItem.item}
           structureType={project?.type}
           onClose={() => setAnalyzingItem(null)}
@@ -646,6 +647,8 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
       )}
       {calculatingQtyForItem && (
         <GeometricCalculator
+          key={calculatingQtyForItem.item.id}
+          item={calculatingQtyForItem.item}
           onClose={() => setCalculatingQtyForItem(null)}
           onApply={(newQty) => {
             updateItem(calculatingQtyForItem.sectionId, calculatingQtyForItem.item.id, {
