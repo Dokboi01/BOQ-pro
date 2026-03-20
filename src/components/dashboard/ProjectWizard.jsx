@@ -5,13 +5,11 @@ import {
   ChevronLeft,
   CheckCircle2,
   Layers,
-  Sparkles,
   ClipboardList,
   MapPin,
-  Save,
-  ArrowRight
+  Save
 } from 'lucide-react';
-import { STRUCTURE_CATEGORIES, STRUCTURE_DATA } from '../../data/structures';
+import { STRUCTURE_DATA } from '../../data/structures';
 
 const ProjectWizard = ({ onSelect, onClose }) => {
   const [step, setStep] = useState(1);
@@ -21,7 +19,8 @@ const ProjectWizard = ({ onSelect, onClose }) => {
     region: 'Lagos',
     notes: '',
     assumptions: '',
-    exclusions: ''
+    exclusions: '',
+    isUnpricedTemplate: true
   });
 
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -71,7 +70,8 @@ const ProjectWizard = ({ onSelect, onClose }) => {
       sections: finalSections,
       notes: formData.notes,
       assumptions: formData.assumptions,
-      exclusions: formData.exclusions
+      exclusions: formData.exclusions,
+      isUnpricedTemplate: formData.isUnpricedTemplate
     };
     
     onSelect(config);
@@ -237,21 +237,38 @@ const ProjectWizard = ({ onSelect, onClose }) => {
     </div>
   );
 
-  // STEP 5: Materials & Rates Preview
+  // STEP 5: Pricing Setup
   const renderStep5 = () => (
     <div className="wizard-step view-fade-in">
       <div className="step-header">
         <button className="btn-back" onClick={handleBack}><ChevronLeft size={16} /> Back</button>
         <span className="step-number">Step 5 of 6</span>
-        <h3>Materials & Intelligence</h3>
-        <p>AI has pre-populated standard materials, benchmarking, and units based on your region ({formData.region}).</p>
+        <h3>Pricing Setup</h3>
+        <p>Your BOQ will load with a full item library for {formData.region}, but pricing will start from zero so you can enter your own rates.</p>
       </div>
 
       <div className="intelligence-preview">
-        <div className="intel-card">
-          <Sparkles className="text-accent" size={24} />
-          <h4>Smart Rate Mapping</h4>
-          <p>We've loaded initial rates for {selectedSections.length} sections from our central Rate Library. You can further adjust quantities and unit prices in the BOQ editor.</p>
+        <div className="intel-card pricing-card">
+          <div className="pricing-card-icon">
+            <ClipboardList className="text-accent" size={24} />
+          </div>
+          <span className="mode-badge">Default Mode</span>
+          <h4>Unpriced BOQ Template</h4>
+          <p>All selected sections, quantities, units, subcategories, and materials stay in place. Only rates and benchmarks are cleared so the estimate is priced by the user inside the workspace.</p>
+          <div className="pricing-highlights">
+            <div className="pricing-highlight">
+              <strong>{selectedSections.length}</strong>
+              <span>sections included</span>
+            </div>
+            <div className="pricing-highlight">
+              <strong>0.00</strong>
+              <span>starting rate</span>
+            </div>
+            <div className="pricing-highlight">
+              <strong>User</strong>
+              <span>controls pricing</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -286,6 +303,7 @@ const ProjectWizard = ({ onSelect, onClose }) => {
           <div className="summary-row"><span>Category:</span> <strong>{selectedCategory}</strong></div>
           <div className="summary-row"><span>Subtype:</span> <strong>{selectedSubtype}</strong></div>
           <div className="summary-row"><span>BOQ Sections:</span> <strong>{selectedSections.length} selected</strong></div>
+          <div className="summary-row"><span>Pricing:</span> <strong>{formData.isUnpricedTemplate ? 'User-priced BOQ (rates start at 0)' : 'Starter rates included'}</strong></div>
         </div>
 
         <div className="form-group mt-4">
@@ -475,6 +493,53 @@ const ProjectWizard = ({ onSelect, onClose }) => {
         }
         .intel-card h4 { font-size: 1.25rem; color: var(--primary-900); }
         .intel-card p { font-size: 0.875rem; color: var(--primary-600); line-height: 1.6; max-width: 400px; }
+        .pricing-card {
+          background: linear-gradient(180deg, #f8fafc 0%, #eff6ff 100%);
+          border-color: #cbd5e1;
+        }
+        .pricing-card-icon {
+          width: 56px;
+          height: 56px;
+          border-radius: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(37, 99, 235, 0.08);
+        }
+        .mode-badge {
+          font-size: 0.6875rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          color: var(--accent-700);
+          background: rgba(37, 99, 235, 0.08);
+          padding: 0.35rem 0.65rem;
+          border-radius: 999px;
+        }
+        .pricing-highlights {
+          width: 100%;
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 0.75rem;
+          margin-top: 0.5rem;
+        }
+        .pricing-highlight {
+          padding: 0.85rem;
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.7);
+          border: 1px solid rgba(148, 163, 184, 0.25);
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+        }
+        .pricing-highlight strong {
+          font-size: 1rem;
+          color: var(--primary-900);
+        }
+        .pricing-highlight span {
+          font-size: 0.75rem;
+          color: var(--primary-500);
+        }
 
         /* Step 6: Summary */
         .summary-card { background: #f8fafc; border: 1px solid var(--border-light); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; flex: 1; }
@@ -510,6 +575,7 @@ const ProjectWizard = ({ onSelect, onClose }) => {
           .wizard-modal { height: 100vh; max-height: 100vh; border-radius: 0; }
           .wizard-content { padding: 1.5rem; }
           .checklist-grid { grid-template-columns: 1fr; }
+          .pricing-highlights { grid-template-columns: 1fr; }
         }
       `}</style>
     </div>

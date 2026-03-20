@@ -2,9 +2,19 @@
  * Email Service — Frontend client for the /api/send-report serverless function
  */
 
+function getSendReportUrl() {
+  const apiBase = import.meta.env.VITE_API_BASE_URL?.trim();
+
+  if (apiBase) {
+    return new URL('/api/send-report', apiBase).toString();
+  }
+
+  return '/api/send-report';
+}
+
 export async function sendReportEmail(to, projectInfo, attachments = []) {
   try {
-    const response = await fetch('/api/send-report', {
+    const response = await fetch(getSendReportUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -15,7 +25,14 @@ export async function sendReportEmail(to, projectInfo, attachments = []) {
       }),
     });
 
-    const data = await response.json();
+    const raw = await response.text();
+    let data = {};
+
+    try {
+      data = raw ? JSON.parse(raw) : {};
+    } catch {
+      data = { error: raw || 'Failed to send email' };
+    }
 
     if (!response.ok) {
       return { success: false, error: data.error || 'Failed to send email' };
@@ -24,9 +41,12 @@ export async function sendReportEmail(to, projectInfo, attachments = []) {
     return { success: true, id: data.id };
   } catch (err) {
     console.error('Email service error:', err);
+    const isLocalDev = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
     return {
       success: false,
-      error: 'Network error. Please check your connection and try again.',
+      error: isLocalDev
+        ? 'Email endpoint could not be reached from local dev. Set VITE_API_BASE_URL to your deployed backend URL or run the app from its deployed host.'
+        : 'Network error. Please check your connection and try again.',
     };
   }
 }

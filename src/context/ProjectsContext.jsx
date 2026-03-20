@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { STRUCTURE_DATA } from '../data/structures';
 import { PLAN_LIMITS, PLAN_NAMES } from '../data/plans';
-import { useAuth } from './AuthContext';
-import { useToast } from '../components/ui/ToastContext';
+import { useAuth } from './useAuth';
+import { useToast } from '../components/ui/useToast';
 import {
     saveLocal,
     loadLocal,
@@ -18,14 +18,7 @@ import {
 } from '../db/syncEngine';
 import { subscribeToProject } from '../db/realtimeSync';
 import { logActivity } from '../db/collaborationService';
-
-const ProjectsContext = createContext(null);
-
-export function useProjects() {
-    const ctx = useContext(ProjectsContext);
-    if (!ctx) throw new Error('useProjects must be used within a ProjectsProvider');
-    return ctx;
-}
+import ProjectsContext from './projects-context';
 
 export function ProjectsProvider({ children }) {
     const { user, setView } = useAuth();
@@ -169,6 +162,36 @@ export function ProjectsProvider({ children }) {
         setShowSelector(true);
     };
 
+    const buildProjectSections = useCallback((sections = [], { unpriced = true } = {}) => {
+        return sections.map(section => ({
+            id: Math.random().toString(36).substr(2, 9),
+            title: section.title,
+            expanded: true,
+            items: (section.items || []).map(item => {
+                const qty = Number(item.qty) || 0;
+                const templateRate = Number(item.rate) || 0;
+                const templateBenchmark = Number(item.benchmark) || templateRate || 0;
+                const initialRate = unpriced ? 0 : templateRate;
+                const initialBenchmark = unpriced ? 0 : templateBenchmark;
+
+                return {
+                    id: Math.random().toString(36).substr(2, 9),
+                    description: item.description,
+                    subcategory: item.subcategory || '',
+                    materials: Array.isArray(item.materials) ? item.materials : [],
+                    unit: item.unit,
+                    qty,
+                    rate: initialRate,
+                    benchmark: initialBenchmark,
+                    useBenchmark: false,
+                    total: qty * initialRate,
+                    isVO: false,
+                    breakdown: item.breakdown || null
+                };
+            })
+        }));
+    }, []);
+
     const handleStructureSelect = async (structureId, structureName, manualSections = null) => {
         if (structureId === 'ai-analysis') {
             setShowSelector(false);
@@ -194,25 +217,7 @@ export function ProjectsProvider({ children }) {
             return;
         }
 
-        const processedSections = sectionsToProcess.map(section => ({
-            id: Math.random().toString(36).substr(2, 9),
-            title: section.title,
-            expanded: true,
-            items: (section.items || []).map(item => ({
-                id: Math.random().toString(36).substr(2, 9),
-                description: item.description,
-                subcategory: item.subcategory || '',
-                materials: Array.isArray(item.materials) ? item.materials : [],
-                unit: item.unit,
-                qty: item.qty || 0,
-                rate: item.rate || 0,
-                benchmark: item.benchmark || item.rate || 0,
-                useBenchmark: false,
-                total: (item.qty || 0) * (item.rate || 0),
-                isVO: false,
-                breakdown: item.breakdown || null
-            }))
-        }));
+        const processedSections = buildProjectSections(sectionsToProcess);
 
         const projectId = `local_${Date.now()}`;
         const newProj = {
@@ -222,7 +227,8 @@ export function ProjectsProvider({ children }) {
             status: 'Active',
             sections: processedSections,
             date: new Date().toLocaleDateString(),
-            region: 'Lagos'
+            region: 'Lagos',
+            pricingMode: 'user-entered'
         };
 
         setIsCreating(true);
@@ -251,25 +257,10 @@ export function ProjectsProvider({ children }) {
     };
 
     const handleCompleteWizard = async (projectConfig) => {
-        const processedSections = (projectConfig.sections || []).map(section => ({
-            id: Math.random().toString(36).substr(2, 9),
-            title: section.title,
-            expanded: true,
-            items: (section.items || []).map(item => ({
-                id: Math.random().toString(36).substr(2, 9),
-                description: item.description,
-                subcategory: item.subcategory || '',
-                materials: Array.isArray(item.materials) ? item.materials : [],
-                unit: item.unit,
-                qty: item.qty || 0,
-                rate: item.rate || 0,
-                benchmark: item.benchmark || item.rate || 0,
-                useBenchmark: false,
-                total: (item.qty || 0) * (item.rate || 0),
-                isVO: false,
-                breakdown: item.breakdown || null
-            }))
-        }));
+        const isUnpricedTemplate = projectConfig.isUnpricedTemplate !== false;
+        const processedSections = buildProjectSections(projectConfig.sections || [], {
+            unpriced: isUnpricedTemplate
+        });
 
         const projectId = `local_${Date.now()}`;
         const newProj = {
@@ -285,6 +276,7 @@ export function ProjectsProvider({ children }) {
             notes: projectConfig.notes || '',
             assumptions: projectConfig.assumptions || '',
             exclusions: projectConfig.exclusions || '',
+            pricingMode: isUnpricedTemplate ? 'user-entered' : 'template-rates',
             preparedBy: user?.displayName || user?.email || 'Engineer',
             checkedBy: ''
         };
@@ -468,3 +460,5 @@ export function ProjectsProvider({ children }) {
 
     return <ProjectsContext.Provider value={value}>{children}</ProjectsContext.Provider>;
 }
+
+export default ProjectsProvider;

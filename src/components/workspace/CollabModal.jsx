@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { inviteCollaborator, removeCollaborator } from '../../db/collaborationService';
-import { useToast } from '../ui/ToastContext';
+import { useToast } from '../ui/useToast';
 import { Users, UserPlus, X, Send } from 'lucide-react';
 
 const AVATAR_COLORS = ['#2563eb', '#7c3aed', '#db2777', '#ea580c', '#16a34a', '#0891b2'];

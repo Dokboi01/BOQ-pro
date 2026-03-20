@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { auth } from '../db/firebase';
 import {
     signInWithEmailAndPassword,
@@ -13,16 +13,12 @@ import {
 import { analytics } from '../db/firebase';
 import { logEvent as logAnalyticsEvent } from 'firebase/analytics';
 import { getProfile, updateProfile } from '../db/database';
-
-const AuthContext = createContext(null);
-
-export function useAuth() {
-    const ctx = useContext(AuthContext);
-    if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
-    return ctx;
-}
+import AuthContext from './auth-context';
+import { useToast } from '../components/ui/useToast';
 
 export function AuthProvider({ children }) {
+    const toast = useToast();
+
     // Initialize from cache for instant UI
     const cachedProfile = localStorage.getItem('boq_pro_profile');
     let initialUser = null;
@@ -39,11 +35,20 @@ export function AuthProvider({ children }) {
     const [authError, setAuthError] = useState(null);
     const [pendingUser, setPendingUser] = useState(null);
     const [selectedPlan, setSelectedPlan] = useState(null);
+    const [verificationEmailStatus, setVerificationEmailStatus] = useState('idle');
     const initializationComplete = useRef(false);
+    const userRef = useRef(initialUser);
+
+    useEffect(() => {
+        userRef.current = user;
+    }, [user]);
 
     // Auto-clear auth errors on view changes
     const navigateTo = (newView) => {
         setAuthError(null);
+        if (newView !== 'verification') {
+            setVerificationEmailStatus('idle');
+        }
         setView(newView);
     };
 
@@ -160,7 +165,7 @@ export function AuthProvider({ children }) {
 
         // Fallback timeout: only trigger if definitely not initialized AND no user detected
         const timer = setTimeout(() => {
-            if (!initializationComplete.current && !auth.currentUser && !user) {
+            if (!initializationComplete.current && !auth.currentUser && !userRef.current) {
                 console.warn('Initialization timed out - returning to landing');
                 setView('landing');
                 initializationComplete.current = true;
@@ -238,6 +243,7 @@ export function AuthProvider({ children }) {
 
     const handleSignUp = async (data) => {
         setAuthError(null);
+        setVerificationEmailStatus('idle');
         console.log('🚀 Attempting signup for:', data.email);
 
         try {
@@ -270,14 +276,18 @@ export function AuthProvider({ children }) {
             setPendingUser(result.user);
             initializationComplete.current = true; // ⚡ Prevent timeout on signup path
 
-            // Send verification email (non-blocking)
+            setView('verification');
+
             try {
                 await sendEmailVerification(result.user);
+                setVerificationEmailStatus('sent');
+                toast.success(`Verification email sent to ${result.user.email}.`);
             } catch (emailErr) {
                 console.warn('⚠️ Verification email failed:', emailErr.message);
+                setVerificationEmailStatus('failed');
+                setAuthError('Your account was created, but we could not send the verification email. Use "Resend Email" and try again in a moment.');
+                toast.error('Account created, but the verification email could not be sent.');
             }
-
-            setView('verification');
         } catch (error) {
             console.error('❌ Signup failed:', error.message);
             const messages = {
@@ -294,11 +304,16 @@ export function AuthProvider({ children }) {
         const targetUser = auth.currentUser || pendingUser;
         if (targetUser) {
             try {
+                setAuthError(null);
                 await sendEmailVerification(targetUser);
                 console.log('📧 Verification email resent to:', targetUser.email);
+                setVerificationEmailStatus('sent');
+                toast.success(`Verification email sent to ${targetUser.email}.`);
             } catch (err) {
                 console.error('❌ Failed to resend verification email:', err.message);
-                setAuthError('Failed to resend email. Please try again later.');
+                setVerificationEmailStatus('failed');
+                setAuthError('We could not send the verification email right now. Please try again later.');
+                toast.error('Verification email could not be sent.');
             }
         }
     };
@@ -379,6 +394,7 @@ export function AuthProvider({ children }) {
         user,
         setUser,
         pendingUser,
+        verificationEmailStatus,
         view,
         setView: navigateTo,
         authError,
@@ -395,3 +411,5 @@ export function AuthProvider({ children }) {
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
+
+export default AuthProvider;
