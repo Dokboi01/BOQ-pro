@@ -62,7 +62,7 @@ export const exportToExcel = async (projectInfo, boqData, isUnpriced, calculateG
         item.description,
         item.unit,
         item.qty,
-        isUnpriced ? '' : (item.useBenchmark ? item.benchmark : item.rate),
+        isUnpriced ? '' : (item.useBenchmark && item.qty ? (item.total / item.qty) : (item.useBenchmark ? item.benchmark : item.rate)),
         isUnpriced ? '' : item.total
       ]);
 
@@ -207,7 +207,7 @@ export const exportToPDF = (projectInfo, boqData, isUnpriced, calculateGrandTota
       { content: section.title.toUpperCase(), colSpan: 5, styles: { fontStyle: 'bold', fillColor: [241, 245, 249], textColor: [15, 23, 42] } }
     ]);
     section.items.forEach((item, idx) => {
-      const rate = item.useBenchmark ? item.benchmark : item.rate;
+      const rate = item.useBenchmark && item.qty ? (item.total / item.qty) : (item.useBenchmark ? item.benchmark : item.rate);
       tableData.push([
         { content: `${String.fromCharCode(65 + sIdx)}.${idx + 1}`, styles: { halign: 'center', fontSize: 7 } },
         item.description,

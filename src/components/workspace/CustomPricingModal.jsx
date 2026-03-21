@@ -1,0 +1,751 @@
+import React, { useMemo, useState } from 'react';
+import {
+  X,
+  SlidersHorizontal,
+  Package,
+  HardHat,
+  Wrench,
+  Truck,
+  ShieldCheck,
+  TrendingUp,
+  TrendingDown,
+  Calculator,
+  FileText
+} from 'lucide-react';
+import { getRegionalModifier } from '../../utils/aiService';
+
+const MONEY = new Intl.NumberFormat('en-NG', { maximumFractionDigits: 2 });
+const PERCENT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
+
+const WORK_TYPE_PROFILES = {
+  concrete: { shares: { materials: 0.58, labour: 0.18, plant: 0.14, transport: 0.10 }, waste: 2.5, siteAdjustment: 3, overheads: 12, profit: 10, roundingStep: 100 },
+  masonry: { shares: { materials: 0.61, labour: 0.22, plant: 0.05, transport: 0.12 }, waste: 3, siteAdjustment: 2, overheads: 12, profit: 12, roundingStep: 50 },
+  plastering: { shares: { materials: 0.55, labour: 0.27, plant: 0.04, transport: 0.14 }, waste: 5, siteAdjustment: 2, overheads: 10, profit: 15, roundingStep: 50 },
+  tiling: { shares: { materials: 0.64, labour: 0.22, plant: 0.02, transport: 0.12 }, waste: 7, siteAdjustment: 3, overheads: 10, profit: 15, roundingStep: 50 },
+  painting: { shares: { materials: 0.52, labour: 0.30, plant: 0.03, transport: 0.15 }, waste: 3, siteAdjustment: 2, overheads: 10, profit: 15, roundingStep: 50 },
+  formwork: { shares: { materials: 0.49, labour: 0.25, plant: 0.12, transport: 0.14 }, waste: 5, siteAdjustment: 3, overheads: 12, profit: 10, roundingStep: 100 },
+  reinforcement: { shares: { materials: 0.71, labour: 0.15, plant: 0.05, transport: 0.09 }, waste: 5, siteAdjustment: 3, overheads: 12, profit: 10, roundingStep: 100 },
+  roofing: { shares: { materials: 0.63, labour: 0.18, plant: 0.04, transport: 0.15 }, waste: 7, siteAdjustment: 4, overheads: 12, profit: 12, roundingStep: 100 },
+  pipework: { shares: { materials: 0.59, labour: 0.22, plant: 0.05, transport: 0.14 }, waste: 4, siteAdjustment: 3, overheads: 12, profit: 12, roundingStep: 100 },
+  plumbing: { shares: { materials: 0.61, labour: 0.20, plant: 0.04, transport: 0.15 }, waste: 4, siteAdjustment: 3, overheads: 10, profit: 12, roundingStep: 100 },
+  electrical: { shares: { materials: 0.68, labour: 0.18, plant: 0.03, transport: 0.11 }, waste: 4, siteAdjustment: 2, overheads: 10, profit: 12, roundingStep: 100 },
+  steelwork: { shares: { materials: 0.69, labour: 0.16, plant: 0.05, transport: 0.10 }, waste: 4, siteAdjustment: 4, overheads: 12, profit: 10, roundingStep: 100 },
+  roadwork: { shares: { materials: 0.47, labour: 0.14, plant: 0.23, transport: 0.16 }, waste: 5, siteAdjustment: 5, overheads: 15, profit: 10, roundingStep: 100 },
+  earthwork: { shares: { materials: 0.26, labour: 0.18, plant: 0.39, transport: 0.17 }, waste: 3, siteAdjustment: 5, overheads: 12, profit: 10, roundingStep: 100 },
+  general: { shares: { materials: 0.56, labour: 0.21, plant: 0.08, transport: 0.15 }, waste: 3, siteAdjustment: 3, overheads: 12, profit: 10, roundingStep: 100 }
+};
+
+const clamp = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const formatMoney = (value) => `NGN ${MONEY.format(clamp(value))}`;
+
+const inferWorkType = (description = '') => {
+  const text = String(description).toLowerCase();
+  if (/paint|emulsion|satin/.test(text)) return 'painting';
+  if (/tile|terrazzo|granite tile|ceramic/.test(text)) return 'tiling';
+  if (/plaster|render|screed/.test(text)) return 'plastering';
+  if (/block|masonry|sandcrete|brick/.test(text)) return 'masonry';
+  if (/formwork|shuttering|falsework/.test(text)) return 'formwork';
+  if (/rebar|reinforcement|brc mesh|high yield/.test(text)) return 'reinforcement';
+  if (/roof|sheet|truss|purlin/.test(text)) return 'roofing';
+  if (/pipe|drain|culvert|sewer/.test(text)) return 'pipework';
+  if (/plumb|sanitary|water supply/.test(text)) return 'plumbing';
+  if (/electrical|cable|conduit|lighting/.test(text)) return 'electrical';
+  if (/steel|fabricat|weld|portal frame|i-beam/.test(text)) return 'steelwork';
+  if (/road|asphalt|kerb|paving/.test(text)) return 'roadwork';
+  if (/excavat|backfill|earthwork/.test(text)) return 'earthwork';
+  if (/concrete|slab|beam|column|foundation|pile|abutment/.test(text)) return 'concrete';
+  return 'general';
+};
+
+const getLineTotal = (category, row) => {
+  if (category === 'materials') {
+    return clamp(row.qty) * clamp(row.rate);
+  }
+  if (category === 'labour' || category === 'plant') {
+    return (clamp(row.qty) * clamp(row.rate)) / Math.max(clamp(row.output) || 1, 0.001);
+  }
+  return clamp(row.qty) * clamp(row.rate);
+};
+
+const buildSummary = (pricing) => {
+  const materialBase = clamp(pricing.materialsCost);
+  const labourBase = clamp(pricing.labourCost);
+  const plantBase = clamp(pricing.plantCost);
+  const transportBase = clamp(pricing.transportCost);
+  const directCost = materialBase + labourBase + plantBase + transportBase;
+  const wasteValue = materialBase * (clamp(pricing.wastePercent) / 100);
+  const siteValue = (directCost + wasteValue) * (clamp(pricing.siteAdjustmentPercent) / 100);
+  const subtotalBeforeOverheads = directCost + wasteValue + siteValue;
+  const overheadValue = subtotalBeforeOverheads * (clamp(pricing.overheadsPercent) / 100);
+  const subtotalBeforeProfit = subtotalBeforeOverheads + overheadValue;
+  const profitValue = subtotalBeforeProfit * (clamp(pricing.profitPercent) / 100);
+  const rawRate = subtotalBeforeProfit + profitValue;
+  const roundingStep = Math.max(clamp(pricing.roundingStep), 0);
+  const finalRate = roundingStep > 0 ? Math.ceil(rawRate / roundingStep) * roundingStep : rawRate;
+
+  return {
+    directCost,
+    wasteValue,
+    siteValue,
+    overheadValue,
+    profitValue,
+    rawRate,
+    finalRate
+  };
+};
+
+const seedFromReference = (referenceRate, profile) => {
+  const defaults = {
+    wastePercent: profile.waste,
+    siteAdjustmentPercent: profile.siteAdjustment,
+    overheadsPercent: profile.overheads,
+    profitPercent: profile.profit,
+    roundingStep: profile.roundingStep,
+    pricingReference: '',
+    supplierQuote: '',
+    notes: ''
+  };
+
+  const baseDirect = Math.max(referenceRate * 0.78, 0);
+  let seeded = {
+    ...defaults,
+    materialsCost: baseDirect * profile.shares.materials,
+    labourCost: baseDirect * profile.shares.labour,
+    plantCost: baseDirect * profile.shares.plant,
+    transportCost: baseDirect * profile.shares.transport
+  };
+
+  if (!referenceRate) {
+    return seeded;
+  }
+
+  for (let idx = 0; idx < 6; idx += 1) {
+    const current = buildSummary(seeded).finalRate || 1;
+    const scale = referenceRate / current;
+    seeded = {
+      ...seeded,
+      materialsCost: seeded.materialsCost * scale,
+      labourCost: seeded.labourCost * scale,
+      plantCost: seeded.plantCost * scale,
+      transportCost: seeded.transportCost * scale
+    };
+  }
+
+  return seeded;
+};
+
+const seedFromBreakdown = (item, profile) => {
+  const breakdown = item?.breakdown || {};
+  const materialRows = breakdown.materials || [];
+
+  const materialBase = materialRows.reduce((sum, row) => sum + getLineTotal('materials', row), 0);
+  const wastePercent = materialRows.length > 0
+    ? materialRows.reduce((sum, row) => sum + clamp(row.waste), 0) / materialRows.length
+    : profile.waste;
+
+  return {
+    materialsCost: materialBase,
+    labourCost: (breakdown.labor || []).reduce((sum, row) => sum + getLineTotal('labour', row), 0),
+    plantCost: (breakdown.plant || []).reduce((sum, row) => sum + getLineTotal('plant', row), 0),
+    transportCost: (breakdown.transport || []).reduce((sum, row) => sum + getLineTotal('transport', row), 0),
+    wastePercent,
+    siteAdjustmentPercent: profile.siteAdjustment,
+    overheadsPercent: breakdown.overheads ?? profile.overheads,
+    profitPercent: breakdown.profit ?? profile.profit,
+    roundingStep: profile.roundingStep,
+    pricingReference: 'Imported from detailed rate build-up',
+    supplierQuote: '',
+    notes: ''
+  };
+};
+
+const normalizeSavedPricing = (pricing, profile) => ({
+  materialsCost: clamp(pricing.materialsCost),
+  labourCost: clamp(pricing.labourCost),
+  plantCost: clamp(pricing.plantCost),
+  transportCost: clamp(pricing.transportCost),
+  wastePercent: clamp(pricing.wastePercent ?? profile.waste),
+  siteAdjustmentPercent: clamp(pricing.siteAdjustmentPercent ?? profile.siteAdjustment),
+  overheadsPercent: clamp(pricing.overheadsPercent ?? profile.overheads),
+  profitPercent: clamp(pricing.profitPercent ?? profile.profit),
+  roundingStep: clamp(pricing.roundingStep ?? profile.roundingStep),
+  pricingReference: pricing.pricingReference || '',
+  supplierQuote: pricing.supplierQuote || '',
+  notes: pricing.notes || ''
+});
+
+const buildSeedState = (item, region) => {
+  const workType = inferWorkType(item?.description);
+  const profile = WORK_TYPE_PROFILES[workType] || WORK_TYPE_PROFILES.general;
+  const benchmarkRate = clamp(item?.benchmark) * getRegionalModifier(region);
+  const currentRate = !item?.useBenchmark ? clamp(item?.rate) : benchmarkRate;
+  const referenceRate = currentRate || benchmarkRate || 0;
+
+  if (item?.customPricing) {
+    return {
+      workType,
+      benchmarkRate,
+      pricing: normalizeSavedPricing(item.customPricing, profile)
+    };
+  }
+
+  if (item?.breakdown) {
+    return {
+      workType,
+      benchmarkRate,
+      pricing: seedFromBreakdown(item, profile)
+    };
+  }
+
+  return {
+    workType,
+    benchmarkRate,
+    pricing: seedFromReference(referenceRate, profile)
+  };
+};
+
+const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnalysis }) => {
+  const seeded = useMemo(() => buildSeedState(item, region), [item, region]);
+  const [pricing, setPricing] = useState(seeded.pricing);
+
+  React.useEffect(() => {
+    setPricing(seeded.pricing);
+  }, [seeded]);
+
+  const quantity = Math.max(clamp(item?.qty), 0);
+  const currentRate = item?.useBenchmark ? seeded.benchmarkRate : clamp(item?.rate);
+  const summary = useMemo(() => buildSummary(pricing), [pricing]);
+  const totalAmount = summary.finalRate * quantity;
+  const benchmarkDelta = seeded.benchmarkRate > 0 ? summary.finalRate - seeded.benchmarkRate : 0;
+  const benchmarkDeltaPercent = seeded.benchmarkRate > 0
+    ? (benchmarkDelta / seeded.benchmarkRate) * 100
+    : null;
+
+  const varianceTone = benchmarkDeltaPercent == null
+    ? 'neutral'
+    : Math.abs(benchmarkDeltaPercent) <= 8
+      ? 'aligned'
+      : benchmarkDeltaPercent > 0
+        ? 'high'
+        : 'low';
+
+  const updateNumber = (field, value) => {
+    setPricing((prev) => ({ ...prev, [field]: Math.max(clamp(value), 0) }));
+  };
+
+  const updateText = (field, value) => {
+    setPricing((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const resetToReference = () => {
+    const profile = WORK_TYPE_PROFILES[seeded.workType] || WORK_TYPE_PROFILES.general;
+    const referenceRate = currentRate || seeded.benchmarkRate || 0;
+    setPricing(seedFromReference(referenceRate, profile));
+  };
+
+  const importFromBreakdown = () => {
+    const profile = WORK_TYPE_PROFILES[seeded.workType] || WORK_TYPE_PROFILES.general;
+    setPricing(seedFromBreakdown(item, profile));
+  };
+
+  return (
+    <div className="custom-pricing-overlay" onClick={onClose}>
+      <div className="custom-pricing-modal" onClick={(event) => event.stopPropagation()}>
+        <header className="custom-pricing-header">
+          <div>
+            <div className="custom-pricing-badge">Custom Pricing Studio</div>
+            <h3>{item.description}</h3>
+            <p>
+              Build a company-ready custom rate for {quantity.toLocaleString()} {item.unit}.
+            </p>
+          </div>
+          <button className="custom-pricing-close" onClick={onClose}>
+            <X size={18} />
+          </button>
+        </header>
+
+        <div className="custom-pricing-toolbar">
+          <span className="custom-chip">
+            <ShieldCheck size={14} />
+            Work type: {seeded.workType}
+          </span>
+          <span className="custom-chip">
+            <FileText size={14} />
+            Current rate: {formatMoney(currentRate)} / {item.unit}
+          </span>
+          <span className="custom-chip">
+            <TrendingUp size={14} />
+            Benchmark: {seeded.benchmarkRate ? `${formatMoney(seeded.benchmarkRate)} / ${item.unit}` : 'Not available yet'}
+          </span>
+        </div>
+
+        <div className="custom-pricing-content">
+          <section className="custom-pricing-form">
+            <div className="custom-section-card">
+              <div className="custom-section-head">
+                <div>
+                  <span className="section-kicker">Step 1</span>
+                  <h4>Direct Cost Build</h4>
+                </div>
+                <SlidersHorizontal size={18} />
+              </div>
+              <div className="custom-grid two-up">
+                <label className="custom-field">
+                  <span><Package size={14} /> Materials per {item.unit}</span>
+                  <input type="number" value={pricing.materialsCost || ''} onChange={(event) => updateNumber('materialsCost', event.target.value)} />
+                </label>
+                <label className="custom-field">
+                  <span><HardHat size={14} /> Labour per {item.unit}</span>
+                  <input type="number" value={pricing.labourCost || ''} onChange={(event) => updateNumber('labourCost', event.target.value)} />
+                </label>
+                <label className="custom-field">
+                  <span><Wrench size={14} /> Plant per {item.unit}</span>
+                  <input type="number" value={pricing.plantCost || ''} onChange={(event) => updateNumber('plantCost', event.target.value)} />
+                </label>
+                <label className="custom-field">
+                  <span><Truck size={14} /> Transport per {item.unit}</span>
+                  <input type="number" value={pricing.transportCost || ''} onChange={(event) => updateNumber('transportCost', event.target.value)} />
+                </label>
+              </div>
+            </div>
+
+            <div className="custom-section-card">
+              <div className="custom-section-head">
+                <div>
+                  <span className="section-kicker">Step 2</span>
+                  <h4>Commercial Adjustments</h4>
+                </div>
+                <TrendingUp size={18} />
+              </div>
+              <div className="custom-grid two-up">
+                <label className="custom-field">
+                  <span>Material waste %</span>
+                  <input type="number" value={pricing.wastePercent || ''} onChange={(event) => updateNumber('wastePercent', event.target.value)} />
+                </label>
+                <label className="custom-field">
+                  <span>Site difficulty %</span>
+                  <input type="number" value={pricing.siteAdjustmentPercent || ''} onChange={(event) => updateNumber('siteAdjustmentPercent', event.target.value)} />
+                </label>
+                <label className="custom-field">
+                  <span>Overheads %</span>
+                  <input type="number" value={pricing.overheadsPercent || ''} onChange={(event) => updateNumber('overheadsPercent', event.target.value)} />
+                </label>
+                <label className="custom-field">
+                  <span>Profit %</span>
+                  <input type="number" value={pricing.profitPercent || ''} onChange={(event) => updateNumber('profitPercent', event.target.value)} />
+                </label>
+                <label className="custom-field">
+                  <span>Round up to nearest</span>
+                  <input type="number" value={pricing.roundingStep || ''} onChange={(event) => updateNumber('roundingStep', event.target.value)} />
+                </label>
+              </div>
+            </div>
+
+            <div className="custom-section-card">
+              <div className="custom-section-head">
+                <div>
+                  <span className="section-kicker">Step 3</span>
+                  <h4>Reference & Notes</h4>
+                </div>
+                <FileText size={18} />
+              </div>
+              <div className="custom-grid">
+                <label className="custom-field">
+                  <span>Pricing reference</span>
+                  <input type="text" value={pricing.pricingReference} onChange={(event) => updateText('pricingReference', event.target.value)} placeholder="Supplier quote, old job, market call..." />
+                </label>
+                <label className="custom-field">
+                  <span>Supplier / quote ref</span>
+                  <input type="text" value={pricing.supplierQuote} onChange={(event) => updateText('supplierQuote', event.target.value)} placeholder="Vendor name or quote number" />
+                </label>
+                <label className="custom-field custom-field-full">
+                  <span>Pricing note</span>
+                  <textarea value={pricing.notes} onChange={(event) => updateText('notes', event.target.value)} rows={4} placeholder="Explain the basis for this custom rate, special access constraints, wastage assumptions, or negotiated terms." />
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <aside className="custom-pricing-summary">
+            <div className="summary-card spotlight">
+              <span className="summary-eyebrow">Computed Custom Rate</span>
+              <div className="summary-amount">{formatMoney(summary.finalRate)}</div>
+              <div className="summary-subtext">
+                {quantity.toLocaleString()} x {formatMoney(summary.finalRate)} = {formatMoney(totalAmount)}
+              </div>
+            </div>
+
+            <div className={`summary-card variance-card ${varianceTone}`}>
+              <span className="summary-eyebrow">Market Comparison</span>
+              {benchmarkDeltaPercent == null ? (
+                <div className="variance-copy">No benchmark has been assigned to this item yet.</div>
+              ) : (
+                <>
+                  <div className="variance-value">
+                    {benchmarkDelta >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                    {benchmarkDelta >= 0 ? '+' : ''}{PERCENT.format(benchmarkDeltaPercent)}%
+                  </div>
+                  <div className="variance-copy">
+                    {benchmarkDelta >= 0 ? 'Above' : 'Below'} market by {formatMoney(Math.abs(benchmarkDelta))} per {item.unit}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="summary-card">
+              <span className="summary-eyebrow">Rate Formula</span>
+              <div className="formula-list">
+                <div><span>Direct cost</span><strong>{formatMoney(summary.directCost)}</strong></div>
+                <div><span>Waste</span><strong>{formatMoney(summary.wasteValue)}</strong></div>
+                <div><span>Site difficulty</span><strong>{formatMoney(summary.siteValue)}</strong></div>
+                <div><span>Overheads</span><strong>{formatMoney(summary.overheadValue)}</strong></div>
+                <div><span>Profit</span><strong>{formatMoney(summary.profitValue)}</strong></div>
+                <div className="formula-total"><span>Raw rate</span><strong>{formatMoney(summary.rawRate)}</strong></div>
+              </div>
+            </div>
+
+            <div className="summary-card">
+              <span className="summary-eyebrow">Useful Actions</span>
+              <div className="summary-actions">
+                <button className="summary-action-btn" onClick={resetToReference}>
+                  Reset from current rate
+                </button>
+                {item?.breakdown && (
+                  <button className="summary-action-btn" onClick={importFromBreakdown}>
+                    Import from rate build-up
+                  </button>
+                )}
+                <button className="summary-action-btn summary-action-btn-primary" onClick={onOpenDetailedAnalysis}>
+                  <Calculator size={15} />
+                  Open detailed rate analysis
+                </button>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <footer className="custom-pricing-footer">
+          <button className="custom-footer-btn secondary" onClick={onClose}>Cancel</button>
+          <button
+            className="custom-footer-btn primary"
+            onClick={() => onSave(summary.finalRate, {
+              ...pricing,
+              workType: seeded.workType,
+              benchmarkRate: seeded.benchmarkRate,
+              rawRate: summary.rawRate,
+              finalRate: summary.finalRate
+            })}
+          >
+            Apply custom pricing
+          </button>
+        </footer>
+      </div>
+
+      <style jsx="true">{`
+        .custom-pricing-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(15, 23, 42, 0.68);
+          backdrop-filter: blur(10px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1rem;
+          z-index: 1200;
+        }
+        .custom-pricing-modal {
+          width: min(1180px, 100%);
+          max-height: calc(100vh - 2rem);
+          overflow: auto;
+          background: #f8fafc;
+          border-radius: 24px;
+          box-shadow: 0 32px 80px rgba(15, 23, 42, 0.35);
+        }
+        .custom-pricing-header {
+          display: flex;
+          justify-content: space-between;
+          gap: 1rem;
+          padding: 1.5rem 1.75rem 1rem;
+          background: linear-gradient(135deg, #0f172a, #1d4ed8);
+          color: white;
+        }
+        .custom-pricing-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          font-size: 0.72rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          padding: 0.38rem 0.7rem;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.14);
+        }
+        .custom-pricing-header h3 {
+          margin: 0.55rem 0 0.35rem;
+          font-size: 1.35rem;
+          line-height: 1.3;
+        }
+        .custom-pricing-header p {
+          margin: 0;
+          color: rgba(255, 255, 255, 0.78);
+          font-size: 0.92rem;
+        }
+        .custom-pricing-close {
+          width: 36px;
+          height: 36px;
+          border-radius: 999px;
+          border: none;
+          background: rgba(255, 255, 255, 0.14);
+          color: white;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        }
+        .custom-pricing-toolbar {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.6rem;
+          padding: 1rem 1.75rem 0;
+        }
+        .custom-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.45rem;
+          padding: 0.55rem 0.8rem;
+          border-radius: 999px;
+          background: white;
+          border: 1px solid #dbeafe;
+          color: #1e3a8a;
+          font-size: 0.8rem;
+          font-weight: 700;
+        }
+        .custom-pricing-content {
+          display: grid;
+          grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr);
+          gap: 1rem;
+          padding: 1rem 1.75rem 1.5rem;
+        }
+        .custom-pricing-form,
+        .custom-pricing-summary {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+        .custom-section-card,
+        .summary-card {
+          background: white;
+          border: 1px solid #e2e8f0;
+          border-radius: 20px;
+          padding: 1rem;
+        }
+        .custom-section-head {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 1rem;
+          margin-bottom: 1rem;
+          color: #0f172a;
+        }
+        .section-kicker,
+        .summary-eyebrow {
+          display: block;
+          font-size: 0.68rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          color: #64748b;
+          margin-bottom: 0.3rem;
+        }
+        .custom-section-head h4 {
+          margin: 0;
+          font-size: 1rem;
+        }
+        .custom-grid {
+          display: grid;
+          gap: 0.85rem;
+        }
+        .custom-grid.two-up {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .custom-field {
+          display: flex;
+          flex-direction: column;
+          gap: 0.45rem;
+        }
+        .custom-field span {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          font-size: 0.78rem;
+          font-weight: 700;
+          color: #334155;
+        }
+        .custom-field input,
+        .custom-field textarea {
+          width: 100%;
+          border: 1px solid #cbd5e1;
+          border-radius: 12px;
+          padding: 0.78rem 0.9rem;
+          font-size: 0.9rem;
+          color: #0f172a;
+          background: #f8fafc;
+        }
+        .custom-field input:focus,
+        .custom-field textarea:focus {
+          outline: none;
+          border-color: #2563eb;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+          background: white;
+        }
+        .custom-field-full {
+          grid-column: 1 / -1;
+        }
+        .spotlight {
+          background: linear-gradient(135deg, #0f172a, #1d4ed8);
+          color: white;
+        }
+        .summary-amount {
+          font-size: 2rem;
+          font-weight: 900;
+          letter-spacing: -0.03em;
+        }
+        .summary-subtext {
+          margin-top: 0.35rem;
+          color: rgba(255, 255, 255, 0.76);
+          font-size: 0.86rem;
+        }
+        .variance-card.aligned {
+          border-color: #86efac;
+          background: #f0fdf4;
+        }
+        .variance-card.high {
+          border-color: #fdba74;
+          background: #fff7ed;
+        }
+        .variance-card.low {
+          border-color: #93c5fd;
+          background: #eff6ff;
+        }
+        .variance-card.neutral {
+          background: #f8fafc;
+        }
+        .variance-value {
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          font-size: 1.45rem;
+          font-weight: 900;
+          color: #0f172a;
+        }
+        .variance-copy {
+          margin-top: 0.35rem;
+          color: #475569;
+          font-size: 0.84rem;
+          line-height: 1.5;
+        }
+        .formula-list {
+          display: flex;
+          flex-direction: column;
+          gap: 0.6rem;
+        }
+        .formula-list div {
+          display: flex;
+          justify-content: space-between;
+          gap: 1rem;
+          font-size: 0.86rem;
+          color: #334155;
+        }
+        .formula-list strong {
+          color: #0f172a;
+        }
+        .formula-total {
+          padding-top: 0.6rem;
+          border-top: 1px dashed #cbd5e1;
+          font-weight: 800;
+        }
+        .summary-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 0.65rem;
+        }
+        .summary-action-btn {
+          width: 100%;
+          border: 1px solid #cbd5e1;
+          background: #f8fafc;
+          color: #0f172a;
+          border-radius: 12px;
+          padding: 0.8rem 0.9rem;
+          font-size: 0.84rem;
+          font-weight: 700;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.45rem;
+        }
+        .summary-action-btn-primary {
+          background: #eff6ff;
+          border-color: #93c5fd;
+          color: #1d4ed8;
+        }
+        .custom-pricing-footer {
+          display: flex;
+          justify-content: flex-end;
+          gap: 0.75rem;
+          padding: 1rem 1.75rem 1.5rem;
+          border-top: 1px solid #e2e8f0;
+          background: rgba(255, 255, 255, 0.92);
+        }
+        .custom-footer-btn {
+          border-radius: 999px;
+          padding: 0.82rem 1.2rem;
+          font-size: 0.88rem;
+          font-weight: 800;
+          cursor: pointer;
+          border: 1px solid transparent;
+        }
+        .custom-footer-btn.secondary {
+          background: white;
+          border-color: #cbd5e1;
+          color: #334155;
+        }
+        .custom-footer-btn.primary {
+          background: linear-gradient(135deg, #0f766e, #2563eb);
+          color: white;
+          box-shadow: 0 16px 30px rgba(37, 99, 235, 0.22);
+        }
+        @media (max-width: 960px) {
+          .custom-pricing-content {
+            grid-template-columns: 1fr;
+          }
+        }
+        @media (max-width: 640px) {
+          .custom-pricing-header,
+          .custom-pricing-toolbar,
+          .custom-pricing-content,
+          .custom-pricing-footer {
+            padding-left: 1rem;
+            padding-right: 1rem;
+          }
+          .custom-grid.two-up {
+            grid-template-columns: 1fr;
+          }
+          .custom-pricing-footer {
+            flex-direction: column;
+          }
+          .custom-footer-btn {
+            width: 100%;
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default CustomPricingModal;
