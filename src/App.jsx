@@ -35,7 +35,8 @@ import {
   Maximize2,
   Minimize2,
   Cloud,
-  RefreshCw
+  RefreshCw,
+  SlidersHorizontal
 } from 'lucide-react';
 
 // Class-based Error Boundary to catch render errors
@@ -89,9 +90,10 @@ function App() {
     showSelector, setShowSelector,
     showAnalyzer, setShowAnalyzer,
     isCreating, focusMode, setFocusMode,
+    workspaceIntent, clearWorkspaceIntent,
     calculateTotalValue,
     syncStatus, forceSync,
-    handleCreateProject, handleCompleteWizard, handleAnalysisComplete,
+    handleCreateProject, handleQuickCustomPricingTest, handleCompleteWizard, handleAnalysisComplete,
     handleUpdateProject, handleAddSection, handleDeleteSectionOrItem,
     handleDeleteProject,
   } = useProjects();
@@ -228,6 +230,8 @@ function App() {
             <BOQWorkspace
               key={activeProject.id}
               project={activeProject}
+              launchIntent={workspaceIntent}
+              onLaunchIntentHandled={clearWorkspaceIntent}
               onUpdate={handleUpdateProject}
               onAddSection={() => handleAddSection(activeProject.id)}
               onDelete={handleDeleteSectionOrItem}
@@ -327,6 +331,9 @@ function App() {
             )}
           </div>
           <div className="topbar-actions">
+            <button className="btn-secondary" onClick={handleQuickCustomPricingTest}>
+              <SlidersHorizontal size={16} /> Quick Test Pricing
+            </button>
             {activeTab === 'workspace' && (
               <button
                 className={`btn-focus ${focusMode ? 'active' : ''}`}

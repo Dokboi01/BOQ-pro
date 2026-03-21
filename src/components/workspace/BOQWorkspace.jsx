@@ -37,7 +37,7 @@ import {
   SlidersHorizontal
 } from 'lucide-react';
 
-const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) => {
+const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, onAddSection, onExport, onDelete }) => {
   const [sections, setSections] = useState(project?.sections || []);
   const [analyzingItem, setAnalyzingItem] = useState(null);
   const [customPricingItem, setCustomPricingItem] = useState(null);
@@ -112,6 +112,30 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
     const unsubActivity = subscribeToActivity(project.id, setActivityLog);
     return () => unsubActivity();
   }, [isCustomWorkspace, project?.id]);
+
+  useEffect(() => {
+    if (!launchIntent || launchIntent.type !== 'custom-pricing-test') return;
+    if (launchIntent.projectId !== project?.id) return;
+
+    const availableItems = (sections || []).flatMap((section) =>
+      (section.items || []).map((item) => ({ sectionId: section.id, item }))
+    );
+    const target = launchIntent.itemId
+      ? availableItems.find(({ item }) => item.id === launchIntent.itemId)
+      : availableItems[0];
+
+    const frameId = window.requestAnimationFrame(() => {
+      if (target) {
+        setCustomPricingItem(target);
+      } else {
+        toast.info('No item is available for the custom pricing test yet.');
+      }
+
+      onLaunchIntentHandled?.();
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [launchIntent, onLaunchIntentHandled, project?.id, sections, toast]);
 
   const getInitials = (name) => {
     if (!name) return '?';

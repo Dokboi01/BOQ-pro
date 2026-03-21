@@ -32,7 +32,20 @@ const WORK_TYPE_PROFILES = {
   steelwork: { shares: { materials: 0.69, labour: 0.16, plant: 0.05, transport: 0.10 }, waste: 4, siteAdjustment: 4, overheads: 12, profit: 10, roundingStep: 100 },
   roadwork: { shares: { materials: 0.47, labour: 0.14, plant: 0.23, transport: 0.16 }, waste: 5, siteAdjustment: 5, overheads: 15, profit: 10, roundingStep: 100 },
   earthwork: { shares: { materials: 0.26, labour: 0.18, plant: 0.39, transport: 0.17 }, waste: 3, siteAdjustment: 5, overheads: 12, profit: 10, roundingStep: 100 },
+  entranceworks: { shares: { materials: 0.66, labour: 0.16, plant: 0.04, transport: 0.14 }, waste: 4, siteAdjustment: 4, overheads: 12, profit: 12, roundingStep: 100 },
   general: { shares: { materials: 0.56, labour: 0.21, plant: 0.08, transport: 0.15 }, waste: 3, siteAdjustment: 3, overheads: 12, profit: 10, roundingStep: 100 }
+};
+
+const QUICK_PRESETS = {
+  backyardEntrance: {
+    key: 'backyardEntrance',
+    label: 'Backyard Entrance',
+    workType: 'entranceworks',
+    fallbackReferenceRate: 185000,
+    pricingReference: 'Backyard entrance preset',
+    supplierQuote: 'Gate frame, fittings and installation allowance',
+    notes: 'Allow for framed metal backyard entrance gate, hinges, latch set, holdfasts, fixing, touch-up painting, and minor concrete or blockwork to make good.'
+  }
 };
 
 const clamp = (value) => {
@@ -57,6 +70,7 @@ const inferWorkType = (description = '') => {
   if (/steel|fabricat|weld|portal frame|i-beam/.test(text)) return 'steelwork';
   if (/road|asphalt|kerb|paving/.test(text)) return 'roadwork';
   if (/excavat|backfill|earthwork/.test(text)) return 'earthwork';
+  if (/backyard|gate|entrance|wicket|fence gate|service gate/.test(text)) return 'entranceworks';
   if (/concrete|slab|beam|column|foundation|pile|abutment/.test(text)) return 'concrete';
   return 'general';
 };
@@ -98,8 +112,30 @@ const buildSummary = (pricing) => {
   };
 };
 
+const scaleSeedToReference = (seeded, referenceRate) => {
+  if (!referenceRate) {
+    return seeded;
+  }
+
+  let nextSeed = seeded;
+  for (let idx = 0; idx < 6; idx += 1) {
+    const current = buildSummary(nextSeed).finalRate || 1;
+    const scale = referenceRate / current;
+    nextSeed = {
+      ...nextSeed,
+      materialsCost: nextSeed.materialsCost * scale,
+      labourCost: nextSeed.labourCost * scale,
+      plantCost: nextSeed.plantCost * scale,
+      transportCost: nextSeed.transportCost * scale
+    };
+  }
+
+  return nextSeed;
+};
+
 const seedFromReference = (referenceRate, profile) => {
   const defaults = {
+    workType: 'general',
     wastePercent: profile.waste,
     siteAdjustmentPercent: profile.siteAdjustment,
     overheadsPercent: profile.overheads,
@@ -113,29 +149,13 @@ const seedFromReference = (referenceRate, profile) => {
   const baseDirect = Math.max(referenceRate * 0.78, 0);
   let seeded = {
     ...defaults,
-    materialsCost: baseDirect * profile.shares.materials,
-    labourCost: baseDirect * profile.shares.labour,
-    plantCost: baseDirect * profile.shares.plant,
-    transportCost: baseDirect * profile.shares.transport
+      materialsCost: baseDirect * profile.shares.materials,
+      labourCost: baseDirect * profile.shares.labour,
+      plantCost: baseDirect * profile.shares.plant,
+      transportCost: baseDirect * profile.shares.transport
   };
 
-  if (!referenceRate) {
-    return seeded;
-  }
-
-  for (let idx = 0; idx < 6; idx += 1) {
-    const current = buildSummary(seeded).finalRate || 1;
-    const scale = referenceRate / current;
-    seeded = {
-      ...seeded,
-      materialsCost: seeded.materialsCost * scale,
-      labourCost: seeded.labourCost * scale,
-      plantCost: seeded.plantCost * scale,
-      transportCost: seeded.transportCost * scale
-    };
-  }
-
-  return seeded;
+  return scaleSeedToReference(seeded, referenceRate);
 };
 
 const seedFromBreakdown = (item, profile) => {
@@ -148,6 +168,7 @@ const seedFromBreakdown = (item, profile) => {
     : profile.waste;
 
   return {
+    workType: inferWorkType(item?.description),
     materialsCost: materialBase,
     labourCost: (breakdown.labor || []).reduce((sum, row) => sum + getLineTotal('labour', row), 0),
     plantCost: (breakdown.plant || []).reduce((sum, row) => sum + getLineTotal('plant', row), 0),
@@ -163,7 +184,22 @@ const seedFromBreakdown = (item, profile) => {
   };
 };
 
+const seedFromPreset = (preset, referenceRate = 0) => {
+  const profile = WORK_TYPE_PROFILES[preset.workType] || WORK_TYPE_PROFILES.general;
+  const effectiveReference = referenceRate || preset.fallbackReferenceRate || 0;
+
+  const seeded = seedFromReference(effectiveReference, profile);
+  return {
+    ...seeded,
+    workType: preset.workType,
+    pricingReference: preset.pricingReference,
+    supplierQuote: preset.supplierQuote,
+    notes: preset.notes
+  };
+};
+
 const normalizeSavedPricing = (pricing, profile) => ({
+  workType: pricing.workType || 'general',
   materialsCost: clamp(pricing.materialsCost),
   labourCost: clamp(pricing.labourCost),
   plantCost: clamp(pricing.plantCost),
@@ -179,7 +215,7 @@ const normalizeSavedPricing = (pricing, profile) => ({
 });
 
 const buildSeedState = (item, region) => {
-  const workType = inferWorkType(item?.description);
+  const workType = item?.customPricing?.workType || inferWorkType(item?.description);
   const profile = WORK_TYPE_PROFILES[workType] || WORK_TYPE_PROFILES.general;
   const benchmarkRate = clamp(item?.benchmark) * getRegionalModifier(region);
   const currentRate = !item?.useBenchmark ? clamp(item?.rate) : benchmarkRate;
@@ -217,6 +253,7 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
   }, [seeded]);
 
   const quantity = Math.max(clamp(item?.qty), 0);
+  const activeWorkType = pricing.workType || seeded.workType;
   const currentRate = item?.useBenchmark ? seeded.benchmarkRate : clamp(item?.rate);
   const summary = useMemo(() => buildSummary(pricing), [pricing]);
   const totalAmount = summary.finalRate * quantity;
@@ -242,14 +279,25 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
   };
 
   const resetToReference = () => {
-    const profile = WORK_TYPE_PROFILES[seeded.workType] || WORK_TYPE_PROFILES.general;
+    const profile = WORK_TYPE_PROFILES[activeWorkType] || WORK_TYPE_PROFILES.general;
     const referenceRate = currentRate || seeded.benchmarkRate || 0;
-    setPricing(seedFromReference(referenceRate, profile));
+    setPricing({
+      ...seedFromReference(referenceRate, profile),
+      workType: activeWorkType
+    });
   };
 
   const importFromBreakdown = () => {
-    const profile = WORK_TYPE_PROFILES[seeded.workType] || WORK_TYPE_PROFILES.general;
-    setPricing(seedFromBreakdown(item, profile));
+    const profile = WORK_TYPE_PROFILES[activeWorkType] || WORK_TYPE_PROFILES.general;
+    setPricing({
+      ...seedFromBreakdown(item, profile),
+      workType: activeWorkType
+    });
+  };
+
+  const applyPreset = (preset) => {
+    const referenceRate = currentRate || seeded.benchmarkRate || 0;
+    setPricing(seedFromPreset(preset, referenceRate));
   };
 
   return (
@@ -271,7 +319,7 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
         <div className="custom-pricing-toolbar">
           <span className="custom-chip">
             <ShieldCheck size={14} />
-            Work type: {seeded.workType}
+            Work type: {activeWorkType}
           </span>
           <span className="custom-chip">
             <FileText size={14} />
@@ -285,6 +333,22 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
 
         <div className="custom-pricing-content">
           <section className="custom-pricing-form">
+            <div className="custom-section-card preset-card">
+              <div className="custom-section-head">
+                <div>
+                  <span className="section-kicker">Preset</span>
+                  <h4>Quick Start</h4>
+                </div>
+                <FileText size={18} />
+              </div>
+              <div className="preset-grid">
+                <button className="preset-btn" onClick={() => applyPreset(QUICK_PRESETS.backyardEntrance)}>
+                  <span className="preset-label">Backyard Entrance</span>
+                  <span className="preset-copy">Load a ready-made custom build-up for a typical service gate or rear access entrance.</span>
+                </button>
+              </div>
+            </div>
+
             <div className="custom-section-card">
               <div className="custom-section-head">
                 <div>
@@ -434,7 +498,7 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
             className="custom-footer-btn primary"
             onClick={() => onSave(summary.finalRate, {
               ...pricing,
-              workType: seeded.workType,
+              workType: activeWorkType,
               benchmarkRate: seeded.benchmarkRate,
               rawRate: summary.rawRate,
               finalRate: summary.finalRate
@@ -565,6 +629,41 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
         .custom-section-head h4 {
           margin: 0;
           font-size: 1rem;
+        }
+        .preset-card {
+          background: linear-gradient(135deg, #fff7ed, #fffbeb);
+          border-color: #fed7aa;
+        }
+        .preset-grid {
+          display: grid;
+          gap: 0.75rem;
+        }
+        .preset-btn {
+          border: 1px solid #fdba74;
+          background: rgba(255, 255, 255, 0.82);
+          border-radius: 16px;
+          padding: 1rem;
+          text-align: left;
+          cursor: pointer;
+          display: flex;
+          flex-direction: column;
+          gap: 0.35rem;
+          transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+        }
+        .preset-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 14px 26px rgba(194, 65, 12, 0.12);
+          border-color: #ea580c;
+        }
+        .preset-label {
+          font-size: 0.92rem;
+          font-weight: 800;
+          color: #9a3412;
+        }
+        .preset-copy {
+          font-size: 0.8rem;
+          color: #7c2d12;
+          line-height: 1.5;
         }
         .custom-grid {
           display: grid;
