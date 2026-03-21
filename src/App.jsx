@@ -100,6 +100,22 @@ function App() {
   const searchParams = new URLSearchParams(window.location.search);
   const actionMode = searchParams.get('mode');
   const actionCode = searchParams.get('oobCode');
+  const sharedProjectId = searchParams.get('project');
+  const requestedTab = searchParams.get('tab') || 'workspace';
+  const handledSharedProjectRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!user || !sharedProjectId || !projects.length) return;
+    if (handledSharedProjectRef.current === sharedProjectId) return;
+
+    const linkedProject = projects.find((project) => project.id === sharedProjectId);
+    if (!linkedProject) return;
+
+    setActiveProjectId(linkedProject.id);
+    setActiveTab(requestedTab === 'reports' ? 'reports' : 'workspace');
+    setFocusMode(true);
+    handledSharedProjectRef.current = sharedProjectId;
+  }, [projects, requestedTab, setActiveProjectId, setActiveTab, setFocusMode, sharedProjectId, user]);
 
   if (actionMode && actionCode) {
     return (

@@ -13,6 +13,43 @@ import {
     orderBy,
     serverTimestamp
 } from 'firebase/firestore';
+import { buildCompanyKey, deriveCompanyName } from '../utils/companyAccess';
+
+const sanitizeProjectForCloud = (project, user) => {
+    const clone = JSON.parse(JSON.stringify(project || {}));
+
+    delete clone.id;
+    delete clone.userId;
+    delete clone.updatedAt;
+    delete clone.isOwner;
+
+    const company_name = clone.company_name || deriveCompanyName({
+        companyName: clone.company_name,
+        email: user?.email
+    });
+    const company_key = clone.company_key || buildCompanyKey({
+        companyKey: clone.company_key,
+        companyName: company_name,
+        email: user?.email
+    });
+
+    return {
+        ...clone,
+        name: clone.name,
+        type: clone.type,
+        status: clone.status || 'Draft',
+        date: clone.date,
+        region: clone.region || 'Lagos',
+        user_id: user.uid,
+        company_name,
+        company_key,
+        projectMode: clone.projectMode || 'default',
+        access_mode: clone.access_mode || (clone.projectMode === 'custom' ? 'company' : 'private'),
+        sections: clone.sections || [],
+        collaborators: clone.collaborators || [],
+        updated_at: serverTimestamp()
+    };
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Projects Management
@@ -31,17 +68,7 @@ export const saveProject = async (project) => {
             return null;
         }
 
-        const projectData = {
-            name: project.name,
-            type: project.type,
-            status: project.status || 'Draft',
-            date: project.date,
-            region: project.region || 'Lagos',
-            user_id: user.uid,
-            sections: JSON.parse(JSON.stringify(project.sections || [])),
-            collaborators: project.collaborators || [],
-            updated_at: serverTimestamp()
-        };
+        const projectData = sanitizeProjectForCloud(project, user);
 
         if (project.id && !project.id.startsWith('local_')) {
             // Update existing project
@@ -67,6 +94,13 @@ export const getProjects = async () => {
         const user = auth.currentUser;
         if (!user) return [];
 
+        const profile = await getProfile(user.uid);
+        const companyKey = buildCompanyKey({
+            companyKey: profile?.company_key,
+            companyName: profile?.company_name,
+            email: user.email
+        });
+
         // Fetch own projects
         const ownQuery = query(
             collection(db, 'projects'),
@@ -75,6 +109,23 @@ export const getProjects = async () => {
         );
         const ownSnapshot = await getDocs(ownQuery);
         const ownProjects = ownSnapshot.docs.map(d => ({ id: d.id, ...d.data(), isOwner: true }));
+
+        let companyProjects = [];
+        if (companyKey) {
+            try {
+                const companyQuery = query(
+                    collection(db, 'projects'),
+                    where('company_key', '==', companyKey)
+                );
+                const companySnapshot = await getDocs(companyQuery);
+                companyProjects = companySnapshot.docs
+                    .map(d => ({ id: d.id, ...d.data(), isOwner: d.data().user_id === user.uid }))
+                    .filter(project => project.user_id !== user.uid)
+                    .filter(project => project.projectMode === 'custom' && project.access_mode === 'company');
+            } catch (companyErr) {
+                console.warn('Could not fetch company projects:', companyErr.message);
+            }
+        }
 
         // Fetch shared projects (where user's email is in collaborators)
         let sharedProjects = [];
@@ -93,7 +144,17 @@ export const getProjects = async () => {
             console.warn('Could not fetch shared projects:', sharedErr.message);
         }
 
-        return [...ownProjects, ...sharedProjects];
+        const merged = [...ownProjects, ...companyProjects, ...sharedProjects];
+        const uniqueProjects = [];
+        const seen = new Set();
+
+        for (const project of merged) {
+            if (seen.has(project.id)) continue;
+            seen.add(project.id);
+            uniqueProjects.push(project);
+        }
+
+        return uniqueProjects;
     } catch (err) {
         console.error('Error fetching projects:', err);
         return [];

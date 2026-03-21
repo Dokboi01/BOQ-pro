@@ -395,19 +395,19 @@ const ProjectWizard = ({ onSelect, onClose }) => {
             </div>
             <span className="mode-badge alt">Custom Mode</span>
             <h4>Template + Custom Builder</h4>
-            <p>Mix template sections with your own custom sections, blank line items, and optional starter rates before the BOQ is created.</p>
+            <p>Mix template sections with your own custom sections, then turn the job into a company workspace with a sharable link, team messages, and assigned tasks.</p>
             <div className="pricing-highlights">
               <div className="pricing-highlight">
                 <strong>{normalizedCustomSections.length}</strong>
                 <span>custom sections</span>
               </div>
               <div className="pricing-highlight">
-                <strong>{customItemCount}</strong>
-                <span>custom items</span>
+                <strong>{customItemCount || 'Live'}</strong>
+                <span>builder items</span>
               </div>
               <div className="pricing-highlight">
-                <strong>{formData.isUnpricedTemplate ? 'Zero' : 'Mixed'}</strong>
-                <span>rate strategy</span>
+                <strong>Team</strong>
+                <span>hub enabled</span>
               </div>
             </div>
           </button>

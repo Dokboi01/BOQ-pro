@@ -15,6 +15,7 @@ import { logEvent as logAnalyticsEvent } from 'firebase/analytics';
 import { getProfile, updateProfile } from '../db/database';
 import AuthContext from './auth-context';
 import { useToast } from '../components/ui/useToast';
+import { buildCompanyKey, deriveCompanyName } from '../utils/companyAccess';
 
 const PUBLIC_VIEWS = new Set(['landing', 'pricing', 'login', 'signup', 'forgot-password']);
 
@@ -67,6 +68,12 @@ export function AuthProvider({ children }) {
                     email: firebaseUser.email,
                     ...profile
                 };
+                fullUser.company_name = fullUser.company_name || deriveCompanyName({ companyName: fullUser.company_name, email: firebaseUser.email });
+                fullUser.company_key = fullUser.company_key || buildCompanyKey({
+                    companyKey: fullUser.company_key,
+                    companyName: fullUser.company_name,
+                    email: firebaseUser.email
+                });
                 // 🛡️ GUARD: Never let a stale Firestore fetch downgrade is_onboarded
                 // If the user completed onboarding locally, preserve that status
                 setUser(prev => {
@@ -129,6 +136,12 @@ export function AuthProvider({ children }) {
                         email: firebaseUser.email,
                         ...profile
                     };
+                    fullUser.company_name = fullUser.company_name || deriveCompanyName({ companyName: fullUser.company_name, email: firebaseUser.email });
+                    fullUser.company_key = fullUser.company_key || buildCompanyKey({
+                        companyKey: fullUser.company_key,
+                        companyName: fullUser.company_name,
+                        email: firebaseUser.email
+                    });
                     setUser(fullUser);
                     localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
                     initializationComplete.current = true;
@@ -146,7 +159,9 @@ export function AuthProvider({ children }) {
                         id: firebaseUser.uid,
                         email: firebaseUser.email,
                         full_name: firebaseUser.displayName || 'Practitioner',
-                        plan: 'Free'
+                        plan: 'Free',
+                        company_name: deriveCompanyName({ email: firebaseUser.email }),
+                        company_key: buildCompanyKey({ email: firebaseUser.email })
                     };
                     setUser(basicUser);
                     localStorage.setItem('boq_pro_profile', JSON.stringify(basicUser));
@@ -218,7 +233,9 @@ export function AuthProvider({ children }) {
                 email: result.user.email,
                 full_name: result.user.displayName || 'Practitioner',
                 plan: 'Free',
-                is_onboarded: false
+                is_onboarded: false,
+                company_name: deriveCompanyName({ email: result.user.email }),
+                company_key: buildCompanyKey({ email: result.user.email })
             };
             setUser(optimisticUser);
             localStorage.setItem('boq_pro_profile', JSON.stringify(optimisticUser));
@@ -251,6 +268,9 @@ export function AuthProvider({ children }) {
         console.log('🚀 Attempting signup for:', data.email);
 
         try {
+            const company_name = deriveCompanyName({ companyName: data.companyName, email: data.email });
+            const company_key = buildCompanyKey({ companyName: company_name, email: data.email });
+
             const result = await createUserWithEmailAndPassword(
                 auth,
                 data.email,
@@ -266,7 +286,8 @@ export function AuthProvider({ children }) {
             try {
                 await updateProfile({
                     full_name: data.fullName,
-                    company_name: data.companyName,
+                    company_name,
+                    company_key,
                     phone_number: data.phoneNumber,
                     plan: selectedPlan || 'Free',
                     email: data.email,

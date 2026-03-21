@@ -19,6 +19,7 @@ import {
 import { subscribeToProject } from '../db/realtimeSync';
 import { logActivity } from '../db/collaborationService';
 import ProjectsContext from './projects-context';
+import { buildCompanyKey, deriveCompanyName } from '../utils/companyAccess';
 
 export function ProjectsProvider({ children }) {
     const { user, setView } = useAuth();
@@ -258,6 +259,16 @@ export function ProjectsProvider({ children }) {
 
     const handleCompleteWizard = async (projectConfig) => {
         const isUnpricedTemplate = projectConfig.isUnpricedTemplate !== false;
+        const isCustomMode = projectConfig.projectMode === 'custom';
+        const company_name = deriveCompanyName({
+            companyName: user?.company_name,
+            email: user?.email
+        });
+        const company_key = buildCompanyKey({
+            companyKey: user?.company_key,
+            companyName: company_name,
+            email: user?.email
+        });
         const processedSections = buildProjectSections(projectConfig.sections || [], {
             unpriced: isUnpricedTemplate
         });
@@ -270,6 +281,11 @@ export function ProjectsProvider({ children }) {
             type: projectConfig.type,
             subtype: projectConfig.subtype,
             projectMode: projectConfig.projectMode || 'default',
+            access_mode: isCustomMode ? 'company' : 'private',
+            company_name,
+            company_key,
+            share_enabled: isCustomMode,
+            collaboration_enabled: isCustomMode,
             status: 'Active',
             sections: processedSections,
             date: new Date().toLocaleDateString(),
