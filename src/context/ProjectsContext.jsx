@@ -32,6 +32,7 @@ export function ProjectsProvider({ children }) {
     const [showAnalyzer, setShowAnalyzer] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [focusMode, setFocusMode] = useState(false);
+    const [workspaceIntent, setWorkspaceIntent] = useState(null);
     const [syncStatus, setSyncStatus] = useState({ state: 'synced' });
     const lastRemoteUpdate = useRef(0);
 
@@ -162,6 +163,21 @@ export function ProjectsProvider({ children }) {
         }
         setShowSelector(true);
     };
+
+    const clearWorkspaceIntent = useCallback(() => {
+        setWorkspaceIntent(null);
+    }, []);
+
+    const openWorkspace = useCallback((projectId, intent = null) => {
+        setActiveProjectId(projectId);
+        setActiveTab('workspace');
+        setFocusMode(true);
+        setWorkspaceIntent(intent ? {
+            ...intent,
+            projectId,
+            nonce: Date.now()
+        } : null);
+    }, []);
 
     const buildProjectSections = useCallback((sections = [], { unpriced = true } = {}) => {
         return sections.map(section => ({
@@ -450,6 +466,88 @@ export function ProjectsProvider({ children }) {
         }
     };
 
+    const handleQuickCustomPricingTest = useCallback(async () => {
+        const existingProject = projects.find((project) => project.isQuickCustomPricingTest && (project.sections || []).some((section) => (section.items || []).length > 0));
+        if (existingProject) {
+            const firstItem = (existingProject.sections || []).flatMap((section) =>
+                (section.items || []).map((item) => ({ sectionId: section.id, item }))
+            )[0];
+
+            openWorkspace(existingProject.id, {
+                type: 'custom-pricing-test',
+                itemId: firstItem?.item?.id || null
+            });
+            toast.success('Opened the custom pricing test bench.');
+            return;
+        }
+
+        const projectId = `local_test_${Date.now()}`;
+        const sectionId = `sec_${Date.now()}`;
+        const itemId = `itm_${Date.now()}`;
+        const quickTestProject = {
+            id: projectId,
+            name: 'Custom Pricing Test Bench',
+            type: 'Quick Test',
+            status: 'Draft',
+            isQuickCustomPricingTest: true,
+            sections: [
+                {
+                    id: sectionId,
+                    title: 'Custom Pricing Sandbox',
+                    expanded: true,
+                    items: [
+                        {
+                            id: itemId,
+                            description: 'Backyard Entrance Gate',
+                            subcategory: 'Quick Test Item',
+                            materials: ['Steel frame', 'Hinges', 'Lock set', 'Touch-up paint'],
+                            unit: 'nr',
+                            qty: 1,
+                            rate: 185000,
+                            benchmark: 165000,
+                            useBenchmark: false,
+                            total: 185000,
+                            isVO: false,
+                            qtySource: 'manual',
+                            rateSource: 'custom',
+                            customPricing: {
+                                workType: 'entranceworks',
+                                materialsCost: 112000,
+                                labourCost: 24000,
+                                plantCost: 6000,
+                                transportCost: 18000,
+                                wastePercent: 4,
+                                siteAdjustmentPercent: 4,
+                                overheadsPercent: 12,
+                                profitPercent: 12,
+                                roundingStep: 100,
+                                pricingReference: 'Quick custom pricing test shortcut',
+                                supplierQuote: 'Sandbox sample item',
+                                notes: 'Use this sample item to test the custom pricing studio without creating a full project.'
+                            }
+                        }
+                    ]
+                }
+            ],
+            date: new Date().toLocaleDateString(),
+            region: 'Lagos',
+            pricingMode: 'user-entered'
+        };
+
+        try {
+            await saveLocal(quickTestProject);
+            setProjects((prev) => [quickTestProject, ...prev]);
+            openWorkspace(projectId, {
+                type: 'custom-pricing-test',
+                itemId
+            });
+            toast.success('Custom pricing test bench is ready.');
+        } catch (err) {
+            console.error('Error creating quick custom pricing test:', err);
+            toast.error('Could not open the custom pricing test bench.');
+        }
+    }, [openWorkspace, projects, toast]);
+
     const value = {
         projects,
         setProjects,
@@ -465,10 +563,13 @@ export function ProjectsProvider({ children }) {
         isCreating,
         focusMode,
         setFocusMode,
+        workspaceIntent,
+        clearWorkspaceIntent,
         calculateTotalValue,
         syncStatus,
         forceSync,
         handleCreateProject,
+        handleQuickCustomPricingTest,
         handleCompleteWizard,
         handleStructureSelect,
         handleAnalysisComplete,
