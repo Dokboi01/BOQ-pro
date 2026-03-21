@@ -103,6 +103,14 @@ function App() {
   const sharedProjectId = searchParams.get('project');
   const requestedTab = searchParams.get('tab') || 'workspace';
   const handledSharedProjectRef = React.useRef(null);
+  const clearSharedProjectParams = React.useCallback(() => {
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.delete('project');
+    nextUrl.searchParams.delete('tab');
+    const nextSearch = nextUrl.searchParams.toString();
+    const nextHref = `${nextUrl.pathname}${nextSearch ? `?${nextSearch}` : ''}${nextUrl.hash}`;
+    window.history.replaceState({}, document.title, nextHref);
+  }, []);
 
   React.useEffect(() => {
     if (!user || !sharedProjectId || !projects.length) return;
@@ -115,7 +123,8 @@ function App() {
     setActiveTab(requestedTab === 'reports' ? 'reports' : 'workspace');
     setFocusMode(true);
     handledSharedProjectRef.current = sharedProjectId;
-  }, [projects, requestedTab, setActiveProjectId, setActiveTab, setFocusMode, sharedProjectId, user]);
+    clearSharedProjectParams();
+  }, [clearSharedProjectParams, projects, requestedTab, setActiveProjectId, setActiveTab, setFocusMode, sharedProjectId, user]);
 
   if (actionMode && actionCode) {
     return (
