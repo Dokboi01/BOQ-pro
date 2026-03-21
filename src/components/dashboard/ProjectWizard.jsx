@@ -7,9 +7,29 @@ import {
   Layers,
   ClipboardList,
   MapPin,
-  Save
+  Save,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { STRUCTURE_DATA } from '../../data/structures';
+
+const makeId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+const createCustomItem = () => ({
+  id: makeId('item'),
+  description: '',
+  unit: 'Nr',
+  qty: 1,
+  rate: 0,
+  subcategory: 'Custom Work',
+  materials: []
+});
+
+const createCustomSection = () => ({
+  id: makeId('section'),
+  title: '',
+  items: [createCustomItem()]
+});
 
 const ProjectWizard = ({ onSelect, onClose }) => {
   const [step, setStep] = useState(1);
@@ -20,6 +40,7 @@ const ProjectWizard = ({ onSelect, onClose }) => {
     notes: '',
     assumptions: '',
     exclusions: '',
+    projectMode: 'default',
     isUnpricedTemplate: true
   });
 
@@ -27,6 +48,7 @@ const ProjectWizard = ({ onSelect, onClose }) => {
   const [selectedSubtype, setSelectedSubtype] = useState(null);
   const [subtypeData, setSubtypeData] = useState(null);
   const [selectedSections, setSelectedSections] = useState([]);
+  const [customSections, setCustomSections] = useState([]);
 
   const categories = Object.keys(STRUCTURE_DATA).map(key => ({
     id: key,
@@ -42,6 +64,7 @@ const ProjectWizard = ({ onSelect, onClose }) => {
     setSelectedCategory(categoryId);
     setSelectedSubtype(null);
     setSubtypeData(null);
+    setCustomSections([]);
     handleNext();
   };
 
@@ -58,8 +81,91 @@ const ProjectWizard = ({ onSelect, onClose }) => {
     );
   };
 
+  const addCustomSection = () => {
+    setFormData(prev => ({ ...prev, projectMode: 'custom' }));
+    setCustomSections(prev => [...prev, createCustomSection()]);
+  };
+
+  const updateCustomSectionTitle = (sectionId, title) => {
+    setCustomSections(prev => prev.map(section =>
+      section.id === sectionId ? { ...section, title } : section
+    ));
+  };
+
+  const removeCustomSection = (sectionId) => {
+    setCustomSections(prev => prev.filter(section => section.id !== sectionId));
+  };
+
+  const addCustomItem = (sectionId) => {
+    setCustomSections(prev => prev.map(section =>
+      section.id === sectionId
+        ? { ...section, items: [...section.items, createCustomItem()] }
+        : section
+    ));
+  };
+
+  const updateCustomItem = (sectionId, itemId, field, value) => {
+    setCustomSections(prev => prev.map(section =>
+      section.id !== sectionId
+        ? section
+        : {
+            ...section,
+            items: section.items.map(item =>
+              item.id === itemId ? { ...item, [field]: value } : item
+            )
+          }
+    ));
+  };
+
+  const removeCustomItem = (sectionId, itemId) => {
+    setCustomSections(prev => prev.map(section =>
+      section.id !== sectionId
+        ? section
+        : {
+            ...section,
+            items: section.items.filter(item => item.id !== itemId)
+          }
+    ));
+  };
+
+  const normalizedCustomSections = customSections
+    .map(section => ({
+      ...section,
+      title: section.title.trim(),
+      items: (section.items || [])
+        .map(item => ({
+          ...item,
+          description: item.description.trim(),
+          unit: String(item.unit || 'Nr').trim() || 'Nr',
+          qty: Number(item.qty) || 0,
+          rate: Number(item.rate) || 0,
+          subcategory: String(item.subcategory || 'Custom Work').trim() || 'Custom Work',
+          materials: Array.isArray(item.materials) ? item.materials : []
+        }))
+        .filter(item => item.description)
+    }))
+    .filter(section => section.title && section.items.length > 0);
+
+  const customItemCount = normalizedCustomSections.reduce((acc, section) => acc + section.items.length, 0);
+  const totalPlannedSections = selectedSections.length + normalizedCustomSections.length;
+
   const handleGenerate = () => {
-    const finalSections = subtypeData.sections.filter(s => selectedSections.includes(s.id));
+    const templateSections = subtypeData.sections.filter(s => selectedSections.includes(s.id));
+    const customModeSections = normalizedCustomSections.map(section => ({
+      id: section.id,
+      title: section.title,
+      items: section.items.map(item => ({
+        description: item.description,
+        unit: item.unit,
+        qty: item.qty,
+        rate: item.rate,
+        subcategory: item.subcategory,
+        materials: item.materials
+      }))
+    }));
+    const finalSections = [...templateSections, ...customModeSections];
+
+    if (finalSections.length === 0) return;
     
     const config = {
       name: formData.name,
@@ -71,6 +177,9 @@ const ProjectWizard = ({ onSelect, onClose }) => {
       notes: formData.notes,
       assumptions: formData.assumptions,
       exclusions: formData.exclusions,
+      projectMode: formData.projectMode,
+      customSectionCount: normalizedCustomSections.length,
+      customItemCount,
       isUnpricedTemplate: formData.isUnpricedTemplate
     };
     
@@ -207,7 +316,7 @@ const ProjectWizard = ({ onSelect, onClose }) => {
         <button className="btn-back" onClick={handleBack}><ChevronLeft size={16} /> Back</button>
         <span className="step-number">Step 4 of 6</span>
         <h3>BOQ Categories</h3>
-        <p>Select the standard divisions of work required for this project.</p>
+        <p>Select the standard divisions of work required for this project. You can leave this empty if you plan to build everything in Custom Mode on the next step.</p>
       </div>
 
       <div className="checklist-grid">
@@ -230,7 +339,7 @@ const ProjectWizard = ({ onSelect, onClose }) => {
       </div>
 
       <div className="wizard-actions right">
-        <button className="btn-primary" disabled={selectedSections.length === 0} onClick={handleNext}>
+        <button className="btn-primary" onClick={handleNext}>
           Continue <ChevronRight size={16} />
         </button>
       </div>
@@ -243,37 +352,196 @@ const ProjectWizard = ({ onSelect, onClose }) => {
       <div className="step-header">
         <button className="btn-back" onClick={handleBack}><ChevronLeft size={16} /> Back</button>
         <span className="step-number">Step 5 of 6</span>
-        <h3>Pricing Setup</h3>
-        <p>Your BOQ will load with a full item library for {formData.region}, but pricing will start from zero so you can enter your own rates.</p>
+        <h3>Project Mode</h3>
+        <p>Choose whether to start from the standard template only or build a custom BOQ mix with your own sections and line items.</p>
       </div>
 
       <div className="intelligence-preview">
-        <div className="intel-card pricing-card">
-          <div className="pricing-card-icon">
-            <ClipboardList className="text-accent" size={24} />
-          </div>
-          <span className="mode-badge">Default Mode</span>
-          <h4>Unpriced BOQ Template</h4>
-          <p>All selected sections, quantities, units, subcategories, and materials stay in place. Only rates and benchmarks are cleared so the estimate is priced by the user inside the workspace.</p>
-          <div className="pricing-highlights">
-            <div className="pricing-highlight">
-              <strong>{selectedSections.length}</strong>
-              <span>sections included</span>
+        <div className="mode-grid">
+          <button
+            type="button"
+            className={`intel-card pricing-card mode-card ${formData.projectMode === 'default' ? 'active' : ''}`}
+            onClick={() => setFormData(prev => ({ ...prev, projectMode: 'default', isUnpricedTemplate: true }))}
+          >
+            <div className="pricing-card-icon">
+              <ClipboardList className="text-accent" size={24} />
             </div>
-            <div className="pricing-highlight">
-              <strong>0.00</strong>
-              <span>starting rate</span>
+            <span className="mode-badge">Default Mode</span>
+            <h4>Standard BOQ Template</h4>
+            <p>Use only the selected template sections. Rates start from zero so you can price the BOQ yourself inside the workspace.</p>
+            <div className="pricing-highlights">
+              <div className="pricing-highlight">
+                <strong>{selectedSections.length}</strong>
+                <span>template sections</span>
+              </div>
+              <div className="pricing-highlight">
+                <strong>0.00</strong>
+                <span>starting rate</span>
+              </div>
+              <div className="pricing-highlight">
+                <strong>User</strong>
+                <span>controls pricing</span>
+              </div>
             </div>
-            <div className="pricing-highlight">
-              <strong>User</strong>
-              <span>controls pricing</span>
+          </button>
+
+          <button
+            type="button"
+            className={`intel-card pricing-card mode-card ${formData.projectMode === 'custom' ? 'active' : ''}`}
+            onClick={() => setFormData(prev => ({ ...prev, projectMode: 'custom' }))}
+          >
+            <div className="pricing-card-icon custom">
+              <Layers className="text-accent" size={24} />
             </div>
-          </div>
+            <span className="mode-badge alt">Custom Mode</span>
+            <h4>Template + Custom Builder</h4>
+            <p>Mix template sections with your own custom sections, blank line items, and optional starter rates before the BOQ is created.</p>
+            <div className="pricing-highlights">
+              <div className="pricing-highlight">
+                <strong>{normalizedCustomSections.length}</strong>
+                <span>custom sections</span>
+              </div>
+              <div className="pricing-highlight">
+                <strong>{customItemCount}</strong>
+                <span>custom items</span>
+              </div>
+              <div className="pricing-highlight">
+                <strong>{formData.isUnpricedTemplate ? 'Zero' : 'Mixed'}</strong>
+                <span>rate strategy</span>
+              </div>
+            </div>
+          </button>
         </div>
+
+        {formData.projectMode === 'custom' && (
+          <div className="custom-builder">
+            <div className="builder-header">
+              <div>
+                <h4>Custom Builder</h4>
+                <p>Add new BOQ sections and line items before the project is generated.</p>
+              </div>
+              <button type="button" className="btn-outline" onClick={addCustomSection}>
+                <Plus size={14} /> Add Section
+              </button>
+            </div>
+
+            <div className="pricing-strategy">
+              <span className="strategy-label">Rate Setup</span>
+              <div className="strategy-toggle">
+                <button
+                  type="button"
+                  className={`strategy-btn ${formData.isUnpricedTemplate ? 'active' : ''}`}
+                  onClick={() => setFormData(prev => ({ ...prev, isUnpricedTemplate: true }))}
+                >
+                  Start Unpriced
+                </button>
+                <button
+                  type="button"
+                  className={`strategy-btn ${!formData.isUnpricedTemplate ? 'active' : ''}`}
+                  onClick={() => setFormData(prev => ({ ...prev, isUnpricedTemplate: false }))}
+                >
+                  Keep Starter Rates
+                </button>
+              </div>
+            </div>
+
+            {customSections.length === 0 ? (
+              <div className="builder-empty">
+                <strong>No custom sections added yet.</strong>
+                <span>Add one if you want a custom-only BOQ or extra work sections beyond the template.</span>
+              </div>
+            ) : (
+              <div className="custom-sections-list">
+                {customSections.map((section, sectionIndex) => (
+                  <div key={section.id} className="custom-section-card">
+                    <div className="custom-section-head">
+                      <div className="form-group compact grow">
+                        <label>Section Title</label>
+                        <input
+                          type="text"
+                          placeholder={`e.g. ${sectionIndex + 1}. SPECIAL INSTALLATIONS`}
+                          value={section.title}
+                          onChange={(e) => updateCustomSectionTitle(section.id, e.target.value)}
+                        />
+                      </div>
+                      <button type="button" className="btn-icon-danger" onClick={() => removeCustomSection(section.id)}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+
+                    <div className="custom-items-list">
+                      {section.items.map((item, itemIndex) => (
+                        <div key={item.id} className="custom-item-card">
+                          <div className="custom-item-top">
+                            <span className="custom-item-label">Line Item {itemIndex + 1}</span>
+                            <button type="button" className="btn-text-danger" onClick={() => removeCustomItem(section.id, item.id)}>
+                              Remove
+                            </button>
+                          </div>
+                          <div className="custom-item-grid">
+                            <div className="form-group compact span-2">
+                              <label>Description</label>
+                              <input
+                                type="text"
+                                placeholder="Describe the work item"
+                                value={item.description}
+                                onChange={(e) => updateCustomItem(section.id, item.id, 'description', e.target.value)}
+                              />
+                            </div>
+                            <div className="form-group compact">
+                              <label>Unit</label>
+                              <input
+                                type="text"
+                                placeholder="m2"
+                                value={item.unit}
+                                onChange={(e) => updateCustomItem(section.id, item.id, 'unit', e.target.value)}
+                              />
+                            </div>
+                            <div className="form-group compact">
+                              <label>Qty</label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={item.qty}
+                                onChange={(e) => updateCustomItem(section.id, item.id, 'qty', e.target.value)}
+                              />
+                            </div>
+                            <div className="form-group compact">
+                              <label>Rate</label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={item.rate}
+                                onChange={(e) => updateCustomItem(section.id, item.id, 'rate', e.target.value)}
+                              />
+                            </div>
+                            <div className="form-group compact">
+                              <label>Subcategory</label>
+                              <input
+                                type="text"
+                                placeholder="Custom Work"
+                                value={item.subcategory}
+                                onChange={(e) => updateCustomItem(section.id, item.id, 'subcategory', e.target.value)}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <button type="button" className="btn-outline subtle" onClick={() => addCustomItem(section.id)}>
+                      <Plus size={14} /> Add Item
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="wizard-actions right">
-        <button className="btn-primary" onClick={handleNext}>
+        <button className="btn-primary" disabled={totalPlannedSections === 0} onClick={handleNext}>
           Review Project <ChevronRight size={16} />
         </button>
       </div>
@@ -302,8 +570,12 @@ const ProjectWizard = ({ onSelect, onClose }) => {
           <h5>Structure Classification</h5>
           <div className="summary-row"><span>Category:</span> <strong>{selectedCategory}</strong></div>
           <div className="summary-row"><span>Subtype:</span> <strong>{selectedSubtype}</strong></div>
-          <div className="summary-row"><span>BOQ Sections:</span> <strong>{selectedSections.length} selected</strong></div>
-          <div className="summary-row"><span>Pricing:</span> <strong>{formData.isUnpricedTemplate ? 'User-priced BOQ (rates start at 0)' : 'Starter rates included'}</strong></div>
+          <div className="summary-row"><span>Mode:</span> <strong>{formData.projectMode === 'custom' ? 'Custom Builder' : 'Default Template'}</strong></div>
+          <div className="summary-row"><span>Template Sections:</span> <strong>{selectedSections.length} selected</strong></div>
+          <div className="summary-row"><span>Custom Sections:</span> <strong>{normalizedCustomSections.length}</strong></div>
+          <div className="summary-row"><span>Custom Items:</span> <strong>{customItemCount}</strong></div>
+          <div className="summary-row"><span>Total Sections:</span> <strong>{totalPlannedSections}</strong></div>
+          <div className="summary-row"><span>Pricing:</span> <strong>{formData.isUnpricedTemplate ? 'User-priced BOQ (rates start at 0)' : 'Starter and custom rates included'}</strong></div>
         </div>
 
         <div className="form-group mt-4">
@@ -328,7 +600,7 @@ const ProjectWizard = ({ onSelect, onClose }) => {
       </div>
 
       <div className="wizard-actions end">
-        <button className="btn-generate" onClick={handleGenerate}>
+        <button className="btn-generate" disabled={totalPlannedSections === 0} onClick={handleGenerate}>
           <Save size={16} /> Generate BOQ
         </button>
       </div>
@@ -487,9 +759,26 @@ const ProjectWizard = ({ onSelect, onClose }) => {
 
         /* Step 5: Intel Preview */
         .intelligence-preview { display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 2rem; flex: 1; }
+        .mode-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 1rem;
+        }
         .intel-card {
           background: #eff6ff; border: 1px solid #bfdbfe; padding: 2rem; border-radius: 12px;
           text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1rem;
+        }
+        .mode-card {
+          cursor: pointer;
+          transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+        }
+        .mode-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+        }
+        .mode-card.active {
+          border-color: var(--accent-600);
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
         }
         .intel-card h4 { font-size: 1.25rem; color: var(--primary-900); }
         .intel-card p { font-size: 0.875rem; color: var(--primary-600); line-height: 1.6; max-width: 400px; }
@@ -506,6 +795,9 @@ const ProjectWizard = ({ onSelect, onClose }) => {
           justify-content: center;
           background: rgba(37, 99, 235, 0.08);
         }
+        .pricing-card-icon.custom {
+          background: rgba(16, 185, 129, 0.12);
+        }
         .mode-badge {
           font-size: 0.6875rem;
           font-weight: 800;
@@ -515,6 +807,10 @@ const ProjectWizard = ({ onSelect, onClose }) => {
           background: rgba(37, 99, 235, 0.08);
           padding: 0.35rem 0.65rem;
           border-radius: 999px;
+        }
+        .mode-badge.alt {
+          color: #047857;
+          background: rgba(16, 185, 129, 0.12);
         }
         .pricing-highlights {
           width: 100%;
@@ -539,6 +835,182 @@ const ProjectWizard = ({ onSelect, onClose }) => {
         .pricing-highlight span {
           font-size: 0.75rem;
           color: var(--primary-500);
+        }
+        .custom-builder {
+          background: #f8fafc;
+          border: 1px solid var(--border-light);
+          border-radius: 16px;
+          padding: 1.25rem;
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+        .builder-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 1rem;
+        }
+        .builder-header h4 {
+          font-size: 1.0625rem;
+          color: var(--primary-900);
+          margin-bottom: 0.25rem;
+        }
+        .builder-header p {
+          font-size: 0.8125rem;
+          color: var(--primary-500);
+        }
+        .pricing-strategy {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 1rem;
+          padding: 0.9rem 1rem;
+          border: 1px solid var(--border-light);
+          border-radius: 12px;
+          background: white;
+        }
+        .strategy-label {
+          font-size: 0.75rem;
+          font-weight: 800;
+          color: var(--primary-700);
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+        }
+        .strategy-toggle {
+          display: inline-flex;
+          background: #e2e8f0;
+          padding: 4px;
+          border-radius: 999px;
+          gap: 0.25rem;
+        }
+        .strategy-btn {
+          border: none;
+          background: transparent;
+          border-radius: 999px;
+          padding: 0.55rem 0.9rem;
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: #475569;
+          cursor: pointer;
+        }
+        .strategy-btn.active {
+          background: white;
+          color: var(--accent-700);
+          box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+        }
+        .builder-empty {
+          display: flex;
+          flex-direction: column;
+          gap: 0.35rem;
+          padding: 1rem;
+          border-radius: 12px;
+          border: 1px dashed #cbd5e1;
+          background: white;
+          color: var(--primary-600);
+        }
+        .builder-empty strong {
+          color: var(--primary-900);
+        }
+        .custom-sections-list {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+        .custom-section-card {
+          background: white;
+          border: 1px solid var(--border-light);
+          border-radius: 14px;
+          padding: 1rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.9rem;
+        }
+        .custom-section-head {
+          display: flex;
+          align-items: flex-start;
+          gap: 0.75rem;
+        }
+        .grow { flex: 1; }
+        .compact { gap: 0.35rem; }
+        .compact label {
+          font-size: 0.7rem;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        .custom-items-list {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+        .custom-item-card {
+          border: 1px solid var(--border-light);
+          border-radius: 12px;
+          padding: 0.9rem;
+          background: #f8fafc;
+        }
+        .custom-item-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.75rem;
+        }
+        .custom-item-label {
+          font-size: 0.75rem;
+          font-weight: 800;
+          color: var(--primary-700);
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+        }
+        .custom-item-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.75rem;
+        }
+        .span-2 {
+          grid-column: span 2;
+        }
+        .btn-outline {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.45rem;
+          background: white;
+          color: var(--primary-700);
+          border: 1px solid var(--border-medium);
+          padding: 0.7rem 1rem;
+          border-radius: 10px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+        .btn-outline.subtle {
+          align-self: flex-start;
+          padding: 0.6rem 0.85rem;
+          font-size: 0.75rem;
+        }
+        .btn-outline:hover {
+          border-color: var(--accent-500);
+          color: var(--accent-700);
+        }
+        .btn-icon-danger,
+        .btn-text-danger {
+          border: none;
+          background: transparent;
+          color: #dc2626;
+          cursor: pointer;
+          font-weight: 700;
+        }
+        .btn-icon-danger {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          background: #fef2f2;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .btn-text-danger {
+          font-size: 0.75rem;
         }
 
         /* Step 6: Summary */
@@ -570,12 +1042,27 @@ const ProjectWizard = ({ onSelect, onClose }) => {
           transition: background 0.2s; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
         }
         .btn-generate:hover { background: #059669; }
+        .btn-generate:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          box-shadow: none;
+        }
 
         @media (max-width: 640px) {
           .wizard-modal { height: 100vh; max-height: 100vh; border-radius: 0; }
           .wizard-content { padding: 1.5rem; }
           .checklist-grid { grid-template-columns: 1fr; }
+          .mode-grid { grid-template-columns: 1fr; }
           .pricing-highlights { grid-template-columns: 1fr; }
+          .pricing-strategy,
+          .builder-header,
+          .custom-section-head,
+          .custom-item-top {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .custom-item-grid { grid-template-columns: 1fr; }
+          .span-2 { grid-column: span 1; }
         }
       `}</style>
     </div>

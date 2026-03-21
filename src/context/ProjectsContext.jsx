@@ -269,6 +269,7 @@ export function ProjectsProvider({ children }) {
             clientName: projectConfig.clientName || '',
             type: projectConfig.type,
             subtype: projectConfig.subtype,
+            projectMode: projectConfig.projectMode || 'default',
             status: 'Active',
             sections: processedSections,
             date: new Date().toLocaleDateString(),
@@ -276,6 +277,8 @@ export function ProjectsProvider({ children }) {
             notes: projectConfig.notes || '',
             assumptions: projectConfig.assumptions || '',
             exclusions: projectConfig.exclusions || '',
+            customSectionCount: Number(projectConfig.customSectionCount) || 0,
+            customItemCount: Number(projectConfig.customItemCount) || 0,
             pricingMode: isUnpricedTemplate ? 'user-entered' : 'template-rates',
             preparedBy: user?.displayName || user?.email || 'Engineer',
             checkedBy: ''
