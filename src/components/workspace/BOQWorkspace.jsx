@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useToast } from '../ui/useToast';
 import { useAuth } from '../../context/useAuth';
 import RateAnalysisModal from './RateAnalysisModal';
+import CustomPricingModal from './CustomPricingModal';
 import GeometricCalculator from './GeometricCalculator';
 import BidManagerModal from './BidManagerModal';
 import TeamHubPanel from './TeamHubPanel';
@@ -32,12 +33,14 @@ import {
   Copy,
   MessagesSquare,
   Database,
-  Save
+  Save,
+  SlidersHorizontal
 } from 'lucide-react';
 
 const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) => {
   const [sections, setSections] = useState(project?.sections || []);
   const [analyzingItem, setAnalyzingItem] = useState(null);
+  const [customPricingItem, setCustomPricingItem] = useState(null);
   const [calculatingQtyForItem, setCalculatingQtyForItem] = useState(null);
   const [biddingItem, setBiddingItem] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -117,6 +120,24 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
 
   const AVATAR_COLORS = ['#2563eb', '#7c3aed', '#db2777', '#ea580c', '#16a34a', '#0891b2'];
 
+  const cloneBreakdown = (breakdown) => {
+    if (!breakdown) return null;
+
+    return {
+      ...breakdown,
+      materials: Array.isArray(breakdown.materials) ? breakdown.materials.map((row) => ({ ...row })) : [],
+      labor: Array.isArray(breakdown.labor) ? breakdown.labor.map((row) => ({ ...row })) : [],
+      plant: Array.isArray(breakdown.plant) ? breakdown.plant.map((row) => ({ ...row })) : [],
+      transport: Array.isArray(breakdown.transport) ? breakdown.transport.map((row) => ({ ...row })) : []
+    };
+  };
+
+  const getEffectiveBenchmarkRate = (item) => {
+    const baseBenchmark = Number(item?.benchmark) || 0;
+    if (!baseBenchmark) return 0;
+    return baseBenchmark * getRegionalModifier(project?.region || 'Lagos');
+  };
+
   const toggleSection = (sectionId) => {
     setSections(prev => prev.map(s =>
       s.id === sectionId ? { ...s, expanded: !s.expanded } : s
@@ -145,7 +166,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
             updatedItem = { ...item, [fieldOrUpdates]: valueOrBreakdown };
             if (breakdown) updatedItem.breakdown = breakdown;
           }
-          const rateToUse = updatedItem.useBenchmark ? (updatedItem.benchmark * getRegionalModifier(project?.region || 'Lagos')) : updatedItem.rate;
+          const rateToUse = updatedItem.useBenchmark ? getEffectiveBenchmarkRate(updatedItem) : (Number(updatedItem.rate) || 0);
           updatedItem.total = updatedItem.qty * rateToUse;
           if (updatedItem.qtyCompleted !== undefined) {
             updatedItem.progressPercent = updatedItem.qty > 0 ? (updatedItem.qtyCompleted / updatedItem.qty) * 100 : 0;
@@ -164,9 +185,63 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
       rate: rate,
       rateSource: 'calculated',
       useBenchmark: false,
-      breakdown: breakdown
+      breakdown: breakdown,
+      customPricing: null
     });
     setAnalyzingItem(null);
+  };
+
+  const handleCustomPricingSave = (rate, customPricing) => {
+    if (!customPricingItem) return;
+
+    updateItem(customPricingItem.sectionId, customPricingItem.item.id, {
+      rate,
+      rateSource: 'custom',
+      useBenchmark: false,
+      customPricing: {
+        ...customPricing,
+        savedAt: new Date().toISOString()
+      }
+    });
+    setCustomPricingItem(null);
+  };
+
+  const handleManualRateChange = (sectionId, item, nextRate) => {
+    updateItem(sectionId, item.id, {
+      rate: Number(nextRate) || 0,
+      rateSource: 'manual',
+      useBenchmark: false,
+      customPricing: null
+    });
+  };
+
+  const openDetailedAnalysis = (sectionId, item) => {
+    setCustomPricingItem(null);
+    setAnalyzingItem({ sectionId, item });
+  };
+
+  const activateCustomPricing = (sectionId, item) => {
+    updateItem(sectionId, item.id, {
+      useBenchmark: false,
+      rateSource: item.customPricing
+        ? 'custom'
+        : item.breakdown
+          ? 'calculated'
+          : item.rateSource === 'benchmark'
+            ? 'manual'
+            : (item.rateSource || 'manual')
+    });
+  };
+
+  const activateBenchmarkPricing = (sectionId, item) => {
+    const regionalModifier = getRegionalModifier(project?.region || 'Lagos');
+    const derivedBenchmark = item.benchmark || ((Number(item.rate) || 0) / Math.max(regionalModifier, 0.001));
+
+    updateItem(sectionId, item.id, {
+      useBenchmark: true,
+      rateSource: 'benchmark',
+      benchmark: derivedBenchmark || 0
+    });
   };
 
   const handleStructuralImport = (importedSections) => {
@@ -184,7 +259,8 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         total: 0,
         benchmark: 0,
         useBenchmark: false,
-        rateSource: 'manual'
+        rateSource: 'manual',
+        customPricing: null
       }))
     }));
 
@@ -203,7 +279,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
     const benchmarkMap = {};
     dbMaterials.forEach(mat => {
       const key = mat.name.toLowerCase().split(' ')[0]; // Use first word as key
-      benchmarkMap[key] = mat.price;
+      benchmarkMap[key] = Number(mat.benchmark || mat.price || 0);
     });
 
     // Fallback static benchmarks for common items not in DB
@@ -218,35 +294,40 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
     const updated = sections.map(section => ({
       ...section,
       items: section.items.map(item => {
-        if (item.rate > 0) return item;
+        if (item.rate > 0 && item.benchmark > 0) return item;
 
         const desc = item.description.toLowerCase();
-        let matchedRate = 0;
+        let matchedBenchmark = 0;
 
         // Try DB matches first
-        for (const [key, price] of Object.entries(benchmarkMap)) {
+        for (const [key, benchmark] of Object.entries(benchmarkMap)) {
           if (desc.includes(key)) {
-            matchedRate = price * regionMod;
+            matchedBenchmark = benchmark;
             break;
           }
         }
 
         // Try fallbacks if no DB match
-        if (matchedRate === 0) {
+        if (matchedBenchmark === 0) {
           for (const [key, price] of Object.entries(fallbacks)) {
             if (desc.includes(key)) {
-              matchedRate = price * regionMod;
+              matchedBenchmark = price;
               break;
             }
           }
         }
 
-        if (matchedRate > 0) {
+        if (matchedBenchmark > 0) {
+          const regionalBenchmark = matchedBenchmark * regionMod;
+          const rateToKeep = Number(item.rate) > 0 ? Number(item.rate) : regionalBenchmark;
+          const totalToUse = item.useBenchmark ? (Number(item.qty) || 0) * regionalBenchmark : (Number(item.qty) || 0) * rateToKeep;
+
           return {
             ...item,
-            rate: matchedRate,
-            total: item.qty * matchedRate,
-            rateSource: 'calculated'
+            benchmark: matchedBenchmark,
+            rate: rateToKeep,
+            total: totalToUse,
+            rateSource: Number(item.rate) > 0 ? item.rateSource : 'calculated'
           };
         }
         return item;
@@ -278,7 +359,8 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           benchmark: 0,
           useBenchmark: false,
           rateSource: 'manual',
-          qtySource: 'manual'
+          qtySource: 'manual',
+          customPricing: null
         }]
       };
     });
@@ -297,7 +379,9 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         ...sourceItem,
         id: Date.now() + Math.random(),
         description: `${sourceItem.description} (Copy)`,
-        materials: Array.isArray(sourceItem.materials) ? [...sourceItem.materials] : []
+        materials: Array.isArray(sourceItem.materials) ? [...sourceItem.materials] : [],
+        breakdown: cloneBreakdown(sourceItem.breakdown),
+        customPricing: sourceItem.customPricing ? { ...sourceItem.customPricing } : null
       };
 
       const nextItems = [...section.items];
@@ -313,6 +397,34 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
     if (!benchmark || benchmark === 0 || !rate) return false;
     const ratio = rate / benchmark;
     return ratio > 1.5 || ratio < 0.5;
+  };
+
+  const getRateSourceMeta = (item) => {
+    if (item.useBenchmark) return { label: 'Benchmark', tone: 'benchmark' };
+    if (item.rateSource === 'custom') return { label: 'Custom pricing', tone: 'custom' };
+    if (item.rateSource === 'calculated') return { label: 'Rate analysis', tone: 'calculated' };
+    if (item.rateSource === 'benchmark') return { label: 'Benchmarked', tone: 'benchmark' };
+    return { label: 'Manual rate', tone: 'manual' };
+  };
+
+  const getBenchmarkDeltaMeta = (item) => {
+    if (item.useBenchmark) return null;
+
+    const benchmarkRate = getEffectiveBenchmarkRate(item);
+    const customRate = Number(item.rate) || 0;
+    if (!benchmarkRate || !customRate) return null;
+
+    const delta = ((customRate - benchmarkRate) / benchmarkRate) * 100;
+    const absDelta = Math.abs(delta);
+
+    if (absDelta < 0.5) {
+      return { text: 'At market benchmark', tone: 'aligned' };
+    }
+
+    return {
+      text: `${delta > 0 ? '+' : ''}${delta.toFixed(1)}% vs benchmark`,
+      tone: delta > 0 ? 'high' : 'low'
+    };
   };
 
   const filteredSections = React.useMemo(() => {
@@ -494,8 +606,11 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                       ? (((section.items || [])[idx - 1]?.subcategory || 'General').trim() || 'General')
                       : null;
                     const showSubcategoryHeader = idx === 0 || currentSubcategory !== previousSubcategory;
-                    const outlier = !item.useBenchmark && isOutlier(item.rate, item.benchmark);
-                    const rate = item.useBenchmark ? (item.benchmark * getRegionalModifier(project?.region || 'Lagos')) : item.rate;
+                    const benchmarkRate = getEffectiveBenchmarkRate(item);
+                    const outlier = !item.useBenchmark && isOutlier(item.rate, benchmarkRate);
+                    const rate = item.useBenchmark ? benchmarkRate : item.rate;
+                    const rateSourceMeta = getRateSourceMeta(item);
+                    const benchmarkDeltaMeta = getBenchmarkDeltaMeta(item);
                     return (
                       <React.Fragment key={item.id}>
                         {showSubcategoryHeader && (
@@ -582,9 +697,15 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                           <td>
                             <div className="ws-strategy-toggle">
                               <button className={`ws-strat-btn ${!item.useBenchmark ? 'active' : ''}`}
-                                onClick={() => updateItem(section.id, item.id, 'useBenchmark', false)}>C</button>
+                                onClick={() => activateCustomPricing(section.id, item)}
+                                title="Use custom pricing">
+                                Custom
+                              </button>
                               <button className={`ws-strat-btn ${item.useBenchmark ? 'active' : ''}`}
-                                onClick={() => updateItem(section.id, item.id, { useBenchmark: true, rateSource: 'benchmark' })}>B</button>
+                                onClick={() => activateBenchmarkPricing(section.id, item)}
+                                title="Use benchmark pricing">
+                                Benchmark
+                              </button>
                             </div>
                           </td>
                         )}
@@ -594,13 +715,31 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
                               type="number"
                               className="ws-input ws-rate-input"
                               value={rate || ''}
-                              onChange={(e) => updateItem(section.id, item.id, 'rate', Number(e.target.value))}
+                              onChange={(e) => handleManualRateChange(section.id, item, e.target.value)}
                               disabled={item.useBenchmark}
                             />
-                            <button className="ws-analysis-btn" onClick={() => setAnalyzingItem({ sectionId: section.id, item })} title="Rate Analysis">
+                            {!item.useBenchmark && (
+                              <button
+                                className="ws-analysis-btn ws-custom-studio-btn"
+                                onClick={() => setCustomPricingItem({ sectionId: section.id, item })}
+                                title="Open custom pricing studio"
+                              >
+                                <SlidersHorizontal size={11} />
+                              </button>
+                            )}
+                            <button className="ws-analysis-btn" onClick={() => openDetailedAnalysis(section.id, item)} title="Detailed rate analysis">
                               <Calculator size={11} />
                             </button>
                           </div>
+                          <div className="ws-rate-meta">
+                            <span className={`ws-rate-chip ws-rate-chip-${rateSourceMeta.tone}`}>{rateSourceMeta.label}</span>
+                            {benchmarkDeltaMeta && (
+                              <span className={`ws-rate-chip ws-rate-chip-${benchmarkDeltaMeta.tone}`}>{benchmarkDeltaMeta.text}</span>
+                            )}
+                          </div>
+                          {!item.useBenchmark && item.customPricing?.pricingReference && (
+                            <div className="ws-rate-note">{item.customPricing.pricingReference}</div>
+                          )}
                         </td>
                         <td className="ws-total-cell">₦{(item.total || 0).toLocaleString()}</td>
                         <td className="ws-act-cell">
@@ -676,6 +815,16 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
           structureType={project?.type}
           onClose={() => setAnalyzingItem(null)}
           onSave={handleRateApply}
+        />
+      )}
+      {customPricingItem && (
+        <CustomPricingModal
+          key={customPricingItem.item.id}
+          item={customPricingItem.item}
+          region={project?.region}
+          onClose={() => setCustomPricingItem(null)}
+          onSave={handleCustomPricingSave}
+          onOpenDetailedAnalysis={() => openDetailedAnalysis(customPricingItem.sectionId, customPricingItem.item)}
         />
       )}
       {calculatingQtyForItem && (
@@ -859,8 +1008,8 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         .ws-th-unit { width: 60px; text-align: center; }
         .ws-th-qty { width: 80px; text-align: center; }
         .ws-th-sm { width: 70px; text-align: center; }
-        .ws-th-strategy { width: 80px; text-align: center; }
-        .ws-th-rate { width: 120px; text-align: right; }
+        .ws-th-strategy { width: 150px; text-align: center; }
+        .ws-th-rate { width: 180px; text-align: right; }
         .ws-th-total { width: 120px; text-align: right; }
         .ws-th-act { width: 64px; }
 
@@ -1002,11 +1151,11 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         .ws-sm-input { text-align: center; font-weight: 600; width: 100%; }
         .ws-input:disabled { color: #94a3b8; background: #f8fafc; }
 
-        .ws-qty-wrap, .ws-rate-wrap { display: flex; align-items: center; gap: 2px; }
+        .ws-qty-wrap, .ws-rate-wrap { display: flex; align-items: center; gap: 0.25rem; }
 
         .ws-geo-btn, .ws-analysis-btn {
           display: flex; align-items: center; justify-content: center;
-          width: 20px; height: 20px;
+          width: 22px; height: 22px;
           border: none; background: #f1f5f9; color: #64748b;
           border-radius: 4px; cursor: pointer; flex-shrink: 0;
           transition: all 0.15s; opacity: 0;
@@ -1014,21 +1163,64 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         .ws-item-row:hover .ws-geo-btn,
         .ws-item-row:hover .ws-analysis-btn { opacity: 1; }
         .ws-geo-btn:hover, .ws-analysis-btn:hover { background: #2563eb; color: white; }
+        .ws-custom-studio-btn { background: #ecfeff; color: #0f766e; }
+        .ws-custom-studio-btn:hover { background: #0f766e !important; color: white !important; }
 
-        .ws-strategy-toggle { display: flex; gap: 1px; justify-content: center; }
-        .ws-strat-btn {
-          padding: 0.175rem 0.5rem;
-          font-size: 0.5625rem; font-weight: 800;
+        .ws-strategy-toggle {
+          display: inline-flex;
+          gap: 0.2rem;
+          justify-content: center;
+          background: #f8fafc;
           border: 1px solid #e2e8f0;
-          background: white; color: #94a3b8;
+          border-radius: 999px;
+          padding: 0.18rem;
+        }
+        .ws-strat-btn {
+          padding: 0.26rem 0.58rem;
+          min-width: 64px;
+          font-size: 0.56rem;
+          font-weight: 800;
+          border: 1px solid transparent;
+          border-radius: 999px;
+          background: transparent;
+          color: #64748b;
           cursor: pointer; transition: all 0.15s;
         }
-        .ws-strat-btn:first-child { border-radius: 4px 0 0 4px; }
-        .ws-strat-btn:last-child { border-radius: 0 4px 4px 0; }
         .ws-strat-btn.active { background: #1e293b; color: white; border-color: #1e293b; }
 
         .ws-total-cell { text-align: right; font-weight: 700; color: #1e293b; font-size: 0.8125rem; white-space: nowrap; }
         .ws-rate-cell { text-align: right; }
+        .ws-rate-meta {
+          display: flex;
+          justify-content: flex-end;
+          flex-wrap: wrap;
+          gap: 0.25rem;
+          margin-top: 0.2rem;
+        }
+        .ws-rate-chip {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.16rem 0.42rem;
+          border-radius: 999px;
+          font-size: 0.58rem;
+          font-weight: 800;
+          letter-spacing: 0.02em;
+          white-space: nowrap;
+        }
+        .ws-rate-chip-benchmark { background: #eff6ff; color: #1d4ed8; }
+        .ws-rate-chip-custom { background: #ecfeff; color: #0f766e; }
+        .ws-rate-chip-calculated { background: #f5f3ff; color: #6d28d9; }
+        .ws-rate-chip-manual { background: #f8fafc; color: #475569; }
+        .ws-rate-chip-aligned { background: #f0fdf4; color: #15803d; }
+        .ws-rate-chip-high { background: #fff7ed; color: #c2410c; }
+        .ws-rate-chip-low { background: #eff6ff; color: #2563eb; }
+        .ws-rate-note {
+          margin-top: 0.22rem;
+          font-size: 0.62rem;
+          color: #64748b;
+          line-height: 1.35;
+        }
 
         .ws-progress-bar {
           height: 18px; background: #f1f5f9;

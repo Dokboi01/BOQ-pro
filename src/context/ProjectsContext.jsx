@@ -187,7 +187,8 @@ export function ProjectsProvider({ children }) {
                     useBenchmark: false,
                     total: qty * initialRate,
                     isVO: false,
-                    breakdown: item.breakdown || null
+                    breakdown: item.breakdown || null,
+                    customPricing: item.customPricing || null
                 };
             })
         }));

@@ -509,6 +509,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                   if (item.description.toLowerCase().includes(mat.name.toLowerCase().split(' ')[0])) {
                     return {
                       ...item,
+                      benchmark: Number(mat.benchmark || mat.price || 0),
                       rate: mat.price,
                       useBenchmark: false,
                       total: item.qty * mat.price
