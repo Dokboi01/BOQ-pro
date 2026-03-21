@@ -234,7 +234,7 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
         : 'low';
 
   const updateNumber = (field, value) => {
-    setPricing((prev) => ({ ...prev, [field]: Math.max(clamp(value), 0) }));
+    setPricing((prev) => ({ ...prev, [field]: value }));
   };
 
   const updateText = (field, value) => {
@@ -296,19 +296,19 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
               <div className="custom-grid two-up">
                 <label className="custom-field">
                   <span><Package size={14} /> Materials per {item.unit}</span>
-                  <input type="number" value={pricing.materialsCost || ''} onChange={(event) => updateNumber('materialsCost', event.target.value)} />
+                  <input type="number" value={pricing.materialsCost ?? ''} onChange={(event) => updateNumber('materialsCost', event.target.value)} />
                 </label>
                 <label className="custom-field">
                   <span><HardHat size={14} /> Labour per {item.unit}</span>
-                  <input type="number" value={pricing.labourCost || ''} onChange={(event) => updateNumber('labourCost', event.target.value)} />
+                  <input type="number" value={pricing.labourCost ?? ''} onChange={(event) => updateNumber('labourCost', event.target.value)} />
                 </label>
                 <label className="custom-field">
                   <span><Wrench size={14} /> Plant per {item.unit}</span>
-                  <input type="number" value={pricing.plantCost || ''} onChange={(event) => updateNumber('plantCost', event.target.value)} />
+                  <input type="number" value={pricing.plantCost ?? ''} onChange={(event) => updateNumber('plantCost', event.target.value)} />
                 </label>
                 <label className="custom-field">
                   <span><Truck size={14} /> Transport per {item.unit}</span>
-                  <input type="number" value={pricing.transportCost || ''} onChange={(event) => updateNumber('transportCost', event.target.value)} />
+                  <input type="number" value={pricing.transportCost ?? ''} onChange={(event) => updateNumber('transportCost', event.target.value)} />
                 </label>
               </div>
             </div>
@@ -324,23 +324,23 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
               <div className="custom-grid two-up">
                 <label className="custom-field">
                   <span>Material waste %</span>
-                  <input type="number" value={pricing.wastePercent || ''} onChange={(event) => updateNumber('wastePercent', event.target.value)} />
+                  <input type="number" value={pricing.wastePercent ?? ''} onChange={(event) => updateNumber('wastePercent', event.target.value)} />
                 </label>
                 <label className="custom-field">
                   <span>Site difficulty %</span>
-                  <input type="number" value={pricing.siteAdjustmentPercent || ''} onChange={(event) => updateNumber('siteAdjustmentPercent', event.target.value)} />
+                  <input type="number" value={pricing.siteAdjustmentPercent ?? ''} onChange={(event) => updateNumber('siteAdjustmentPercent', event.target.value)} />
                 </label>
                 <label className="custom-field">
                   <span>Overheads %</span>
-                  <input type="number" value={pricing.overheadsPercent || ''} onChange={(event) => updateNumber('overheadsPercent', event.target.value)} />
+                  <input type="number" value={pricing.overheadsPercent ?? ''} onChange={(event) => updateNumber('overheadsPercent', event.target.value)} />
                 </label>
                 <label className="custom-field">
                   <span>Profit %</span>
-                  <input type="number" value={pricing.profitPercent || ''} onChange={(event) => updateNumber('profitPercent', event.target.value)} />
+                  <input type="number" value={pricing.profitPercent ?? ''} onChange={(event) => updateNumber('profitPercent', event.target.value)} />
                 </label>
                 <label className="custom-field">
                   <span>Round up to nearest</span>
-                  <input type="number" value={pricing.roundingStep || ''} onChange={(event) => updateNumber('roundingStep', event.target.value)} />
+                  <input type="number" value={pricing.roundingStep ?? ''} onChange={(event) => updateNumber('roundingStep', event.target.value)} />
                 </label>
               </div>
             </div>
