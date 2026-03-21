@@ -189,6 +189,9 @@ const ACTION_LABELS = {
   project_updated: '📝 Updated project',
   collaborator_invited: '👤 Invited collaborator',
   collaborator_removed: '👤 Removed collaborator',
+  message_sent: '💬 Sent message',
+  task_created: '✅ Created task',
+  task_updated: '🔧 Updated task',
 };
 
 /**
@@ -257,4 +260,145 @@ export function subscribeToActivity(projectId, callback, maxEntries = 15) {
   });
 
   return unsubscribe;
+}
+
+export async function sendProjectMessage(projectId, text) {
+  if (!projectId || projectId.startsWith('local_') || !auth.currentUser) {
+    return { success: false, error: 'Project must be synced before team messaging is available.' };
+  }
+
+  const cleanText = String(text || '').trim();
+  if (!cleanText) return { success: false, error: 'Message cannot be empty.' };
+
+  try {
+    const messagesCol = collection(db, 'projects', projectId, 'messages');
+    await addDoc(messagesCol, {
+      text: cleanText,
+      userId: auth.currentUser.uid,
+      userEmail: auth.currentUser.email,
+      userName: auth.currentUser.displayName || 'User',
+      createdAt: serverTimestamp(),
+    });
+
+    await logActivity(projectId, 'message_sent', {
+      preview: cleanText.slice(0, 80),
+    });
+
+    return { success: true };
+  } catch (err) {
+    console.warn('Send message failed:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+export function subscribeToMessages(projectId, callback, maxEntries = 50) {
+  if (!projectId || projectId.startsWith('local_')) {
+    callback([]);
+    return () => {};
+  }
+
+  const messagesCol = collection(db, 'projects', projectId, 'messages');
+  const q = query(messagesCol, orderBy('createdAt', 'asc'), limit(maxEntries));
+
+  return onSnapshot(q, (snapshot) => {
+    const entries = snapshot.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+      createdAt: d.data().createdAt?.toDate?.() || new Date(),
+    }));
+    callback(entries);
+  });
+}
+
+export async function createProjectTask(projectId, task = {}) {
+  if (!projectId || projectId.startsWith('local_') || !auth.currentUser) {
+    return { success: false, error: 'Project must be synced before tasks are available.' };
+  }
+
+  const title = String(task.title || '').trim();
+  if (!title) return { success: false, error: 'Task title is required.' };
+
+  try {
+    const taskCol = collection(db, 'projects', projectId, 'tasks');
+    await addDoc(taskCol, {
+      title,
+      description: String(task.description || '').trim(),
+      assigneeEmail: String(task.assigneeEmail || '').trim().toLowerCase(),
+      status: task.status || 'todo',
+      dueDate: task.dueDate ? Timestamp.fromDate(new Date(task.dueDate)) : null,
+      createdById: auth.currentUser.uid,
+      createdByEmail: auth.currentUser.email,
+      createdByName: auth.currentUser.displayName || 'User',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    await logActivity(projectId, 'task_created', {
+      title,
+      assigneeEmail: String(task.assigneeEmail || '').trim().toLowerCase(),
+    });
+
+    return { success: true };
+  } catch (err) {
+    console.warn('Create task failed:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function updateProjectTask(projectId, taskId, updates = {}) {
+  if (!projectId || projectId.startsWith('local_') || !taskId || !auth.currentUser) {
+    return { success: false, error: 'Task update is unavailable.' };
+  }
+
+  try {
+    const taskRef = doc(db, 'projects', projectId, 'tasks', taskId);
+    const payload = {
+      ...updates,
+      updatedAt: serverTimestamp(),
+      updatedById: auth.currentUser.uid,
+      updatedByEmail: auth.currentUser.email,
+      updatedByName: auth.currentUser.displayName || 'User',
+    };
+
+    if (payload.assigneeEmail !== undefined) {
+      payload.assigneeEmail = String(payload.assigneeEmail || '').trim().toLowerCase();
+    }
+    if (payload.dueDate !== undefined) {
+      payload.dueDate = payload.dueDate ? Timestamp.fromDate(new Date(payload.dueDate)) : null;
+    }
+
+    await updateDoc(taskRef, payload);
+
+    await logActivity(projectId, 'task_updated', {
+      taskId,
+      status: updates.status,
+      title: updates.title,
+    });
+
+    return { success: true };
+  } catch (err) {
+    console.warn('Update task failed:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+export function subscribeToTasks(projectId, callback, maxEntries = 50) {
+  if (!projectId || projectId.startsWith('local_')) {
+    callback([]);
+    return () => {};
+  }
+
+  const taskCol = collection(db, 'projects', projectId, 'tasks');
+  const q = query(taskCol, orderBy('createdAt', 'desc'), limit(maxEntries));
+
+  return onSnapshot(q, (snapshot) => {
+    const entries = snapshot.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+      createdAt: d.data().createdAt?.toDate?.() || new Date(),
+      updatedAt: d.data().updatedAt?.toDate?.() || null,
+      dueDate: d.data().dueDate?.toDate?.() || null,
+    }));
+    callback(entries);
+  });
 }

@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '../ui/useToast';
+import { useAuth } from '../../context/useAuth';
 import RateAnalysisModal from './RateAnalysisModal';
 import GeometricCalculator from './GeometricCalculator';
 import BidManagerModal from './BidManagerModal';
-import CollabModal from './CollabModal';
-import ActivityPanel from './ActivityPanel';
+import TeamHubPanel from './TeamHubPanel';
 import StructuralAnalyzer from './StructuralAnalyzer';
 import ProjectNotesAccordion from './ProjectNotesAccordion';
 import { getRegionalModifier } from '../../utils/aiService';
 import { getMaterials } from '../../db/database';
+import { buildCompanyKey, deriveCompanyName } from '../../utils/companyAccess';
 import {
   startPresence,
   stopPresence,
@@ -29,8 +30,7 @@ import {
   Gavel,
   AlertTriangle,
   Copy,
-  UserPlus,
-  History,
+  MessagesSquare,
   Database,
   Save
 } from 'lucide-react';
@@ -45,12 +45,13 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
   const [showStructuralAnalyzer, setShowStructuralAnalyzer] = useState(false);
 
   // Collaboration state
-  const [showInviteModal, setShowInviteModal] = useState(false);
-  const [showActivityPanel, setShowActivityPanel] = useState(false);
+  const [showTeamHub, setShowTeamHub] = useState(false);
   const [presenceUsers, setPresenceUsers] = useState([]);
   const [activityLog, setActivityLog] = useState([]);
 
   const toast = useToast();
+  const { user } = useAuth();
+  const isCustomWorkspace = project?.projectMode === 'custom';
 
   React.useEffect(() => {
     if (project?.sections) {
@@ -58,23 +59,56 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
     }
   }, [project]);
 
+  useEffect(() => {
+    if (!project?.id || !isCustomWorkspace || !user?.email) return;
+
+    const company_name = project.company_name || deriveCompanyName({
+      companyName: user.company_name,
+      email: user.email
+    });
+    const company_key = project.company_key || buildCompanyKey({
+      companyKey: user.company_key,
+      companyName: company_name,
+      email: user.email
+    });
+
+    const metadataUpdates = {};
+    if (project.access_mode !== 'company') metadataUpdates.access_mode = 'company';
+    if (project.company_name !== company_name) metadataUpdates.company_name = company_name;
+    if (project.company_key !== company_key) metadataUpdates.company_key = company_key;
+    if (!project.share_enabled) metadataUpdates.share_enabled = true;
+    if (!project.collaboration_enabled) metadataUpdates.collaboration_enabled = true;
+
+    if (Object.keys(metadataUpdates).length > 0) {
+      onUpdate(project.id, sections, project.region, metadataUpdates);
+    }
+  }, [
+    isCustomWorkspace,
+    onUpdate,
+    project,
+    sections,
+    user?.company_key,
+    user?.company_name,
+    user?.email
+  ]);
+
   // Presence subscription
   useEffect(() => {
-    if (!project?.id) return;
+    if (!project?.id || !isCustomWorkspace) return;
     startPresence(project.id);
     const unsubPresence = subscribeToPresence(project.id, setPresenceUsers);
     return () => {
       stopPresence(project.id);
       unsubPresence();
     };
-  }, [project?.id]);
+  }, [isCustomWorkspace, project?.id]);
 
   // Activity log subscription
   useEffect(() => {
-    if (!project?.id) return;
+    if (!project?.id || !isCustomWorkspace) return;
     const unsubActivity = subscribeToActivity(project.id, setActivityLog);
     return () => unsubActivity();
-  }, [project?.id]);
+  }, [isCustomWorkspace, project?.id]);
 
   const getInitials = (name) => {
     if (!name) return '?';
@@ -353,7 +387,7 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         </div>
         <div className="ws-toolbar-right">
           {/* Presence Avatars */}
-          {presenceUsers.length > 0 && (
+          {isCustomWorkspace && presenceUsers.length > 0 && (
             <div className="ws-presence">
               {presenceUsers.slice(0, 4).map((u, i) => (
                 <div
@@ -371,12 +405,11 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
               )}
             </div>
           )}
-          <button className="ws-btn ws-btn-ghost" onClick={() => setShowInviteModal(true)} title="Share project">
-            <UserPlus size={14} /> Share
-          </button>
-          <button className="ws-btn ws-btn-ghost" onClick={() => setShowActivityPanel(!showActivityPanel)} title="Activity log">
-            <History size={14} />
-          </button>
+          {isCustomWorkspace && (
+            <button className="ws-btn ws-btn-custom" onClick={() => setShowTeamHub(true)} title="Open company workspace">
+              <MessagesSquare size={14} /> Custom Hub
+            </button>
+          )}
           <button className="ws-btn ws-btn-ghost" onClick={() => {
             const firstItem = (sections || []).flatMap(s => s.items || [])[0];
             if (firstItem) {
@@ -683,18 +716,13 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         />
       )}
 
-      {showInviteModal && (
-        <CollabModal
-          projectId={project.id}
-          collaborators={project?.collaborators || []}
-          onClose={() => setShowInviteModal(false)}
-        />
-      )}
-
-      {showActivityPanel && (
-        <ActivityPanel
+      {showTeamHub && isCustomWorkspace && (
+        <TeamHubPanel
+          key={project.id}
+          project={project}
+          presenceUsers={presenceUsers}
           activityLog={activityLog}
-          onClose={() => setShowActivityPanel(false)}
+          onClose={() => setShowTeamHub(false)}
         />
       )}
 
@@ -782,6 +810,14 @@ const BOQWorkspace = ({ project, onUpdate, onAddSection, onExport, onDelete }) =
         }
         .ws-btn-ghost { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.1); }
         .ws-btn-ghost:hover { background: rgba(255,255,255,0.12); color: white; }
+        .ws-btn-custom {
+          background: linear-gradient(135deg, rgba(16,185,129,0.95), rgba(5,150,105,0.95));
+          color: white;
+          box-shadow: 0 10px 20px rgba(5, 150, 105, 0.25);
+        }
+        .ws-btn-custom:hover {
+          filter: brightness(1.05);
+        }
         .ws-btn-primary { background: #2563eb; color: white; }
         .ws-btn-primary:hover { background: #1d4ed8; }
 
