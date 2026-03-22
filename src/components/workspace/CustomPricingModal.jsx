@@ -40,13 +40,73 @@ const QUICK_PRESETS = {
   backyardEntrance: {
     key: 'backyardEntrance',
     label: 'Backyard Entrance',
+    copy: 'Load a ready-made custom build-up for a typical service gate or rear access entrance.',
     workType: 'entranceworks',
     fallbackReferenceRate: 185000,
     pricingReference: 'Backyard entrance preset',
     supplierQuote: 'Gate frame, fittings and installation allowance',
     notes: 'Allow for framed metal backyard entrance gate, hinges, latch set, holdfasts, fixing, touch-up painting, and minor concrete or blockwork to make good.'
+  },
+  concreteWork: {
+    key: 'concreteWork',
+    label: 'Reinforced Concrete',
+    copy: 'Use a concrete-heavy build-up with labour, plant, transport, and commercial allowances suited to structural concrete work.',
+    workType: 'concrete',
+    fallbackReferenceRate: 75000,
+    pricingReference: 'Concrete works preset',
+    supplierQuote: 'Batching, placing and compaction allowance',
+    notes: 'Allow for production, placement, vibration, curing, and incidental waste for reinforced concrete work.'
+  },
+  blockwork: {
+    key: 'blockwork',
+    label: 'Sandcrete Blockwork',
+    copy: 'Set up a masonry-oriented pricing profile for walls, partitions, and block-based enclosures.',
+    workType: 'masonry',
+    fallbackReferenceRate: 18000,
+    pricingReference: 'Blockwork preset',
+    supplierQuote: 'Blocks, mortar materials and masonry labour allowance',
+    notes: 'Allow for laying, jointing, line and level control, mortar waste, and making good around openings.'
+  },
+  roofing: {
+    key: 'roofing',
+    label: 'Roof Covering',
+    copy: 'Start from a roof-focused mix with material-heavy pricing, access allowances, and weather exposure risk.',
+    workType: 'roofing',
+    fallbackReferenceRate: 28500,
+    pricingReference: 'Roofing preset',
+    supplierQuote: 'Roofing sheets, accessories and fixing labour allowance',
+    notes: 'Allow for roof sheets, ridges, flashings, fasteners, laps, wastage, access scaffolds, and touch-up work.'
+  },
+  painting: {
+    key: 'painting',
+    label: 'Painting Finish',
+    copy: 'Load a labour-sensitive pricing mix for interior or exterior painting and decorative finish work.',
+    workType: 'painting',
+    fallbackReferenceRate: 6500,
+    pricingReference: 'Painting preset',
+    supplierQuote: 'Paint system and surface preparation allowance',
+    notes: 'Allow for surface prep, primer, finish coats, masking, touch-ups, and normal access requirements.'
   }
 };
+
+const WORK_TYPE_OPTIONS = [
+  { value: 'general', label: 'General Building', helper: 'Balanced fallback for mixed building work and uncertain scope.' },
+  { value: 'concrete', label: 'Concrete', helper: 'Structural or plain concrete work with batching, placing, and curing costs.' },
+  { value: 'masonry', label: 'Masonry', helper: 'Block, brick, or stone walling and similar laid units.' },
+  { value: 'plastering', label: 'Plastering / Rendering', helper: 'Cement-sand rendering, screeds, and other wet finishes.' },
+  { value: 'tiling', label: 'Tiling', helper: 'Floor or wall tiles with adhesive, grout, and cutting waste.' },
+  { value: 'painting', label: 'Painting', helper: 'Primer, finish coats, prep, and labour-led finishing work.' },
+  { value: 'formwork', label: 'Formwork', helper: 'Temporary works, shuttering, and repeated carpentry systems.' },
+  { value: 'reinforcement', label: 'Reinforcement', helper: 'Steel bar fixing, cutting, bending, and tying work.' },
+  { value: 'roofing', label: 'Roofing', helper: 'Roof sheets, accessories, lifting, and access-related allowances.' },
+  { value: 'pipework', label: 'Pipework', helper: 'External pipe runs, drainage, and buried service pipe installations.' },
+  { value: 'plumbing', label: 'Plumbing', helper: 'Sanitary and water-service installations within buildings.' },
+  { value: 'electrical', label: 'Electrical', helper: 'Cabling, conduits, fittings, and electrical installation work.' },
+  { value: 'steelwork', label: 'Steelwork', helper: 'Fabrication, welding, erection, and protective finishing.' },
+  { value: 'roadwork', label: 'Roadwork', helper: 'Road construction, paving, kerbs, and surfacing operations.' },
+  { value: 'earthwork', label: 'Earthwork', helper: 'Excavation, filling, cart-away, and heavy plant-led operations.' },
+  { value: 'entranceworks', label: 'Entrance / Gate Works', helper: 'Metal gates, access points, fittings, and making-good items.' }
+];
 
 const clamp = (value) => {
   const parsed = Number(value);
@@ -54,6 +114,11 @@ const clamp = (value) => {
 };
 
 const formatMoney = (value) => `NGN ${MONEY.format(clamp(value))}`;
+
+const getWorkTypeMeta = (workType) => {
+  return WORK_TYPE_OPTIONS.find((option) => option.value === workType)
+    || WORK_TYPE_OPTIONS[0];
+};
 
 const inferWorkType = (description = '') => {
   const text = String(description).toLowerCase();
@@ -254,6 +319,7 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
 
   const quantity = Math.max(clamp(item?.qty), 0);
   const activeWorkType = pricing.workType || seeded.workType;
+  const activeWorkTypeMeta = getWorkTypeMeta(activeWorkType);
   const currentRate = item?.useBenchmark ? seeded.benchmarkRate : clamp(item?.rate);
   const summary = useMemo(() => buildSummary(pricing), [pricing]);
   const totalAmount = summary.finalRate * quantity;
@@ -269,6 +335,20 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
       : benchmarkDeltaPercent > 0
         ? 'high'
         : 'low';
+  const directMix = useMemo(() => {
+    const rows = [
+      { key: 'materials', label: 'Materials', unitValue: clamp(pricing.materialsCost) },
+      { key: 'labour', label: 'Labour', unitValue: clamp(pricing.labourCost) },
+      { key: 'plant', label: 'Plant', unitValue: clamp(pricing.plantCost) },
+      { key: 'transport', label: 'Transport', unitValue: clamp(pricing.transportCost) }
+    ];
+
+    return rows.map((row) => ({
+      ...row,
+      percentOfDirect: summary.directCost > 0 ? (row.unitValue / summary.directCost) * 100 : 0,
+      totalValue: row.unitValue * quantity
+    }));
+  }, [pricing, quantity, summary.directCost]);
 
   const updateNumber = (field, value) => {
     setPricing((prev) => ({ ...prev, [field]: value }));
@@ -276,6 +356,19 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
 
   const updateText = (field, value) => {
     setPricing((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const applyWorkTypeDefaults = (nextWorkType) => {
+    const profile = WORK_TYPE_PROFILES[nextWorkType] || WORK_TYPE_PROFILES.general;
+    setPricing((prev) => ({
+      ...prev,
+      workType: nextWorkType,
+      wastePercent: profile.waste,
+      siteAdjustmentPercent: profile.siteAdjustment,
+      overheadsPercent: profile.overheads,
+      profitPercent: profile.profit,
+      roundingStep: profile.roundingStep
+    }));
   };
 
   const resetToReference = () => {
@@ -319,7 +412,7 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
         <div className="custom-pricing-toolbar">
           <span className="custom-chip">
             <ShieldCheck size={14} />
-            Work type: {activeWorkType}
+            Work type: {activeWorkTypeMeta.label}
           </span>
           <span className="custom-chip">
             <FileText size={14} />
@@ -342,10 +435,12 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
                 <FileText size={18} />
               </div>
               <div className="preset-grid">
-                <button className="preset-btn" onClick={() => applyPreset(QUICK_PRESETS.backyardEntrance)}>
-                  <span className="preset-label">Backyard Entrance</span>
-                  <span className="preset-copy">Load a ready-made custom build-up for a typical service gate or rear access entrance.</span>
-                </button>
+                {Object.values(QUICK_PRESETS).map((preset) => (
+                  <button key={preset.key} className="preset-btn" onClick={() => applyPreset(preset)}>
+                    <span className="preset-label">{preset.label}</span>
+                    <span className="preset-copy">{preset.copy}</span>
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -353,6 +448,39 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
               <div className="custom-section-head">
                 <div>
                   <span className="section-kicker">Step 1</span>
+                  <h4>Work Type & Pricing Basis</h4>
+                </div>
+                <ShieldCheck size={18} />
+              </div>
+              <div className="custom-grid">
+                <label className="custom-field custom-field-full">
+                  <span>Pricing profile</span>
+                  <select
+                    className="custom-select"
+                    value={activeWorkType}
+                    onChange={(event) => applyWorkTypeDefaults(event.target.value)}
+                  >
+                    {WORK_TYPE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="profile-helper-card">
+                  <strong>{activeWorkTypeMeta.label}</strong>
+                  <p>{activeWorkTypeMeta.helper}</p>
+                  <button className="profile-helper-btn" onClick={() => applyWorkTypeDefaults(activeWorkType)}>
+                    Apply recommended percentages for this work type
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="custom-section-card">
+              <div className="custom-section-head">
+                <div>
+                  <span className="section-kicker">Step 2</span>
                   <h4>Direct Cost Build</h4>
                 </div>
                 <SlidersHorizontal size={18} />
@@ -380,7 +508,7 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
             <div className="custom-section-card">
               <div className="custom-section-head">
                 <div>
-                  <span className="section-kicker">Step 2</span>
+                  <span className="section-kicker">Step 3</span>
                   <h4>Commercial Adjustments</h4>
                 </div>
                 <TrendingUp size={18} />
@@ -412,7 +540,7 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
             <div className="custom-section-card">
               <div className="custom-section-head">
                 <div>
-                  <span className="section-kicker">Step 3</span>
+                  <span className="section-kicker">Step 4</span>
                   <h4>Reference & Notes</h4>
                 </div>
                 <FileText size={18} />
@@ -458,6 +586,24 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
                   </div>
                 </>
               )}
+            </div>
+
+            <div className="summary-card">
+              <span className="summary-eyebrow">Direct Cost Mix</span>
+              <div className="mix-list">
+                {directMix.map((row) => (
+                  <div key={row.key} className="mix-row">
+                    <div>
+                      <span>{row.label}</span>
+                      <small>{PERCENT.format(row.percentOfDirect)}% of direct cost</small>
+                    </div>
+                    <div className="mix-values">
+                      <strong>{formatMoney(row.unitValue)}</strong>
+                      <small>Total: {formatMoney(row.totalValue)}</small>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="summary-card">
@@ -637,6 +783,7 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
         .preset-grid {
           display: grid;
           gap: 0.75rem;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
         .preset-btn {
           border: 1px solid #fdba74;
@@ -686,6 +833,7 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
           color: #334155;
         }
         .custom-field input,
+        .custom-field select,
         .custom-field textarea {
           width: 100%;
           border: 1px solid #cbd5e1;
@@ -696,14 +844,45 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
           background: #f8fafc;
         }
         .custom-field input:focus,
+        .custom-field select:focus,
         .custom-field textarea:focus {
           outline: none;
           border-color: #2563eb;
           box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
           background: white;
         }
+        .custom-select {
+          appearance: none;
+        }
         .custom-field-full {
           grid-column: 1 / -1;
+        }
+        .profile-helper-card {
+          border: 1px solid #dbeafe;
+          border-radius: 16px;
+          background: #eff6ff;
+          padding: 0.95rem 1rem;
+        }
+        .profile-helper-card strong {
+          display: block;
+          color: #1e3a8a;
+          font-size: 0.9rem;
+        }
+        .profile-helper-card p {
+          margin: 0.35rem 0 0.8rem;
+          color: #334155;
+          font-size: 0.82rem;
+          line-height: 1.55;
+        }
+        .profile-helper-btn {
+          border: 1px solid #93c5fd;
+          background: white;
+          color: #1d4ed8;
+          border-radius: 999px;
+          padding: 0.55rem 0.85rem;
+          font-size: 0.78rem;
+          font-weight: 800;
+          cursor: pointer;
         }
         .spotlight {
           background: linear-gradient(135deg, #0f172a, #1d4ed8);
@@ -752,6 +931,36 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
           display: flex;
           flex-direction: column;
           gap: 0.6rem;
+        }
+        .mix-list {
+          display: flex;
+          flex-direction: column;
+          gap: 0.7rem;
+        }
+        .mix-row {
+          display: flex;
+          justify-content: space-between;
+          gap: 1rem;
+          padding-bottom: 0.7rem;
+          border-bottom: 1px solid #e2e8f0;
+        }
+        .mix-row:last-child {
+          padding-bottom: 0;
+          border-bottom: none;
+        }
+        .mix-row span,
+        .mix-row strong {
+          color: #0f172a;
+          font-size: 0.84rem;
+        }
+        .mix-row small {
+          display: block;
+          margin-top: 0.18rem;
+          color: #64748b;
+          font-size: 0.72rem;
+        }
+        .mix-values {
+          text-align: right;
         }
         .formula-list div {
           display: flex;
@@ -833,6 +1042,9 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
             padding-right: 1rem;
           }
           .custom-grid.two-up {
+            grid-template-columns: 1fr;
+          }
+          .preset-grid {
             grid-template-columns: 1fr;
           }
           .custom-pricing-footer {
