@@ -37,6 +37,25 @@ import {
   SlidersHorizontal
 } from 'lucide-react';
 
+const WORK_TYPE_LABELS = {
+  general: 'General Building',
+  concrete: 'Concrete',
+  masonry: 'Masonry',
+  plastering: 'Plastering',
+  tiling: 'Tiling',
+  painting: 'Painting',
+  formwork: 'Formwork',
+  reinforcement: 'Reinforcement',
+  roofing: 'Roofing',
+  pipework: 'Pipework',
+  plumbing: 'Plumbing',
+  electrical: 'Electrical',
+  steelwork: 'Steelwork',
+  roadwork: 'Roadwork',
+  earthwork: 'Earthwork',
+  entranceworks: 'Entrance / Gate Works'
+};
+
 const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, onAddSection, onExport, onDelete }) => {
   const [sections, setSections] = useState(project?.sections || []);
   const [analyzingItem, setAnalyzingItem] = useState(null);
@@ -244,17 +263,36 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     setAnalyzingItem({ sectionId, item });
   };
 
+  const openCustomPricingStudio = (sectionId, item) => {
+    setCustomPricingItem({
+      sectionId,
+      item: {
+        ...item,
+        useBenchmark: false
+      }
+    });
+  };
+
   const activateCustomPricing = (sectionId, item) => {
+    const nextRateSource = item.customPricing
+      ? 'custom'
+      : item.breakdown
+        ? 'calculated'
+        : item.rateSource === 'benchmark'
+          ? 'manual'
+          : (item.rateSource || 'manual');
+
     updateItem(sectionId, item.id, {
       useBenchmark: false,
-      rateSource: item.customPricing
-        ? 'custom'
-        : item.breakdown
-          ? 'calculated'
-          : item.rateSource === 'benchmark'
-            ? 'manual'
-            : (item.rateSource || 'manual')
+      rateSource: nextRateSource
     });
+
+    if (!item.customPricing) {
+      openCustomPricingStudio(sectionId, {
+        ...item,
+        rateSource: nextRateSource
+      });
+    }
   };
 
   const activateBenchmarkPricing = (sectionId, item) => {
@@ -449,6 +487,24 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       text: `${delta > 0 ? '+' : ''}${delta.toFixed(1)}% vs benchmark`,
       tone: delta > 0 ? 'high' : 'low'
     };
+  };
+
+  const getCustomPricingSummary = (item) => {
+    if (!item?.customPricing) return '';
+
+    const segments = [];
+    const workTypeLabel = WORK_TYPE_LABELS[item.customPricing.workType];
+    if (workTypeLabel) {
+      segments.push(workTypeLabel);
+    }
+    if (item.customPricing.pricingReference) {
+      segments.push(item.customPricing.pricingReference);
+    }
+    if (item.customPricing.supplierQuote) {
+      segments.push(item.customPricing.supplierQuote);
+    }
+
+    return segments.join(' • ');
   };
 
   const filteredSections = React.useMemo(() => {
@@ -745,8 +801,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                             {!item.useBenchmark && (
                               <button
                                 className="ws-analysis-btn ws-custom-studio-btn"
-                                onClick={() => setCustomPricingItem({ sectionId: section.id, item })}
-                                title="Open custom pricing studio"
+                                onClick={() => openCustomPricingStudio(section.id, item)}
+                                title={item.customPricing ? 'Edit custom pricing studio' : 'Build custom pricing in the studio'}
                               >
                                 <SlidersHorizontal size={11} />
                               </button>
@@ -760,9 +816,21 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                             {benchmarkDeltaMeta && (
                               <span className={`ws-rate-chip ws-rate-chip-${benchmarkDeltaMeta.tone}`}>{benchmarkDeltaMeta.text}</span>
                             )}
+                            {!item.useBenchmark && !item.customPricing && (
+                              <button
+                                className="ws-rate-link"
+                                onClick={() => openCustomPricingStudio(section.id, item)}
+                                title="Build a defendable custom rate"
+                              >
+                                Build in studio
+                              </button>
+                            )}
                           </div>
-                          {!item.useBenchmark && item.customPricing?.pricingReference && (
-                            <div className="ws-rate-note">{item.customPricing.pricingReference}</div>
+                          {!item.useBenchmark && item.customPricing && (
+                            <div className="ws-rate-note">{getCustomPricingSummary(item) || 'Custom pricing saved for this item.'}</div>
+                          )}
+                          {!item.useBenchmark && !item.customPricing && (
+                            <div className="ws-rate-note">Custom pricing is active. Open the studio to record the basis, quote, and commercial allowances behind this rate.</div>
                           )}
                         </td>
                         <td className="ws-total-cell">₦{(item.total || 0).toLocaleString()}</td>
@@ -1244,6 +1312,20 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           font-size: 0.62rem;
           color: #64748b;
           line-height: 1.35;
+        }
+        .ws-rate-link {
+          border: none;
+          background: #ecfeff;
+          color: #0f766e;
+          border-radius: 999px;
+          padding: 0.16rem 0.46rem;
+          font-size: 0.58rem;
+          font-weight: 800;
+          cursor: pointer;
+        }
+        .ws-rate-link:hover {
+          background: #0f766e;
+          color: white;
         }
 
         .ws-progress-bar {
