@@ -258,19 +258,19 @@ const Hero = ({ onGetStarted, onLogin }) => {
           position: relative;
           overflow: hidden;
           background:
-            radial-gradient(circle at top left, rgba(214, 158, 46, 0.12), transparent 28%),
-            radial-gradient(circle at 85% 15%, rgba(59, 130, 246, 0.14), transparent 26%),
-            linear-gradient(180deg, #071019 0%, #0b1724 44%, #101d2d 100%);
-          color: #f8fafc;
-          font-family: "Space Grotesk", "Segoe UI", "Trebuchet MS", sans-serif;
+            radial-gradient(circle at top left, rgba(37, 99, 235, 0.09), transparent 28%),
+            radial-gradient(circle at 90% 12%, rgba(217, 119, 6, 0.08), transparent 22%),
+            linear-gradient(180deg, #ffffff 0%, #f8fafc 52%, #f1f5f9 100%);
+          color: var(--primary-900);
+          font-family: var(--font-main);
         }
 
         .landing-atmosphere {
           position: absolute;
           inset: 0;
           background:
-            radial-gradient(circle at 20% 25%, rgba(56, 189, 248, 0.12), transparent 22%),
-            radial-gradient(circle at 78% 76%, rgba(245, 158, 11, 0.1), transparent 20%);
+            radial-gradient(circle at 18% 24%, rgba(96, 165, 250, 0.18), transparent 18%),
+            radial-gradient(circle at 82% 74%, rgba(251, 191, 36, 0.12), transparent 18%);
           pointer-events: none;
         }
 
@@ -278,10 +278,10 @@ const Hero = ({ onGetStarted, onLogin }) => {
           position: absolute;
           inset: 0;
           background-image:
-            linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+            linear-gradient(rgba(203, 213, 225, 0.45) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(203, 213, 225, 0.45) 1px, transparent 1px);
           background-size: 64px 64px;
-          mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.82), transparent 88%);
+          mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.4), transparent 90%);
           pointer-events: none;
         }
 
@@ -319,7 +319,7 @@ const Hero = ({ onGetStarted, onLogin }) => {
           align-items: center;
           justify-content: center;
           border-radius: 14px;
-          background: linear-gradient(135deg, #0f766e, #2563eb);
+          background: linear-gradient(135deg, var(--primary-900), var(--accent-600));
           box-shadow: 0 18px 35px rgba(37, 99, 235, 0.24);
         }
 
@@ -336,7 +336,7 @@ const Hero = ({ onGetStarted, onLogin }) => {
 
         .brand-copy small {
           font-size: 0.72rem;
-          color: #93a7bd;
+          color: var(--primary-500);
         }
 
         .nav-actions {
@@ -358,25 +358,25 @@ const Hero = ({ onGetStarted, onLogin }) => {
 
         .nav-link {
           background: transparent;
-          color: #dbe7f5;
+          color: var(--primary-600);
           font-size: 0.9rem;
           font-weight: 700;
           padding: 0.65rem 0.85rem;
         }
 
         .nav-link:hover {
-          color: white;
+          color: var(--primary-900);
           transform: translateY(-1px);
         }
 
         .nav-cta {
           padding: 0.82rem 1.2rem;
           border-radius: 999px;
-          background: linear-gradient(135deg, #f59e0b, #d97706);
-          color: #09131d;
+          background: var(--primary-900);
+          color: white;
           font-size: 0.9rem;
           font-weight: 800;
-          box-shadow: 0 16px 30px rgba(217, 119, 6, 0.28);
+          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.14);
         }
 
         .nav-cta:hover,
@@ -415,10 +415,10 @@ const Hero = ({ onGetStarted, onLogin }) => {
 
         .hero-kicker {
           padding: 0.55rem 0.9rem;
-          background: rgba(12, 21, 33, 0.64);
-          border: 1px solid rgba(148, 163, 184, 0.18);
-          color: #9dc4ff;
-          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+          background: rgba(59, 130, 246, 0.08);
+          border: 1px solid rgba(59, 130, 246, 0.16);
+          color: var(--accent-600);
+          box-shadow: 0 8px 18px rgba(59, 130, 246, 0.08);
         }
 
         .hero-copy h1 {
@@ -426,17 +426,18 @@ const Hero = ({ onGetStarted, onLogin }) => {
           font-size: clamp(3rem, 7vw, 5.4rem);
           line-height: 0.95;
           letter-spacing: -0.05em;
+          color: var(--primary-950);
         }
 
         .hero-copy h1 span {
           display: block;
-          color: #f6b951;
+          color: var(--accent-600);
         }
 
         .hero-subtitle {
           max-width: 670px;
           margin: 0;
-          color: #b4c4d8;
+          color: var(--primary-600);
           font-size: 1.06rem;
           line-height: 1.78;
         }
@@ -455,26 +456,27 @@ const Hero = ({ onGetStarted, onLogin }) => {
           gap: 0.65rem;
           padding: 1rem 1.35rem;
           border-radius: 18px;
-          background: linear-gradient(135deg, #0f766e, #0284c7);
+          background: var(--primary-900);
           color: white;
           font-size: 0.96rem;
           font-weight: 800;
-          box-shadow: 0 22px 40px rgba(2, 132, 199, 0.24);
+          box-shadow: 0 18px 30px rgba(15, 23, 42, 0.14);
         }
 
         .hero-secondary {
           padding: 1rem 1.25rem;
           border-radius: 18px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(148, 163, 184, 0.2);
-          color: #edf4fb;
+          background: white;
+          border: 1px solid var(--border-medium);
+          color: var(--primary-700);
           font-size: 0.95rem;
           font-weight: 700;
-          backdrop-filter: blur(10px);
+          box-shadow: var(--shadow-sm);
         }
 
         .hero-secondary:hover {
-          background: rgba(255, 255, 255, 0.09);
+          background: var(--primary-50);
+          border-color: var(--primary-400);
           transform: translateY(-2px);
         }
 
@@ -488,14 +490,14 @@ const Hero = ({ onGetStarted, onLogin }) => {
         .hero-stat-card {
           padding: 1rem 1.05rem;
           border-radius: 20px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(148, 163, 184, 0.16);
-          backdrop-filter: blur(12px);
+          background: white;
+          border: 1px solid var(--border-light);
+          box-shadow: var(--shadow-sm);
         }
 
         .hero-stat-card strong {
           display: block;
-          color: white;
+          color: var(--primary-900);
           font-size: 1rem;
           font-weight: 800;
         }
@@ -503,7 +505,7 @@ const Hero = ({ onGetStarted, onLogin }) => {
         .hero-stat-card span {
           display: block;
           margin-top: 0.3rem;
-          color: #9fb0c2;
+          color: var(--primary-500);
           font-size: 0.78rem;
           line-height: 1.5;
         }
@@ -518,11 +520,12 @@ const Hero = ({ onGetStarted, onLogin }) => {
         .trust-strip span {
           padding: 0.46rem 0.72rem;
           border-radius: 999px;
-          background: rgba(245, 158, 11, 0.08);
-          border: 1px solid rgba(245, 158, 11, 0.18);
-          color: #f6c872;
+          background: white;
+          border: 1px solid var(--border-light);
+          color: var(--primary-700);
           font-size: 0.74rem;
           font-weight: 700;
+          box-shadow: var(--shadow-sm);
         }
 
         .hero-visual {
@@ -532,10 +535,10 @@ const Hero = ({ onGetStarted, onLogin }) => {
 
         .workspace-card {
           border-radius: 28px;
-          border: 1px solid rgba(148, 163, 184, 0.16);
-          background: rgba(8, 16, 28, 0.82);
-          backdrop-filter: blur(18px);
-          box-shadow: 0 30px 70px rgba(0, 0, 0, 0.28);
+          border: 1px solid var(--border-light);
+          background: rgba(255, 255, 255, 0.92);
+          backdrop-filter: blur(14px);
+          box-shadow: var(--shadow-xl);
         }
 
         .workspace-main {
@@ -548,8 +551,8 @@ const Hero = ({ onGetStarted, onLogin }) => {
           bottom: 1.2rem;
           width: min(280px, 82%);
           padding: 1.1rem 1rem;
-          background: linear-gradient(180deg, rgba(17, 24, 39, 0.96), rgba(10, 17, 27, 0.94));
-          box-shadow: 0 28px 60px rgba(0, 0, 0, 0.32);
+          background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+          box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
         }
 
         .workspace-header {
@@ -561,9 +564,9 @@ const Hero = ({ onGetStarted, onLogin }) => {
 
         .workspace-tag {
           padding: 0.42rem 0.72rem;
-          background: rgba(14, 165, 233, 0.1);
-          border: 1px solid rgba(14, 165, 233, 0.22);
-          color: #93c5fd;
+          background: rgba(37, 99, 235, 0.08);
+          border: 1px solid rgba(37, 99, 235, 0.14);
+          color: var(--accent-600);
         }
 
         .workspace-header h2,
@@ -571,6 +574,7 @@ const Hero = ({ onGetStarted, onLogin }) => {
           margin: 0.6rem 0 0;
           font-size: 1.2rem;
           line-height: 1.25;
+          color: var(--primary-950);
         }
 
         .workspace-status {
@@ -579,8 +583,8 @@ const Hero = ({ onGetStarted, onLogin }) => {
           gap: 0.35rem;
           padding: 0.55rem 0.75rem;
           border-radius: 14px;
-          background: rgba(245, 158, 11, 0.1);
-          color: #f8c979;
+          background: rgba(217, 119, 6, 0.1);
+          color: var(--warning-600);
           font-size: 0.78rem;
           font-weight: 700;
           white-space: nowrap;
@@ -599,10 +603,11 @@ const Hero = ({ onGetStarted, onLogin }) => {
           gap: 0.4rem;
           padding: 0.55rem 0.75rem;
           border-radius: 14px;
-          background: rgba(255, 255, 255, 0.05);
-          color: #c8d6e5;
+          background: var(--primary-50);
+          color: var(--primary-700);
           font-size: 0.76rem;
           font-weight: 700;
+          border: 1px solid var(--border-light);
         }
 
         .snapshot-table {
@@ -619,19 +624,20 @@ const Hero = ({ onGetStarted, onLogin }) => {
           gap: 1rem;
           padding: 0.95rem 1rem;
           border-radius: 18px;
-          background: rgba(255, 255, 255, 0.04);
-          border: 1px solid rgba(148, 163, 184, 0.12);
+          background: white;
+          border: 1px solid var(--border-light);
         }
 
         .snapshot-row strong {
           display: block;
           font-size: 0.92rem;
+          color: var(--primary-900);
         }
 
         .snapshot-row small {
           display: block;
           margin-top: 0.2rem;
-          color: #8fa1b4;
+          color: var(--primary-500);
           font-size: 0.72rem;
         }
 
@@ -671,15 +677,15 @@ const Hero = ({ onGetStarted, onLogin }) => {
           margin-top: 1.2rem;
           padding: 1rem;
           border-radius: 22px;
-          background: linear-gradient(180deg, rgba(20, 31, 48, 0.88), rgba(10, 17, 27, 0.8));
-          border: 1px solid rgba(148, 163, 184, 0.12);
+          background: var(--primary-50);
+          border: 1px solid var(--border-light);
         }
 
         .activity-title {
           display: flex;
           align-items: center;
           gap: 0.45rem;
-          color: #f3f8fe;
+          color: var(--primary-900);
           font-size: 0.83rem;
           font-weight: 800;
           margin-bottom: 0.75rem;
@@ -689,7 +695,7 @@ const Hero = ({ onGetStarted, onLogin }) => {
           display: flex;
           align-items: flex-start;
           gap: 0.55rem;
-          color: #aec0d3;
+          color: var(--primary-600);
           font-size: 0.78rem;
           line-height: 1.55;
         }
@@ -701,7 +707,7 @@ const Hero = ({ onGetStarted, onLogin }) => {
         .activity-row svg {
           margin-top: 0.18rem;
           flex-shrink: 0;
-          color: #5eead4;
+          color: var(--accent-600);
         }
 
         .side-metric {
@@ -717,13 +723,14 @@ const Hero = ({ onGetStarted, onLogin }) => {
         }
 
         .side-metric span {
-          color: #9fb0c2;
+          color: var(--primary-500);
           font-size: 0.76rem;
         }
 
         .side-metric strong {
           text-align: right;
           font-size: 0.84rem;
+          color: var(--primary-900);
         }
 
         .side-action {
@@ -731,8 +738,8 @@ const Hero = ({ onGetStarted, onLogin }) => {
           margin-top: 1rem;
           padding: 0.85rem 0.95rem;
           border-radius: 14px;
-          background: linear-gradient(135deg, #f59e0b, #d97706);
-          color: #111827;
+          background: var(--accent-600);
+          color: white;
           font-size: 0.84rem;
           font-weight: 800;
         }
@@ -747,9 +754,9 @@ const Hero = ({ onGetStarted, onLogin }) => {
         .capability-card {
           padding: 1.35rem;
           border-radius: 24px;
-          background: rgba(255, 255, 255, 0.06);
-          border: 1px solid rgba(148, 163, 184, 0.14);
-          backdrop-filter: blur(12px);
+          background: white;
+          border: 1px solid var(--border-light);
+          box-shadow: var(--shadow-sm);
         }
 
         .capability-icon {
@@ -759,8 +766,8 @@ const Hero = ({ onGetStarted, onLogin }) => {
           align-items: center;
           justify-content: center;
           border-radius: 14px;
-          background: linear-gradient(135deg, rgba(14, 165, 233, 0.18), rgba(245, 158, 11, 0.16));
-          color: #f7fafc;
+          background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(15, 23, 42, 0.06));
+          color: var(--accent-600);
         }
 
         .capability-card h3 {
@@ -770,7 +777,7 @@ const Hero = ({ onGetStarted, onLogin }) => {
 
         .capability-card p {
           margin: 0;
-          color: #a9bbcd;
+          color: var(--primary-600);
           font-size: 0.84rem;
           line-height: 1.65;
         }
@@ -786,9 +793,9 @@ const Hero = ({ onGetStarted, onLogin }) => {
 
         .section-kicker {
           padding: 0.45rem 0.72rem;
-          background: rgba(15, 118, 110, 0.14);
-          border: 1px solid rgba(45, 212, 191, 0.18);
-          color: #7dd3fc;
+          background: rgba(37, 99, 235, 0.08);
+          border: 1px solid rgba(37, 99, 235, 0.14);
+          color: var(--accent-600);
         }
 
         .section-heading h2,
@@ -803,7 +810,7 @@ const Hero = ({ onGetStarted, onLogin }) => {
         .closing-cta p {
           margin: 0;
           max-width: 720px;
-          color: #a7b9ca;
+          color: var(--primary-600);
           line-height: 1.75;
         }
 
@@ -819,16 +826,15 @@ const Hero = ({ onGetStarted, onLogin }) => {
           min-height: 210px;
           padding: 1.2rem;
           border-radius: 24px;
-          background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.03)),
-            linear-gradient(135deg, rgba(14, 165, 233, 0.08), transparent);
-          border: 1px solid rgba(148, 163, 184, 0.14);
+          background: white;
+          border: 1px solid var(--border-light);
+          box-shadow: var(--shadow-sm);
         }
 
         .workflow-index {
           display: inline-flex;
           margin-bottom: 1.2rem;
-          color: #f6b951;
+          color: var(--accent-600);
           font-size: 1.65rem;
           font-weight: 900;
           letter-spacing: -0.04em;
@@ -837,7 +843,7 @@ const Hero = ({ onGetStarted, onLogin }) => {
         .workflow-card p {
           margin: 0;
           max-width: 220px;
-          color: #e6eef7;
+          color: var(--primary-700);
           font-size: 0.95rem;
           line-height: 1.65;
         }
@@ -850,10 +856,9 @@ const Hero = ({ onGetStarted, onLogin }) => {
           margin: 3.6rem 0 1rem;
           padding: 1.6rem;
           border-radius: 30px;
-          background:
-            linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(14, 116, 144, 0.14)),
-            rgba(255, 255, 255, 0.04);
-          border: 1px solid rgba(94, 234, 212, 0.14);
+          background: linear-gradient(135deg, rgba(37, 99, 235, 0.06), rgba(255, 255, 255, 0.95));
+          border: 1px solid var(--border-light);
+          box-shadow: var(--shadow-md);
         }
 
         .closing-login {
