@@ -252,6 +252,15 @@ const Hero = ({ onGetStarted, onLogin }) => {
         </section>
       </main>
 
+      <div className="mobile-cta-dock">
+        <button className="mobile-dock-btn mobile-dock-btn-secondary" onClick={onLogin}>
+          Log in
+        </button>
+        <button className="mobile-dock-btn mobile-dock-btn-primary" onClick={onGetStarted}>
+          Start free
+        </button>
+      </div>
+
       <style jsx="true">{`
         .landing-shell {
           min-height: 100vh;
@@ -865,6 +874,10 @@ const Hero = ({ onGetStarted, onLogin }) => {
           min-width: 120px;
         }
 
+        .mobile-cta-dock {
+          display: none;
+        }
+
         @media (max-width: 1080px) {
           .hero-panel,
           .capabilities-band,
@@ -930,29 +943,88 @@ const Hero = ({ onGetStarted, onLogin }) => {
             width: min(1220px, calc(100% - 1.25rem));
           }
 
+          .landing-nav {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            padding: 0.9rem 0 0.8rem;
+            background: rgba(248, 250, 252, 0.92);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(203, 213, 225, 0.7);
+          }
+
           .landing-main {
             padding-top: 1rem;
-            padding-bottom: 2.4rem;
+            padding-bottom: 7rem;
+          }
+
+          .brand-copy small {
+            display: none;
+          }
+
+          .nav-actions {
+            display: none;
           }
 
           .hero-actions,
-          .closing-actions,
-          .nav-actions {
+          .closing-actions {
             width: 100%;
           }
 
-          .nav-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+          .hero-panel {
+            gap: 1.25rem;
+          }
+
+          .hero-copy {
+            padding: 0.5rem 0 0;
+          }
+
+          .hero-kicker {
+            width: 100%;
+            justify-content: center;
+            text-align: center;
           }
 
           .hero-primary,
           .hero-secondary,
-          .nav-link,
-          .nav-cta,
           .side-action {
             width: 100%;
             justify-content: center;
+          }
+
+          .hero-copy h1 {
+            font-size: clamp(2.35rem, 12vw, 3rem);
+            line-height: 1.02;
+          }
+
+          .hero-subtitle {
+            font-size: 0.95rem;
+            line-height: 1.7;
+          }
+
+          .hero-stats,
+          .trust-strip,
+          .workspace-badges {
+            display: flex;
+            overflow-x: auto;
+            gap: 0.75rem;
+            padding-bottom: 0.2rem;
+            scroll-snap-type: x proximity;
+          }
+
+          .hero-stat-card,
+          .trust-strip span,
+          .workspace-badges span {
+            flex: 0 0 auto;
+            scroll-snap-align: start;
+          }
+
+          .hero-stat-card {
+            min-width: 210px;
+          }
+
+          .trust-strip span {
+            white-space: nowrap;
           }
 
           .workspace-main,
@@ -963,6 +1035,16 @@ const Hero = ({ onGetStarted, onLogin }) => {
             padding-right: 1rem;
           }
 
+          .workspace-main {
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+          }
+
+          .workspace-side {
+            margin-top: 0.75rem;
+            border-radius: 22px;
+          }
+
           .workspace-header,
           .snapshot-row,
           .closing-cta {
@@ -970,9 +1052,71 @@ const Hero = ({ onGetStarted, onLogin }) => {
             align-items: flex-start;
           }
 
+          .snapshot-row:nth-child(n + 3) {
+            display: none;
+          }
+
           .snapshot-meta {
             width: 100%;
             text-align: left;
+          }
+
+          .activity-card {
+            display: none;
+          }
+
+          .capabilities-band,
+          .workflow-grid {
+            gap: 0.85rem;
+          }
+
+          .capability-card,
+          .workflow-card {
+            border-radius: 20px;
+          }
+
+          .workflow-card {
+            padding: 1rem;
+          }
+
+          .closing-cta {
+            margin-bottom: 0;
+          }
+
+          .mobile-cta-dock {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 30;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            padding: 0.8rem 0.9rem calc(0.8rem + env(safe-area-inset-bottom, 0px));
+            background: rgba(248, 250, 252, 0.96);
+            backdrop-filter: blur(16px);
+            border-top: 1px solid rgba(203, 213, 225, 0.8);
+            box-shadow: 0 -10px 24px rgba(15, 23, 42, 0.08);
+          }
+
+          .mobile-dock-btn {
+            min-height: 48px;
+            border-radius: 14px;
+            font-size: 0.9rem;
+            font-weight: 800;
+            border: 1px solid transparent;
+          }
+
+          .mobile-dock-btn-secondary {
+            background: white;
+            color: var(--primary-700);
+            border-color: var(--border-medium);
+          }
+
+          .mobile-dock-btn-primary {
+            background: var(--primary-900);
+            color: white;
+            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
           }
         }
       `}</style>
