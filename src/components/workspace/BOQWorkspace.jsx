@@ -538,6 +538,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   }, [sections]);
 
   const totalItems = (sections || []).reduce((a, s) => a + (s.items?.length || 0), 0);
+  const totalColumnCount = viewMode === 'valuation' ? 9 : 8;
+  const sectionHeaderSpan = viewMode === 'valuation' ? 8 : 7;
+  const subtotalLeadingSpan = viewMode === 'valuation' ? 6 : 5;
 
   return (
     <div className="ws-container">
@@ -624,6 +627,25 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         </div>
       </div>
 
+      <div className="ws-mobile-summary">
+        <div className="ws-mobile-stat-card">
+          <span>Region</span>
+          <strong>{project?.region || 'Lagos'}</strong>
+        </div>
+        <div className="ws-mobile-stat-card">
+          <span>Sections / Items</span>
+          <strong>{sections.length} / {totalItems}</strong>
+        </div>
+        <div className="ws-mobile-stat-card">
+          <span>Total Qty</span>
+          <strong>{totalQuantity.toLocaleString(undefined, { maximumFractionDigits: 2 })}</strong>
+        </div>
+        <div className="ws-mobile-stat-card ws-mobile-stat-card-total">
+          <span>Contract Sum</span>
+          <strong>₦{calculateGrandTotal.toLocaleString()}</strong>
+        </div>
+      </div>
+
       {/* Table */}
       <div className="ws-table-wrap">
         <table className="ws-table">
@@ -655,7 +677,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                 <React.Fragment key={section.id}>
                   {/* Section Header */}
                   <tr className="ws-section-row" onClick={() => toggleSection(section.id)}>
-                    <td colSpan={viewMode === 'valuation' ? 8 : 7} className="ws-section-cell">
+                    <td colSpan={sectionHeaderSpan} className="ws-section-cell">
                       <div className="ws-section-inner">
                         {section.expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                         <span className="ws-section-letter">{String.fromCharCode(65 + sIdx)}</span>
@@ -691,11 +713,12 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                     const rate = item.useBenchmark ? benchmarkRate : item.rate;
                     const rateSourceMeta = getRateSourceMeta(item);
                     const benchmarkDeltaMeta = getBenchmarkDeltaMeta(item);
+                    const itemCode = `${String.fromCharCode(65 + sIdx)}.${idx + 1}`;
                     return (
                       <React.Fragment key={item.id}>
                         {showSubcategoryHeader && (
                           <tr className="ws-subcategory-row">
-                            <td colSpan={viewMode === 'valuation' ? 9 : 8} className="ws-subcategory-cell">
+                            <td colSpan={totalColumnCount} className="ws-subcategory-cell">
                               <div className="ws-subcategory-inner">
                                 <span className="ws-subcategory-label">Subcategory</span>
                                 <span className="ws-subcategory-title">{currentSubcategory}</span>
@@ -704,7 +727,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                           </tr>
                         )}
                         <tr className={`ws-item-row ${outlier ? 'ws-outlier' : ''}`}>
-                        <td className="ws-num">{String.fromCharCode(65 + sIdx)}.{idx + 1}</td>
+                        <td className="ws-num">{itemCode}</td>
                         <td className="ws-desc">
                           <div className="ws-desc-inner">
                             {item.isVO && <span className="ws-vo">VO</span>}
@@ -858,6 +881,197 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                           )}
                         </td>
                       </tr>
+                      <tr className={`ws-mobile-row ${outlier ? 'ws-outlier' : ''}`}>
+                        <td colSpan={totalColumnCount} className="ws-mobile-cell">
+                          <div className="ws-mobile-card">
+                            <div className="ws-mobile-card-head">
+                              <div className="ws-mobile-card-badges">
+                                <span className="ws-mobile-item-code">{itemCode}</span>
+                                {item.isVO && <span className="ws-vo">VO</span>}
+                                <span className="ws-mobile-unit-pill">{item.unit}</span>
+                              </div>
+                              <div className="ws-mobile-card-total">
+                                <span>Amount</span>
+                                <strong>₦{(item.total || 0).toLocaleString()}</strong>
+                              </div>
+                            </div>
+
+                            <div className="ws-mobile-field-block ws-mobile-field-block-full">
+                              <label>Description</label>
+                              <div className="ws-desc-inner">
+                                <input
+                                  type="text"
+                                  className="ws-input ws-desc-input"
+                                  value={item.description}
+                                  onChange={(e) => updateItem(section.id, item.id, 'description', e.target.value)}
+                                />
+                                {outlier && <AlertCircle size={12} className="ws-outlier-icon" title="Rate variance detected" />}
+                              </div>
+                            </div>
+
+                            <div className="ws-mobile-meta-grid">
+                              <div className="ws-mobile-field-block">
+                                <label>Subcategory</label>
+                                <input
+                                  type="text"
+                                  className="ws-input ws-meta-input"
+                                  value={item.subcategory || ''}
+                                  onChange={(e) => updateItem(section.id, item.id, 'subcategory', e.target.value)}
+                                  placeholder="Subcategory"
+                                />
+                              </div>
+                              <div className="ws-mobile-field-block">
+                                <label>Materials</label>
+                                <input
+                                  type="text"
+                                  className="ws-input ws-meta-input"
+                                  value={(item.materials || []).join(', ')}
+                                  onChange={(e) => {
+                                    const parsed = e.target.value
+                                      .split(',')
+                                      .map((entry) => entry.trim())
+                                      .filter(Boolean);
+                                    updateItem(section.id, item.id, 'materials', parsed);
+                                  }}
+                                  placeholder="Materials"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="ws-mobile-grid">
+                              <div className="ws-mobile-field-block">
+                                <label>Unit</label>
+                                <input
+                                  type="text"
+                                  className="ws-input ws-unit-input"
+                                  value={item.unit}
+                                  onChange={(e) => updateItem(section.id, item.id, 'unit', e.target.value)}
+                                />
+                              </div>
+                              <div className="ws-mobile-field-block">
+                                <label>Quantity</label>
+                                <div className="ws-qty-wrap">
+                                  <input
+                                    type="number"
+                                    className="ws-input ws-qty-input"
+                                    value={item.qty || ''}
+                                    onChange={(e) => updateItem(section.id, item.id, 'qty', Number(e.target.value))}
+                                  />
+                                  <button className="ws-geo-btn ws-mobile-icon-btn" onClick={() => setCalculatingQtyForItem({ sectionId: section.id, item })} title="Geometric Takeoff">
+                                    <Calculator size={11} />
+                                  </button>
+                                </div>
+                              </div>
+                              {viewMode === 'valuation' ? (
+                                <>
+                                  <div className="ws-mobile-field-block">
+                                    <label>Done</label>
+                                    <input type="number" className="ws-input ws-sm-input" value={item.qtyCompleted || ''}
+                                      onChange={(e) => updateItem(section.id, item.id, 'qtyCompleted', Number(e.target.value))} />
+                                  </div>
+                                  <div className="ws-mobile-field-block">
+                                    <label>Progress</label>
+                                    <div className="ws-progress-bar">
+                                      <div className="ws-progress-fill" style={{ width: `${Math.min(100, item.progressPercent || 0)}%` }}></div>
+                                      <span>{Math.round(item.progressPercent || 0)}%</span>
+                                    </div>
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="ws-mobile-field-block ws-mobile-field-block-wide">
+                                  <label>Pricing Strategy</label>
+                                  <div className="ws-strategy-toggle ws-strategy-toggle-mobile">
+                                    <button className={`ws-strat-btn ${!item.useBenchmark ? 'active' : ''}`}
+                                      onClick={() => activateCustomPricing(section.id, item)}
+                                      title="Use custom pricing">
+                                      Custom
+                                    </button>
+                                    <button className={`ws-strat-btn ${item.useBenchmark ? 'active' : ''}`}
+                                      onClick={() => activateBenchmarkPricing(section.id, item)}
+                                      title="Use benchmark pricing">
+                                      Benchmark
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="ws-mobile-field-block ws-mobile-field-block-full">
+                              <label>Rate / Unit</label>
+                              <div className="ws-rate-wrap">
+                                <input
+                                  type="number"
+                                  className="ws-input ws-rate-input"
+                                  value={rate || ''}
+                                  onChange={(e) => handleManualRateChange(section.id, item, e.target.value)}
+                                  disabled={item.useBenchmark}
+                                />
+                                {!item.useBenchmark && (
+                                  <button
+                                    className="ws-analysis-btn ws-custom-studio-btn ws-mobile-icon-btn"
+                                    onClick={() => openCustomPricingStudio(section.id, item)}
+                                    title={item.customPricing ? 'Edit custom pricing studio' : 'Build custom pricing in the studio'}
+                                  >
+                                    <SlidersHorizontal size={12} />
+                                  </button>
+                                )}
+                                <button className="ws-analysis-btn ws-mobile-icon-btn" onClick={() => openDetailedAnalysis(section.id, item)} title="Detailed rate analysis">
+                                  <Calculator size={12} />
+                                </button>
+                              </div>
+                              <div className="ws-rate-meta ws-rate-meta-mobile">
+                                <span className={`ws-rate-chip ws-rate-chip-${rateSourceMeta.tone}`}>{rateSourceMeta.label}</span>
+                                {benchmarkDeltaMeta && (
+                                  <span className={`ws-rate-chip ws-rate-chip-${benchmarkDeltaMeta.tone}`}>{benchmarkDeltaMeta.text}</span>
+                                )}
+                                {!item.useBenchmark && !item.customPricing && (
+                                  <button
+                                    className="ws-rate-link"
+                                    onClick={() => openCustomPricingStudio(section.id, item)}
+                                    title="Build a defendable custom rate"
+                                  >
+                                    Build in studio
+                                  </button>
+                                )}
+                              </div>
+                              {!item.useBenchmark && item.customPricing && (
+                                <div className="ws-rate-note">{getCustomPricingSummary(item) || 'Custom pricing saved for this item.'}</div>
+                              )}
+                              {!item.useBenchmark && !item.customPricing && (
+                                <div className="ws-rate-note">Custom pricing is active. Open the studio to record the basis, quote, and allowances behind this rate.</div>
+                              )}
+                            </div>
+
+                            <div className="ws-mobile-actions">
+                              {viewMode === 'valuation' ? (
+                                <button className={`ws-mobile-action-btn ${item.isVO ? 'ws-vo-active' : ''}`}
+                                  onClick={() => toggleVO(section.id, item.id)} title="Variation Order">
+                                  <AlertTriangle size={14} />
+                                  Variation Order
+                                </button>
+                              ) : (
+                                <>
+                                  <button className={`ws-mobile-action-btn ${item.bids?.length > 0 ? 'ws-bid-active' : ''}`}
+                                    onClick={() => setBiddingItem({ sectionId: section.id, item })} title="Bids">
+                                    <Gavel size={14} />
+                                    Bids
+                                  </button>
+                                  <button className="ws-mobile-action-btn"
+                                    onClick={() => duplicateItem(section.id, item.id)} title="Duplicate Item">
+                                    <Copy size={14} />
+                                    Duplicate
+                                  </button>
+                                  <button className="ws-mobile-action-btn ws-mobile-action-btn-danger"
+                                    onClick={() => onDelete(project.id, section.id, item.id)} title="Delete">
+                                    <Trash2 size={14} />
+                                    Delete
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
                       </React.Fragment>
                     );
                   })}
@@ -865,14 +1079,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                   {section.expanded && (
                     <>
                       <tr className="ws-subtotal-row">
-                        <td colSpan={viewMode === 'valuation' ? 6 : 5}></td>
+                        <td colSpan={subtotalLeadingSpan}></td>
                         <td colSpan="2" className="ws-subtotal-val">
                           Sub-Total Qty: {sectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })} | Cost: ₦{sectionSubtotal.toLocaleString()}
                         </td>
                         <td></td>
                       </tr>
                       <tr className="ws-add-row">
-                        <td colSpan={viewMode === 'valuation' ? 9 : 8}>
+                        <td colSpan={totalColumnCount}>
                           <button className="ws-add-btn" onClick={() => addItemToSection(section.id)}>
                             <Plus size={13} /> Add Custom Item
                           </button>
@@ -980,6 +1194,212 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           height: calc(100vh - 56px);
           background: #f1f5f9;
           overflow: hidden;
+        }
+
+        .ws-mobile-summary,
+        .ws-mobile-row {
+          display: none;
+        }
+
+        .ws-mobile-summary {
+          gap: 0.625rem;
+          padding: 0.75rem;
+          background: linear-gradient(180deg, #f8fafc, #eef2ff);
+          border-bottom: 1px solid #e2e8f0;
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+        .ws-mobile-summary::-webkit-scrollbar { display: none; }
+
+        .ws-mobile-stat-card {
+          min-width: 130px;
+          display: flex;
+          flex-direction: column;
+          gap: 0.24rem;
+          padding: 0.75rem 0.85rem;
+          background: rgba(255,255,255,0.92);
+          border: 1px solid #dbe4ee;
+          border-radius: 14px;
+          box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+        }
+        .ws-mobile-stat-card span {
+          font-size: 0.56rem;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+        .ws-mobile-stat-card strong {
+          font-size: 0.92rem;
+          font-weight: 900;
+          color: #0f172a;
+        }
+        .ws-mobile-stat-card-total {
+          background: linear-gradient(135deg, #eff6ff, #dbeafe);
+          border-color: #bfdbfe;
+        }
+        .ws-mobile-stat-card-total strong {
+          color: #1d4ed8;
+        }
+
+        .ws-mobile-cell {
+          padding: 0.6rem 0.75rem !important;
+          background: #f8fafc;
+          border-bottom: 1px solid #e2e8f0;
+        }
+
+        .ws-mobile-card {
+          display: flex;
+          flex-direction: column;
+          gap: 0.8rem;
+          padding: 0.95rem;
+          background: white;
+          border: 1px solid #e2e8f0;
+          border-radius: 18px;
+          box-shadow: 0 18px 32px rgba(15, 23, 42, 0.07);
+        }
+
+        .ws-mobile-card-head {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 0.75rem;
+        }
+
+        .ws-mobile-card-badges {
+          display: flex;
+          align-items: center;
+          gap: 0.42rem;
+          flex-wrap: wrap;
+        }
+
+        .ws-mobile-item-code,
+        .ws-mobile-unit-pill {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 999px;
+          font-size: 0.62rem;
+          font-weight: 900;
+          padding: 0.28rem 0.55rem;
+        }
+
+        .ws-mobile-item-code {
+          background: #e2e8f0;
+          color: #0f172a;
+          letter-spacing: 0.03em;
+        }
+
+        .ws-mobile-unit-pill {
+          background: #eff6ff;
+          color: #1d4ed8;
+          text-transform: lowercase;
+        }
+
+        .ws-mobile-card-total {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 0.16rem;
+          flex-shrink: 0;
+          text-align: right;
+        }
+        .ws-mobile-card-total span {
+          font-size: 0.56rem;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+        .ws-mobile-card-total strong {
+          font-size: 0.95rem;
+          font-weight: 900;
+          color: #0f172a;
+        }
+
+        .ws-mobile-meta-grid,
+        .ws-mobile-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.7rem;
+        }
+
+        .ws-mobile-field-block {
+          display: flex;
+          flex-direction: column;
+          gap: 0.35rem;
+          min-width: 0;
+        }
+        .ws-mobile-field-block label {
+          font-size: 0.6rem;
+          font-weight: 900;
+          letter-spacing: 0.07em;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+        .ws-mobile-field-block-full {
+          grid-column: 1 / -1;
+        }
+        .ws-mobile-field-block-wide {
+          grid-column: span 2;
+        }
+
+        .ws-mobile-icon-btn {
+          width: 30px;
+          height: 30px;
+          flex-shrink: 0;
+        }
+
+        .ws-strategy-toggle-mobile {
+          width: 100%;
+          justify-content: stretch;
+        }
+        .ws-strategy-toggle-mobile .ws-strat-btn {
+          flex: 1;
+        }
+
+        .ws-rate-meta-mobile {
+          justify-content: flex-start;
+        }
+
+        .ws-mobile-actions {
+          display: flex;
+          gap: 0.5rem;
+          overflow-x: auto;
+          padding-bottom: 0.1rem;
+          scrollbar-width: none;
+        }
+        .ws-mobile-actions::-webkit-scrollbar { display: none; }
+
+        .ws-mobile-action-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.38rem;
+          min-height: 38px;
+          padding: 0.65rem 0.9rem;
+          border: 1px solid #dbe4ee;
+          border-radius: 12px;
+          background: #f8fafc;
+          color: #334155;
+          font-size: 0.7rem;
+          font-weight: 800;
+          white-space: nowrap;
+          cursor: pointer;
+          transition: all 0.15s;
+        }
+        .ws-mobile-action-btn:hover {
+          background: #e2e8f0;
+          border-color: #cbd5e1;
+        }
+        .ws-mobile-action-btn-danger {
+          background: #fff5f5;
+          border-color: #fecaca;
+          color: #dc2626;
+        }
+        .ws-mobile-action-btn-danger:hover {
+          background: #fee2e2;
+          border-color: #fca5a5;
         }
 
         /* ── TOOLBAR ── */
@@ -1400,12 +1820,135 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
         /* ── MOBILE ── */
         @media (max-width: 768px) {
-          .ws-toolbar { flex-wrap: wrap; padding: 0.5rem; }
-          .ws-toolbar-center { display: none; }
-          .ws-search { width: 100%; }
-          .ws-table { font-size: 0.75rem; }
-          .ws-th-strategy, .ws-th-rate { display: none; }
-          .ws-item-meta-row { grid-template-columns: 1fr; }
+          .ws-container {
+            height: auto;
+            min-height: calc(100vh - 56px);
+          }
+          .ws-toolbar {
+            flex-wrap: wrap;
+            align-items: stretch;
+            padding: 0.65rem;
+            gap: 0.55rem;
+          }
+          .ws-toolbar-left,
+          .ws-toolbar-right {
+            width: 100%;
+          }
+          .ws-toolbar-left {
+            flex-wrap: wrap;
+          }
+          .ws-toolbar-center {
+            display: none;
+          }
+          .ws-search {
+            width: 100%;
+            min-width: 0;
+          }
+          .ws-mode-switch {
+            flex: 1;
+            min-width: 0;
+          }
+          .ws-mode-btn {
+            flex: 1;
+            justify-content: center;
+            min-height: 34px;
+          }
+          .ws-region-sel {
+            min-height: 34px;
+          }
+          .ws-toolbar-right {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding-bottom: 0.2rem;
+            scrollbar-width: none;
+          }
+          .ws-toolbar-right::-webkit-scrollbar { display: none; }
+          .ws-btn {
+            flex-shrink: 0;
+            min-height: 34px;
+          }
+          .ws-mobile-summary {
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: minmax(130px, 1fr);
+          }
+          .ws-table-wrap {
+            background: #f8fafc;
+          }
+          .ws-table {
+            font-size: 0.75rem;
+            background: transparent;
+          }
+          .ws-table thead {
+            display: none;
+          }
+          .ws-item-row {
+            display: none;
+          }
+          .ws-mobile-row {
+            display: table-row;
+          }
+          .ws-section-row td,
+          .ws-subcategory-cell,
+          .ws-subtotal-val,
+          .ws-add-row td,
+          .ws-grand-total td {
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+          }
+          .ws-section-cell {
+            padding-top: 0.75rem !important;
+          }
+          .ws-section-inner {
+            flex-wrap: wrap;
+          }
+          .ws-section-total {
+            width: 100%;
+            margin-left: 0;
+            padding-left: 1.9rem;
+          }
+          .ws-subcategory-inner {
+            flex-wrap: wrap;
+          }
+          .ws-item-meta-row {
+            grid-template-columns: 1fr;
+          }
+          .ws-rate-wrap {
+            width: 100%;
+          }
+          .ws-rate-input {
+            min-width: 0;
+          }
+          .ws-subtotal-row td:first-child,
+          .ws-subtotal-row td:last-child {
+            display: none;
+          }
+          .ws-subtotal-val {
+            display: block;
+            text-align: left !important;
+          }
+          .ws-grand-total td:first-child {
+            width: auto;
+          }
+        }
+
+        @media (max-width: 560px) {
+          .ws-mobile-meta-grid,
+          .ws-mobile-grid {
+            grid-template-columns: 1fr;
+          }
+          .ws-mobile-field-block-wide {
+            grid-column: auto;
+          }
+          .ws-mobile-card-head {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .ws-mobile-card-total {
+            align-items: flex-start;
+            text-align: left;
+          }
         }
 
         /* ── PRESENCE AVATARS ── */
