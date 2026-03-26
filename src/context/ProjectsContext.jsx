@@ -35,6 +35,25 @@ export function ProjectsProvider({ children }) {
     const [workspaceIntent, setWorkspaceIntent] = useState(null);
     const [syncStatus, setSyncStatus] = useState({ state: 'synced' });
     const lastRemoteUpdate = useRef(0);
+    const lastUserIdRef = useRef(user?.id || null);
+
+    useEffect(() => {
+        const currentUserId = user?.id || null;
+        if (currentUserId === lastUserIdRef.current) return;
+
+        lastUserIdRef.current = currentUserId;
+        setActiveProjectId(null);
+        setActiveTab('dashboard');
+        setShowSelector(false);
+        setShowAnalyzer(false);
+        setIsCreating(false);
+        setFocusMode(false);
+        setWorkspaceIntent(null);
+
+        if (!currentUserId) {
+            setProjects([]);
+        }
+    }, [user?.id]);
 
     // ── Load projects: local first, then cloud ──
     useEffect(() => {
@@ -132,6 +151,27 @@ export function ProjectsProvider({ children }) {
     const activeProject = useMemo(() => {
         return projects.find(p => p.id === activeProjectId) || projects[0] || null;
     }, [projects, activeProjectId]);
+
+    useEffect(() => {
+        if (!user) return;
+
+        if (!projects.length) {
+            if (activeTab === 'workspace' || focusMode) {
+                setActiveTab('dashboard');
+                setFocusMode(false);
+            }
+            setActiveProjectId(null);
+            return;
+        }
+
+        if (activeProjectId && !projects.some(project => project.id === activeProjectId)) {
+            setActiveProjectId(null);
+            if (activeTab === 'workspace') {
+                setActiveTab('dashboard');
+                setFocusMode(false);
+            }
+        }
+    }, [activeProjectId, activeTab, focusMode, projects, user]);
 
     const calculateTotalValue = useMemo(() => {
         try {

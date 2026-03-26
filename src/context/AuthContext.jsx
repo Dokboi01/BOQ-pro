@@ -29,7 +29,6 @@ export function AuthProvider({ children }) {
     if (cachedProfile) {
         try {
             initialUser = JSON.parse(cachedProfile);
-            initialView = initialUser?.is_onboarded === false ? 'onboarding' : 'app';
         } catch { /* ignore */ }
     }
 
