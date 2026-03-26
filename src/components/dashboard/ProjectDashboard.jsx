@@ -1,31 +1,53 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useToast } from '../ui/useToast';
 import {
-  BarChart3,
-  TrendingUp,
-  TrendingDown,
   AlertCircle,
-  CheckCircle2,
-  Clock,
   ArrowUpRight,
-  Target,
-  ShieldAlert,
-  Layers,
-  Users,
+  BarChart3,
   Calendar,
+  CheckCircle2,
   ChevronRight,
-  Info,
+  Clock,
+  Layers,
   Lock,
-  Trash2,
-  Sparkles,
   Search,
-  Filter,
-  ArrowUpDown
+  ShieldAlert,
+  Target,
+  Trash2,
+  TrendingDown,
+  TrendingUp,
+  Users
 } from 'lucide-react';
 import { PLAN_LIMITS, PLAN_NAMES } from '../../data/plans';
+import { getProjectPricingAnalytics } from '../../utils/pricing';
+
+const MONEY = new Intl.NumberFormat('en-NG', { maximumFractionDigits: 0 });
+const PERCENT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
+
+const formatMoney = (value) => `₦${MONEY.format(Number(value) || 0)}`;
+
+const formatProjectDate = (value) => {
+  if (!value) return 'Recently updated';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
+const toneForStatus = (status = '') => {
+  const value = status.toLowerCase();
+  if (value.includes('complete')) return 'completed';
+  if (value.includes('draft')) return 'draft';
+  return 'active';
+};
+
+const riskIconForLevel = (level) => {
+  if (level === 'high') return ShieldAlert;
+  if (level === 'medium') return AlertCircle;
+  return CheckCircle2;
+};
 
 const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProject, onDeleteProject, onUpgrade }) => {
-  const [budget, setBudget] = useState(250000000); // ₦250M
+  const [budget, setBudget] = useState(250000000);
   const [activeVizTab, setActiveVizTab] = useState('section');
   const [isApproved, setIsApproved] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -33,241 +55,184 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
   const [sortBy, setSortBy] = useState('newest');
   const toast = useToast();
 
-  const calculateTotal = (proj) => {
-    if (!proj.sections) return 0;
-    return proj.sections.reduce((acc, s) =>
-      acc + s.items.reduce((iAcc, item) => iAcc + (item.qty * (item.useBenchmark ? item.benchmark : item.rate)), 0)
-      , 0);
-  };
+  const projectEntries = useMemo(() => (
+    projects.map((project) => ({
+      project,
+      analytics: getProjectPricingAnalytics(project)
+    }))
+  ), [projects]);
 
-  const currentTotal = projects.length > 0 ? calculateTotal(projects[0]) : 0;
+  const activeEntry = projectEntries[0] || null;
+  const activeProject = activeEntry?.project || null;
+  const activeAnalytics = activeEntry?.analytics || null;
+
+  const currentTotal = activeAnalytics?.totalValue || 0;
   const variance = budget - currentTotal;
-  const variancePercent = budget > 0 ? ((variance / budget) * 100).toFixed(2) : 0;
+  const variancePercent = budget > 0 ? (variance / budget) * 100 : 0;
+  const status = currentTotal === 0 ? 'No Data'
+    : currentTotal > budget ? 'Over Budget'
+      : currentTotal > budget * 0.95 ? 'At Risk'
+        : 'On Budget';
 
-  const status = currentTotal === 0 ? 'No Data' :
-    currentTotal > budget ? 'Over Budget' :
-      currentTotal > budget * 0.95 ? 'At Risk' : 'On Budget';
+  const pricingStage = !activeAnalytics || activeAnalytics.totalItems === 0
+    ? 'Scope Setup'
+    : activeAnalytics.pricingCoveragePercent < 40
+      ? 'Initial Pricing'
+      : activeAnalytics.pricingCoveragePercent < 85
+        ? 'Rate Build-Up'
+        : activeAnalytics.outlierCount > 0
+          ? 'Commercial Review'
+          : 'Tender Ready';
 
   const limits = PLAN_LIMITS[user?.plan] || PLAN_LIMITS[PLAN_NAMES.FREE];
   const isLimitReached = projects.length >= limits.maxProjects;
 
-  const filteredProjects = (() => {
-    const result = projects.filter(p => {
-      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesType = filterType === 'All' || p.type === filterType;
+  const filteredProjects = useMemo(() => {
+    const result = projectEntries.filter(({ project }) => {
+      const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesType = filterType === 'All' || project.type === filterType;
       return matchesSearch && matchesType;
     });
 
-    if (sortBy === 'oldest') {
-      return [...result].reverse();
-    }
-
-    if (sortBy === 'value-high') {
-      return [...result].sort((a, b) => calculateTotal(b) - calculateTotal(a));
-    }
-
-    if (sortBy === 'value-low') {
-      return [...result].sort((a, b) => calculateTotal(a) - calculateTotal(b));
-    }
-
-    // Default to the current array order, which is already newest-first in the app.
+    if (sortBy === 'oldest') return [...result].reverse();
+    if (sortBy === 'value-high') return [...result].sort((a, b) => b.analytics.totalValue - a.analytics.totalValue);
+    if (sortBy === 'value-low') return [...result].sort((a, b) => a.analytics.totalValue - b.analytics.totalValue);
     return result;
-  })();
+  }, [filterType, projectEntries, searchQuery, sortBy]);
 
-  const costBreakdown = (() => {
-    if (projects.length === 0) return [];
-    const activeProject = projects[0];
-    if (!activeProject.sections) return [];
+  const portfolioValue = projectEntries.reduce((sum, entry) => sum + entry.analytics.totalValue, 0);
+  const portfolioItems = projectEntries.reduce((sum, entry) => sum + entry.analytics.totalItems, 0);
+  const portfolioCustomItems = projectEntries.reduce((sum, entry) => sum + entry.analytics.customItems, 0);
+  const portfolioOutliers = projectEntries.reduce((sum, entry) => sum + entry.analytics.outlierCount, 0);
 
-    let materials = 0, labour = 0, others = 0;
-    activeProject.sections.forEach(s => {
-      s.items.forEach(item => {
-        const cost = item.qty * (item.useBenchmark ? item.benchmark : item.rate);
-        if (item.description.toLowerCase().includes('material') || item.description.toLowerCase().includes('cement') || item.description.toLowerCase().includes('sand')) materials += cost;
-        else if (item.description.toLowerCase().includes('labour') || item.description.toLowerCase().includes('work')) labour += cost;
-        else others += cost;
-      });
-    });
+  const analyticsCards = [
+    {
+      label: 'Portfolio Value',
+      value: formatMoney(portfolioValue),
+      detail: `${projects.length} live project${projects.length === 1 ? '' : 's'}`,
+      icon: BarChart3
+    },
+    {
+      label: 'Pricing Coverage',
+      value: activeAnalytics ? `${PERCENT.format(activeAnalytics.pricingCoveragePercent)}%` : '0%',
+      detail: activeAnalytics ? `${activeAnalytics.pricedItems}/${activeAnalytics.totalItems} items priced` : 'No active project',
+      icon: Target
+    },
+    {
+      label: 'Pricing Confidence',
+      value: activeAnalytics ? `${Math.round(activeAnalytics.confidenceScore)}/100` : '0/100',
+      detail: activeAnalytics ? `${activeAnalytics.outlierCount} drift flag${activeAnalytics.outlierCount === 1 ? '' : 's'}` : 'Waiting for pricing data',
+      icon: CheckCircle2
+    },
+    {
+      label: 'Market Tracking',
+      value: activeAnalytics ? `${PERCENT.format(activeAnalytics.benchmarkCoveragePercent)}%` : '0%',
+      detail: activeAnalytics ? `${activeAnalytics.customItems} custom-priced items` : 'Benchmark coverage appears here',
+      icon: Users
+    }
+  ];
 
-    const total = materials + labour + others;
-    if (total === 0) return [];
+  const pipelineStages = [
+    { label: 'Scope Setup', status: activeAnalytics?.totalItems > 0 ? 'completed' : 'active' },
+    { label: 'Rate Build-Up', status: !activeAnalytics || activeAnalytics.totalItems === 0 ? 'upcoming' : activeAnalytics.pricingCoveragePercent >= 85 ? 'completed' : 'active' },
+    { label: 'Commercial Review', status: !activeAnalytics || activeAnalytics.pricingCoveragePercent < 60 ? 'upcoming' : activeAnalytics.outlierCount > 0 || activeAnalytics.unpricedItems > 0 ? 'active' : 'completed' },
+    { label: 'Tender Handover', status: activeAnalytics && activeAnalytics.pricingCoveragePercent >= 100 && activeAnalytics.outlierCount === 0 ? 'active' : 'upcoming' }
+  ];
 
-    const result = [
-      { label: 'Material Costs', amount: materials, color: 'var(--primary-900)', percent: Math.round((materials / total) * 100), trend: 'up' },
-      { label: 'Labour Costs', amount: labour, color: 'var(--accent-600)', percent: Math.round((labour / total) * 100), trend: 'stable' },
-      { label: 'Other Costs', amount: others, color: 'var(--accent-400)', percent: Math.round((others / total) * 100), trend: 'down' },
-    ];
-    return result;
-  })();
+  const costBreakdown = activeAnalytics?.compositionRows.slice(0, 4).map((row) => ({
+    label: row.label,
+    amount: row.amount,
+    percent: Math.round(row.percent),
+    trend: row.percent >= 40 ? 'up' : row.percent >= 18 ? 'stable' : 'down'
+  })) || [];
 
-  const riskFlags = projects.length > 0 ? [
-    { level: 'high', message: 'Material cost exceeds 65% of total — review supplier rates.', icon: ShieldAlert },
-    { level: 'medium', message: 'Concrete works account for the highest cost exposure.', icon: AlertCircle },
-    { level: 'low', message: 'Overhead percentage above typical market range.', icon: Info },
-  ] : [];
+  const chartRows = activeVizTab === 'section'
+    ? (activeAnalytics?.sectionSummaries || []).slice(0, 5).map((section) => ({
+      label: section.title,
+      percent: section.percentOfTotal,
+      helper: `${section.itemCount} item${section.itemCount === 1 ? '' : 's'}`
+    }))
+    : (activeAnalytics?.topDrivers || []).slice(0, 5).map((driver) => ({
+      label: `${driver.description} (${driver.section})`,
+      percent: driver.percentOfTotal,
+      helper: formatMoney(driver.total)
+    }));
+
+  const riskFlags = activeAnalytics?.riskFlags || [];
+  const usagePercent = Math.min((projects.length / limits.maxProjects) * 100, 100);
 
   return (
-    <div className="dashboard-control-center view-fade-in">
-      {/* SaaS Header */}
-      <header className="dashboard-welcome">
+    <div className="dashboard-shell">
+      <header className="dashboard-header">
         <div>
           <h2>Good Afternoon, {user?.full_name || 'Practitioner'}</h2>
-          <p>You have <strong>{projects.length} active projects</strong> this month.</p>
+          <p>You have <strong>{projects.length} active projects</strong> in your commercial workspace.</p>
         </div>
         {user?.plan === PLAN_NAMES.FREE && (
-          <div className="usage-card enterprise-card">
-            <div className="usage-info">
+          <div className="usage-card">
+            <div className="usage-row">
               <span>Project Limit</span>
               <span>{projects.length} / {limits.maxProjects}</span>
             </div>
-            <div className="usage-bar">
-              <div className="usage-fill" style={{ width: `${(projects.length / limits.maxProjects) * 100}%`, background: isLimitReached ? 'var(--warning-600)' : 'var(--accent-600)' }}></div>
-            </div>
-            <button className="text-upgrade-link" onClick={onUpgrade}>Upgrade to unlock more projects</button>
+            <div className="usage-track"><div className="usage-fill" style={{ width: `${usagePercent}%` }} /></div>
+            <button className="usage-link" onClick={onUpgrade}>Upgrade to unlock more projects</button>
           </div>
         )}
       </header>
 
-      {/* Premium Analytics Grid */}
-      <div className="analytics-grid">
-        <div className="analytics-card ai-premium">
-          <div className="card-glass-reveal"></div>
-          <div className="card-icon-elite ai-glow">
-            <Sparkles size={24} />
-          </div>
-          <div className="card-info">
-            <span className="card-tag">AI COST FORECAST</span>
-            <span className="card-val-large">₦{(currentTotal * 1.08).toLocaleString()}</span>
-            <div className="card-meta">
-              <span className="meta-trend-badge positive">
-                <TrendingUp size={12} /> +8.4%
-              </span>
-              <span className="meta-sub">vs. Market Intelligence</span>
+      <section className="stats-grid">
+        {analyticsCards.map((card) => (
+          <article key={card.label} className="stat-card enterprise-card">
+            <div className="stat-icon"><card.icon size={18} /></div>
+            <div>
+              <span className="eyebrow">{card.label}</span>
+              <strong className="stat-value">{card.value}</strong>
+              <p className="muted">{card.detail}</p>
             </div>
-          </div>
-        </div>
+          </article>
+        ))}
+      </section>
 
-        <div className="analytics-card elite-glass">
-          <div className="card-icon-elite blue">
-            <Target size={24} />
-          </div>
-          <div className="card-info">
-            <span className="card-tag">BUDGET EXPOSURE</span>
-            <span className="card-val-large">{variancePercent}%</span>
-            <div className="card-meta">
-              <span className={`meta-trend-badge ${variance > 0 ? 'positive' : 'negative'}`}>
-                {variance > 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                {variance > 0 ? 'Surplus' : 'Deficit'}
-              </span>
-              <span className="meta-sub">₦{Math.abs(variance).toLocaleString()} bal</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="analytics-card elite-glass">
-          <div className="card-icon-elite indigo">
-            <BarChart3 size={24} />
-          </div>
-          <div className="card-info">
-            <span className="card-tag">PORTFOLIO VOLUME</span>
-            <span className="card-val-large">₦{currentTotal.toLocaleString()}</span>
-            <div className="card-meta">
-              <span className="meta-trend-badge neutral">
-                <Clock size={12} /> {projects.length} Active
-              </span>
-              <span className="meta-sub">Projected Q1 Vol</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="analytics-card elite-glass">
-          <div className="card-icon-elite emerald">
-            <Users size={24} />
-          </div>
-          <div className="card-info">
-            <span className="card-tag">PROCUREMENT HEALTH</span>
-            <span className="card-val-large">94.2%</span>
-            <div className="card-meta">
-              <span className="meta-trend-badge positive">
-                <CheckCircle2 size={12} /> Elite
-              </span>
-              <span className="meta-sub">Efficiency Rating</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Pro Lifecycle Pipeline */}
-      <section className="pro-pipeline-container enterprise-card">
-        <div className="pipeline-header-elite">
-          <div className="h-left">
+      <section className="pipeline enterprise-card">
+        <div className="row-head">
+          <div>
             <h3>Project Execution Roadmap</h3>
-            <span className="h-sub">Strategic lifecycle stage monitoring</span>
+            <p>Live stage tracking for the active pricing workflow</p>
           </div>
-          <div className="h-right">
-            <span className="live-badge">LIVE TRACKING</span>
-          </div>
+          <span className="badge">{pricingStage}</span>
         </div>
-        <div className="pipeline-track-pro">
-          {[
-            { label: 'Cost Planning', status: 'completed' },
-            { label: 'Selection', status: 'upcoming' },
-            { label: 'Post-Contract', status: 'upcoming' }
-          ].map((stage, i) => (
-            <div key={i} className={`track-node ${stage.status}`}>
-              <div className="node-marker">
-                {stage.status === 'completed' ? <CheckCircle2 size={14} /> : <span>0{i + 1}</span>}
+        <div className="pipeline-grid">
+          {pipelineStages.map((stage) => (
+            <div key={stage.label} className={`stage-card ${stage.status}`}>
+              <div className="stage-dot">{stage.status === 'completed' ? <CheckCircle2 size={14} /> : stage.label.slice(0, 2).toUpperCase()}</div>
+              <div>
+                <strong>{stage.label}</strong>
+                <span>{stage.status.toUpperCase()}</span>
               </div>
-              <div className="node-details">
-                <span className="node-label">{stage.label}</span>
-                <span className="node-status-text">{stage.status.toUpperCase()}</span>
-              </div>
-              {i < 3 && <div className="node-spacer"></div>}
             </div>
           ))}
         </div>
       </section>
 
-      {/* portfolio-stats - Portfolio Analytics */}
-      <section className="portfolio-analytics-grid">
-        <div className="enterprise-card portfolio-mini-card">
-          <BarChart3 size={18} className="text-accent" />
-          <div className="mini-info">
-            <span className="mini-label">Total Portfolio Value</span>
-            <span className="mini-val">₦{projects.reduce((acc, p) => acc + calculateTotal(p), 0).toLocaleString()}</span>
-          </div>
-        </div>
-        <div className="enterprise-card portfolio-mini-card">
-          <Users size={18} className="text-secondary" />
-          <div className="mini-info">
-            <span className="mini-label">Active Subcontractors</span>
-            <span className="mini-val">12 Verified</span>
-          </div>
-        </div>
-        <div className="enterprise-card portfolio-mini-card">
-          <TrendingUp size={18} className="text-success" />
-          <div className="mini-info">
-            <span className="mini-label">Avg. Bid Variance</span>
-            <span className="mini-val text-success">-4.2%</span>
-          </div>
-        </div>
+      <section className="portfolio-grid">
+        <article className="mini-card enterprise-card"><BarChart3 size={18} /><div><span className="eyebrow">Portfolio Value</span><strong>{formatMoney(portfolioValue)}</strong></div></article>
+        <article className="mini-card enterprise-card"><Layers size={18} /><div><span className="eyebrow">Portfolio Items</span><strong>{portfolioItems}</strong></div></article>
+        <article className="mini-card enterprise-card"><Target size={18} /><div><span className="eyebrow">Custom-Priced</span><strong>{portfolioCustomItems}</strong></div></article>
+        <article className="mini-card enterprise-card"><AlertCircle size={18} /><div><span className="eyebrow">Open Drift Flags</span><strong>{portfolioOutliers}</strong></div></article>
       </section>
 
-      {/* My Projects Grid / Empty State */}
-      <section className="projects-section">
-        <div className="section-header">
-          <h3>My Projects</h3>
-          <div className="dashboard-controls-row">
-            <div className="search-bar">
+      <section className="projects-panel">
+        <div className="row-head">
+          <div>
+            <h3>My Projects</h3>
+            <p>Select a live project to continue pricing or commercial review</p>
+          </div>
+          <div className="controls">
+            <label className="search-bar">
               <Search size={16} />
-              <input 
-                type="text" 
-                placeholder="Search projects..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="control-select">
+              <input type="text" placeholder="Search projects..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            </label>
+            <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="control">
               <option value="All">All Types</option>
               <option value="Building">Building</option>
               <option value="Road">Road</option>
@@ -275,692 +240,270 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
               <option value="Foundation">Foundation</option>
               <option value="Coastal / Marine">Coastal</option>
             </select>
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="control-select">
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="control">
               <option value="newest">Newest First</option>
               <option value="oldest">Oldest First</option>
               <option value="value-high">Highest Value</option>
               <option value="value-low">Lowest Value</option>
             </select>
-            {projects.length > 0 && <button className="btn-primary-sm" onClick={onCreateProject} disabled={isLimitReached}>{isLimitReached ? 'Limit Reached' : '+ New Project'}</button>}
+            {projects.length > 0 && <button className="primary-btn" onClick={onCreateProject} disabled={isLimitReached}>{isLimitReached ? 'Limit Reached' : '+ New Project'}</button>}
           </div>
         </div>
 
         {projects.length === 0 ? (
-          <div className="empty-state enterprise-card">
-            <div className="empty-icon-wrapper">
-              <Layers size={48} className="text-subtle" />
-            </div>
+          <div className="empty-card enterprise-card">
+            <div className="empty-icon"><Layers size={44} /></div>
             <h3>No projects yet</h3>
-            <p>Ready to start your first professional Bill of Quantities? Create a project to unlock cost intelligence and automated reporting.</p>
-            <button className="btn-primary-glow" onClick={onCreateProject}>
-              <ArrowUpRight size={18} /> Create Your First Project
-            </button>
+            <p>Start a project to unlock realistic pricing coverage, benchmark tracking, and company-ready BOQ visibility.</p>
+            <button className="primary-btn" onClick={onCreateProject}><ArrowUpRight size={16} /> Create Your First Project</button>
           </div>
         ) : (
-          <div className="projects-grid">
-            {filteredProjects.map(project => (
-              <div
-                key={project.id}
-                className="project-card enterprise-card"
-                onClick={() => onSelectProject(project.id)}
-              >
-                <div className="project-card-header">
-                  <span className={`status-dot ${project.status.toLowerCase()}`}></span>
+          <div className="project-grid">
+            {filteredProjects.map(({ project, analytics }) => (
+              <article key={project.id} className="project-card enterprise-card" onClick={() => onSelectProject(project.id)}>
+                <div className="project-top">
+                  <span className={`status-dot ${toneForStatus(project.status)}`} />
                   <span className="project-status">{project.status}</span>
-                  <span className="project-date">{project.date}</span>
+                  <span className="muted">{formatProjectDate(project.date || project.updatedAt || project.updated_at)}</span>
                 </div>
                 <h4>{project.name}</h4>
-                <div className="project-card-footer">
-                  <div className="project-val">
-                    <span className="label">Value</span>
-                    <span className="val">₦{calculateTotal(project).toLocaleString()}</span>
+                <p className="muted">{project.type} · {analytics.totalItems} items</p>
+                <div className="project-metrics">
+                  <div><span className="eyebrow">Value</span><strong>{formatMoney(analytics.totalValue)}</strong></div>
+                  <div><span className="eyebrow">Coverage</span><strong>{PERCENT.format(analytics.pricingCoveragePercent)}%</strong></div>
+                </div>
+                <div className="project-foot">
+                  <div className="pill-row">
+                    <span className="pill">{analytics.customItems} custom</span>
+                    <span className="pill">{analytics.outlierCount} drift</span>
                   </div>
-                  <div className="project-actions-row">
+                  <div className="action-row">
                     <button
-                      className="btn-icon-delete"
+                      className="icon-btn"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (confirm(`Are you sure you want to delete "${project.name}"?`)) {
-                          onDeleteProject(project.id);
-                        }
+                        if (confirm(`Are you sure you want to delete "${project.name}"?`)) onDeleteProject(project.id);
                       }}
                       title="Delete Project"
                     >
                       <Trash2 size={16} />
                     </button>
-                    <ChevronRight size={18} className="text-subtle" />
+                    <ChevronRight size={18} />
                   </div>
                 </div>
-              </div>
+              </article>
             ))}
             {user?.plan === PLAN_NAMES.FREE && projects.length < limits.maxProjects && (
-              <div className="project-card locked enterprise-card" onClick={onCreateProject}>
-                <Lock size={24} className="text-subtle" />
+              <article className="project-card locked enterprise-card" onClick={onCreateProject}>
+                <Lock size={24} />
                 <p>Available project slot</p>
-              </div>
+              </article>
             )}
           </div>
         )}
       </section>
 
-      {projects.length > 0 && (
+      {activeProject && activeAnalytics && (
         <>
-          <div className="divider"></div>
-
-          {/* Health Panel */}
           <section className="health-panel enterprise-card">
-            <div className="health-header">
-              <div className="title-group">
-                <h3>Active Project Health: <strong>{projects[0].name}</strong></h3>
-                <span className={`status-badge-large ${status.toLowerCase().replace(' ', '-')}`}>
-                  {status}
-                </span>
+            <div className="row-head">
+              <div>
+                <h3>{activeProject.name}</h3>
+                <span className={`status-chip ${status.toLowerCase().replace(/\s+/g, '-')}`}>{status}</span>
               </div>
-              <div className="edit-budget">
+              <div className="budget-box">
                 <label>Approved Budget (₦)</label>
-                <input
-                  type="number"
-                  value={budget}
-                  onChange={(e) => setBudget(Number(e.target.value))}
-                  className="budget-input"
-                />
+                <input type="number" value={budget} onChange={(e) => setBudget(Number(e.target.value))} className="control" />
               </div>
             </div>
+            <div className="metric-grid">
+              <article className="metric-card"><span className="eyebrow">Contract Value</span><strong>{formatMoney(currentTotal)}</strong><p className="muted">Live BOQ total</p></article>
+              <article className="metric-card"><span className="eyebrow">Budget Variance</span><strong className={variance < 0 ? 'danger' : 'success'}>{variance < 0 ? '-' : '+'}{formatMoney(Math.abs(variance))}</strong><p className="muted">{PERCENT.format(Math.abs(variancePercent))}% against budget</p></article>
+              <article className="metric-card"><span className="eyebrow">Pricing Coverage</span><strong>{PERCENT.format(activeAnalytics.pricingCoveragePercent)}%</strong><p className="muted">{activeAnalytics.unpricedItems} items still open</p></article>
+              <article className="metric-card"><span className="eyebrow">Benchmark Coverage</span><strong>{PERCENT.format(activeAnalytics.benchmarkCoveragePercent)}%</strong><p className="muted">{Math.round(activeAnalytics.confidenceScore)}/100 confidence</p></article>
+            </div>
+            <div className="meter-grid">
+              <div className="meter-card">
+                <div className="meter-copy"><span>Budget Use</span><strong>{PERCENT.format(Math.min((currentTotal / Math.max(budget, 1)) * 100, 100))}%</strong></div>
+                <div className="meter-track"><div className={`meter-fill ${status.toLowerCase().replace(/\s+/g, '-')}`} style={{ width: `${Math.min((currentTotal / Math.max(budget, 1)) * 100, 100)}%` }} /></div>
+              </div>
+              <div className="meter-card">
+                <div className="meter-copy"><span>Commercial Readiness</span><strong>{PERCENT.format(activeAnalytics.pricingCoveragePercent)}%</strong></div>
+                <div className="meter-track"><div className="meter-fill readiness" style={{ width: `${activeAnalytics.pricingCoveragePercent}%` }} /></div>
+              </div>
+            </div>
+          </section>
 
-            <div className="health-metrics">
-              <div className="metric-box pro">
-                <span className="label">Total Contract Value</span>
-                <span className="value">₦{currentTotal.toLocaleString()}</span>
-                <span className="sub-val">Verified Baseline</span>
-              </div>
-              <div className="metric-box pro">
-                <span className="label">Project Cash Flow Variance</span>
-                <span className={`value ${variance < 0 ? 'text-danger' : 'text-success'}`}>
-                  {variance < 0 ? '-' : '+'}₦{Math.abs(variance).toLocaleString()}
-                </span>
-                <span className="sub-val">Net Liquidity Scope</span>
-              </div>
-              <div className="metric-box pro">
-                <span className="label">Market Confidence Score</span>
-                <div className="confidence-display">
-                  <span className="value text-success">92/100</span>
-                  <div className="score-mini-track"><div className="score-mini-fill" style={{ width: '92%' }}></div></div>
+          <section className="intel-grid">
+            {costBreakdown.map((item) => (
+              <article key={item.label} className="intel-card enterprise-card">
+                <div className="intel-head">
+                  <span className="eyebrow">{item.label}</span>
+                  {item.trend === 'up' && <TrendingUp size={16} className="danger" />}
+                  {item.trend === 'down' && <TrendingDown size={16} className="success" />}
+                  {item.trend === 'stable' && <Clock size={16} className="muted-icon" />}
                 </div>
-                <span className="sub-val">Low Volatility Impact</span>
-              </div>
-            </div>
+                <strong>{formatMoney(item.amount)}</strong>
+                <p className="muted">{item.percent}% of contract sum</p>
+              </article>
+            ))}
+          </section>
 
-            <div className="health-progress-bar">
-              <div
-                className={`progress-fill ${status.toLowerCase().replace(' ', '-')}`}
-                style={{ width: `${Math.min((currentTotal / budget) * 100, 100)}%` }}
-              ></div>
-            </div>
+          <div className="split-grid">
+            <section className="enterprise-card panel-card">
+              <div className="row-head">
+                <div>
+                  <h3>Cost Distribution</h3>
+                  <p>{activeAnalytics.dominantSection ? `${activeAnalytics.dominantSection.title} is the current commercial driver` : 'Add pricing data to unlock distribution insights'}</p>
+                </div>
+                <div className="tab-row">
+                  <button className={`tab-btn ${activeVizTab === 'section' ? 'active' : ''}`} onClick={() => setActiveVizTab('section')}>By Section</button>
+                  <button className={`tab-btn ${activeVizTab === 'drivers' ? 'active' : ''}`} onClick={() => setActiveVizTab('drivers')}>Top Drivers</button>
+                </div>
+              </div>
+              <div className="chart-stack">
+                {chartRows.length > 0 ? chartRows.map((row) => (
+                  <div key={row.label} className="chart-row">
+                    <div className="chart-labels"><span>{row.label}</span><span>{PERCENT.format(row.percent)}%</span></div>
+                    <div className="muted">{row.helper}</div>
+                    <div className="chart-track"><div className="chart-fill" style={{ width: `${Math.min(row.percent, 100)}%` }} /></div>
+                  </div>
+                )) : <p className="muted">No distribution data is available yet for this project.</p>}
+              </div>
+            </section>
+
+            <section className="enterprise-card panel-card">
+              <div className="row-head">
+                <div>
+                  <h3>Risk Flags</h3>
+                  <p>Issues generated from live coverage and market drift</p>
+                </div>
+                <Target size={18} />
+              </div>
+              <div className="risk-list">
+                {riskFlags.length > 0 ? riskFlags.map((risk, index) => {
+                  const Icon = riskIconForLevel(risk.level);
+                  return (
+                    <article key={`${risk.level}-${index}`} className={`risk-card ${risk.level}`}>
+                      <Icon size={18} />
+                      <p>{risk.message}</p>
+                    </article>
+                  );
+                }) : <article className="risk-card low"><CheckCircle2 size={18} /><p>No active commercial risks are showing yet.</p></article>}
+              </div>
+            </section>
+          </div>
+
+          <section className="workflow enterprise-card">
+            <div className="workflow-item"><Layers size={18} /><div><span className="eyebrow">Current Stage</span><strong>{pricingStage}</strong></div></div>
+            <div className="workflow-item"><Calendar size={18} /><div><span className="eyebrow">Last Modified</span><strong>{formatProjectDate(activeProject.date || activeProject.updatedAt || activeProject.updated_at)}</strong></div></div>
+            <div className="workflow-item"><Users size={18} /><div><span className="eyebrow">Project Controller</span><strong>{user?.role || 'Professional User'}</strong></div></div>
+            <button
+              className={`primary-btn approve-btn ${isApproved ? 'approved' : ''}`}
+              onClick={() => {
+                if (confirm('Are you sure you want to approve this pricing review?')) {
+                  setIsApproved(true);
+                  toast.success('Pricing review approved successfully.');
+                }
+              }}
+              disabled={isApproved}
+            >
+              {isApproved ? 'Review Approved' : 'Approve Pricing Review'}
+            </button>
           </section>
         </>
       )}
 
-      {/* Cost Intelligence Cards */}
-      <section className="intelligence-grid">
-        {costBreakdown.map((item, i) => (
-          <div key={i} className="enterprise-card intel-card">
-            <div className="intel-header">
-              <span className="intel-label">{item.label}</span>
-              {item.trend === 'up' && <TrendingUp size={16} className="text-danger" />}
-              {item.trend === 'down' && <TrendingDown size={16} className="text-success" />}
-              {item.trend === 'stable' && <Clock size={16} className="text-subtle" />}
-            </div>
-            <div className="intel-value">₦{item.amount.toLocaleString()}</div>
-            <div className="intel-footer">
-              <span className="percent-tag">{item.percent}% of total</span>
-              <span className="subtle-link">View analysis <ChevronRight size={12} /></span>
-            </div>
-          </div>
-        ))}
-      </section>
-
-      {/* Distribution & Risk Panels */}
-      <div className="dashboard-split">
-        <section className="visualization-panel enterprise-card">
-          <div className="panel-header">
-            <h3>Cost Distribution</h3>
-            <div className="header-actions">
-              <button
-                className={`btn-tab ${activeVizTab === 'section' ? 'active' : ''}`}
-                onClick={() => setActiveVizTab('section')}
-              >
-                By Section
-              </button>
-              <button
-                className={`btn-tab ${activeVizTab === 'drivers' ? 'active' : ''}`}
-                onClick={() => setActiveVizTab('drivers')}
-              >
-                Top 5 Drivers
-              </button>
-            </div>
-          </div>
-          <div className="chart-container-large">
-            <div className="viz-bars">
-              {projects.length > 0 && projects[0].sections ?
-                (activeVizTab === 'section' ? (
-                  projects[0].sections.slice(0, 5).map((s, i) => {
-                    const sectionTotal = s.items.reduce((acc, item) => acc + (item.qty * (item.useBenchmark ? item.benchmark : item.rate)), 0);
-                    const percent = currentTotal > 0 ? Math.round((sectionTotal / currentTotal) * 100) : 0;
-                    return (
-                      <div key={i} className="viz-row">
-                        <div className="row-info">
-                          <span>{s.title}</span>
-                          <span>{percent}%</span>
-                        </div>
-                        <div className="row-bar-bg">
-                          <div className="row-bar-fill" style={{ width: `${percent}%` }}></div>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  // Top 5 Drivers Logic
-                  (() => {
-                    const allItems = projects[0].sections.flatMap(s => s.items.map(i => ({ ...i, section: s.title })));
-                    const sortedItems = [...allItems].sort((a, b) => {
-                      const aTotal = a.qty * (a.useBenchmark ? a.benchmark : a.rate);
-                      const bTotal = b.qty * (b.useBenchmark ? b.benchmark : b.rate);
-                      return bTotal - aTotal;
-                    }).slice(0, 5);
-
-                    return sortedItems.map((item, i) => {
-                      const itemTotal = item.qty * (item.useBenchmark ? item.benchmark : item.rate);
-                      const percent = currentTotal > 0 ? Math.round((itemTotal / currentTotal) * 100) : 0;
-                      return (
-                        <div key={i} className="viz-row">
-                          <div className="row-info">
-                            <span>{item.description} ({item.section})</span>
-                            <span>{percent}%</span>
-                          </div>
-                          <div className="row-bar-bg">
-                            <div className="row-bar-fill" style={{ width: `${percent}%`, background: 'var(--accent-600)' }}></div>
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()
-                ))
-                : (
-                  <p className="text-subtle text-center py-8">No data available for visualization</p>
-                )
-              }
-            </div>
-          </div>
-        </section>
-
-        <section className="risk-panel enterprise-card">
-          <div className="panel-header">
-            <h3>Risk Flags</h3>
-            <Target size={18} className="text-subtle" />
-          </div>
-          <div className="risk-list">
-            {riskFlags.map((risk, i) => (
-              <div key={i} className={`risk-item ${risk.level}`}>
-                <risk.icon size={20} className="risk-icon" />
-                <div className="risk-message">{risk.message}</div>
-              </div>
-            ))}
-          </div>
-          <div className="audit-footer">
-            <CheckCircle2 size={14} className="text-success" />
-            <span>Audit integrity check passed.</span>
-          </div>
-        </section>
-      </div>
-
-      {/* Workflow Strip */}
-      <section className="workflow-strip enterprise-card">
-        <div className="workflow-item">
-          <Layers size={18} />
-          <div>
-            <span className="label">Current Stage</span>
-            <span className="val">Draft Analysis</span>
-          </div>
-        </div>
-        <div className="workflow-item">
-          <Calendar size={18} />
-          <div>
-            <span className="label">Last Modified</span>
-            <span className="val">Today at 14:22</span>
-          </div>
-        </div>
-        <div className="workflow-item">
-          <Users size={18} />
-          <div>
-            <span className="label">Project Controller</span>
-            <span className="val">{user?.role || 'Professional User'}</span>
-          </div>
-        </div>
-        <div className="workflow-actions">
-          <button
-            className={`btn-approve ${isApproved ? 'approved' : ''}`}
-            onClick={() => {
-              if (confirm('Are you sure you want to approve this cost plan? This will finalize the draft for export.')) {
-                setIsApproved(true);
-                toast.success('Cost plan approved successfully.');
-              }
-            }}
-            disabled={isApproved || projects.length === 0}
-          >
-            {isApproved ? 'Plan Approved' : 'Approve Cost Plan'}
-          </button>
-        </div>
-      </section>
-
       <style jsx="true">{`
-        .dashboard-control-center { display: flex; flex-direction: column; gap: 1.5rem; }
-        
-        .empty-state {
-          padding: 5rem 2rem;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-          background: white;
-          border: 2px dashed var(--border-medium);
-        }
-
-        .empty-icon-wrapper {
-          width: 80px;
-          height: 80px;
-          background: var(--bg-main);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 2rem;
-        }
-
-        .empty-state h3 { font-size: 1.5rem; margin-bottom: 1rem; color: var(--primary-900); }
-        .empty-state p { max-width: 480px; color: var(--primary-500); margin-bottom: 2.5rem; line-height: 1.6; }
-        
-        .btn-primary-glow {
-          background: var(--primary-900);
-          color: white;
-          border: none;
-          padding: 1rem 2rem;
-          border-radius: var(--radius-sm);
-          font-weight: 700;
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          transition: all 0.2s;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .btn-primary-glow:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-          background: var(--primary-950);
-        }
-
-        .dashboard-welcome { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-        .dashboard-welcome h2 { font-size: 1.75rem; margin-bottom: 0.25rem; }
-        .dashboard-welcome p { color: var(--primary-500); }
-
-        /* Analytics Cards - WOW FACTOR */
-        /* Elite Analytics Feed */
-        .analytics-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-          gap: 1.5rem;
-          margin-bottom: 2.5rem;
-        }
-
-        .analytics-card {
-          position: relative;
-          border-radius: 20px;
-          padding: 1.75rem;
-          display: flex;
-          align-items: center;
-          gap: 1.5rem;
-          overflow: hidden;
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-          border: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .elite-glass {
-          background: rgba(255, 255, 255, 0.7);
-          backdrop-filter: blur(16px);
-          box-shadow: 0 10px 30px -10px rgba(0,0,0,0.05);
-          border: 1px solid rgba(255, 255, 255, 0.4);
-        }
-
-        .ai-premium {
-          background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-          border-color: rgba(37, 99, 235, 0.2);
-          box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.3);
-        }
-
-        .ai-premium .card-tag { color: rgba(255,255,255,0.5); }
-        .ai-premium .card-val-large { color: white; }
-        .ai-premium .meta-sub { color: rgba(255,255,255,0.4); }
-
-        .card-glass-reveal {
-          position: absolute;
-          top: -50%;
-          left: -50%;
-          width: 200%;
-          height: 200%;
-          background: radial-gradient(circle at center, rgba(37, 99, 235, 0.1) 0%, transparent 70%);
-          pointer-events: none;
-          opacity: 0;
-          transition: opacity 0.6s;
-        }
-
-        .analytics-card:hover .card-glass-reveal { opacity: 1; }
-        .analytics-card:hover { transform: translateY(-6px); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1); }
-
-        .card-icon-elite {
-          width: 52px;
-          height: 52px;
-          border-radius: 14px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          flex-shrink: 0;
-          box-shadow: 0 8px 16px -4px rgba(0,0,0,0.1);
-          background: var(--primary-900);
-        }
-
-        .card-icon-elite.blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
-        .card-icon-elite.indigo { background: linear-gradient(135deg, #6366f1, #4f46e5); }
-        .card-icon-elite.emerald { background: linear-gradient(135deg, #10b981, #059669); }
-
-        .ai-glow { animation: pulse-glow-premium 3s ease-in-out infinite; background: linear-gradient(135deg, #60a5fa, #3b82f6); }
-
-        @keyframes pulse-glow-premium {
-          0%, 100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); transform: scale(1); }
-          50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.7); transform: scale(1.05); }
-        }
-
-        .card-info { display: flex; flex-direction: column; gap: 0.25rem; }
-        .card-tag { font-size: 0.625rem; font-weight: 800; color: var(--primary-500); letter-spacing: 0.1em; }
-        .card-val-large { font-size: 1.5rem; font-weight: 900; color: var(--primary-900); letter-spacing: -0.02em; }
-        .card-meta { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.25rem; }
-        .meta-trend-badge { font-size: 0.6875rem; font-weight: 700; display: flex; align-items: center; gap: 2px; padding: 2px 6px; border-radius: 4px; }
-        .meta-trend-badge.positive { background: rgba(34, 197, 94, 0.1); color: #15803d; }
-        .meta-trend-badge.negative { background: rgba(239, 68, 68, 0.1); color: #b91c1c; }
-        .meta-trend-badge.neutral { background: #f1f5f9; color: #475569; }
-        .meta-sub { font-size: 0.6875rem; color: var(--primary-400); font-weight: 500; }
-
-        .card-trend.positive { color: var(--success-600); }
-        .card-trend.negative { color: var(--danger-600); }
-        .card-trend.neutral { color: var(--primary-500); }
-
-        .usage-card { width: 240px; padding: 1rem; background: white; }
-        .usage-info { display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 700; margin-bottom: 0.5rem; }
-        .usage-bar { height: 6px; background: var(--bg-main); border-radius: 100px; margin-bottom: 0.75rem; overflow: hidden; }
-        .usage-fill { height: 100%; border-radius: 100px; }
-        .text-upgrade-link { background: none; border: none; color: var(--accent-600); font-size: 0.6875rem; font-weight: 700; padding: 0; cursor: pointer; }
-
-        /* Lifecycle Pipeline Pro */
-        .pro-pipeline-container { padding: 0!important; overflow: hidden; border: none; }
-        .pipeline-header-elite { 
-          padding: 1.5rem 2rem; 
-          background: #f8fafc; 
-          border-bottom: 1px solid var(--border-light); 
-          display: flex; 
-          justify-content: space-between; 
-          align-items: center; 
-        }
-        .pipeline-header-elite h3 { margin: 0; font-size: 1.125rem; color: var(--primary-900); }
-        .h-sub { font-size: 0.75rem; color: var(--primary-400); font-weight: 500; }
-        .live-badge { 
-          font-size: 0.625rem; 
-          font-weight: 800; 
-          color: #2563eb; 
-          background: rgba(37, 99, 235, 0.1); 
-          padding: 3px 8px; 
-          border-radius: 100px; 
-          display: flex; 
-          align-items: center; 
-          gap: 4px; 
-        }
-        .live-badge::before { content: ''; width: 6px; height: 6px; background: #2563eb; border-radius: 50%; display: inline-block; animation: blink 1s infinite; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-        .pipeline-track-pro { 
-          padding: 2.5rem 2rem; 
-          display: flex; 
-          justify-content: space-between; 
-          background: white; 
-        }
-        .track-node { display: flex; align-items: center; gap: 1rem; position: relative; }
-        .node-marker { 
-          width: 32px; 
-          height: 32px; 
-          border-radius: 10px; 
-          display: flex; 
-          align-items: center; 
-          justify-content: center; 
-          font-size: 0.75rem; 
-          font-weight: 800; 
-          border: 2px solid #e2e8f0; 
-          color: #94a3b8; 
-          transition: all 0.3s; 
-          background: white;
-          z-index: 2;
-        }
-        .track-node.completed .node-marker { border-color: #2563eb; background: #2563eb; color: white; }
-        .track-node.active .node-marker { border-color: #2563eb; color: #2563eb; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
-        .node-details { display: flex; flex-direction: column; }
-        .node-label { font-size: 0.875rem; font-weight: 700; color: var(--primary-700); }
-        .node-status-text { font-size: 0.625rem; font-weight: 800; color: #94a3b8; letter-spacing: 0.05em; }
-        .track-node.active .node-status-text { color: #2563eb; }
-        .node-spacer { width: 100px; height: 2px; background: #e2e8f0; margin: 0 1rem; border-radius: 2px; }
-        .track-node.completed + .node-spacer { background: #2563eb; }
-
-        /* Health & Confidence */
-        .metric-box.pro { position: relative; }
-        .sub-val { font-size: 0.6875rem; color: var(--primary-400); font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; }
-        .confidence-display { display: flex; align-items: center; gap: 0.75rem; margin: 0.25rem 0; }
-        .score-mini-track { width: 60px; height: 4px; background: #e2e8f0; border-radius: 10px; overflow: hidden; }
-        .score-mini-fill { height: 100%; background: #22c55e; }
-
-        /* Projects Section */
-        .projects-section { margin-bottom: 2rem; }
-        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
-        .btn-primary-sm { background: var(--primary-900); color: white; border: none; padding: 0.5rem 1rem; border-radius: var(--radius-sm); font-weight: 600; font-size: 0.8125rem; }
-
-        .projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.25rem; }
-        .project-card { padding: 1.5rem; cursor: pointer; transition: all 0.2s; position: relative; }
-        .project-card:hover { border-color: var(--accent-400); transform: translateY(-2px); box-shadow: var(--shadow-md); }
-        .project-card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
+        .dashboard-shell { display: flex; flex-direction: column; gap: 1.25rem; }
+        .dashboard-header, .row-head, .workflow { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+        .dashboard-header h2, .row-head h3 { margin: 0 0 0.3rem; color: var(--primary-900); }
+        .dashboard-header p, .row-head p, .muted { margin: 0; color: var(--primary-500); font-size: 0.8rem; }
+        .enterprise-card { background: white; border: 1px solid var(--border-light); border-radius: 20px; box-shadow: 0 18px 36px rgba(15, 23, 42, 0.05); }
+        .usage-card, .pipeline, .health-panel, .panel-card { padding: 1.2rem; }
+        .usage-row { display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .usage-track, .meter-track, .chart-track { height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+        .usage-fill, .meter-fill, .chart-fill { height: 100%; background: #2563eb; border-radius: 999px; }
+        .usage-link { background: none; border: none; padding: 0; margin-top: 0.7rem; color: var(--accent-600); font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+        .stats-grid, .portfolio-grid, .metric-grid, .intel-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+        .stat-card, .mini-card, .metric-card, .intel-card, .project-card, .empty-card, .stage-card, .risk-card { padding: 1rem; }
+        .stat-card, .mini-card, .workflow-item { display: flex; gap: 0.8rem; align-items: center; }
+        .stat-icon, .empty-icon, .stage-dot { width: 40px; height: 40px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: #eff6ff; color: var(--primary-900); flex-shrink: 0; }
+        .empty-card { text-align: center; padding: 3.2rem 1.5rem; }
+        .empty-icon { margin: 0 auto 1rem; width: 74px; height: 74px; border-radius: 50%; background: var(--bg-main); }
+        .eyebrow { display: block; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--primary-500); }
+        .stat-value, .metric-card strong, .intel-card strong, .mini-card strong, .project-card strong { display: block; color: var(--primary-900); }
+        .badge, .pill, .status-chip { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 0.3rem 0.7rem; font-size: 0.72rem; font-weight: 800; }
+        .badge { background: rgba(37, 99, 235, 0.12); color: #1d4ed8; }
+        .status-chip.on-budget { background: rgba(22, 163, 74, 0.12); color: var(--success-600); }
+        .status-chip.at-risk { background: rgba(217, 119, 6, 0.12); color: var(--warning-600); }
+        .status-chip.over-budget { background: rgba(220, 38, 38, 0.12); color: var(--danger-600); }
+        .pipeline-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.8rem; }
+        .stage-card { display: flex; gap: 0.75rem; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 18px; }
+        .stage-card.completed { background: #eff6ff; border-color: #bfdbfe; }
+        .stage-card.active { background: #eef2ff; border-color: #c7d2fe; }
+        .stage-card strong { display: block; color: var(--primary-800); }
+        .stage-card span { font-size: 0.68rem; font-weight: 800; color: var(--primary-500); }
+        .projects-panel { display: flex; flex-direction: column; gap: 1rem; }
+        .controls { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+        .search-bar { display: flex; align-items: center; gap: 0.5rem; min-width: 240px; padding: 0.65rem 0.8rem; background: white; border: 1px solid var(--border-medium); border-radius: 12px; }
+        .search-bar input { border: none; outline: none; background: transparent; width: 100%; font-size: 0.85rem; }
+        .control, .primary-btn { border-radius: 12px; padding: 0.7rem 0.85rem; font-size: 0.82rem; }
+        .control { border: 1px solid var(--border-medium); background: white; }
+        .primary-btn { border: none; background: var(--primary-900); color: white; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; cursor: pointer; }
+        .primary-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .project-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+        .project-card { cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .project-card:hover { transform: translateY(-2px); box-shadow: 0 18px 30px rgba(15, 23, 42, 0.08); }
+        .project-top, .project-foot, .project-metrics, .meter-copy, .chart-labels, .intel-head { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
+        .project-top { margin-bottom: 0.7rem; }
+        .project-card h4 { margin: 0 0 0.35rem; }
+        .project-metrics { margin: 1rem 0; align-items: flex-start; }
+        .project-foot { margin-top: 0.8rem; }
+        .pill-row, .action-row, .tab-row { display: flex; align-items: center; gap: 0.45rem; }
+        .pill { background: #f8fafc; color: var(--primary-600); font-size: 0.66rem; }
+        .icon-btn { border: none; background: transparent; color: var(--primary-400); cursor: pointer; }
+        .icon-btn:hover { color: var(--danger-600); }
+        .locked { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--primary-400); text-align: center; border-style: dashed; }
         .status-dot { width: 8px; height: 8px; border-radius: 50%; }
         .status-dot.active { background: var(--success-600); }
         .status-dot.draft { background: var(--warning-600); }
         .status-dot.completed { background: var(--primary-500); }
-        .project-status { font-size: 0.6875rem; font-weight: 700; color: var(--primary-600); }
-        .project-date { font-size: 0.6875rem; color: var(--primary-400); margin-left: auto; }
-        .project-card h4 { font-size: 1rem; margin-bottom: 1.25rem; line-height: 1.4; min-height: 2.8rem; }
-        .project-card-footer { display: flex; justify-content: space-between; align-items: flex-end; }
-        .project-val .label { display: block; font-size: 0.625rem; font-weight: 700; color: var(--primary-400); text-transform: uppercase; }
-        .project-val .val { font-size: 0.875rem; font-weight: 700; color: var(--primary-900); }
-        
-        .project-actions-row { display: flex; align-items: center; gap: 0.5rem; }
-        .btn-icon-delete {
-          background: transparent;
-          border: none;
-          color: var(--primary-400);
-          padding: 4px;
-          border-radius: 4px;
-          cursor: pointer;
-          transition: all 0.2s;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+        .budget-box { display: flex; flex-direction: column; gap: 0.35rem; }
+        .budget-box label { font-size: 0.68rem; font-weight: 800; color: var(--primary-500); text-transform: uppercase; }
+        .meter-grid, .split-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 1rem; }
+        .meter-card { padding: 0.95rem 1rem; border-radius: 16px; background: #f8fafc; border: 1px solid #e2e8f0; }
+        .meter-copy { margin-bottom: 0.6rem; font-size: 0.8rem; font-weight: 800; color: var(--primary-700); }
+        .meter-fill.at-risk { background: var(--warning-600); }
+        .meter-fill.over-budget { background: var(--danger-600); }
+        .meter-fill.readiness { background: #2563eb; }
+        .intel-head { margin-bottom: 0.5rem; }
+        .panel-card { display: flex; flex-direction: column; gap: 1rem; }
+        .tab-btn { border: 1px solid #dbe4ee; background: white; color: var(--primary-600); border-radius: 999px; padding: 0.45rem 0.7rem; font-size: 0.74rem; font-weight: 800; cursor: pointer; }
+        .tab-btn.active { background: var(--primary-900); color: white; border-color: var(--primary-900); }
+        .chart-stack, .risk-list { display: flex; flex-direction: column; gap: 0.8rem; }
+        .chart-row { display: flex; flex-direction: column; gap: 0.35rem; }
+        .chart-labels span:first-child { color: var(--primary-800); font-weight: 700; }
+        .risk-card { display: flex; gap: 0.75rem; align-items: flex-start; border-radius: 16px; }
+        .risk-card.high { background: rgba(220, 38, 38, 0.06); }
+        .risk-card.medium { background: rgba(217, 119, 6, 0.07); }
+        .risk-card.low { background: #f8fafc; }
+        .risk-card p { margin: 0; font-size: 0.8rem; color: var(--primary-800); line-height: 1.5; }
+        .workflow { padding: 1rem 1.2rem; align-items: center; }
+        .workflow-item strong { color: var(--primary-900); }
+        .approve-btn { margin-left: auto; }
+        .approve-btn.approved { background: var(--primary-500); }
+        .danger { color: var(--danger-600); }
+        .success { color: var(--success-600); }
+        .muted-icon { color: var(--primary-400); }
+        @media (max-width: 980px) {
+          .dashboard-header, .row-head, .workflow { flex-direction: column; align-items: flex-start; }
+          .usage-card, .controls, .search-bar, .budget-box, .control, .primary-btn, .approve-btn { width: 100%; }
+          .pipeline-grid, .meter-grid, .split-grid { grid-template-columns: 1fr; }
         }
-        .btn-icon-delete:hover { color: var(--danger-600); background: rgba(220, 38, 38, 0.05); }
-
-        .project-card.locked { background: var(--bg-main); border-style: dashed; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; color: var(--primary-400); text-align: center; }
-        .project-card.locked p { font-size: 0.75rem; font-weight: 600; }
-
-        .divider { height: 1px; background: var(--border-light); margin: 1rem 0 2rem; }
-
-        .dashboard-controls-row { display: flex; gap: 0.75rem; align-items: center; }
-        .search-bar { display: flex; align-items: center; gap: 0.5rem; background: white; border: 1px solid var(--border-medium); border-radius: var(--radius-sm); padding: 0.4rem 0.75rem; width: 220px; }
-        .search-bar input { border: none; outline: none; background: transparent; width: 100%; font-size: 0.8125rem; color: var(--primary-900); }
-        .control-select { 
-          padding: 0.5rem 0.75rem; 
-          border: 1px solid var(--border-medium); 
-          border-radius: var(--radius-sm); 
-          font-size: 0.8125rem; 
-          background: white; 
-          color: var(--primary-700); 
-          outline: none; 
-          cursor: pointer;
-        }
-        
-        /* Portfolio Analytics */
-        .portfolio-analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
-        .portfolio-mini-card { padding: 1.25rem; display: flex; align-items: center; gap: 1rem; }
-        .mini-info { display: flex; flex-direction: column; }
-        .mini-label { font-size: 0.6875rem; font-weight: 600; color: var(--primary-500); margin-bottom: 0.25rem; }
-        .mini-val { font-size: 1rem; font-weight: 800; color: var(--primary-900); }
-        .text-accent { color: var(--accent-600); }
-        .text-secondary { color: var(--primary-600); }
-
-        /* Health Panel */
-        .health-panel { padding: 2.5rem; border-left: 4px solid var(--accent-600); }
-        .health-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
-        .title-group { display: flex; align-items: center; gap: 1rem; }
-        .status-badge-large { padding: 0.25rem 0.75rem; border-radius: 100px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
-        .on-budget { background: rgba(22, 163, 74, 0.1); color: var(--success-600); }
-        .at-risk { background: rgba(217, 119, 6, 0.1); color: var(--warning-600); }
-        .over-budget { background: rgba(220, 38, 38, 0.1); color: var(--danger-600); }
-
-        .edit-budget { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; }
-        .edit-budget label { font-size: 0.625rem; font-weight: 700; color: var(--primary-500); text-transform: uppercase; }
-        .budget-input { border: 1px solid var(--border-light); padding: 0.5rem; border-radius: 4px; font-weight: 700; text-align: right; width: 140px; }
-
-        .health-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-bottom: 2rem; }
-        .metric-box .label { font-size: 0.8125rem; color: var(--primary-500); }
-        .metric-box .value { font-size: 1.5rem; font-weight: 800; display: block; }
-
-        .audit-footer { display: flex; align-items: center; gap: 0.5rem; padding-top: 1rem; border-top: 1px solid var(--border-light); font-size: 0.75rem; color: var(--primary-600); }
-
-        .health-progress-bar { height: 8px; background: var(--bg-main); border-radius: 100px; overflow: hidden; }
-        .progress-fill { height: 100%; transition: width 0.5s ease; }
-        .progress-fill.on-budget { background: var(--success-600); }
-        .progress-fill.at-risk { background: var(--warning-600); }
-        .progress-fill.over-budget { background: var(--danger-600); }
-
-        .intelligence-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; }
-        .intel-card { padding: 1.25rem; }
-        .intel-header { display: flex; justify-content: space-between; margin-bottom: 0.75rem; }
-        .intel-label { font-size: 0.75rem; font-weight: 600; color: var(--primary-600); }
-        .intel-value { font-size: 1.25rem; font-weight: 800; margin-bottom: 1rem; }
-        .intel-footer { display: flex; justify-content: space-between; align-items: center; }
-        .percent-tag { font-size: 0.6875rem; font-weight: 700; color: var(--primary-500); background: var(--bg-main); padding: 0.125rem 0.375rem; border-radius: 4px; }
-        .subtle-link { font-size: 0.6875rem; color: var(--accent-600); display: flex; align-items: center; gap: 0.25rem; }
-
-        .dashboard-split { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem; }
-        .panel-header { padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-light); }
-        .risk-list { padding: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; }
-        .risk-item { display: flex; gap: 1rem; padding: 1rem; border-radius: 8px; }
-        .risk-item.high { background: rgba(220, 38, 38, 0.03); color: var(--danger-600); }
-        .risk-item.low { background: #f8fafc; color: var(--primary-600); }
-        .risk-message { font-size: 0.8125rem; line-height: 1.4; color: var(--primary-800); }
-
-        .workflow-strip { padding: 1.25rem 2rem; display: flex; align-items: center; gap: 3rem; margin-top: 1rem; }
-        .workflow-item { display: flex; align-items: center; gap: 0.75rem; }
-        .workflow-item .label { display: block; font-size: 0.625rem; font-weight: 700; color: var(--primary-400); text-transform: uppercase; }
-        .workflow-item .val { font-size: 0.8125rem; font-weight: 700; }
-        .workflow-actions { margin-left: auto; }
-
-        .btn-approve { background: var(--success-600); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
-        .btn-approve:hover { background: #15803d; transform: translateY(-1px); }
-        .btn-approve.approved { background: var(--primary-500); cursor: default; transform: none; }
-        .btn-approve:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        .text-danger { color: var(--danger-600); }
-        .text-success { color: var(--success-600); }
-        .text-subtle { color: var(--primary-400); }
-        
-        .viz-bars { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
-        .viz-row { display: flex; flex-direction: column; gap: 0.5rem; }
-        .row-info { display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 600; }
-        .row-bar-bg { height: 8px; background: var(--bg-main); border-radius: 100px; overflow: hidden; }
-        .row-bar-fill { height: 100%; background: var(--primary-800); }
-
-        /* ── Dashboard Mobile Overrides ── */
         @media (max-width: 768px) {
-          .dashboard-welcome {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 1.5rem;
-          }
-
-          .usage-card {
-            width: 100%;
-          }
-
-          .analytics-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .pipeline-track-pro {
-            flex-direction: column;
-            gap: 1.5rem;
-            padding: 1.5rem;
-          }
-
-          .node-spacer {
-            width: 2px;
-            height: 20px;
-            margin: 0.5rem 0 0.5rem 15px;
-          }
-
-          .dashboard-split {
-            grid-template-columns: 1fr;
-          }
-
-          .visualization-panel {
-            order: 2;
-          }
-
-          .health-metrics {
-            grid-template-columns: 1fr;
-            gap: 1.5rem;
-          }
-
-          .health-header {
-            flex-direction: column;
-            gap: 1.5rem;
-          }
-
-          .edit-budget {
-            align-items: flex-start;
-            width: 100%;
-          }
-
-          .budget-input {
-            width: 100%;
-            text-align: left;
-          }
-
-          .workflow-strip {
-            flex-direction: column;
-            padding: 1.5rem;
-            gap: 1.5rem;
-          }
-
-          .workflow-actions {
-            width: 100%;
-          }
-
-          .btn-approve {
-            width: 100%;
-            justify-content: center;
-          }
+          .stats-grid, .portfolio-grid, .project-grid, .metric-grid, .intel-grid { grid-template-columns: 1fr; }
+          .project-metrics, .project-foot { flex-direction: column; align-items: flex-start; }
         }
       `}</style>
     </div>

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { generateAIInsight } from '../../utils/aiService';
 import { getBreakdownForItem } from '../../data/rateBreakdowns';
+import { applyRegionCostProfileToBreakdown } from '../../utils/pricing';
 
 const normalizeUnit = (unit = '') => {
   const value = String(unit).toLowerCase().replace(/\s+/g, '');
@@ -118,7 +119,7 @@ const getLineTotal = (category, row) => {
   return Number(row.qty || 0) * Number(row.rate || 0);
 };
 
-const RateAnalysisModal = ({ item, structureType, onClose, onSave }) => {
+const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onSave }) => {
   const normalizeBreakdown = (bd) => {
     const unit = normalizeUnit(item?.unit);
     const workType = inferWorkType(item?.description);
@@ -144,15 +145,19 @@ const RateAnalysisModal = ({ item, structureType, onClose, onSave }) => {
   const [breakdown, setBreakdown] = useState(() => {
     try {
       if (item.breakdown) return normalizeBreakdown(item.breakdown);
-      return normalizeBreakdown(getBreakdownForItem(item.description, structureType));
+      return applyRegionCostProfileToBreakdown(
+        normalizeBreakdown(getBreakdownForItem(item.description, structureType)),
+        region,
+        item
+      );
     } catch (err) {
       console.warn('[RateAnalysis] Breakdown engine error:', err.message);
-      return normalizeBreakdown({
+      return applyRegionCostProfileToBreakdown(normalizeBreakdown({
         materials: [{ id: 1, name: 'OPC Cement (50kg)', qty: 6.5, unit: 'Bags', rate: 12500 }],
         labor: [{ id: 2, name: 'Mason / Concrete Worker', qty: 1, unit: 'Day', rate: 8000, output: 5 }],
         plant: [{ id: 3, name: 'Concrete Mixer (350L)', qty: 1, unit: 'Day', rate: 15000, output: 5 }],
         transport: [{ id: 4, name: 'Material Haulage', qty: 1, unit: 'Trip', rate: 5000 }],
-      });
+      }), region, item);
     }
   });
 

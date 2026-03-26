@@ -8,9 +8,19 @@ import BidManagerModal from './BidManagerModal';
 import TeamHubPanel from './TeamHubPanel';
 import StructuralAnalyzer from './StructuralAnalyzer';
 import ProjectNotesAccordion from './ProjectNotesAccordion';
-import { getRegionalModifier } from '../../utils/aiService';
 import { getMaterials } from '../../db/database';
 import { buildCompanyKey, deriveCompanyName } from '../../utils/companyAccess';
+import {
+  buildAutoRateResult,
+  buildMaterialRateIndex,
+  getBenchmarkRegionalFactor,
+  getEffectiveBenchmarkRate,
+  getItemTotal,
+  getItemUnitRate,
+  getProjectPricingAnalytics,
+  isBenchmarkOutlier,
+  repriceSectionsForRegion
+} from '../../utils/pricing';
 import {
   startPresence,
   stopPresence,
@@ -175,12 +185,6 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     };
   };
 
-  const getEffectiveBenchmarkRate = (item) => {
-    const baseBenchmark = Number(item?.benchmark) || 0;
-    if (!baseBenchmark) return 0;
-    return baseBenchmark * getRegionalModifier(project?.region || 'Lagos');
-  };
-
   const toggleSection = (sectionId) => {
     setSections(prev => prev.map(s =>
       s.id === sectionId ? { ...s, expanded: !s.expanded } : s
@@ -209,8 +213,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             updatedItem = { ...item, [fieldOrUpdates]: valueOrBreakdown };
             if (breakdown) updatedItem.breakdown = breakdown;
           }
-          const rateToUse = updatedItem.useBenchmark ? getEffectiveBenchmarkRate(updatedItem) : (Number(updatedItem.rate) || 0);
-          updatedItem.total = updatedItem.qty * rateToUse;
+          updatedItem.total = getItemTotal(updatedItem, project?.region || 'Lagos');
           if (updatedItem.qtyCompleted !== undefined) {
             updatedItem.progressPercent = updatedItem.qty > 0 ? (updatedItem.qtyCompleted / updatedItem.qty) * 100 : 0;
           }
@@ -296,8 +299,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   };
 
   const activateBenchmarkPricing = (sectionId, item) => {
-    const regionalModifier = getRegionalModifier(project?.region || 'Lagos');
-    const derivedBenchmark = item.benchmark || ((Number(item.rate) || 0) / Math.max(regionalModifier, 0.001));
+    const regionalFactor = getBenchmarkRegionalFactor(item, project?.region || 'Lagos');
+    const derivedBenchmark = item.benchmark || ((Number(item.rate) || 0) / Math.max(regionalFactor, 0.001));
 
     updateItem(sectionId, item.id, {
       useBenchmark: true,
@@ -332,72 +335,53 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     setShowStructuralAnalyzer(false);
   };
 
+  const handleRegionChange = (nextRegion) => {
+    const repriced = repriceSectionsForRegion(sections, nextRegion);
+    setSections(repriced);
+    onUpdate(project.id, repriced, nextRegion);
+    toast.success(`Workspace repriced for ${nextRegion.replace('_', ' ')} market conditions.`);
+  };
+
   const autoRateProject = async () => {
-    // 1. Fetch real-time benchmarks from the database
     const dbMaterials = await getMaterials();
-    const regionMod = getRegionalModifier(project?.region || 'Lagos');
+    const materialIndex = buildMaterialRateIndex(dbMaterials);
+    let updatedCount = 0;
+    let benchmarkedCount = 0;
 
-    // 2. Map database materials to a searchable dictionary
-    const benchmarkMap = {};
-    dbMaterials.forEach(mat => {
-      const key = mat.name.toLowerCase().split(' ')[0]; // Use first word as key
-      benchmarkMap[key] = Number(mat.benchmark || mat.price || 0);
-    });
-
-    // Fallback static benchmarks for common items not in DB
-    const fallbacks = {
-      'concrete': 75000,
-      'reinforcement': 1250000,
-      'steel': 1250000,
-      'formwork': 12500,
-      'excavation': 8500
-    };
-
-    const updated = sections.map(section => ({
+    const updated = sections.map((section) => ({
       ...section,
-      items: section.items.map(item => {
-        if (item.rate > 0 && item.benchmark > 0) return item;
+      items: (section.items || []).map((item) => {
+        const shouldPreserveManualRate = !item.useBenchmark && Number(item.rate) > 0 && item.rateSource === 'manual';
+        const autoRated = buildAutoRateResult(item, {
+          structureType: project?.type,
+          region: project?.region || 'Lagos',
+          materialIndex
+        });
 
-        const desc = item.description.toLowerCase();
-        let matchedBenchmark = 0;
+        const nextItem = {
+          ...item,
+          benchmark: Number(item.benchmark) > 0 ? item.benchmark : autoRated.benchmark,
+          breakdown: item.breakdown || autoRated.breakdown
+        };
 
-        // Try DB matches first
-        for (const [key, benchmark] of Object.entries(benchmarkMap)) {
-          if (desc.includes(key)) {
-            matchedBenchmark = benchmark;
-            break;
-          }
+        if (!shouldPreserveManualRate && Number(item.rate) <= 0) {
+          nextItem.rate = autoRated.rate;
+          nextItem.rateSource = item.customPricing ? 'custom' : 'calculated';
+          updatedCount += 1;
         }
 
-        // Try fallbacks if no DB match
-        if (matchedBenchmark === 0) {
-          for (const [key, price] of Object.entries(fallbacks)) {
-            if (desc.includes(key)) {
-              matchedBenchmark = price;
-              break;
-            }
-          }
+        if (nextItem.benchmark > 0 && Number(item.benchmark) <= 0) {
+          benchmarkedCount += 1;
         }
 
-        if (matchedBenchmark > 0) {
-          const regionalBenchmark = matchedBenchmark * regionMod;
-          const rateToKeep = Number(item.rate) > 0 ? Number(item.rate) : regionalBenchmark;
-          const totalToUse = item.useBenchmark ? (Number(item.qty) || 0) * regionalBenchmark : (Number(item.qty) || 0) * rateToKeep;
-
-          return {
-            ...item,
-            benchmark: matchedBenchmark,
-            rate: rateToKeep,
-            total: totalToUse,
-            rateSource: Number(item.rate) > 0 ? item.rateSource : 'calculated'
-          };
-        }
-        return item;
+        nextItem.total = getItemTotal(nextItem, project?.region || 'Lagos');
+        return nextItem;
       })
     }));
 
     setSections(updated);
     onUpdate(project.id, updated, project?.region);
+    toast.success(`Auto-rated ${updatedCount} item${updatedCount === 1 ? '' : 's'} and benchmarked ${benchmarkedCount} item${benchmarkedCount === 1 ? '' : 's'}.`);
   };
 
   const toggleVO = (sectionId, itemId) => {
@@ -456,9 +440,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   };
 
   const isOutlier = (rate, benchmark) => {
-    if (!benchmark || benchmark === 0 || !rate) return false;
-    const ratio = rate / benchmark;
-    return ratio > 1.5 || ratio < 0.5;
+    return isBenchmarkOutlier(rate, benchmark);
   };
 
   const getRateSourceMeta = (item) => {
@@ -472,7 +454,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const getBenchmarkDeltaMeta = (item) => {
     if (item.useBenchmark) return null;
 
-    const benchmarkRate = getEffectiveBenchmarkRate(item);
+    const benchmarkRate = getEffectiveBenchmarkRate(item, project?.region || 'Lagos');
     const customRate = Number(item.rate) || 0;
     if (!benchmarkRate || !customRate) return null;
 
@@ -524,20 +506,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     }).filter(Boolean);
   }, [sections, searchQuery]);
 
-  const calculateGrandTotal = React.useMemo(() => {
-    return (sections || []).reduce((acc, section) =>
-      acc + (section.items || []).reduce((sum, item) => sum + (item.total || 0), 0), 0
-    );
-  }, [sections]);
+  const workspaceAnalytics = React.useMemo(() => (
+    getProjectPricingAnalytics({ ...project, sections })
+  ), [project, sections]);
 
-  const totalQuantity = React.useMemo(() => {
-    return (sections || []).reduce(
-      (acc, section) => acc + (section.items || []).reduce((sum, item) => sum + (Number(item.qty) || 0), 0),
-      0
-    );
-  }, [sections]);
+  const calculateGrandTotal = workspaceAnalytics.totalValue;
+  const totalQuantity = workspaceAnalytics.totalQuantity;
 
-  const totalItems = (sections || []).reduce((a, s) => a + (s.items?.length || 0), 0);
+  const totalItems = workspaceAnalytics.totalItems;
   const totalColumnCount = viewMode === 'valuation' ? 9 : 8;
   const sectionHeaderSpan = viewMode === 'valuation' ? 8 : 7;
   const subtotalLeadingSpan = viewMode === 'valuation' ? 6 : 5;
@@ -567,7 +543,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         </div>
         <div className="ws-toolbar-center">
           <div className="ws-stat"><span className="ws-stat-label">Region</span>
-            <select className="ws-region-sel" value={project?.region || 'Lagos'} onChange={(e) => onUpdate(project.id, sections, e.target.value)}>
+            <select className="ws-region-sel" value={project?.region || 'Lagos'} onChange={(e) => handleRegionChange(e.target.value)}>
               <option value="Lagos">Lagos</option>
               <option value="Abuja">Abuja</option>
               <option value="Port_Harcourt">PH</option>
@@ -646,6 +622,46 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         </div>
       </div>
 
+      <div className="ws-insight-strip">
+        <div className="ws-insight-card ws-insight-card-strong">
+          <span className="ws-insight-label">Pricing Coverage</span>
+          <strong className="ws-insight-value">{workspaceAnalytics.pricingCoveragePercent.toFixed(0)}%</strong>
+          <p className="ws-insight-copy">
+            {workspaceAnalytics.pricedItems} of {workspaceAnalytics.totalItems} items priced
+            {workspaceAnalytics.unpricedItems > 0 ? ` · ${workspaceAnalytics.unpricedItems} still need review` : ' · full coverage reached'}
+          </p>
+        </div>
+        <div className="ws-insight-card">
+          <span className="ws-insight-label">Strategy Mix</span>
+          <strong className="ws-insight-value">
+            {workspaceAnalytics.customItems} custom · {workspaceAnalytics.benchmarkItems} benchmark
+          </strong>
+          <p className="ws-insight-copy">
+            {workspaceAnalytics.calculatedItems} analysis-backed · {workspaceAnalytics.manualItems} manual
+          </p>
+        </div>
+        <div className="ws-insight-card">
+          <span className="ws-insight-label">Market Tracking</span>
+          <strong className="ws-insight-value">{workspaceAnalytics.benchmarkCoveragePercent.toFixed(0)}%</strong>
+          <p className="ws-insight-copy">
+            {workspaceAnalytics.outlierCount > 0
+              ? `${workspaceAnalytics.outlierCount} item${workspaceAnalytics.outlierCount === 1 ? '' : 's'} outside tolerance`
+              : 'No benchmark drift flags right now'}
+          </p>
+        </div>
+        <div className="ws-insight-card">
+          <span className="ws-insight-label">Commercial Driver</span>
+          <strong className="ws-insight-value">
+            {workspaceAnalytics.dominantSection ? workspaceAnalytics.dominantSection.title : 'Waiting for pricing'}
+          </strong>
+          <p className="ws-insight-copy">
+            {workspaceAnalytics.dominantSection
+              ? `${workspaceAnalytics.dominantSection.percentOfTotal.toFixed(1)}% of current contract sum`
+              : 'Add rates to reveal the heaviest cost section'}
+          </p>
+        </div>
+      </div>
+
       {/* Table */}
       <div className="ws-table-wrap">
         <table className="ws-table">
@@ -670,7 +686,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           </thead>
           <tbody>
             {filteredSections.map((section, sIdx) => {
-              const sectionSubtotal = (section.items || []).reduce((a, i) => a + (i.total || 0), 0);
+              const sectionSubtotal = (section.items || []).reduce((a, i) => a + getItemTotal(i, project?.region || 'Lagos'), 0);
               const sectionQty = (section.items || []).reduce((a, i) => a + (Number(i.qty) || 0), 0);
 
               return (
@@ -708,9 +724,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                       ? (((section.items || [])[idx - 1]?.subcategory || 'General').trim() || 'General')
                       : null;
                     const showSubcategoryHeader = idx === 0 || currentSubcategory !== previousSubcategory;
-                    const benchmarkRate = getEffectiveBenchmarkRate(item);
+                    const benchmarkRate = getEffectiveBenchmarkRate(item, project?.region || 'Lagos');
                     const outlier = !item.useBenchmark && isOutlier(item.rate, benchmarkRate);
-                    const rate = item.useBenchmark ? benchmarkRate : item.rate;
+                    const rate = getItemUnitRate(item, project?.region || 'Lagos');
+                    const itemTotal = getItemTotal(item, project?.region || 'Lagos');
                     const rateSourceMeta = getRateSourceMeta(item);
                     const benchmarkDeltaMeta = getBenchmarkDeltaMeta(item);
                     const itemCode = `${String.fromCharCode(65 + sIdx)}.${idx + 1}`;
@@ -856,7 +873,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                             <div className="ws-rate-note">Custom pricing is active. Open the studio to record the basis, quote, and commercial allowances behind this rate.</div>
                           )}
                         </td>
-                        <td className="ws-total-cell">₦{(item.total || 0).toLocaleString()}</td>
+                        <td className="ws-total-cell">₦{itemTotal.toLocaleString()}</td>
                         <td className="ws-act-cell">
                           {viewMode === 'valuation' ? (
                             <button className={`ws-btn-icon ${item.isVO ? 'ws-vo-active' : ''}`}
@@ -892,7 +909,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                               </div>
                               <div className="ws-mobile-card-total">
                                 <span>Amount</span>
-                                <strong>₦{(item.total || 0).toLocaleString()}</strong>
+                                <strong>₦{itemTotal.toLocaleString()}</strong>
                               </div>
                             </div>
 
@@ -1119,6 +1136,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           key={analyzingItem.item.id}
           item={analyzingItem.item}
           structureType={project?.type}
+          region={project?.region}
           onClose={() => setAnalyzingItem(null)}
           onSave={handleRateApply}
         />
@@ -1240,6 +1258,52 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
         .ws-mobile-stat-card-total strong {
           color: #1d4ed8;
+        }
+
+        .ws-insight-strip {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 0.85rem;
+          padding: 0.85rem;
+          background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+          border-bottom: 1px solid #dbe4ee;
+        }
+
+        .ws-insight-card {
+          display: flex;
+          flex-direction: column;
+          gap: 0.28rem;
+          padding: 0.95rem 1rem;
+          border-radius: 18px;
+          background: rgba(255, 255, 255, 0.92);
+          border: 1px solid #dbe4ee;
+          box-shadow: 0 18px 28px rgba(15, 23, 42, 0.06);
+        }
+
+        .ws-insight-card-strong {
+          background: linear-gradient(135deg, #eff6ff, #dbeafe);
+          border-color: #bfdbfe;
+        }
+
+        .ws-insight-label {
+          font-size: 0.62rem;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+
+        .ws-insight-value {
+          font-size: 1rem;
+          font-weight: 900;
+          color: #0f172a;
+        }
+
+        .ws-insight-copy {
+          margin: 0;
+          font-size: 0.72rem;
+          line-height: 1.45;
+          color: #475569;
         }
 
         .ws-mobile-cell {
@@ -1873,6 +1937,15 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             grid-auto-flow: column;
             grid-auto-columns: minmax(130px, 1fr);
           }
+          .ws-insight-strip {
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: minmax(220px, 1fr);
+            overflow-x: auto;
+            padding-bottom: 0.95rem;
+            scrollbar-width: none;
+          }
+          .ws-insight-strip::-webkit-scrollbar { display: none; }
           .ws-table-wrap {
             background: #f8fafc;
           }
@@ -1934,6 +2007,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
 
         @media (max-width: 560px) {
+          .ws-insight-card {
+            min-height: 120px;
+          }
           .ws-mobile-meta-grid,
           .ws-mobile-grid {
             grid-template-columns: 1fr;
