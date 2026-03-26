@@ -162,6 +162,7 @@ function App() {
     onSendMagicLink={handleSendMagicLink}
     onSwitchToSignUp={() => { setAuthError(null); setView('signup'); }}
     onForgotPassword={() => setView('forgot-password')}
+    onBack={() => setView(user ? 'app' : 'landing')}
   />;
   if (view === 'signup') return <SignUp error={authError} selectedPlan={selectedPlan} onSignUp={handleSignUp} onSwitchToLogin={(target) => { setAuthError(null); setView(target); }} />;
   if (view === 'verification') return (
