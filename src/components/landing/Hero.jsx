@@ -10,7 +10,11 @@ import {
   MapPin,
   CheckCircle2,
   Layers3,
-  BarChart3
+  BarChart3,
+  Building2,
+  ClipboardCheck,
+  FileText,
+  TrendingUp
 } from 'lucide-react';
 
 const Hero = ({ onGetStarted, onLogin }) => {
@@ -43,6 +47,33 @@ const Hero = ({ onGetStarted, onLogin }) => {
     'Measure quantities and choose benchmark or custom pricing',
     'Review commercial allowances and internal notes',
     'Export client-ready BOQ schedules and reports'
+  ];
+
+  const operatingLanes = [
+    {
+      icon: <Building2 size={18} />,
+      title: 'Company Dashboard',
+      copy: 'See which jobs are live, which teams are pricing, and which estimates are ready for review without chasing separate files.',
+      points: ['Live job status and totals', 'Shared company workspace flow', 'Quick access to current commercial decisions']
+    },
+    {
+      icon: <ClipboardCheck size={18} />,
+      title: 'Estimator Workflow',
+      copy: 'Move from measurement to defendable rate build-up with regional benchmarks and custom pricing in the same screen.',
+      points: ['Benchmark or custom rate per item', 'Quantity takeoff tied to BOQ units', 'Saved rate basis and pricing notes']
+    },
+    {
+      icon: <FileText size={18} />,
+      title: 'Review And Handover',
+      copy: 'Keep the final stretch clean with exports, review notes, and submission-ready schedules that still trace back to the working BOQ.',
+      points: ['PDF and Excel outputs', 'Commercial review before handoff', 'One source of truth from draft to final']
+    }
+  ];
+
+  const outcomeStrip = [
+    { value: '1 source', label: 'No duplicate pricing sheets' },
+    { value: 'Live rates', label: 'Benchmark and custom in one flow' },
+    { value: 'Team-ready', label: 'Built for company rollout, not solo spreadsheets' }
   ];
 
   const trustSignals = [
@@ -209,6 +240,53 @@ const Hero = ({ onGetStarted, onLogin }) => {
               <p>{copy}</p>
             </article>
           ))}
+        </section>
+
+        <section className="operating-system-section">
+          <div className="section-heading">
+            <span className="section-kicker">Inside the app</span>
+            <h2>A base page that feels like the product you open next.</h2>
+            <p>
+              BOQ Pro is strongest when it looks less like a generic landing page and more like a
+              serious commercial system for construction teams. This front page now shows that
+              company workflow more clearly.
+            </p>
+          </div>
+
+          <div className="operating-system-grid">
+            {operatingLanes.map(({ icon, title, copy, points }) => (
+              <article key={title} className="operating-card">
+                <div className="operating-card-head">
+                  <div className="capability-icon operating-icon">{icon}</div>
+                  <div>
+                    <h3>{title}</h3>
+                    <p>{copy}</p>
+                  </div>
+                </div>
+
+                <div className="operating-points">
+                  {points.map((point) => (
+                    <div key={point} className="operating-point">
+                      <CheckCircle2 size={14} />
+                      <span>{point}</span>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="outcome-strip">
+            {outcomeStrip.map(({ value, label }) => (
+              <div key={label} className="outcome-card">
+                <TrendingUp size={16} />
+                <div>
+                  <strong>{value}</strong>
+                  <span>{label}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
 
         <section className="workflow-section">
@@ -791,6 +869,114 @@ const Hero = ({ onGetStarted, onLogin }) => {
           line-height: 1.65;
         }
 
+        .operating-system-section {
+          margin-top: 3rem;
+        }
+
+        .operating-system-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 1rem;
+          margin-top: 1.4rem;
+        }
+
+        .operating-card {
+          padding: 1.35rem;
+          border-radius: 26px;
+          background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98));
+          border: 1px solid var(--border-light);
+          box-shadow: var(--shadow-sm);
+        }
+
+        .operating-card-head {
+          display: grid;
+          grid-template-columns: auto 1fr;
+          gap: 1rem;
+          align-items: flex-start;
+        }
+
+        .operating-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 16px;
+        }
+
+        .operating-card h3 {
+          margin: 0 0 0.45rem;
+          font-size: 1rem;
+          color: var(--primary-950);
+        }
+
+        .operating-card p {
+          margin: 0;
+          color: var(--primary-600);
+          font-size: 0.84rem;
+          line-height: 1.7;
+        }
+
+        .operating-points {
+          display: grid;
+          gap: 0.7rem;
+          margin-top: 1.15rem;
+        }
+
+        .operating-point {
+          display: flex;
+          align-items: flex-start;
+          gap: 0.55rem;
+          padding: 0.8rem 0.9rem;
+          border-radius: 16px;
+          background: var(--primary-50);
+          border: 1px solid rgba(203, 213, 225, 0.65);
+          color: var(--primary-700);
+          font-size: 0.8rem;
+          line-height: 1.5;
+        }
+
+        .operating-point svg {
+          flex-shrink: 0;
+          margin-top: 0.1rem;
+          color: var(--accent-600);
+        }
+
+        .outcome-strip {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 0.9rem;
+          margin-top: 1rem;
+        }
+
+        .outcome-card {
+          display: flex;
+          align-items: center;
+          gap: 0.8rem;
+          padding: 1rem 1.1rem;
+          border-radius: 20px;
+          background: white;
+          border: 1px solid var(--border-light);
+          box-shadow: var(--shadow-sm);
+        }
+
+        .outcome-card svg {
+          color: var(--accent-600);
+          flex-shrink: 0;
+        }
+
+        .outcome-card strong {
+          display: block;
+          color: var(--primary-900);
+          font-size: 0.92rem;
+          font-weight: 800;
+        }
+
+        .outcome-card span {
+          display: block;
+          margin-top: 0.2rem;
+          color: var(--primary-500);
+          font-size: 0.76rem;
+          line-height: 1.45;
+        }
+
         .workflow-section {
           margin-top: 3.5rem;
           padding: 2rem 0 0;
@@ -881,6 +1067,8 @@ const Hero = ({ onGetStarted, onLogin }) => {
         @media (max-width: 1080px) {
           .hero-panel,
           .capabilities-band,
+          .operating-system-grid,
+          .outcome-strip,
           .workflow-grid,
           .closing-cta {
             grid-template-columns: 1fr;
@@ -903,6 +1091,7 @@ const Hero = ({ onGetStarted, onLogin }) => {
           }
 
           .capabilities-band,
+          .operating-system-grid,
           .workflow-grid {
             display: grid;
           }
@@ -928,6 +1117,8 @@ const Hero = ({ onGetStarted, onLogin }) => {
           }
 
           .capabilities-band,
+          .operating-system-grid,
+          .outcome-strip,
           .workflow-grid {
             grid-template-columns: 1fr;
           }
@@ -1004,7 +1195,8 @@ const Hero = ({ onGetStarted, onLogin }) => {
 
           .hero-stats,
           .trust-strip,
-          .workspace-badges {
+          .workspace-badges,
+          .outcome-strip {
             display: flex;
             overflow-x: auto;
             gap: 0.75rem;
@@ -1014,7 +1206,8 @@ const Hero = ({ onGetStarted, onLogin }) => {
 
           .hero-stat-card,
           .trust-strip span,
-          .workspace-badges span {
+          .workspace-badges span,
+          .outcome-card {
             flex: 0 0 auto;
             scroll-snap-align: start;
           }
@@ -1030,6 +1223,7 @@ const Hero = ({ onGetStarted, onLogin }) => {
           .workspace-main,
           .workspace-side,
           .capability-card,
+          .operating-card,
           .closing-cta {
             padding-left: 1rem;
             padding-right: 1rem;
@@ -1071,8 +1265,17 @@ const Hero = ({ onGetStarted, onLogin }) => {
           }
 
           .capability-card,
+          .operating-card,
           .workflow-card {
             border-radius: 20px;
+          }
+
+          .operating-card-head {
+            grid-template-columns: 1fr;
+          }
+
+          .outcome-card {
+            min-width: 230px;
           }
 
           .workflow-card {
