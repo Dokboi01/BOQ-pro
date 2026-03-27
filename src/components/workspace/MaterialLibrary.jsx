@@ -3,23 +3,18 @@ import { useToast } from '../ui/useToast';
 import {
   Plus,
   Search,
-  Filter,
   TrendingUp,
   TrendingDown,
   Info,
   Edit2,
-  BarChart3,
-  MapPin,
-  Calendar,
   ArrowRight,
   SearchCheck,
   AlertCircle,
-  ChevronRight,
   Activity,
   ShieldCheck,
   Lock
 } from 'lucide-react';
-import { hasFeature, PLAN_NAMES } from '../../data/plans';
+import { hasFeature } from '../../data/plans';
 import { getMaterials, getMarketIndices, addMaterial, updateMaterial, deleteMaterial } from '../../db/database';
 import { Loader2 } from 'lucide-react';
 
@@ -33,6 +28,32 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
   const [isManageMode, setIsManageMode] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState(null);
   const toast = useToast();
+  const activeRegionLabel = activeProject?.region || 'Lagos';
+
+  const getRegionalBenchmark = (material) => Number(
+    material?.regions?.[activeRegionLabel] || material?.benchmark || material?.price || 0
+  );
+
+  const getBenchmarkDriftMeta = (material) => {
+    const benchmark = getRegionalBenchmark(material);
+    const marketRead = Number(material?.price || 0);
+
+    if (!benchmark || !marketRead) {
+      return {
+        label: 'Benchmark band pending',
+        tone: 'pending'
+      };
+    }
+
+    const delta = ((marketRead - benchmark) / benchmark) * 100;
+    const flagged = Math.abs(delta) >= 5;
+
+    return {
+      label: flagged ? 'Benchmark drift flag' : 'Within benchmark band',
+      tone: flagged ? 'flagged' : 'aligned',
+      delta
+    };
+  };
 
   const defaultMaterials = React.useMemo(() => [
     {
@@ -386,11 +407,11 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
               <Activity size={16} className="text-accent" />
             </div>
             <div className="metric-val text-danger">+4.8%</div>
-            <div className="metric-footer">Regional Inflation (Lagos/Abuja)</div>
+            <div className="metric-footer">{activeRegionLabel} market pulse vs regional average</div>
           </div>
           <div className="enterprise-card intel-metric">
             <div className="metric-header">
-              <span className="label">Highest Exposure Category</span>
+              <span className="label">Highest Exposure Trade</span>
               <AlertCircle size={16} className="text-warning" />
             </div>
             <div className="metric-val">Bitumen & Oils</div>
@@ -398,11 +419,11 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
           </div>
           <div className="enterprise-card intel-metric">
             <div className="metric-header">
-              <span className="label">Market Trust Score</span>
+              <span className="label">Benchmark Confidence</span>
               <ShieldCheck size={16} className="text-success" />
             </div>
             <div className="metric-val">98.2%</div>
-            <div className="metric-footer">Based on 1.4k regional inputs</div>
+            <div className="metric-footer">Based on supplier reads and QS calibration logs</div>
           </div>
         </div>
 
@@ -410,9 +431,9 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
           <div className="index-header">
             <div className="title-box">
               <h3>Construction Material Cost Index (CMCI)</h3>
-              <p>Industry-standard tracking of cost movements in West Africa</p>
+              <p>Regional benchmark signals calibrated from supplier reads, market spot checks, and live QS updates</p>
             </div>
-            <button className="btn-secondary small" onClick={() => toast.info('Index breakdown history will be available in the next update.')}>View Full Index History</button>
+            <button className="btn-secondary small" onClick={() => toast.info('Index breakdown history will be available in the next update.')}>View Full Benchmark History</button>
           </div>
           <div className="index-grid">
             {marketIndices.map((idx, i) => (
@@ -439,7 +460,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
         <div className="modal-header">
           <div className="mat-identity">
             <span className="cat-tag">{mat.category}</span>
-            <h3>{mat.name} Intelligence Report</h3>
+            <h3>{mat.name} Market Benchmark Report</h3>
           </div>
           <button className="close-btn" onClick={() => setSelectedMaterial(null)}>×</button>
         </div>
@@ -447,7 +468,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
         <div className="modal-body">
           <div className="report-grid">
             <div className="price-trends">
-              <div className="section-title">Historical Benchmark Trend (6 Months)</div>
+              <div className="section-title">{activeRegionLabel} Benchmark Trend (6 Months)</div>
               <div className="trend-chart-placeholder">
                 <div className="chart-bars">
                   {mat.history.map((h, i) => (
@@ -461,11 +482,11 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
             </div>
             <div className="bench-stats">
               <div className="stat-box">
-                <span className="s-label">Market Benchmark</span>
-                <span className="s-val">₦{mat.benchmark.toLocaleString()}</span>
+                <span className="s-label">{activeRegionLabel} Market Benchmark</span>
+                <span className="s-val">₦{getRegionalBenchmark(mat).toLocaleString()}</span>
               </div>
               <div className="stat-box">
-                <span className="s-label">Regional Breakdown</span>
+                <span className="s-label">Regional Market Spread</span>
                 <div className="regional-list">
                   {mat.regions && Object.entries(mat.regions).map(([r, p]) => (
                     <div key={r} className="regional-item">
@@ -476,8 +497,12 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 </div>
               </div>
               <div className="stat-box">
-                <span className="s-label">Confidence Rating</span>
+                <span className="s-label">Benchmark Confidence</span>
                 <span className="s-val text-success">HIGH</span>
+              </div>
+              <div className="stat-box">
+                <span className="s-label">Benchmark Evidence Band</span>
+                <span className="s-val small">{mat.range}</span>
               </div>
             </div>
           </div>
@@ -489,7 +514,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
 
           <div className="trust-disclaimer">
             <Info size={14} />
-            <span>Rates reflect aggregated market data from registered suppliers. Benchmark values are advisory, not prescriptive.</span>
+            <span>Benchmarks are calibrated from supplier quotes, regional spot checks, and live QS pricing signals. Use custom overrides when procurement conditions differ.</span>
           </div>
         </div>
 
@@ -502,24 +527,26 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 toast.warning('Please select or open a project first.');
                 return;
               }
+              const benchmarkValue = getRegionalBenchmark(mat);
               const updatedSections = (activeProject.sections || []).map(section => ({
                 ...section,
                 items: section.items.map(item => {
                   // Matching logic: rudimentary check on description containing material name
-                  if (item.description.toLowerCase().includes(mat.name.toLowerCase().split(' ')[0])) {
+                  if ((item.description || '').toLowerCase().includes(mat.name.toLowerCase().split(' ')[0])) {
                     return {
                       ...item,
-                      benchmark: Number(mat.benchmark || mat.price || 0),
-                      rate: mat.price,
-                      useBenchmark: false,
-                      total: item.qty * mat.price
+                      benchmark: benchmarkValue,
+                      rate: benchmarkValue,
+                      useBenchmark: true,
+                      rateSource: 'benchmark',
+                      total: (Number(item.qty) || 0) * benchmarkValue
                     };
                   }
                   return item;
                 })
               }));
               onUpdate(activeProject.id, updatedSections);
-              toast.success(`Applied ${mat.name} benchmark rate of ₦${mat.price.toLocaleString()} to matching items.`);
+              toast.success(`Applied the ${activeRegionLabel} benchmark for ${mat.name} at ₦${benchmarkValue.toLocaleString()} to matching items.`);
               setSelectedMaterial(null);
             }}
           >
@@ -541,15 +568,15 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
       {/* Header */}
       <div className="library-header-premium">
         <div className="title-group">
-          <h2>Material Price Intelligence & Rate Library</h2>
-          <p>Evidence-based market benchmarks and custom rates for professional quantity surveying</p>
+          <h2>Market Benchmark Intelligence & Rate Library</h2>
+          <p>Regional supplier reads, benchmark bands, and custom rate overrides for professional quantity surveying teams</p>
         </div>
         <div className="header-actions">
           <button
             className="btn-secondary"
             onClick={() => setIsManageMode(!isManageMode)}
           >
-            {isManageMode ? 'Exit Manage Mode' : 'Manage Custom Rates'}
+            {isManageMode ? 'Exit Manage Mode' : 'Manage Custom Rate Overrides'}
           </button>
           <button
             className="btn-primary-action"
@@ -569,7 +596,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
             <Search size={18} />
             <input
               type="text"
-              placeholder="Search benchmark repository..."
+              placeholder="Search market benchmarks, supplier items, or trades..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -594,7 +621,11 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
         </div>
 
         <div className="intelligence-grid-l">
-          {filteredMaterials.map((mat) => (
+          {filteredMaterials.map((mat) => {
+            const regionalBenchmark = getRegionalBenchmark(mat);
+            const driftMeta = getBenchmarkDriftMeta(mat);
+
+            return (
             <div key={mat.id} className="enterprise-card mat-intel-card glass-card" onClick={() => setSelectedMaterial(mat)}>
               <div className="card-top-row">
                 <span className="cat-text">{mat.category}</span>
@@ -607,11 +638,19 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 <span className="unit-text">per {mat.unit}</span>
               </div>
               <div className="mat-price-row">
-                <span className="p-label">Market Avg</span>
+                <span className="p-label">Current Market Read</span>
                 <div className="p-val">
                   <span className="curr">₦</span>
                   <span className="amount">{mat.price.toLocaleString()}</span>
                 </div>
+              </div>
+              <div className="mat-benchmark-row">
+                <span className="p-label">{activeRegionLabel} Market Benchmark</span>
+                <strong className="benchmark-amount">₦{regionalBenchmark.toLocaleString()}</strong>
+              </div>
+              <div className="mat-support-row">
+                <span className={`benchmark-flag ${driftMeta.tone}`}>{driftMeta.label}</span>
+                <span className="benchmark-range">Band {mat.range}</span>
               </div>
               <div className="card-footer-l">
                 <div className="last-sync">Updated {mat.lastUpdated}</div>
@@ -627,7 +666,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 )}
               </div>
             </div>
-          ))}
+          )})}
         </div>
       </div>
 
@@ -871,10 +910,40 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 .unit-text { font-size: 0.75rem; color: var(--primary-500); }
 
                 .mat-price-row { margin-top: 1.25rem; display: flex; flex-direction: column; }
+                .mat-benchmark-row {
+                    margin-top: 0.85rem;
+                    padding-top: 0.85rem;
+                    border-top: 1px dashed var(--border-light);
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.2rem;
+                }
+                .mat-support-row {
+                    margin-top: 0.9rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 0.75rem;
+                    flex-wrap: wrap;
+                }
                 .p-label { font-size: 0.6875rem; font-weight: 600; color: var(--primary-400); }
                 .p-val { display: flex; align-items: baseline; gap: 0.25rem; }
                 .p-val .curr { font-weight: 700; color: var(--primary-600); }
                 .p-val .amount { font-size: 1.5rem; font-weight: 800; color: var(--primary-900); }
+                .benchmark-amount { font-size: 1rem; font-weight: 800; color: var(--primary-800); }
+                .benchmark-flag {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 0.3rem 0.55rem;
+                    border-radius: 999px;
+                    font-size: 0.625rem;
+                    font-weight: 800;
+                }
+                .benchmark-flag.aligned { background: rgba(22, 163, 74, 0.12); color: var(--success-600); }
+                .benchmark-flag.flagged { background: rgba(234, 88, 12, 0.12); color: #c2410c; }
+                .benchmark-flag.pending { background: rgba(148, 163, 184, 0.15); color: var(--primary-500); }
+                .benchmark-range { font-size: 0.6875rem; color: var(--primary-500); font-weight: 600; }
 
                 .card-footer-l {
                     margin-top: 1.5rem;
