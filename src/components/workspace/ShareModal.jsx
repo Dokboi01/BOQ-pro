@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '../ui/useToast';
 import { sendReportEmail, shareViaWhatsApp, shareViaNative, copyShareTextToClipboard } from '../../utils/emailService';
+import { getItemTotal, getItemUnitRate } from '../../utils/pricing';
 import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -22,10 +23,12 @@ const toBase64 = (bufferLike) => {
   return btoa(binary);
 };
 
-const ShareModal = ({ isOpen, onClose, projectInfo, boqData, calculateGrandTotal }) => {
+const ShareModal = ({ isOpen, onClose, projectInfo, boqData, grandTotal }) => {
   const toast = useToast();
   const [emailConfig, setEmailConfig] = useState({ recipient: '', includePDF: true, includeExcel: false });
   const [isSending, setIsSending] = useState(false);
+  const projectRegion = projectInfo?.region || 'Lagos';
+  const calculateGrandTotal = () => grandTotal;
 
   if (!isOpen) return null;
 
@@ -86,18 +89,22 @@ const ShareModal = ({ isOpen, onClose, projectInfo, boqData, calculateGrandTotal
         boqData.forEach(section => {
           tableData.push([{ content: section.title, colSpan: 6, styles: { fillColor: [240, 240, 240], fontStyle: 'bold' } }]);
           section.items.forEach((item, idx) => {
+            const rate = getItemUnitRate(item, projectRegion);
+            const total = getItemTotal(item, projectRegion);
             tableData.push([
               idx + 1,
               item.description,
               item.unit,
               item.qty.toLocaleString(),
-              (item.useBenchmark ? item.benchmark : item.rate).toLocaleString(),
-              item.total.toLocaleString()
+              rate.toLocaleString(),
+              total.toLocaleString()
             ]);
           });
         });
 
         tableData.push([{ content: 'GRAND TOTAL', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } }, { content: `₦${calculateGrandTotal().toLocaleString()}`, styles: { fontStyle: 'bold' } }]);
+
+        tableData[tableData.length - 1][1].content = `₦${grandTotal.toLocaleString()}`;
 
         doc.autoTable({
           startY: 40,
@@ -122,7 +129,7 @@ const ShareModal = ({ isOpen, onClose, projectInfo, boqData, calculateGrandTotal
         worksheet.addRow(['Description', 'Unit', 'Qty', 'Rate', 'Total']).font = { bold: true };
         boqData.forEach(s => {
           worksheet.addRow([s.title]).font = { bold: true };
-          s.items.forEach(i => worksheet.addRow([i.description, i.unit, i.qty, i.rate, i.total]));
+          s.items.forEach(i => worksheet.addRow([i.description, i.unit, i.qty, getItemUnitRate(i, projectRegion), getItemTotal(i, projectRegion)]));
         });
         const buffer = await workbook.xlsx.writeBuffer();
         const excelBase64 = toBase64(buffer);
@@ -134,7 +141,7 @@ const ShareModal = ({ isOpen, onClose, projectInfo, boqData, calculateGrandTotal
 
       const result = await sendReportEmail(recipient, {
         name: projectInfo.title,
-        totalValue: calculateGrandTotal()
+        totalValue: grandTotal
       }, attachments);
 
       if (result.success) {

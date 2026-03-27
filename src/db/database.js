@@ -40,7 +40,7 @@ const sanitizeProjectForCloud = (project, user) => {
         status: clone.status || 'Draft',
         date: clone.date,
         region: clone.region || 'Lagos',
-        user_id: user.uid,
+        user_id: clone.user_id || user.uid,
         company_name,
         company_key,
         projectMode: clone.projectMode || 'default',
@@ -177,7 +177,23 @@ export const getProjectById = async (id) => {
 
 export const deleteProject = async (id) => {
     try {
-        await deleteDoc(doc(db, 'projects', id));
+        const user = auth.currentUser;
+        if (!user) return false;
+
+        const docRef = doc(db, 'projects', id);
+        const snapshot = await getDoc(docRef);
+
+        if (!snapshot.exists()) {
+            return true;
+        }
+
+        const project = snapshot.data();
+        if (project?.user_id && project.user_id !== user.uid) {
+            console.warn('Delete blocked for non-owner project:', id);
+            return false;
+        }
+
+        await deleteDoc(docRef);
         return true;
     } catch (err) {
         console.error('Error deleting project:', err);
