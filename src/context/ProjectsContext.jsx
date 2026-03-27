@@ -19,7 +19,7 @@ import {
 import { subscribeToProject } from '../db/realtimeSync';
 import { logActivity } from '../db/collaborationService';
 import ProjectsContext from './projects-context';
-import { buildCompanyKey, deriveCompanyName } from '../utils/companyAccess';
+import { buildCompanyKey, canAccessCompanyProject, deriveCompanyName } from '../utils/companyAccess';
 
 export function ProjectsProvider({ children }) {
     const { user, setView } = useAuth();
@@ -36,6 +36,25 @@ export function ProjectsProvider({ children }) {
     const [syncStatus, setSyncStatus] = useState({ state: 'synced' });
     const lastRemoteUpdate = useRef(0);
     const lastUserIdRef = useRef(user?.id || null);
+
+    const filterVisibleProjects = useCallback((incomingProjects = []) => {
+        if (!user) return [];
+
+        return incomingProjects.filter((project) => {
+            if (!project) return false;
+
+            const hasCloudAccessMeta = !!project.user_id
+                || Array.isArray(project.collaborators)
+                || !!project.access_mode
+                || !!project.company_key;
+
+            if (hasCloudAccessMeta) {
+                return canAccessCompanyProject(user, project);
+            }
+
+            return project.userId === user.id || String(project.id || '').startsWith('local_');
+        });
+    }, [user]);
 
     useEffect(() => {
         const currentUserId = user?.id || null;
@@ -67,26 +86,28 @@ export function ProjectsProvider({ children }) {
         const init = async () => {
             // 1. Instant load from Dexie
             const localProjects = await loadLocal();
-            if (!cancelled && localProjects.length > 0) {
-                setProjects(localProjects);
+            const visibleLocalProjects = filterVisibleProjects(localProjects);
+            if (!cancelled && visibleLocalProjects.length > 0) {
+                setProjects(visibleLocalProjects);
             }
 
             // 2. Background pull from cloud and merge
             const merged = await pullFromCloud();
             if (!cancelled && merged) {
-                setProjects(merged);
-            } else if (!cancelled && localProjects.length === 0) {
+                setProjects(filterVisibleProjects(merged));
+            } else if (!cancelled && visibleLocalProjects.length === 0) {
                 // If no local data and pull failed, we still load from local (empty)
                 // but also try loading from cloud directly for first-time users
                 const { getProjects } = await import('../db/database');
                 try {
                     const cloudData = await getProjects();
-                    if (!cancelled && cloudData.length > 0) {
+                    const visibleCloudData = filterVisibleProjects(cloudData);
+                    if (!cancelled && visibleCloudData.length > 0) {
                         // Save to local DB for next time
-                        for (const p of cloudData) {
+                        for (const p of visibleCloudData) {
                             await saveLocal(p);
                         }
-                        setProjects(cloudData);
+                        setProjects(visibleCloudData);
                     }
                 } catch {
                     // Offline and no local data — that's fine
@@ -103,7 +124,7 @@ export function ProjectsProvider({ children }) {
             cancelled = true;
             stopAutoSync();
         };
-    }, [user]);
+    }, [filterVisibleProjects, user]);
 
     // ── Listen for sync status changes ──
     useEffect(() => {
@@ -189,11 +210,11 @@ export function ProjectsProvider({ children }) {
     const forceSync = useCallback(async () => {
         const merged = await pullFromCloud();
         if (merged) {
-            setProjects(merged);
+            setProjects(filterVisibleProjects(merged));
             toast.success('Synced with cloud!');
         }
         await processQueue();
-    }, [toast]);
+    }, [filterVisibleProjects, toast]);
 
     const handleCreateProject = () => {
         const limits = PLAN_LIMITS[user?.plan] || PLAN_LIMITS[PLAN_NAMES.FREE];

@@ -4,34 +4,90 @@ const slugify = (value = '') => String(value)
   .replace(/[^a-z0-9]+/g, '-')
   .replace(/^-+|-+$/g, '');
 
+const PERSONAL_EMAIL_DOMAINS = new Set([
+  'gmail.com',
+  'yahoo.com',
+  'hotmail.com',
+  'outlook.com',
+  'icloud.com',
+  'live.com',
+  'msn.com',
+  'aol.com',
+  'proton.me',
+  'protonmail.com',
+  'gmx.com',
+  'mail.com',
+]);
+
+const buildDerivedCompanyName = (domain = '') => {
+  return domain
+    .split('.')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+};
+
+const buildDomainCompanyKey = (domain = '') => {
+  return slugify(domain.replace(/\.[a-z]{2,}$/i, ''));
+};
+
+const buildPersonalWorkspaceKey = (email = '') => {
+  const normalizedEmail = slugify(String(email).toLowerCase());
+  return normalizedEmail ? `private-${normalizedEmail}` : '';
+};
+
+const isPersonalDomain = (domain = '') => PERSONAL_EMAIL_DOMAINS.has(String(domain).toLowerCase());
+
 export const getEmailDomain = (email = '') => {
   const [, domain = ''] = String(email).toLowerCase().split('@');
   return domain.trim();
 };
 
 export const buildCompanyKey = ({ companyKey = '', companyName = '', email = '' } = {}) => {
-  if (companyKey) return slugify(companyKey);
-
-  const normalizedCompany = slugify(companyName);
-  if (normalizedCompany) return normalizedCompany;
-
   const domain = getEmailDomain(email);
-  if (!domain) return '';
+  const personalDomain = isPersonalDomain(domain);
+  const normalizedCompanyKey = slugify(companyKey);
+  const normalizedCompany = slugify(companyName);
+  const derivedDomainKey = buildDomainCompanyKey(domain);
+  const derivedDomainName = slugify(buildDerivedCompanyName(domain));
 
-  return slugify(domain.replace(/\.[a-z]{2,}$/i, ''));
+  if (normalizedCompanyKey) {
+    if (!personalDomain || (normalizedCompanyKey !== derivedDomainKey && normalizedCompanyKey !== slugify(domain))) {
+      return normalizedCompanyKey;
+    }
+  }
+
+  if (normalizedCompany) {
+    if (!personalDomain || normalizedCompany !== derivedDomainName) {
+      return normalizedCompany;
+    }
+  }
+
+  if (!domain) return normalizedCompanyKey || normalizedCompany;
+
+  if (personalDomain) {
+    return buildPersonalWorkspaceKey(email);
+  }
+
+  return derivedDomainKey;
 };
 
 export const deriveCompanyName = ({ companyName = '', email = '' } = {}) => {
-  if (companyName?.trim()) return companyName.trim();
-
   const domain = getEmailDomain(email);
+  const personalDomain = isPersonalDomain(domain);
+  const trimmedCompanyName = companyName?.trim();
+
+  if (trimmedCompanyName) {
+    if (!personalDomain || slugify(trimmedCompanyName) !== slugify(buildDerivedCompanyName(domain))) {
+      return trimmedCompanyName;
+    }
+  }
+
   if (!domain) return 'Company Workspace';
 
-  return domain
-    .split('.')
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
+  if (personalDomain) return 'Private Workspace';
+
+  return buildDerivedCompanyName(domain);
 };
 
 export const isCustomModeProject = (project) => project?.projectMode === 'custom';
