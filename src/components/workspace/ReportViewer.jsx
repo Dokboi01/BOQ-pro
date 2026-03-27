@@ -2,6 +2,7 @@ import React from 'react';
 import { 
   Zap, ChevronRight, Lock, FileText, PieChart, Package, ShieldCheck, AlertTriangle 
 } from 'lucide-react';
+import { getItemTotal, getItemUnitRate } from '../../utils/pricing';
 
 const ReportViewer = ({ 
   activeReport, 
@@ -13,6 +14,7 @@ const ReportViewer = ({
   projectSummary, 
   isGeneratingSummary 
 }) => {
+  const projectRegion = projectInfo?.region || 'Lagos';
   
   const renderBOQReport = () => (
     <div className="print-document view-fade-in">
@@ -47,19 +49,24 @@ const ReportViewer = ({
               <tr className="section-row">
                 <td colSpan="6" className="font-bold">{section.title}</td>
               </tr>
-              {section.items.map((item, iidx) => (
-                <tr key={iidx}>
-                  <td>{iidx + 1}</td>
-                  <td className="text-left">{item.description}</td>
-                  <td>{item.unit}</td>
-                  <td>{item.qty.toLocaleString()}</td>
-                  <td>{(item.useBenchmark ? item.benchmark : item.rate).toLocaleString()}</td>
-                  <td>{item.total.toLocaleString()}</td>
-                </tr>
-              ))}
+              {section.items.map((item, iidx) => {
+                const rate = getItemUnitRate(item, projectRegion);
+                const total = getItemTotal(item, projectRegion);
+
+                return (
+                  <tr key={iidx}>
+                    <td>{iidx + 1}</td>
+                    <td className="text-left">{item.description}</td>
+                    <td>{item.unit}</td>
+                    <td>{item.qty.toLocaleString()}</td>
+                    <td>{rate.toLocaleString()}</td>
+                    <td>{total.toLocaleString()}</td>
+                  </tr>
+                );
+              })}
               <tr className="subtotal-row">
                 <td colSpan="5">SUBTOTAL</td>
-                <td>{section.items.reduce((acc, i) => acc + (i.total || 0), 0).toLocaleString()}</td>
+                <td>{section.items.reduce((acc, i) => acc + getItemTotal(i, projectRegion), 0).toLocaleString()}</td>
               </tr>
             </React.Fragment>
           ))}
@@ -88,7 +95,14 @@ const ReportViewer = ({
   );
 
   const renderVariationSummary = () => {
-    const voItems = boqData.flatMap(s => s.items.filter(i => i.isVO));
+    const voItems = boqData.flatMap((section) =>
+      (section.items || [])
+        .filter((item) => item.isVO)
+        .map((item) => ({
+          ...item,
+          rate: getItemUnitRate(item, projectRegion)
+        }))
+    );
 
     return (
       <div className="report-preview-canvas enterprise-card view-fade-in">

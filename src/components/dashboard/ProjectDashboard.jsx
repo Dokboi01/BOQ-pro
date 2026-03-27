@@ -259,7 +259,12 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
           </div>
         ) : (
           <div className="project-grid">
-            {filteredProjects.map(({ project, analytics }) => (
+            {filteredProjects.map(({ project, analytics }) => {
+              const canDeleteProject = project.isOwner === true
+                || project.user_id === user?.id
+                || String(project.id || '').startsWith('local_');
+
+              return (
               <article key={project.id} className="project-card enterprise-card" onClick={() => onSelectProject(project.id)}>
                 <div className="project-top">
                   <span className={`status-dot ${toneForStatus(project.status)}`} />
@@ -278,21 +283,23 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
                     <span className="pill">{analytics.outlierCount} drift</span>
                   </div>
                   <div className="action-row">
-                    <button
-                      className="icon-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (confirm(`Are you sure you want to delete "${project.name}"?`)) onDeleteProject(project.id);
-                      }}
-                      title="Delete Project"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    {canDeleteProject && (
+                      <button
+                        className="icon-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`Are you sure you want to delete "${project.name}"?`)) onDeleteProject(project.id);
+                        }}
+                        title="Delete Project"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                     <ChevronRight size={18} />
                   </div>
                 </div>
               </article>
-            ))}
+            )})}
             {user?.plan === PLAN_NAMES.FREE && projects.length < limits.maxProjects && (
               <article className="project-card locked enterprise-card" onClick={onCreateProject}>
                 <Lock size={24} />

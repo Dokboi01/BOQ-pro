@@ -509,6 +509,18 @@ export function ProjectsProvider({ children }) {
     };
 
     const handleDeleteProject = async (projectId) => {
+        const project = projects.find(p => p.id === projectId);
+        if (!project) return;
+
+        const canDeleteProject = String(projectId || '').startsWith('local_')
+            || project.isOwner === true
+            || project.user_id === user?.id;
+
+        if (!canDeleteProject) {
+            toast.error('Only the project owner can delete this project.');
+            return;
+        }
+
         // 1. Remove from local DB immediately
         await deleteLocal(projectId);
         setProjects(prev => prev.filter(p => p.id !== projectId));

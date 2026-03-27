@@ -16,8 +16,9 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { hasFeature } from '../../data/plans';
-import { generateProjectSummary, getRegionalModifier } from '../../utils/aiService';
+import { generateProjectSummary } from '../../utils/aiService';
 import { exportToExcel, exportToPDF, exportMaterialsToPDF } from '../../utils/reportExports';
+import { getItemTotal, getItemUnitRate } from '../../utils/pricing';
 import ShareModal from './ShareModal';
 import ReportViewer from './ReportViewer';
 
@@ -78,6 +79,7 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
     ref: activeProject?.id ? `BOQ-${activeProject.id}` : 'N/A',
     client: activeProject?.clientName || user?.organization || 'Private Client',
     location: activeProject?.region || 'Lagos - Algiers Sector',
+    region: activeProject?.region || 'Lagos',
     preparedBy: activeProject?.preparedBy || user?.full_name || 'BOQ Pro Professional',
     checkedBy: activeProject?.checkedBy || 'Senior QA/QC',
     date: activeProject?.date || new Date().toLocaleDateString(),
@@ -86,19 +88,20 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
   };
 
   const boqData = React.useMemo(() => activeProject?.sections || [], [activeProject]);
+  const projectRegion = projectInfo.region || 'Lagos';
 
-  const calculateGrandTotal = React.useCallback(() => {
+  const grandTotal = React.useMemo(() => {
     return boqData.reduce((acc, section) => {
-      return acc + (section.items || []).reduce((itemAcc, item) => itemAcc + (item.total || 0), 0);
+      return acc + (section.items || []).reduce((itemAcc, item) => itemAcc + getItemTotal(item, projectRegion), 0);
     }, 0);
-  }, [boqData]);
+  }, [boqData, projectRegion]);
 
   const summaryData = React.useMemo(() => {
-    const total = calculateGrandTotal();
+    const total = grandTotal;
     return {
       total: total,
       breakdown: boqData.map(section => {
-        const amt = (section.items || []).reduce((acc, item) => acc + (item.total || 0), 0);
+        const amt = (section.items || []).reduce((acc, item) => acc + getItemTotal(item, projectRegion), 0);
         return {
           label: section.title,
           amt: amt,
@@ -106,23 +109,23 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
         };
       })
     };
-  }, [boqData, calculateGrandTotal]);
+  }, [boqData, grandTotal, projectRegion]);
 
   const ipcStats = React.useMemo(() => {
     let grossWorkDone = 0;
     let voTotal = 0;
 
     boqData.forEach(section => {
-      section.items.forEach(item => {
-        const rate = (item.useBenchmark ? (item.benchmark * getRegionalModifier(activeProject?.region || 'Lagos')) : item.rate);
+      (section.items || []).forEach(item => {
+        const rate = getItemUnitRate(item, projectRegion);
         grossWorkDone += (item.qtyCompleted || 0) * rate;
         if (item.isVO) {
-          voTotal += (item.qty * rate);
+          voTotal += getItemTotal(item, projectRegion);
         }
       });
     });
 
-    const contractSum = calculateGrandTotal();
+    const contractSum = grandTotal;
     const retentionPercent = 0.05;
     const retentionAmt = grossWorkDone * retentionPercent;
     const netWorkDone = grossWorkDone - retentionAmt;
@@ -139,12 +142,12 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
       totalDue,
       progressPercent: contractSum > 0 ? (grossWorkDone / contractSum) * 100 : 0
     };
-  }, [boqData, activeProject, calculateGrandTotal]);
+  }, [boqData, grandTotal, projectRegion]);
 
   const materialData = React.useMemo(() => {
     const agg = {};
     boqData.forEach(section => {
-      section.items.forEach(item => {
+      (section.items || []).forEach(item => {
         if (item.breakdown?.materials) {
           item.breakdown.materials.forEach(mat => {
             const key = mat.name;
@@ -186,8 +189,8 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
     }
   }, [activeReport, projectSummary, projectInfo.title, summaryData.total, boqData]);
 
-  const handleExportExcel = () => exportToExcel(projectInfo, boqData, isUnpriced, calculateGrandTotal());
-  const handleExportPDF = () => exportToPDF(projectInfo, boqData, isUnpriced, calculateGrandTotal());
+  const handleExportExcel = () => exportToExcel(projectInfo, boqData, isUnpriced);
+  const handleExportPDF = () => exportToPDF(projectInfo, boqData, isUnpriced);
   const handleExportMaterialsPDF = () => exportMaterialsToPDF(projectInfo, materialData, boqData);
 
 
@@ -290,7 +293,7 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
         onClose={() => setIsShareModalOpen(false)}
         projectInfo={projectInfo}
         boqData={boqData}
-        calculateGrandTotal={calculateGrandTotal}
+        grandTotal={grandTotal}
       />
 
 
