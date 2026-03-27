@@ -67,8 +67,9 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
   const activeAnalytics = activeEntry?.analytics || null;
 
   const currentTotal = activeAnalytics?.totalValue || 0;
-  const variance = budget - currentTotal;
-  const variancePercent = budget > 0 ? (variance / budget) * 100 : 0;
+  const commercialReadiness = activeAnalytics
+    ? Math.min((activeAnalytics.pricingCoveragePercent + activeAnalytics.confidenceScore) / 2, 100)
+    : 0;
   const status = currentTotal === 0 ? 'No Data'
     : currentTotal > budget ? 'Over Budget'
       : currentTotal > budget * 0.95 ? 'At Risk'
@@ -102,15 +103,21 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
 
   const portfolioValue = projectEntries.reduce((sum, entry) => sum + entry.analytics.totalValue, 0);
   const portfolioItems = projectEntries.reduce((sum, entry) => sum + entry.analytics.totalItems, 0);
-  const portfolioCustomItems = projectEntries.reduce((sum, entry) => sum + entry.analytics.customItems, 0);
+  const portfolioBenchmarkItems = projectEntries.reduce((sum, entry) => sum + entry.analytics.benchmarkItems, 0);
   const portfolioOutliers = projectEntries.reduce((sum, entry) => sum + entry.analytics.outlierCount, 0);
 
   const analyticsCards = [
     {
-      label: 'Portfolio Value',
-      value: formatMoney(portfolioValue),
-      detail: `${projects.length} live project${projects.length === 1 ? '' : 's'}`,
+      label: 'Estimated Cost',
+      value: activeAnalytics ? formatMoney(currentTotal) : formatMoney(0),
+      detail: activeProject ? `${activeProject.name} live BOQ total` : 'Open a project to see live BOQ totals',
       icon: BarChart3
+    },
+    {
+      label: 'Sections',
+      value: activeAnalytics ? activeAnalytics.totalSections : 0,
+      detail: activeAnalytics ? `${activeAnalytics.totalItems} items across the current BOQ` : 'No active project',
+      icon: Layers
     },
     {
       label: 'Pricing Coverage',
@@ -127,7 +134,7 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
     {
       label: 'Market Tracking',
       value: activeAnalytics ? `${PERCENT.format(activeAnalytics.benchmarkCoveragePercent)}%` : '0%',
-      detail: activeAnalytics ? `${activeAnalytics.customItems} custom-priced items` : 'Benchmark coverage appears here',
+      detail: activeAnalytics ? `${activeAnalytics.benchmarkItems} benchmark-priced · ${activeAnalytics.outlierCount} drift flag${activeAnalytics.outlierCount === 1 ? '' : 's'}` : 'Benchmark coverage appears here',
       icon: Users
     }
   ];
@@ -217,7 +224,7 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
       <section className="portfolio-grid">
         <article className="mini-card enterprise-card"><BarChart3 size={18} /><div><span className="eyebrow">Portfolio Value</span><strong>{formatMoney(portfolioValue)}</strong></div></article>
         <article className="mini-card enterprise-card"><Layers size={18} /><div><span className="eyebrow">Portfolio Items</span><strong>{portfolioItems}</strong></div></article>
-        <article className="mini-card enterprise-card"><Target size={18} /><div><span className="eyebrow">Custom-Priced</span><strong>{portfolioCustomItems}</strong></div></article>
+        <article className="mini-card enterprise-card"><Target size={18} /><div><span className="eyebrow">Benchmark-Priced</span><strong>{portfolioBenchmarkItems}</strong></div></article>
         <article className="mini-card enterprise-card"><AlertCircle size={18} /><div><span className="eyebrow">Open Drift Flags</span><strong>{portfolioOutliers}</strong></div></article>
       </section>
 
@@ -272,15 +279,15 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
                   <span className="muted">{formatProjectDate(project.date || project.updatedAt || project.updated_at)}</span>
                 </div>
                 <h4>{project.name}</h4>
-                <p className="muted">{project.type} · {analytics.totalItems} items</p>
+                <p className="muted">{project.type} · {analytics.totalItems} items · {analytics.totalSections} sections</p>
                 <div className="project-metrics">
-                  <div><span className="eyebrow">Value</span><strong>{formatMoney(analytics.totalValue)}</strong></div>
+                  <div><span className="eyebrow">Est. Cost</span><strong>{formatMoney(analytics.totalValue)}</strong></div>
                   <div><span className="eyebrow">Coverage</span><strong>{PERCENT.format(analytics.pricingCoveragePercent)}%</strong></div>
                 </div>
                 <div className="project-foot">
                   <div className="pill-row">
-                    <span className="pill">{analytics.customItems} custom</span>
-                    <span className="pill">{analytics.outlierCount} drift</span>
+                    <span className="pill">{analytics.benchmarkItems} benchmark</span>
+                    <span className="pill">{analytics.customItems} custom override</span>
                   </div>
                   <div className="action-row">
                     {canDeleteProject && (
@@ -324,10 +331,11 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
               </div>
             </div>
             <div className="metric-grid">
-              <article className="metric-card"><span className="eyebrow">Contract Value</span><strong>{formatMoney(currentTotal)}</strong><p className="muted">Live BOQ total</p></article>
-              <article className="metric-card"><span className="eyebrow">Budget Variance</span><strong className={variance < 0 ? 'danger' : 'success'}>{variance < 0 ? '-' : '+'}{formatMoney(Math.abs(variance))}</strong><p className="muted">{PERCENT.format(Math.abs(variancePercent))}% against budget</p></article>
+              <article className="metric-card"><span className="eyebrow">Estimated Cost</span><strong>{formatMoney(currentTotal)}</strong><p className="muted">Live BOQ total</p></article>
+              <article className="metric-card"><span className="eyebrow">Sections</span><strong>{activeAnalytics.totalSections}</strong><p className="muted">{activeAnalytics.totalItems} items in current scope</p></article>
               <article className="metric-card"><span className="eyebrow">Pricing Coverage</span><strong>{PERCENT.format(activeAnalytics.pricingCoveragePercent)}%</strong><p className="muted">{activeAnalytics.unpricedItems} items still open</p></article>
-              <article className="metric-card"><span className="eyebrow">Benchmark Coverage</span><strong>{PERCENT.format(activeAnalytics.benchmarkCoveragePercent)}%</strong><p className="muted">{Math.round(activeAnalytics.confidenceScore)}/100 confidence</p></article>
+              <article className="metric-card"><span className="eyebrow">Pricing Confidence</span><strong>{Math.round(activeAnalytics.confidenceScore)}/100</strong><p className="muted">{activeAnalytics.outlierCount} drift flag{activeAnalytics.outlierCount === 1 ? '' : 's'}</p></article>
+              <article className="metric-card"><span className="eyebrow">Market Tracking</span><strong>{PERCENT.format(activeAnalytics.benchmarkCoveragePercent)}%</strong><p className="muted">{activeAnalytics.benchmarkItems} benchmark-priced · {activeAnalytics.customItems} custom override</p></article>
             </div>
             <div className="meter-grid">
               <div className="meter-card">
@@ -335,8 +343,8 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
                 <div className="meter-track"><div className={`meter-fill ${status.toLowerCase().replace(/\s+/g, '-')}`} style={{ width: `${Math.min((currentTotal / Math.max(budget, 1)) * 100, 100)}%` }} /></div>
               </div>
               <div className="meter-card">
-                <div className="meter-copy"><span>Commercial Readiness</span><strong>{PERCENT.format(activeAnalytics.pricingCoveragePercent)}%</strong></div>
-                <div className="meter-track"><div className="meter-fill readiness" style={{ width: `${activeAnalytics.pricingCoveragePercent}%` }} /></div>
+                <div className="meter-copy"><span>Commercial Readiness</span><strong>{PERCENT.format(commercialReadiness)}%</strong></div>
+                <div className="meter-track"><div className="meter-fill readiness" style={{ width: `${commercialReadiness}%` }} /></div>
               </div>
             </div>
           </section>
