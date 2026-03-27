@@ -657,6 +657,23 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     return `Amount = ${quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} × ₦${rate.toLocaleString()}`;
   };
 
+  const getQuantityDisplayValue = (item) => {
+    const quantity = sanitizeNonNegativeNumber(item?.qty);
+    if (quantity <= 0) {
+      return '0.00';
+    }
+
+    return quantity.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  };
+
+  const getQuantitySourceLabel = (item) => {
+    if (item?.qtySource === 'calculated') {
+      return 'Measured from takeoff';
+    }
+
+    return 'Project quantity';
+  };
+
   const filteredSections = React.useMemo(() => {
     if (!searchQuery?.trim()) return sections || [];
     const query = searchQuery.toLowerCase();
@@ -903,6 +920,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                     const automationMeta = getAutomationMeta(item, benchmarkRate, rate);
                     const itemStatusMeta = getItemStatusMeta(item, benchmarkRate, rate);
                     const amountFormula = getAmountFormula(item, rate);
+                    const quantityDisplayValue = getQuantityDisplayValue(item);
+                    const quantitySourceLabel = getQuantitySourceLabel(item);
                     const hasValidQuantity = sanitizeNonNegativeNumber(item.qty) > 0;
                     const hasBenchmarkRate = sanitizeNonNegativeNumber(benchmarkRate) > 0;
                     const hasUnitRate = sanitizeNonNegativeNumber(rate) > 0;
@@ -983,6 +1002,13 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                             <button className="ws-geo-btn" onClick={() => setCalculatingQtyForItem({ sectionId: section.id, item })} title="Geometric Takeoff">
                               <Calculator size={10} />
                             </button>
+                          </div>
+                          <div className="ws-qty-display">
+                            <strong className="ws-qty-main">{quantityDisplayValue}</strong>
+                            <span className="ws-qty-unit-text">{item.unit || 'unit'}</span>
+                          </div>
+                          <div className="ws-qty-meta">
+                            <span className="ws-qty-source">{quantitySourceLabel}</span>
                           </div>
                           <div className={`ws-field-feedback ws-field-feedback-${quantityFeedbackMeta.tone}`}>
                             {quantityFeedbackMeta.text}
@@ -1173,6 +1199,13 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                                   <button className="ws-geo-btn ws-mobile-icon-btn" onClick={() => setCalculatingQtyForItem({ sectionId: section.id, item })} title="Geometric Takeoff">
                                     <Calculator size={11} />
                                   </button>
+                                </div>
+                                <div className="ws-qty-display ws-qty-display-mobile">
+                                  <strong className="ws-qty-main">{quantityDisplayValue}</strong>
+                                  <span className="ws-qty-unit-text">{item.unit || 'unit'}</span>
+                                </div>
+                                <div className="ws-qty-meta">
+                                  <span className="ws-qty-source">{quantitySourceLabel}</span>
                                 </div>
                                 <div className={`ws-field-feedback ws-field-feedback-${quantityFeedbackMeta.tone}`}>
                                   {quantityFeedbackMeta.text}
@@ -1613,6 +1646,13 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-mobile-field-block .ws-rate-note {
           align-items: flex-start;
         }
+        .ws-mobile-field-block .ws-qty-display,
+        .ws-mobile-field-block .ws-qty-meta {
+          justify-content: flex-start;
+        }
+        .ws-qty-display-mobile .ws-qty-main {
+          font-size: 1rem;
+        }
         .ws-mobile-field-block label {
           font-size: 0.6rem;
           font-weight: 900;
@@ -1801,7 +1841,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-th-num { width: 44px; text-align: center; }
         .ws-th-desc { /* auto width — takes remaining space */ }
         .ws-th-unit { width: 60px; text-align: center; }
-        .ws-th-qty { width: 80px; text-align: center; }
+        .ws-th-qty { width: 146px; text-align: center; }
         .ws-th-sm { width: 70px; text-align: center; }
         .ws-th-strategy { width: 150px; text-align: center; }
         .ws-th-rate { width: 180px; text-align: right; }
@@ -1974,10 +2014,46 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           padding: 0.22rem 0.35rem;
         }
         .ws-unit-input { text-align: center; font-weight: 700; text-transform: uppercase; font-size: 0.6875rem; color: #64748b; letter-spacing: 0.04em; }
-        .ws-qty-input { text-align: right; font-weight: 600; }
+        .ws-qty-input { text-align: right; font-weight: 700; font-size: 0.88rem; }
         .ws-rate-input { text-align: right; font-weight: 600; }
         .ws-sm-input { text-align: center; font-weight: 600; width: 100%; }
         .ws-input:disabled { color: #94a3b8; background: #f8fafc; }
+        .ws-qty-display {
+          margin-top: 0.26rem;
+          display: flex;
+          align-items: baseline;
+          justify-content: flex-end;
+          gap: 0.26rem;
+        }
+        .ws-qty-main {
+          font-size: 0.86rem;
+          line-height: 1.1;
+          font-weight: 900;
+          color: #0f172a;
+        }
+        .ws-qty-unit-text {
+          font-size: 0.62rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: #64748b;
+        }
+        .ws-qty-meta {
+          margin-top: 0.12rem;
+          display: flex;
+          justify-content: flex-end;
+        }
+        .ws-qty-source {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.14rem 0.42rem;
+          border-radius: 999px;
+          font-size: 0.55rem;
+          font-weight: 800;
+          background: #eff6ff;
+          color: #1d4ed8;
+        }
         .ws-field-feedback {
           margin-top: 0.22rem;
           font-size: 0.62rem;
