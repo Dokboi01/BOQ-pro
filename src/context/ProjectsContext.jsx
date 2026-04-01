@@ -36,6 +36,35 @@ export function ProjectsProvider({ children }) {
     const [syncStatus, setSyncStatus] = useState({ state: 'synced' });
     const lastRemoteUpdate = useRef(0);
     const lastUserIdRef = useRef(user?.id || null);
+    const hasRestoredWorkspaceRef = useRef(false);
+
+    const getWorkspaceStateStorageKey = useCallback(() => (
+        user?.id ? `boq_pro_last_workspace:${user.id}` : null
+    ), [user?.id]);
+
+    const readSavedWorkspaceState = useCallback(() => {
+        const storageKey = getWorkspaceStateStorageKey();
+        if (!storageKey) return null;
+
+        try {
+            const raw = localStorage.getItem(storageKey);
+            return raw ? JSON.parse(raw) : null;
+        } catch {
+            return null;
+        }
+    }, [getWorkspaceStateStorageKey]);
+
+    const writeSavedWorkspaceState = useCallback((nextState) => {
+        const storageKey = getWorkspaceStateStorageKey();
+        if (!storageKey) return;
+
+        if (!nextState) {
+            localStorage.removeItem(storageKey);
+            return;
+        }
+
+        localStorage.setItem(storageKey, JSON.stringify(nextState));
+    }, [getWorkspaceStateStorageKey]);
 
     const filterVisibleProjects = useCallback((incomingProjects = []) => {
         if (!user) return [];
@@ -61,6 +90,7 @@ export function ProjectsProvider({ children }) {
         if (currentUserId === lastUserIdRef.current) return;
 
         lastUserIdRef.current = currentUserId;
+        hasRestoredWorkspaceRef.current = false;
         setActiveProjectId(null);
         setActiveTab('dashboard');
         setShowSelector(false);
@@ -143,9 +173,17 @@ export function ProjectsProvider({ children }) {
             if (activeProjectId === oldId) {
                 setActiveProjectId(newId);
             }
+
+            const savedWorkspaceState = readSavedWorkspaceState();
+            if (savedWorkspaceState?.projectId === oldId) {
+                writeSavedWorkspaceState({
+                    ...savedWorkspaceState,
+                    projectId: newId
+                });
+            }
         });
         return unsubscribe;
-    }, [activeProjectId]);
+    }, [activeProjectId, readSavedWorkspaceState, writeSavedWorkspaceState]);
 
     // ── Real-time listener for active project (live collaboration) ──
     useEffect(() => {
@@ -174,6 +212,51 @@ export function ProjectsProvider({ children }) {
     }, [projects, activeProjectId]);
 
     useEffect(() => {
+        if (!user?.id || hasRestoredWorkspaceRef.current || !projects.length) return;
+
+        const sharedProjectId = new URLSearchParams(window.location.search).get('project');
+        if (sharedProjectId) {
+            hasRestoredWorkspaceRef.current = true;
+            return;
+        }
+
+        const savedWorkspaceState = readSavedWorkspaceState();
+        hasRestoredWorkspaceRef.current = true;
+
+        if (!savedWorkspaceState?.projectId) return;
+
+        const matchingProject = projects.find((project) => project.id === savedWorkspaceState.projectId);
+        if (!matchingProject) {
+            writeSavedWorkspaceState(null);
+            return;
+        }
+
+        const restorableTabs = new Set(['workspace', 'reports', 'library']);
+        const nextTab = restorableTabs.has(savedWorkspaceState.activeTab)
+            ? savedWorkspaceState.activeTab
+            : 'workspace';
+
+        setActiveProjectId(matchingProject.id);
+        setActiveTab(nextTab);
+        setFocusMode(savedWorkspaceState.focusMode !== false || nextTab === 'workspace');
+        setWorkspaceIntent(null);
+    }, [projects, readSavedWorkspaceState, user?.id, writeSavedWorkspaceState]);
+
+    useEffect(() => {
+        if (!user?.id || !activeProjectId || !projects.some((project) => project.id === activeProjectId)) {
+            return;
+        }
+
+        const nextTab = activeTab === 'dashboard' ? 'workspace' : activeTab;
+        writeSavedWorkspaceState({
+            projectId: activeProjectId,
+            activeTab: nextTab,
+            focusMode: nextTab === 'workspace' ? true : focusMode !== false,
+            savedAt: new Date().toISOString()
+        });
+    }, [activeProjectId, activeTab, focusMode, projects, user?.id, writeSavedWorkspaceState]);
+
+    useEffect(() => {
         if (!user) return;
 
         if (!projects.length) {
@@ -186,13 +269,17 @@ export function ProjectsProvider({ children }) {
         }
 
         if (activeProjectId && !projects.some(project => project.id === activeProjectId)) {
+            const savedWorkspaceState = readSavedWorkspaceState();
+            if (savedWorkspaceState?.projectId === activeProjectId) {
+                writeSavedWorkspaceState(null);
+            }
             setActiveProjectId(null);
             if (activeTab === 'workspace') {
                 setActiveTab('dashboard');
                 setFocusMode(false);
             }
         }
-    }, [activeProjectId, activeTab, focusMode, projects, user]);
+    }, [activeProjectId, activeTab, focusMode, projects, readSavedWorkspaceState, user, writeSavedWorkspaceState]);
 
     const calculateTotalValue = useMemo(() => {
         try {
@@ -536,6 +623,11 @@ export function ProjectsProvider({ children }) {
             toast.success('Project deleted.');
         } else {
             toast.info('Project deleted locally. Cloud sync will complete later.');
+        }
+
+        const savedWorkspaceState = readSavedWorkspaceState();
+        if (savedWorkspaceState?.projectId === projectId) {
+            writeSavedWorkspaceState(null);
         }
     };
 
