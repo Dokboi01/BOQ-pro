@@ -563,12 +563,12 @@ export function ProjectsProvider({ children }) {
     }, [activeProject]);
 
     const forceSync = useCallback(async () => {
+        await processQueue();
         const merged = await pullFromCloud();
         if (merged) {
             setProjects(filterVisibleProjects(merged));
             toast.success('Synced with cloud!');
         }
-        await processQueue();
     }, [filterVisibleProjects, toast]);
 
     const handleCreateProject = () => {

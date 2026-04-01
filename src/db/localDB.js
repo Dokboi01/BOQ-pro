@@ -13,4 +13,9 @@ localDB.version(1).stores({
   syncQueue: '++id, action, projectId, createdAt',
 });
 
+localDB.version(2).stores({
+  projects: 'id, userId, updatedAt',
+  syncQueue: '++id, userId, action, projectId, createdAt, [userId+projectId+action]',
+});
+
 export default localDB;
