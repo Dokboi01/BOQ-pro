@@ -9,6 +9,7 @@ let syncState = 'synced'; // 'synced' | 'syncing' | 'pending' | 'offline'
 let listeners = [];
 let debounceTimers = {};
 let autoSyncInterval = null;
+const projectIdRedirects = new Map();
 
 function getLocalUserId() {
   if (auth.currentUser?.uid) return auth.currentUser.uid;
@@ -23,8 +24,181 @@ function getLocalUserId() {
   }
 }
 
-function canSyncToCloud() {
-  return navigator.onLine && !!auth.currentUser;
+function getAuthenticatedUserId() {
+  return auth.currentUser?.uid || null;
+}
+
+function canSyncToCloudForUser(userId = getAuthenticatedUserId()) {
+  return navigator.onLine && !!userId && getAuthenticatedUserId() === userId;
+}
+
+function resolveProjectId(projectId) {
+  if (!projectId) return projectId;
+
+  let resolvedId = projectId;
+  const seen = new Set();
+
+  while (projectIdRedirects.has(resolvedId) && !seen.has(resolvedId)) {
+    seen.add(resolvedId);
+    resolvedId = projectIdRedirects.get(resolvedId);
+  }
+
+  return resolvedId;
+}
+
+async function getQueuedItemsForUser(userId = getLocalUserId()) {
+  if (!userId) return [];
+
+  await migrateLegacyQueueItems(userId);
+  const queuedItems = await localDB.syncQueue.where('userId').equals(userId).toArray();
+  return queuedItems.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+}
+
+async function getPendingQueueCount(userId = getLocalUserId()) {
+  if (!userId) return 0;
+  await migrateLegacyQueueItems(userId);
+  return localDB.syncQueue.where('userId').equals(userId).count();
+}
+
+async function refreshSyncState(userId = getLocalUserId()) {
+  if (!navigator.onLine) {
+    setSyncState('offline');
+    return;
+  }
+
+  const pendingCount = await getPendingQueueCount(userId);
+  setSyncState(pendingCount > 0 ? 'pending' : 'synced');
+}
+
+async function migrateLegacyQueueItems(userId) {
+  if (!userId) return;
+
+  const legacyItems = await localDB.syncQueue
+    .toCollection()
+    .filter((item) => !item.userId)
+    .toArray();
+
+  for (const item of legacyItems) {
+    await localDB.syncQueue.update(item.id, { userId });
+  }
+}
+
+async function upsertQueueItem(action, projectId, payload, userId = getLocalUserId()) {
+  const scopedUserId = userId || getLocalUserId();
+  if (!scopedUserId || !projectId) return;
+
+  const resolvedProjectId = resolveProjectId(projectId);
+  const nextPayload = payload
+    ? JSON.parse(JSON.stringify({
+        ...payload,
+        id: resolvedProjectId,
+        local_origin_id: payload.local_origin_id || (resolvedProjectId !== projectId ? projectId : payload.local_origin_id || null),
+      }))
+    : null;
+
+  const existing = await localDB.syncQueue
+    .where('[userId+projectId+action]')
+    .equals([scopedUserId, resolvedProjectId, action])
+    .first();
+
+  if (existing) {
+    await localDB.syncQueue.update(existing.id, {
+      payload: nextPayload,
+      retries: 0,
+      createdAt: Date.now(),
+      lastError: null,
+      lastTriedAt: null,
+    });
+  } else {
+    await localDB.syncQueue.add({
+      userId: scopedUserId,
+      action,
+      projectId: resolvedProjectId,
+      payload: nextPayload,
+      retries: 0,
+      createdAt: Date.now(),
+      lastError: null,
+      lastTriedAt: null,
+    });
+  }
+
+  await refreshSyncState(scopedUserId);
+}
+
+async function clearQueuedAction(userId, projectId, action) {
+  if (!userId || !projectId) return;
+
+  const resolvedProjectId = resolveProjectId(projectId);
+  await localDB.syncQueue
+    .where('[userId+projectId+action]')
+    .equals([userId, resolvedProjectId, action])
+    .delete();
+}
+
+async function remapQueuedProject(userId, oldProjectId, newProjectId) {
+  if (!userId || !oldProjectId || !newProjectId || oldProjectId === newProjectId) return;
+
+  const queuedItems = await getQueuedItemsForUser(userId);
+  const oldItems = queuedItems.filter((item) => item.projectId === oldProjectId);
+
+  for (const item of oldItems) {
+    const existingTarget = queuedItems.find((candidate) => (
+      candidate.id !== item.id
+      && candidate.projectId === newProjectId
+      && candidate.action === item.action
+    ));
+
+    const nextPayload = item.payload
+      ? {
+          ...item.payload,
+          id: newProjectId,
+          local_origin_id: item.payload.local_origin_id || oldProjectId,
+        }
+      : null;
+
+    if (existingTarget) {
+      await localDB.syncQueue.update(existingTarget.id, {
+        payload: nextPayload || existingTarget.payload,
+        createdAt: Math.max(existingTarget.createdAt || 0, item.createdAt || 0),
+        retries: 0,
+        lastError: null,
+        lastTriedAt: null,
+      });
+      await localDB.syncQueue.delete(item.id);
+      continue;
+    }
+
+    await localDB.syncQueue.update(item.id, {
+      projectId: newProjectId,
+      payload: nextPayload,
+      retries: 0,
+      lastError: null,
+      lastTriedAt: null,
+    });
+  }
+}
+
+async function promoteLocalProjectId(oldProjectId, newProjectId, userId = getLocalUserId()) {
+  if (!oldProjectId || !newProjectId || oldProjectId === newProjectId) return;
+
+  const localProject = await localDB.projects.get(oldProjectId);
+  const existingProject = await localDB.projects.get(newProjectId);
+
+  if (!localProject) {
+    await remapQueuedProject(userId, oldProjectId, newProjectId);
+    return;
+  }
+
+  await localDB.projects.delete(oldProjectId);
+  await localDB.projects.put({
+    ...(existingProject || {}),
+    ...localProject,
+    id: newProjectId,
+    userId: existingProject?.userId || localProject.userId || userId,
+    local_origin_id: existingProject?.local_origin_id || localProject.local_origin_id || oldProjectId,
+  });
+
+  await remapQueuedProject(userId, oldProjectId, newProjectId);
 }
 
 function notifyListeners() {
@@ -95,28 +269,26 @@ export async function deleteLocal(projectId) {
 // Sync Queue
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function addToQueue(action, projectId, payload) {
-  // Remove any existing queued operation for this project+action to avoid duplication
-  await localDB.syncQueue.where({ projectId, action }).delete();
-
-  await localDB.syncQueue.add({
-    action,        // 'save' | 'delete'
-    projectId,
-    payload: payload ? JSON.parse(JSON.stringify(payload)) : null,
-    retries: 0,
-    createdAt: Date.now(),
-  });
-
-  setSyncState('pending');
+async function addToQueue(action, projectId, payload, userId = getLocalUserId()) {
+  await upsertQueueItem(action, projectId, payload, userId);
 }
 
 /**
  * Process all queued sync operations
  */
 export async function processQueue() {
-  if (!canSyncToCloud()) return;
+  const syncUserId = getLocalUserId();
+  if (!syncUserId) {
+    await refreshSyncState(null);
+    return;
+  }
 
-  const queue = await localDB.syncQueue.toArray();
+  if (!canSyncToCloudForUser(syncUserId)) {
+    await refreshSyncState(syncUserId);
+    return;
+  }
+
+  const queue = await getQueuedItemsForUser(syncUserId);
   if (queue.length === 0) {
     setSyncState('synced');
     return;
@@ -127,27 +299,30 @@ export async function processQueue() {
   for (const item of queue) {
     try {
       if (item.action === 'save' && item.payload) {
-        const savedId = await saveProject(item.payload);
+        const resolvedProjectId = resolveProjectId(item.projectId);
+        const payload = resolvedProjectId === item.projectId
+          ? item.payload
+          : {
+              ...item.payload,
+              id: resolvedProjectId,
+              local_origin_id: item.payload.local_origin_id || item.projectId,
+            };
+
+        const savedId = await saveProject(payload);
         if (savedId) {
-          // If it was a local_ project, update the local DB with the real ID
-          if (item.projectId.startsWith('local_') && savedId !== item.projectId) {
-            const localProject = await localDB.projects.get(item.projectId);
-            if (localProject) {
-              await localDB.projects.delete(item.projectId);
-              await localDB.projects.put({
-                ...localProject,
-                id: savedId,
-                local_origin_id: localProject.local_origin_id || item.projectId
-              });
-            }
-            notifyIdChange(item.projectId, savedId);
+          if (resolvedProjectId.startsWith('local_') && savedId !== resolvedProjectId) {
+            await promoteLocalProjectId(resolvedProjectId, savedId, syncUserId);
+            notifyIdChange(resolvedProjectId, savedId);
+          } else if (resolvedProjectId !== item.projectId) {
+            await remapQueuedProject(syncUserId, item.projectId, resolvedProjectId);
           }
+
           await localDB.syncQueue.delete(item.id);
         } else {
           throw new Error('Save returned null');
         }
       } else if (item.action === 'delete') {
-        const success = await cloudDeleteProject(item.projectId);
+        const success = await cloudDeleteProject(resolveProjectId(item.projectId));
         if (success) {
           await localDB.syncQueue.delete(item.id);
         } else {
@@ -156,19 +331,15 @@ export async function processQueue() {
       }
     } catch (err) {
       console.warn(`⚠️ Sync failed for ${item.action} ${item.projectId}:`, err.message);
-      // Increment retries, remove if too many
-      if (item.retries >= 5) {
-        console.error(`❌ Giving up on ${item.action} ${item.projectId} after 5 retries`);
-        await localDB.syncQueue.delete(item.id);
-      } else {
-        await localDB.syncQueue.update(item.id, { retries: item.retries + 1 });
-      }
+      await localDB.syncQueue.update(item.id, {
+        retries: (item.retries || 0) + 1,
+        lastError: err.message || 'Unknown sync error',
+        lastTriedAt: Date.now(),
+      });
     }
   }
 
-  // Check if anything remains
-  const remaining = await localDB.syncQueue.count();
-  setSyncState(remaining > 0 ? 'pending' : 'synced');
+  await refreshSyncState(syncUserId);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -179,6 +350,9 @@ export async function processQueue() {
  * Sync a project to cloud (debounced, with queue fallback)
  */
 export function syncToCloud(project) {
+  const sourceUserId = getAuthenticatedUserId() || getLocalUserId();
+  if (!project?.id || !sourceUserId) return;
+
   // Debounce per project — avoid hammering Firestore on every keystroke
   if (debounceTimers[project.id]) {
     clearTimeout(debounceTimers[project.id]);
@@ -187,42 +361,37 @@ export function syncToCloud(project) {
   debounceTimers[project.id] = setTimeout(async () => {
     delete debounceTimers[project.id];
 
-    if (!auth.currentUser) {
-      setSyncState('synced');
-      return;
-    }
+    const resolvedProjectId = resolveProjectId(project.id);
+    const nextProject = resolvedProjectId === project.id
+      ? project
+      : {
+          ...project,
+          id: resolvedProjectId,
+          local_origin_id: project.local_origin_id || project.id,
+        };
 
-    if (!canSyncToCloud()) {
-      await addToQueue('save', project.id, project);
+    if (!canSyncToCloudForUser(sourceUserId)) {
+      await addToQueue('save', resolvedProjectId, nextProject, sourceUserId);
       return;
     }
 
     setSyncState('syncing');
 
     try {
-      const savedId = await saveProject(project);
+      const savedId = await saveProject(nextProject);
       if (savedId) {
-        // If local_ project got a real ID, update local DB
-        if (project.id.startsWith('local_') && savedId !== project.id) {
-          const localProject = await localDB.projects.get(project.id);
-          if (localProject) {
-            await localDB.projects.delete(project.id);
-            await localDB.projects.put({
-              ...localProject,
-              id: savedId,
-              local_origin_id: localProject.local_origin_id || project.id
-            });
-          }
-          // Return the new ID so context can update
-          notifyIdChange(project.id, savedId);
+        if (resolvedProjectId.startsWith('local_') && savedId !== resolvedProjectId) {
+          await promoteLocalProjectId(resolvedProjectId, savedId, sourceUserId);
+          notifyIdChange(resolvedProjectId, savedId);
         }
-        setSyncState('synced');
+        await clearQueuedAction(sourceUserId, resolvedProjectId, 'save');
+        await refreshSyncState(sourceUserId);
       } else {
-        await addToQueue('save', project.id, project);
+        await addToQueue('save', resolvedProjectId, nextProject, sourceUserId);
       }
     } catch (err) {
       console.warn('⚠️ Cloud sync failed, queuing:', err.message);
-      await addToQueue('save', project.id, project);
+      await addToQueue('save', resolvedProjectId, nextProject, sourceUserId);
     }
   }, 800);
 }
@@ -231,24 +400,30 @@ export function syncToCloud(project) {
  * Sync a delete operation to cloud
  */
 export async function syncDeleteToCloud(projectId) {
-  if (!auth.currentUser) {
-    setSyncState('synced');
-    return true;
+  const sourceUserId = getAuthenticatedUserId() || getLocalUserId();
+  const resolvedProjectId = resolveProjectId(projectId);
+
+  if (!sourceUserId) {
+    await refreshSyncState(null);
+    return false;
   }
 
-  if (!canSyncToCloud()) {
-    await addToQueue('delete', projectId, null);
+  if (!canSyncToCloudForUser(sourceUserId)) {
+    await addToQueue('delete', resolvedProjectId, null, sourceUserId);
     return false;
   }
 
   try {
-    const success = await cloudDeleteProject(projectId);
+    const success = await cloudDeleteProject(resolvedProjectId);
     if (!success) {
-      await addToQueue('delete', projectId, null);
+      await addToQueue('delete', resolvedProjectId, null, sourceUserId);
+    } else {
+      await clearQueuedAction(sourceUserId, resolvedProjectId, 'delete');
+      await refreshSyncState(sourceUserId);
     }
     return success;
   } catch {
-    await addToQueue('delete', projectId, null);
+    await addToQueue('delete', resolvedProjectId, null, sourceUserId);
     return false;
   }
 }
@@ -258,7 +433,11 @@ export async function syncDeleteToCloud(projectId) {
  * Cloud wins on conflict (by updated_at timestamp)
  */
 export async function pullFromCloud() {
-  if (!canSyncToCloud()) return null;
+  const syncUserId = getAuthenticatedUserId();
+  if (!canSyncToCloudForUser(syncUserId)) {
+    await refreshSyncState(getLocalUserId());
+    return null;
+  }
 
   setSyncState('syncing');
 
@@ -283,6 +462,7 @@ export async function pullFromCloud() {
       if (!localVersion || cloudTime >= localTime) {
         if (originLinkedLocal && originLinkedLocal.id !== cp.id) {
           await localDB.projects.delete(originLinkedLocal.id);
+          await remapQueuedProject(syncUserId, originLinkedLocal.id, cp.id);
           notifyIdChange(originLinkedLocal.id, cp.id);
         }
 
@@ -311,11 +491,11 @@ export async function pullFromCloud() {
     }
 
     const merged = await loadLocal();
-    setSyncState('synced');
+    await refreshSyncState(syncUserId);
     return merged;
   } catch (err) {
     console.warn('⚠️ Pull from cloud failed:', err.message);
-    setSyncState('pending');
+    await refreshSyncState(syncUserId || getLocalUserId());
     return null;
   }
 }
@@ -331,6 +511,9 @@ export function onIdChange(callback) {
 }
 
 function notifyIdChange(oldId, newId) {
+  if (oldId && newId && oldId !== newId) {
+    projectIdRedirects.set(oldId, newId);
+  }
   idChangeListeners.forEach(fn => fn(oldId, newId));
 }
 

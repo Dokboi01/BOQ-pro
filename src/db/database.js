@@ -14,6 +14,7 @@ import {
     serverTimestamp
 } from 'firebase/firestore';
 import { buildCompanyKey, deriveCompanyName } from '../utils/companyAccess';
+import { getSeedMaterials } from './seed_materials';
 
 const sanitizeProjectForCloud = (project, user) => {
     const clone = JSON.parse(JSON.stringify(project || {}));
@@ -257,10 +258,11 @@ export const getWorkspaceState = async () => {
 export const getMaterials = async () => {
     try {
         const snapshot = await getDocs(query(collection(db, 'materials'), orderBy('name')));
-        return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        const materials = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        return materials.length > 0 ? materials : getSeedMaterials();
     } catch (err) {
         console.error('Error fetching materials:', err);
-        return [];
+        return getSeedMaterials();
     }
 };
 

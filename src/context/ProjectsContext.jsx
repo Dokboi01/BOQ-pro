@@ -21,6 +21,7 @@ import { logActivity } from '../db/collaborationService';
 import { getWorkspaceState as getCloudWorkspaceState, saveWorkspaceState as saveCloudWorkspaceState } from '../db/database';
 import ProjectsContext from './projects-context';
 import { buildCompanyKey, canAccessCompanyProject, deriveCompanyName } from '../utils/companyAccess';
+import { buildAutoRateResult } from '../utils/pricing';
 
 const RESTORABLE_WORKSPACE_TABS = new Set(['workspace', 'reports', 'library']);
 
@@ -563,12 +564,12 @@ export function ProjectsProvider({ children }) {
     }, [activeProject]);
 
     const forceSync = useCallback(async () => {
+        await processQueue();
         const merged = await pullFromCloud();
         if (merged) {
             setProjects(filterVisibleProjects(merged));
             toast.success('Synced with cloud!');
         }
-        await processQueue();
     }, [filterVisibleProjects, toast]);
 
     const handleCreateProject = () => {
@@ -595,7 +596,7 @@ export function ProjectsProvider({ children }) {
         } : null);
     }, []);
 
-    const buildProjectSections = useCallback((sections = [], { unpriced = true } = {}) => {
+    const buildProjectSections = useCallback((sections = [], { unpriced = true, structureType = null, region = 'Lagos' } = {}) => {
         return sections.map(section => ({
             id: Math.random().toString(36).substr(2, 9),
             title: section.title,
@@ -604,8 +605,21 @@ export function ProjectsProvider({ children }) {
                 const qty = Number(item.qty) || 0;
                 const templateRate = Number(item.rate) || 0;
                 const templateBenchmark = Number(item.benchmark) || templateRate || 0;
-                const initialRate = unpriced ? 0 : templateRate;
-                const initialBenchmark = unpriced ? 0 : templateBenchmark;
+                const fallbackAutoRate = templateBenchmark > 0
+                    ? null
+                    : buildAutoRateResult({
+                        description: item.description,
+                        unit: item.unit,
+                        materials: Array.isArray(item.materials) ? item.materials : [],
+                        breakdown: item.breakdown || null
+                    }, {
+                        structureType,
+                        region
+                    });
+                const seededBenchmark = templateBenchmark || Number(fallbackAutoRate?.benchmark) || 0;
+                const seededRate = templateRate || Number(fallbackAutoRate?.rate) || 0;
+                const initialRate = unpriced ? 0 : seededRate;
+                const initialBenchmark = seededBenchmark;
 
                 return {
                     id: Math.random().toString(36).substr(2, 9),
@@ -619,7 +633,7 @@ export function ProjectsProvider({ children }) {
                     useBenchmark: false,
                     total: qty * initialRate,
                     isVO: false,
-                    breakdown: item.breakdown || null,
+                    breakdown: item.breakdown || fallbackAutoRate?.breakdown || null,
                     customPricing: item.customPricing || null
                 };
             })
@@ -651,7 +665,10 @@ export function ProjectsProvider({ children }) {
             return;
         }
 
-        const processedSections = buildProjectSections(sectionsToProcess);
+        const processedSections = buildProjectSections(sectionsToProcess, {
+            structureType: structureName || structureId,
+            region: 'Lagos'
+        });
 
         const projectId = `local_${Date.now()}`;
         const newProj = {
@@ -703,7 +720,9 @@ export function ProjectsProvider({ children }) {
             email: user?.email
         });
         const processedSections = buildProjectSections(projectConfig.sections || [], {
-            unpriced: isUnpricedTemplate
+            unpriced: isUnpricedTemplate,
+            structureType: projectConfig.subtype || projectConfig.type,
+            region: projectConfig.region || 'Lagos'
         });
 
         const projectId = `local_${Date.now()}`;

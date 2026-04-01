@@ -626,6 +626,12 @@ const materialsToSeed = [
     },
 ];
 
+export const getSeedMaterials = () => materialsToSeed.map((material) => ({
+    ...material,
+    history: Array.isArray(material.history) ? [...material.history] : [],
+    regions: material.regions ? { ...material.regions } : {},
+}));
+
 const indicesToSeed = [
     { label: 'Overall CMCI', val: 148.3, delta: '+2.1%', trend: 'up' },
     { label: 'Binder Index', val: 156.2, delta: '+3.2%', trend: 'up' },
