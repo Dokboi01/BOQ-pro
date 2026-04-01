@@ -241,6 +241,16 @@ export const getSetting = async (key) => {
     }
 };
 
+const WORKSPACE_STATE_SETTING_KEY = 'workspace_state_v1';
+
+export const saveWorkspaceState = async (workspaceState) => {
+    return saveSetting(WORKSPACE_STATE_SETTING_KEY, workspaceState);
+};
+
+export const getWorkspaceState = async () => {
+    return getSetting(WORKSPACE_STATE_SETTING_KEY);
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Global Market Data
 // ─────────────────────────────────────────────────────────────────────────────

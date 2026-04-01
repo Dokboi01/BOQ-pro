@@ -18,8 +18,176 @@ import {
 } from '../db/syncEngine';
 import { subscribeToProject } from '../db/realtimeSync';
 import { logActivity } from '../db/collaborationService';
+import { getWorkspaceState as getCloudWorkspaceState, saveWorkspaceState as saveCloudWorkspaceState } from '../db/database';
 import ProjectsContext from './projects-context';
 import { buildCompanyKey, canAccessCompanyProject, deriveCompanyName } from '../utils/companyAccess';
+
+const RESTORABLE_WORKSPACE_TABS = new Set(['workspace', 'reports', 'library']);
+
+const normalizeWorkspaceTab = (tab) => (
+    RESTORABLE_WORKSPACE_TABS.has(tab) ? tab : 'workspace'
+);
+
+const getWorkspaceTimestamp = (value) => (
+    Date.parse(
+        value?.projects?.[value?.lastProjectId]?.savedAt
+        || value?.savedAt
+        || ''
+    ) || 0
+);
+
+const normalizeWorkspaceSnapshot = (rawState) => {
+    if (!rawState || typeof rawState !== 'object') return null;
+
+    if (rawState.projectId) {
+        const activeTab = normalizeWorkspaceTab(rawState.activeTab);
+        const focusMode = activeTab === 'workspace' ? true : rawState.focusMode !== false;
+        const savedAt = rawState.savedAt || '';
+
+        return {
+            version: 1,
+            lastProjectId: rawState.projectId,
+            savedAt,
+            projects: {
+                [rawState.projectId]: {
+                    activeTab,
+                    focusMode,
+                    savedAt,
+                }
+            }
+        };
+    }
+
+    const projects = Object.entries(rawState.projects || {}).reduce((acc, [projectId, value]) => {
+        if (!projectId) return acc;
+
+        const activeTab = normalizeWorkspaceTab(value?.activeTab);
+        acc[projectId] = {
+            activeTab,
+            focusMode: activeTab === 'workspace' ? true : value?.focusMode !== false,
+            savedAt: value?.savedAt || '',
+        };
+
+        return acc;
+    }, {});
+
+    const fallbackProjectId = rawState.lastProjectId || Object.keys(projects)[0] || null;
+    if (!fallbackProjectId) return null;
+
+    if (!projects[fallbackProjectId]) {
+        const activeTab = normalizeWorkspaceTab(rawState.activeTab || rawState.lastActiveTab);
+        projects[fallbackProjectId] = {
+            activeTab,
+            focusMode: activeTab === 'workspace' ? true : rawState.lastFocusMode !== false && rawState.focusMode !== false,
+            savedAt: rawState.savedAt || '',
+        };
+    }
+
+    return {
+        version: 1,
+        lastProjectId: fallbackProjectId,
+        savedAt: projects[fallbackProjectId]?.savedAt || rawState.savedAt || '',
+        projects,
+    };
+};
+
+const pickPreferredWorkspaceSnapshot = (localState, cloudState) => {
+    const normalizedLocal = normalizeWorkspaceSnapshot(localState);
+    const normalizedCloud = normalizeWorkspaceSnapshot(cloudState);
+
+    if (!normalizedLocal) return normalizedCloud;
+    if (!normalizedCloud) return normalizedLocal;
+
+    return getWorkspaceTimestamp(normalizedCloud) > getWorkspaceTimestamp(normalizedLocal)
+        ? normalizedCloud
+        : normalizedLocal;
+};
+
+const buildWorkspaceSnapshot = (baseState, projectId, activeTab, focusMode) => {
+    if (!projectId) return null;
+
+    const normalizedBase = normalizeWorkspaceSnapshot(baseState) || {
+        version: 1,
+        lastProjectId: null,
+        savedAt: '',
+        projects: {},
+    };
+
+    const nextTab = normalizeWorkspaceTab(activeTab);
+    const nextFocusMode = nextTab === 'workspace' ? true : focusMode !== false;
+    const savedAt = new Date().toISOString();
+
+    return {
+        version: 1,
+        lastProjectId: projectId,
+        savedAt,
+        projects: {
+            ...normalizedBase.projects,
+            [projectId]: {
+                activeTab: nextTab,
+                focusMode: nextFocusMode,
+                savedAt,
+            }
+        }
+    };
+};
+
+const remapWorkspaceSnapshotProjectId = (baseState, oldId, newId) => {
+    const normalizedBase = normalizeWorkspaceSnapshot(baseState);
+    if (!normalizedBase) return null;
+
+    const nextProjects = { ...normalizedBase.projects };
+    const oldProjectState = nextProjects[oldId];
+    const existingNewProjectState = nextProjects[newId];
+
+    if (!oldProjectState && normalizedBase.lastProjectId !== oldId) {
+        return normalizedBase;
+    }
+
+    if (oldProjectState) {
+        nextProjects[newId] = getWorkspaceTimestamp({
+            lastProjectId: newId,
+            projects: { [newId]: existingNewProjectState || {} },
+            savedAt: existingNewProjectState?.savedAt || '',
+        }) > getWorkspaceTimestamp({
+            lastProjectId: oldId,
+            projects: { [oldId]: oldProjectState },
+            savedAt: oldProjectState.savedAt || '',
+        })
+            ? existingNewProjectState
+            : oldProjectState;
+        delete nextProjects[oldId];
+    }
+
+    return {
+        ...normalizedBase,
+        lastProjectId: normalizedBase.lastProjectId === oldId ? newId : normalizedBase.lastProjectId,
+        projects: nextProjects,
+        savedAt: nextProjects[normalizedBase.lastProjectId === oldId ? newId : normalizedBase.lastProjectId]?.savedAt || normalizedBase.savedAt,
+    };
+};
+
+const removeWorkspaceSnapshotProject = (baseState, projectId) => {
+    const normalizedBase = normalizeWorkspaceSnapshot(baseState);
+    if (!normalizedBase) return null;
+
+    const nextProjects = { ...normalizedBase.projects };
+    delete nextProjects[projectId];
+
+    const remainingProjectIds = Object.keys(nextProjects);
+    if (!remainingProjectIds.length) return null;
+
+    const nextLastProjectId = normalizedBase.lastProjectId === projectId
+        ? remainingProjectIds[0]
+        : normalizedBase.lastProjectId;
+
+    return {
+        version: 1,
+        lastProjectId: nextLastProjectId,
+        savedAt: nextProjects[nextLastProjectId]?.savedAt || normalizedBase.savedAt,
+        projects: nextProjects,
+    };
+};
 
 export function ProjectsProvider({ children }) {
     const { user, setView } = useAuth();
@@ -34,9 +202,13 @@ export function ProjectsProvider({ children }) {
     const [focusMode, setFocusMode] = useState(false);
     const [workspaceIntent, setWorkspaceIntent] = useState(null);
     const [syncStatus, setSyncStatus] = useState({ state: 'synced' });
+    const [cloudWorkspaceState, setCloudWorkspaceState] = useState(null);
+    const [cloudWorkspaceReady, setCloudWorkspaceReady] = useState(false);
     const lastRemoteUpdate = useRef(0);
     const lastUserIdRef = useRef(user?.id || null);
     const hasRestoredWorkspaceRef = useRef(false);
+    const cloudWorkspaceSaveTimerRef = useRef(null);
+    const lastPersistedWorkspaceSignatureRef = useRef('');
 
     const getWorkspaceStateStorageKey = useCallback(() => (
         user?.id ? `boq_pro_last_workspace:${user.id}` : null
@@ -48,7 +220,7 @@ export function ProjectsProvider({ children }) {
 
         try {
             const raw = localStorage.getItem(storageKey);
-            return raw ? JSON.parse(raw) : null;
+            return raw ? normalizeWorkspaceSnapshot(JSON.parse(raw)) : null;
         } catch {
             return null;
         }
@@ -63,8 +235,29 @@ export function ProjectsProvider({ children }) {
             return;
         }
 
-        localStorage.setItem(storageKey, JSON.stringify(nextState));
+        localStorage.setItem(storageKey, JSON.stringify(normalizeWorkspaceSnapshot(nextState)));
     }, [getWorkspaceStateStorageKey]);
+
+    const persistWorkspaceState = useCallback((nextState) => {
+        const normalizedState = normalizeWorkspaceSnapshot(nextState);
+
+        writeSavedWorkspaceState(normalizedState);
+        setCloudWorkspaceState(normalizedState);
+
+        if (!user?.id) return;
+
+        if (cloudWorkspaceSaveTimerRef.current) {
+            clearTimeout(cloudWorkspaceSaveTimerRef.current);
+        }
+
+        cloudWorkspaceSaveTimerRef.current = setTimeout(async () => {
+            try {
+                await saveCloudWorkspaceState(normalizedState);
+            } catch (err) {
+                console.warn('Workspace state cloud save failed:', err?.message || err);
+            }
+        }, 500);
+    }, [user?.id, writeSavedWorkspaceState]);
 
     const filterVisibleProjects = useCallback((incomingProjects = []) => {
         if (!user) return [];
@@ -98,11 +291,27 @@ export function ProjectsProvider({ children }) {
         setIsCreating(false);
         setFocusMode(false);
         setWorkspaceIntent(null);
+        setCloudWorkspaceState(null);
+        setCloudWorkspaceReady(false);
+        lastPersistedWorkspaceSignatureRef.current = '';
+
+        if (cloudWorkspaceSaveTimerRef.current) {
+            clearTimeout(cloudWorkspaceSaveTimerRef.current);
+            cloudWorkspaceSaveTimerRef.current = null;
+        }
 
         if (!currentUserId) {
             setProjects([]);
         }
     }, [user?.id]);
+
+    useEffect(() => {
+        return () => {
+            if (cloudWorkspaceSaveTimerRef.current) {
+                clearTimeout(cloudWorkspaceSaveTimerRef.current);
+            }
+        };
+    }, []);
 
     // ── Load projects: local first, then cloud ──
     useEffect(() => {
@@ -156,6 +365,42 @@ export function ProjectsProvider({ children }) {
         };
     }, [filterVisibleProjects, user]);
 
+    useEffect(() => {
+        if (!user?.id) return;
+
+        let cancelled = false;
+        setCloudWorkspaceReady(false);
+
+        const loadCloudWorkspaceState = async () => {
+            try {
+                const remoteWorkspaceState = normalizeWorkspaceSnapshot(await getCloudWorkspaceState());
+                if (cancelled) return;
+
+                setCloudWorkspaceState(remoteWorkspaceState);
+                setCloudWorkspaceReady(true);
+
+                const preferredState = pickPreferredWorkspaceSnapshot(
+                    readSavedWorkspaceState(),
+                    remoteWorkspaceState
+                );
+
+                if (preferredState) {
+                    writeSavedWorkspaceState(preferredState);
+                }
+            } catch (err) {
+                if (cancelled) return;
+                console.warn('Workspace state cloud load failed:', err?.message || err);
+                setCloudWorkspaceReady(true);
+            }
+        };
+
+        loadCloudWorkspaceState();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [readSavedWorkspaceState, user?.id, writeSavedWorkspaceState]);
+
     // ── Listen for sync status changes ──
     useEffect(() => {
         const unsubscribe = onSyncStatusChange((status) => {
@@ -174,16 +419,18 @@ export function ProjectsProvider({ children }) {
                 setActiveProjectId(newId);
             }
 
-            const savedWorkspaceState = readSavedWorkspaceState();
-            if (savedWorkspaceState?.projectId === oldId) {
-                writeSavedWorkspaceState({
-                    ...savedWorkspaceState,
-                    projectId: newId
-                });
+            const nextWorkspaceState = remapWorkspaceSnapshotProjectId(
+                pickPreferredWorkspaceSnapshot(readSavedWorkspaceState(), cloudWorkspaceState),
+                oldId,
+                newId
+            );
+
+            if (nextWorkspaceState) {
+                persistWorkspaceState(nextWorkspaceState);
             }
         });
         return unsubscribe;
-    }, [activeProjectId, readSavedWorkspaceState, writeSavedWorkspaceState]);
+    }, [activeProjectId, cloudWorkspaceState, persistWorkspaceState, readSavedWorkspaceState]);
 
     // ── Real-time listener for active project (live collaboration) ──
     useEffect(() => {
@@ -220,41 +467,59 @@ export function ProjectsProvider({ children }) {
             return;
         }
 
-        const savedWorkspaceState = readSavedWorkspaceState();
+        if (!cloudWorkspaceReady) return;
+
+        const savedWorkspaceState = pickPreferredWorkspaceSnapshot(
+            readSavedWorkspaceState(),
+            cloudWorkspaceState
+        );
         hasRestoredWorkspaceRef.current = true;
 
-        if (!savedWorkspaceState?.projectId) return;
+        if (!savedWorkspaceState?.lastProjectId) return;
 
-        const matchingProject = projects.find((project) => project.id === savedWorkspaceState.projectId);
+        const matchingProject = projects.find((project) => project.id === savedWorkspaceState.lastProjectId);
         if (!matchingProject) {
-            writeSavedWorkspaceState(null);
+            persistWorkspaceState(removeWorkspaceSnapshotProject(savedWorkspaceState, savedWorkspaceState.lastProjectId));
             return;
         }
 
-        const restorableTabs = new Set(['workspace', 'reports', 'library']);
-        const nextTab = restorableTabs.has(savedWorkspaceState.activeTab)
-            ? savedWorkspaceState.activeTab
-            : 'workspace';
+        const projectWorkspaceState = savedWorkspaceState.projects?.[matchingProject.id];
+        const nextTab = normalizeWorkspaceTab(projectWorkspaceState?.activeTab);
 
         setActiveProjectId(matchingProject.id);
         setActiveTab(nextTab);
-        setFocusMode(savedWorkspaceState.focusMode !== false || nextTab === 'workspace');
+        setFocusMode(projectWorkspaceState?.focusMode !== false || nextTab === 'workspace');
         setWorkspaceIntent(null);
-    }, [projects, readSavedWorkspaceState, user?.id, writeSavedWorkspaceState]);
+    }, [cloudWorkspaceReady, cloudWorkspaceState, persistWorkspaceState, projects, readSavedWorkspaceState, user?.id]);
+
+    const hasActiveProject = useMemo(() => (
+        !!activeProjectId && projects.some((project) => project.id === activeProjectId)
+    ), [activeProjectId, projects]);
 
     useEffect(() => {
-        if (!user?.id || !activeProjectId || !projects.some((project) => project.id === activeProjectId)) {
+        if (!user?.id || !activeProjectId || !hasActiveProject) {
             return;
         }
 
         const nextTab = activeTab === 'dashboard' ? 'workspace' : activeTab;
-        writeSavedWorkspaceState({
-            projectId: activeProjectId,
-            activeTab: nextTab,
-            focusMode: nextTab === 'workspace' ? true : focusMode !== false,
-            savedAt: new Date().toISOString()
-        });
-    }, [activeProjectId, activeTab, focusMode, projects, user?.id, writeSavedWorkspaceState]);
+        const nextFocusMode = nextTab === 'workspace' ? true : focusMode !== false;
+        const nextSignature = `${activeProjectId}:${nextTab}:${nextFocusMode ? '1' : '0'}`;
+
+        if (lastPersistedWorkspaceSignatureRef.current === nextSignature) {
+            return;
+        }
+
+        lastPersistedWorkspaceSignatureRef.current = nextSignature;
+
+        persistWorkspaceState(
+            buildWorkspaceSnapshot(
+                pickPreferredWorkspaceSnapshot(readSavedWorkspaceState(), cloudWorkspaceState),
+                activeProjectId,
+                nextTab,
+                nextFocusMode
+            )
+        );
+    }, [activeProjectId, activeTab, cloudWorkspaceState, focusMode, hasActiveProject, persistWorkspaceState, readSavedWorkspaceState, user?.id]);
 
     useEffect(() => {
         if (!user) return;
@@ -265,21 +530,24 @@ export function ProjectsProvider({ children }) {
                 setFocusMode(false);
             }
             setActiveProjectId(null);
+            lastPersistedWorkspaceSignatureRef.current = '';
             return;
         }
 
         if (activeProjectId && !projects.some(project => project.id === activeProjectId)) {
-            const savedWorkspaceState = readSavedWorkspaceState();
-            if (savedWorkspaceState?.projectId === activeProjectId) {
-                writeSavedWorkspaceState(null);
-            }
+            const savedWorkspaceState = pickPreferredWorkspaceSnapshot(
+                readSavedWorkspaceState(),
+                cloudWorkspaceState
+            );
+            persistWorkspaceState(removeWorkspaceSnapshotProject(savedWorkspaceState, activeProjectId));
             setActiveProjectId(null);
+            lastPersistedWorkspaceSignatureRef.current = '';
             if (activeTab === 'workspace') {
                 setActiveTab('dashboard');
                 setFocusMode(false);
             }
         }
-    }, [activeProjectId, activeTab, focusMode, projects, readSavedWorkspaceState, user, writeSavedWorkspaceState]);
+    }, [activeProjectId, activeTab, cloudWorkspaceState, focusMode, persistWorkspaceState, projects, readSavedWorkspaceState, user]);
 
     const calculateTotalValue = useMemo(() => {
         try {
@@ -615,6 +883,8 @@ export function ProjectsProvider({ children }) {
         if (activeProjectId === projectId) {
             setActiveProjectId(null);
             setActiveTab('dashboard');
+            setFocusMode(false);
+            lastPersistedWorkspaceSignatureRef.current = '';
         }
 
         // 2. Background cloud delete
@@ -625,10 +895,10 @@ export function ProjectsProvider({ children }) {
             toast.info('Project deleted locally. Cloud sync will complete later.');
         }
 
-        const savedWorkspaceState = readSavedWorkspaceState();
-        if (savedWorkspaceState?.projectId === projectId) {
-            writeSavedWorkspaceState(null);
-        }
+        persistWorkspaceState(removeWorkspaceSnapshotProject(
+            pickPreferredWorkspaceSnapshot(readSavedWorkspaceState(), cloudWorkspaceState),
+            projectId
+        ));
     };
 
     const handleQuickCustomPricingTest = useCallback(async () => {
