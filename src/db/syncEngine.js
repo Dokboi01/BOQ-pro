@@ -134,8 +134,13 @@ export async function processQueue() {
             const localProject = await localDB.projects.get(item.projectId);
             if (localProject) {
               await localDB.projects.delete(item.projectId);
-              await localDB.projects.put({ ...localProject, id: savedId });
+              await localDB.projects.put({
+                ...localProject,
+                id: savedId,
+                local_origin_id: localProject.local_origin_id || item.projectId
+              });
             }
+            notifyIdChange(item.projectId, savedId);
           }
           await localDB.syncQueue.delete(item.id);
         } else {
@@ -202,7 +207,11 @@ export function syncToCloud(project) {
           const localProject = await localDB.projects.get(project.id);
           if (localProject) {
             await localDB.projects.delete(project.id);
-            await localDB.projects.put({ ...localProject, id: savedId });
+            await localDB.projects.put({
+              ...localProject,
+              id: savedId,
+              local_origin_id: localProject.local_origin_id || project.id
+            });
           }
           // Return the new ID so context can update
           notifyIdChange(project.id, savedId);
@@ -258,17 +267,29 @@ export async function pullFromCloud() {
     const localProjects = await loadLocal();
 
     const localMap = new Map(localProjects.map(p => [p.id, p]));
+    const localOriginMap = new Map(
+      localProjects
+        .filter(project => project?.local_origin_id)
+        .map(project => [project.local_origin_id, project])
+    );
 
     // Merge: cloud data wins for existing projects
     for (const cp of cloudProjects) {
       const cloudTime = cp.updated_at?.toMillis?.() || cp.updated_at?.seconds * 1000 || 0;
-      const localVersion = localMap.get(cp.id);
+      const originLinkedLocal = cp.local_origin_id ? (localMap.get(cp.local_origin_id) || localOriginMap.get(cp.local_origin_id)) : null;
+      const localVersion = localMap.get(cp.id) || originLinkedLocal;
       const localTime = localVersion?.updatedAt || 0;
 
       if (!localVersion || cloudTime >= localTime) {
+        if (originLinkedLocal && originLinkedLocal.id !== cp.id) {
+          await localDB.projects.delete(originLinkedLocal.id);
+          notifyIdChange(originLinkedLocal.id, cp.id);
+        }
+
         await localDB.projects.put({
           ...cp,
           userId: auth.currentUser.uid,
+          local_origin_id: cp.local_origin_id || localVersion?.local_origin_id || null,
           updatedAt: cloudTime || Date.now(),
         });
       }
@@ -276,7 +297,12 @@ export async function pullFromCloud() {
 
     // Check for local-only projects that need syncing
     const cloudIds = new Set(cloudProjects.map(p => p.id));
+    const cloudOriginIds = new Set(cloudProjects.map(p => p.local_origin_id).filter(Boolean));
     for (const lp of localProjects) {
+      if (cloudOriginIds.has(lp.id)) {
+        await localDB.projects.delete(lp.id);
+        continue;
+      }
       if (!cloudIds.has(lp.id) && !lp.id.startsWith('local_')) {
         // Project was deleted from cloud — remove locally too
         await localDB.projects.delete(lp.id);

@@ -17,6 +17,7 @@ import { buildCompanyKey, deriveCompanyName } from '../utils/companyAccess';
 
 const sanitizeProjectForCloud = (project, user) => {
     const clone = JSON.parse(JSON.stringify(project || {}));
+    const originalId = clone.id;
 
     delete clone.id;
     delete clone.userId;
@@ -43,6 +44,7 @@ const sanitizeProjectForCloud = (project, user) => {
         user_id: clone.user_id || user.uid,
         company_name,
         company_key,
+        local_origin_id: clone.local_origin_id || (String(originalId || '').startsWith('local_') ? originalId : null),
         projectMode: clone.projectMode || 'default',
         access_mode: clone.access_mode || (clone.projectMode === 'custom' ? 'company' : 'private'),
         sections: clone.sections || [],
