@@ -3,12 +3,24 @@ import { saveProject, getProjects, deleteProject as cloudDeleteProject } from '.
 import { auth } from './firebase';
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Constants
+// ─────────────────────────────────────────────────────────────────────────────
+const MAX_RETRIES = 5;
+const BASE_BACKOFF_MS = 5000; // 5 s
+const MAX_BACKOFF_MS = 300000; // 5 min
+const RECONNECT_JITTER_MS = 1500; // max random jitter on reconnect
+const SYNC_DEBOUNCE_MS = 800;
+const AUTO_SYNC_INTERVAL_MS = 30000;
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Sync State
 // ─────────────────────────────────────────────────────────────────────────────
 let syncState = 'synced'; // 'synced' | 'syncing' | 'pending' | 'offline'
+let pendingCount = 0;
 let listeners = [];
 let debounceTimers = {};
 let autoSyncInterval = null;
+let visibilityListenerAdded = false;
 const projectIdRedirects = new Map();
 
 function getLocalUserId() {
@@ -46,6 +58,38 @@ function resolveProjectId(projectId) {
   return resolvedId;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Backoff helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Calculate the earliest timestamp at which a failed item should be retried.
+ * Uses capped exponential backoff: min(2^retries * BASE, MAX)
+ */
+function calcRetryAfter(retries = 0) {
+  const delay = Math.min(Math.pow(2, retries) * BASE_BACKOFF_MS, MAX_BACKOFF_MS);
+  return Date.now() + delay;
+}
+
+/**
+ * Returns true if the item is in backoff and should be skipped this pass.
+ */
+function isInBackoff(item) {
+  if (!item.retryAfter) return false;
+  return Date.now() < item.retryAfter;
+}
+
+/**
+ * Returns true if the item has exceeded the max retry limit.
+ */
+function isExhausted(item) {
+  return (item.retries || 0) >= MAX_RETRIES;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Queue management helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
 async function getQueuedItemsForUser(userId = getLocalUserId()) {
   if (!userId) return [];
 
@@ -62,12 +106,14 @@ async function getPendingQueueCount(userId = getLocalUserId()) {
 
 async function refreshSyncState(userId = getLocalUserId()) {
   if (!navigator.onLine) {
+    pendingCount = 0;
     setSyncState('offline');
     return;
   }
 
-  const pendingCount = await getPendingQueueCount(userId);
-  setSyncState(pendingCount > 0 ? 'pending' : 'synced');
+  const count = await getPendingQueueCount(userId);
+  pendingCount = count;
+  setSyncState(count > 0 ? 'pending' : 'synced');
 }
 
 async function migrateLegacyQueueItems(userId) {
@@ -108,6 +154,7 @@ async function upsertQueueItem(action, projectId, payload, userId = getLocalUser
       createdAt: Date.now(),
       lastError: null,
       lastTriedAt: null,
+      retryAfter: null,
     });
   } else {
     await localDB.syncQueue.add({
@@ -119,6 +166,7 @@ async function upsertQueueItem(action, projectId, payload, userId = getLocalUser
       createdAt: Date.now(),
       lastError: null,
       lastTriedAt: null,
+      retryAfter: null,
     });
   }
 
@@ -163,6 +211,7 @@ async function remapQueuedProject(userId, oldProjectId, newProjectId) {
         retries: 0,
         lastError: null,
         lastTriedAt: null,
+        retryAfter: null,
       });
       await localDB.syncQueue.delete(item.id);
       continue;
@@ -174,6 +223,7 @@ async function remapQueuedProject(userId, oldProjectId, newProjectId) {
       retries: 0,
       lastError: null,
       lastTriedAt: null,
+      retryAfter: null,
     });
   }
 }
@@ -213,6 +263,7 @@ export function onSyncStatusChange(callback) {
 export function getSyncStatus() {
   return {
     state: navigator.onLine ? syncState : 'offline',
+    pendingCount,
   };
 }
 
@@ -274,7 +325,8 @@ async function addToQueue(action, projectId, payload, userId = getLocalUserId())
 }
 
 /**
- * Process all queued sync operations
+ * Process all queued sync operations.
+ * Items in backoff or exhausted are skipped.
  */
 export async function processQueue() {
   const syncUserId = getLocalUserId();
@@ -289,14 +341,18 @@ export async function processQueue() {
   }
 
   const queue = await getQueuedItemsForUser(syncUserId);
-  if (queue.length === 0) {
-    setSyncState('synced');
+  const actionable = queue.filter(item => !isExhausted(item) && !isInBackoff(item));
+
+  if (actionable.length === 0) {
+    // Still update state — exhausted items keep pendingCount correct
+    pendingCount = queue.length;
+    setSyncState(queue.length > 0 ? 'pending' : 'synced');
     return;
   }
 
   setSyncState('syncing');
 
-  for (const item of queue) {
+  for (const item of actionable) {
     try {
       if (item.action === 'save' && item.payload) {
         const resolvedProjectId = resolveProjectId(item.projectId);
@@ -331,10 +387,12 @@ export async function processQueue() {
       }
     } catch (err) {
       console.warn(`⚠️ Sync failed for ${item.action} ${item.projectId}:`, err.message);
+      const nextRetries = (item.retries || 0) + 1;
       await localDB.syncQueue.update(item.id, {
-        retries: (item.retries || 0) + 1,
+        retries: nextRetries,
         lastError: err.message || 'Unknown sync error',
         lastTriedAt: Date.now(),
+        retryAfter: calcRetryAfter(nextRetries),
       });
     }
   }
@@ -347,7 +405,7 @@ export async function processQueue() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Sync a project to cloud (debounced, with queue fallback)
+ * Sync a project to cloud (debounced, with queue fallback).
  */
 export function syncToCloud(project) {
   const sourceUserId = getAuthenticatedUserId() || getLocalUserId();
@@ -393,20 +451,34 @@ export function syncToCloud(project) {
       console.warn('⚠️ Cloud sync failed, queuing:', err.message);
       await addToQueue('save', resolvedProjectId, nextProject, sourceUserId);
     }
-  }, 800);
+  }, SYNC_DEBOUNCE_MS);
 }
 
 /**
- * Sync a delete operation to cloud
+ * Sync a delete operation to cloud.
+ * Cancels any pending save debounce for the same project first.
  */
 export async function syncDeleteToCloud(projectId) {
   const sourceUserId = getAuthenticatedUserId() || getLocalUserId();
   const resolvedProjectId = resolveProjectId(projectId);
 
+  // Cancel any pending save debounce for this project to avoid a save racing with the delete
+  if (debounceTimers[projectId]) {
+    clearTimeout(debounceTimers[projectId]);
+    delete debounceTimers[projectId];
+  }
+  if (projectId !== resolvedProjectId && debounceTimers[resolvedProjectId]) {
+    clearTimeout(debounceTimers[resolvedProjectId]);
+    delete debounceTimers[resolvedProjectId];
+  }
+
   if (!sourceUserId) {
     await refreshSyncState(null);
     return false;
   }
+
+  // Also clear any queued save for this project — no point saving something we're deleting
+  await clearQueuedAction(sourceUserId, resolvedProjectId, 'save');
 
   if (!canSyncToCloudForUser(sourceUserId)) {
     await addToQueue('delete', resolvedProjectId, null, sourceUserId);
@@ -429,8 +501,9 @@ export async function syncDeleteToCloud(projectId) {
 }
 
 /**
- * Pull latest from cloud and merge with local DB
- * Cloud wins on conflict (by updated_at timestamp)
+ * Pull latest from cloud and merge with local DB.
+ * Cloud wins on conflict (by updated_at timestamp).
+ * Orphan deletion is skipped for projects that have a pending save in the queue.
  */
 export async function pullFromCloud() {
   const syncUserId = getAuthenticatedUserId();
@@ -450,6 +523,14 @@ export async function pullFromCloud() {
       localProjects
         .filter(project => project?.local_origin_id)
         .map(project => [project.local_origin_id, project])
+    );
+
+    // Collect project IDs that have a pending save in the queue (must not be deleted locally)
+    const queuedItems = await getQueuedItemsForUser(syncUserId);
+    const queuedSaveProjectIds = new Set(
+      queuedItems
+        .filter(item => item.action === 'save')
+        .map(item => item.projectId)
     );
 
     // Merge: cloud data wins for existing projects
@@ -484,6 +565,8 @@ export async function pullFromCloud() {
         continue;
       }
       if (!cloudIds.has(lp.id) && !lp.id.startsWith('local_')) {
+        // Guard: don't delete if there's a pending save queued — it may have just been created
+        if (queuedSaveProjectIds.has(lp.id)) continue;
         // Project was deleted from cloud — remove locally too
         await localDB.projects.delete(lp.id);
       }
@@ -521,17 +604,28 @@ function notifyIdChange(oldId, newId) {
 // Auto Sync (start/stop)
 // ─────────────────────────────────────────────────────────────────────────────
 
+function onVisibilityChange() {
+  if (document.visibilityState === 'visible') {
+    processQueue();
+  }
+}
+
 export function startAutoSync() {
   if (autoSyncInterval) return;
 
-  // Process queue every 30 seconds
+  // Process queue on a regular interval
   autoSyncInterval = setInterval(() => {
     processQueue();
-  }, 30000);
+  }, AUTO_SYNC_INTERVAL_MS);
 
-  // Process queue immediately when coming back online
   window.addEventListener('online', onOnline);
   window.addEventListener('offline', onOffline);
+
+  // Trigger processQueue when the user switches back to the tab
+  if (!visibilityListenerAdded) {
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    visibilityListenerAdded = true;
+  }
 
   // Initial queue check
   processQueue();
@@ -544,15 +638,24 @@ export function stopAutoSync() {
   }
   window.removeEventListener('online', onOnline);
   window.removeEventListener('offline', onOffline);
+
+  if (visibilityListenerAdded) {
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    visibilityListenerAdded = false;
+  }
 }
 
 function onOnline() {
   setSyncState('pending');
-  processQueue();
-  // Also pull latest from cloud when reconnecting
-  pullFromCloud();
+  // Add random jitter to avoid thundering-herd when many clients reconnect simultaneously
+  const jitter = Math.floor(Math.random() * RECONNECT_JITTER_MS);
+  setTimeout(() => {
+    processQueue();
+    pullFromCloud();
+  }, jitter);
 }
 
 function onOffline() {
+  pendingCount = 0;
   setSyncState('offline');
 }

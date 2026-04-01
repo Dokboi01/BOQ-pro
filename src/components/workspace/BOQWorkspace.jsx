@@ -13,6 +13,7 @@ import { buildCompanyKey, deriveCompanyName } from '../../utils/companyAccess';
 import {
   buildAutoRateResult,
   buildMaterialRateIndex,
+  getBenchmarkConfidenceLabel,
   getBenchmarkRegionalFactor,
   getEffectiveBenchmarkRate,
   getItemTotal,
@@ -44,7 +45,9 @@ import {
   MessagesSquare,
   Database,
   Save,
-  SlidersHorizontal
+  SlidersHorizontal,
+  RefreshCcw,
+  Pencil
 } from 'lucide-react';
 
 const WORK_TYPE_LABELS = {
@@ -330,21 +333,31 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
   const activateBenchmarkPricing = (sectionId, item) => {
     const regionalFactor = getBenchmarkRegionalFactor(item, project?.region || 'Lagos');
-    const fallbackAutoRate = Number(item.benchmark) > 0
-      ? null
-      : buildAutoRateResult(item, {
-          structureType: project?.subtype || project?.type,
-          region: project?.region || 'Lagos'
-        });
-    const derivedBenchmark = item.benchmark
-      || Number(fallbackAutoRate?.benchmark)
-      || ((Number(item.rate) || 0) / Math.max(regionalFactor, 0.001));
+
+    // Derive benchmark: stored > auto-rate > rate/factor fallback
+    let derivedBenchmark = Number(item.benchmark) > 0 ? item.benchmark : 0;
+    let matchSource = item.benchmarkMatchSource || null;
+
+    if (!derivedBenchmark) {
+      const fallbackAutoRate = buildAutoRateResult(item, {
+        structureType: project?.subtype || project?.type,
+        region: project?.region || 'Lagos'
+      });
+      derivedBenchmark = Number(fallbackAutoRate?.benchmark) || 0;
+      matchSource = fallbackAutoRate?.matchSource || matchSource;
+
+      // Last resort: derive from current rate
+      if (!derivedBenchmark && Number(item.rate) > 0) {
+        derivedBenchmark = Number(item.rate) / Math.max(regionalFactor, 0.001);
+      }
+    }
 
     updateItem(sectionId, item.id, {
       useBenchmark: true,
       rateSource: 'benchmark',
       benchmark: derivedBenchmark || 0,
-      breakdown: item.breakdown || fallbackAutoRate?.breakdown || null
+      benchmarkMatchSource: matchSource,
+      breakdown: item.breakdown || null,
     });
   };
 
@@ -400,7 +413,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         const nextItem = {
           ...item,
           benchmark: Number(item.benchmark) > 0 ? item.benchmark : autoRated.benchmark,
-          breakdown: item.breakdown || autoRated.breakdown
+          breakdown: item.breakdown || autoRated.breakdown,
+          benchmarkMatchSource: item.benchmarkMatchSource || autoRated.matchSource,
         };
 
         if (!shouldPreserveManualRate && Number(item.rate) <= 0) {
@@ -421,6 +435,39 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     setSections(updated);
     onUpdate(project.id, updated, project?.region);
     toast.success(`Auto-rated ${updatedCount} item${updatedCount === 1 ? '' : 's'} and benchmarked ${benchmarkedCount} item${benchmarkedCount === 1 ? '' : 's'}.`);
+  };
+
+  const refreshBenchmarks = async () => {
+    const dbMaterials = await getMaterials();
+    const materialIndex = buildMaterialRateIndex(dbMaterials);
+    let refreshedCount = 0;
+
+    const updated = sections.map((section) => ({
+      ...section,
+      items: (section.items || []).map((item) => {
+        const autoRated = buildAutoRateResult(item, {
+          structureType: project?.type,
+          region: project?.region || 'Lagos',
+          materialIndex
+        });
+
+        if (autoRated.benchmark <= 0) return item;
+
+        refreshedCount += 1;
+        const nextItem = {
+          ...item,
+          benchmark: autoRated.benchmark,
+          breakdown: autoRated.breakdown,
+          benchmarkMatchSource: autoRated.matchSource,
+        };
+        nextItem.total = getItemTotal(nextItem, project?.region || 'Lagos');
+        return nextItem;
+      })
+    }));
+
+    setSections(updated);
+    onUpdate(project.id, updated, project?.region);
+    toast.success(`Refreshed benchmarks for ${refreshedCount} item${refreshedCount === 1 ? '' : 's'} using latest market data.`);
   };
 
   const toggleVO = (sectionId, itemId) => {
@@ -789,6 +836,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           <button className="ws-btn ws-btn-ghost" onClick={autoRateProject} title="Auto-Assign Rates">
             <Zap size={14} className="text-accent-500" /> Auto-Rate
           </button>
+          <button className="ws-btn ws-btn-ghost" onClick={refreshBenchmarks} title="Recalculate all benchmarks with latest material prices">
+            <RefreshCcw size={14} /> Refresh Benchmarks
+          </button>
           <button className="ws-btn ws-btn-ghost" onClick={() => toast.success('Project saved as a reusable template.')} title="Save as Template">
             <Save size={14} /> Save Template
           </button>
@@ -1078,8 +1128,19 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                           </div>
                           <div className="ws-rate-meta">
                             <span className={`ws-rate-chip ws-rate-chip-${rateSourceMeta.tone}`}>{rateSourceMeta.label}</span>
+                            {item.useBenchmark && hasBenchmarkRate && (
+                              <span className={`ws-rate-chip ws-rate-chip-bm-confidence ws-rate-chip-bm-${getBenchmarkConfidenceLabel(item.benchmarkMatchSource).toLowerCase()}`}
+                                title="Benchmark confidence based on breakdown match quality">
+                                {getBenchmarkConfidenceLabel(item.benchmarkMatchSource)} confidence
+                              </span>
+                            )}
                             {benchmarkDeltaMeta && (
                               <span className={`ws-rate-chip ws-rate-chip-${benchmarkDeltaMeta.tone}`}>{benchmarkDeltaMeta.text}</span>
+                            )}
+                            {hasBenchmarkRate && !item.useBenchmark && (
+                              <span className="ws-rate-chip ws-rate-chip-bm-ref" title="Current market benchmark for this item">
+                                Benchmark: ₦{Math.round(benchmarkRate).toLocaleString()}
+                              </span>
                             )}
                             {!item.useBenchmark && !item.customPricing && (
                               <button
@@ -1091,6 +1152,24 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                               </button>
                             )}
                           </div>
+                          {/* Manual benchmark override when benchmark pricing is active */}
+                          {item.useBenchmark && (
+                            <div className="ws-benchmark-override">
+                              <Pencil size={10} className="ws-benchmark-override-icon" />
+                              <span className="ws-benchmark-override-label">Benchmark (₦):</span>
+                              <input
+                                type="number"
+                                className="ws-input ws-benchmark-override-input"
+                                value={item.benchmark || ''}
+                                min="0"
+                                step="any"
+                                title="Override the benchmark rate with your own market data"
+                                onChange={(e) => updateItem(section.id, item.id, {
+                                  benchmark: sanitizeNonNegativeNumber(e.target.value),
+                                })}
+                              />
+                            </div>
+                          )}
                           <div className={`ws-rate-note ws-rate-note-${automationMeta.tone}`}>
                             <strong>{automationMeta.title}</strong>
                             <span>{automationMeta.detail}</span>

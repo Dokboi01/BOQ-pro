@@ -598,6 +598,124 @@ const BREAKDOWNS = [
         labor: [labour('mason', 0.3), labour('general', 0.2)],
         plant: [],
     },
+
+    // ══════════════════════════════════════════════════════════
+    // SANITATION — SEPTIC & DRAINAGE
+    // ══════════════════════════════════════════════════════════
+    {
+        keywords: ['septic tank', 'sewage treatment', 'biodigester'],
+        materials: [
+            mat('OPC Cement (50kg)', 28, 'Bags', 12500),
+            mat('Sharp Sand', 1.5, 'm³', 22000),
+            mat('Granite (20mm)', 3.0, 'm³', 35000),
+            mat('Reinforcement Steel (12mm)', 180, 'kg', 1150),
+            mat('Bituminous Membrane (3mm SBS)', 12, 'm²', 3800),
+            mat('uPVC Inlet/Outlet Pipe (4-inch)', 3, 'Length', 6500),
+            mat('Concrete Cover Slab', 1, 'Sum', 45000),
+        ],
+        labor: [labour('mason', 4), labour('steel_fixer', 2), labour('general', 5), labour('carpenter', 1)],
+        plant: [plant('concreteMixer', 0.5), plant('vibrator', 0.3), plant('excavator', 0.5)],
+        overheads: 15,
+        profit: 10,
+    },
+    {
+        keywords: ['soak away', 'soakage pit', 'soakaway', 'french drain', 'storm drain'],
+        materials: [
+            mat('OPC Cement (50kg)', 8, 'Bags', 12500),
+            mat('Coarse Aggregate (40mm)', 2.5, 'm³', 30000),
+            mat('Sharp Sand', 0.5, 'm³', 22000),
+            mat('Sandstone / Hardcore', 1.5, 'm³', 14000),
+        ],
+        labor: [labour('mason', 1), labour('general', 3)],
+        plant: [plant('excavator', 0.3)],
+        overheads: 12,
+        profit: 10,
+    },
+    {
+        keywords: ['borehole', 'borehole drilling', 'water well', 'deep well', 'hand pump', 'submersible pump installation'],
+        materials: [
+            mat('Borehole Drilling (per metre)', 1, 'Sum', 2500000),
+            mat('uPVC Casing (6-inch, Class C)', 30, 'Length', 18500),
+            mat('Submersible Pump (1.5HP)', 1, 'Nr', 185000),
+            mat('Electrical Cable (4mm²)', 35, 'm', 1800),
+            mat('Overhead Tank (5000L Polyethylene)', 1, 'Nr', 195000),
+            mat('GI Rising Main Pipe (1.5-inch)', 30, 'Length', 8500),
+        ],
+        labor: [labour('plumber', 3), labour('electrician', 1), labour('general', 3)],
+        plant: [plant('generator', 1), plant('crane', 0.1)],
+        overheads: 12,
+        profit: 12,
+    },
+
+    // ══════════════════════════════════════════════════════════
+    // FINISHES — SUSPENDED CEILING & TERRAZZO
+    // ══════════════════════════════════════════════════════════
+    {
+        keywords: ['suspended ceiling', 'pop ceiling', 'gypsum board', 'plasterboard ceiling', 'false ceiling', 'ceiling tiles'],
+        materials: [
+            mat('Gypsum Ceiling Board (12mm)', 1.1, 'm²', 3200),
+            mat('Ceiling Frame (Main T-Bar)', 1, 'm', 1800),
+            mat('Ceiling Frame (Cross T-Bar)', 2, 'm', 900),
+            mat('Hanging Rods & Clips', 3, 'Nr', 350),
+            mat('Corner Bead (Aluminium)', 0.3, 'm', 1200),
+            mat('Joint Compound / POP', 0.5, 'kg', 1500),
+        ],
+        labor: [labour('carpenter', 0.8), labour('painter', 0.3), labour('general', 0.3)],
+        plant: [plant('scaffolding', 0.5)],
+        overheads: 12,
+        profit: 15,
+    },
+    {
+        keywords: ['terrazzo', 'granolithic', 'terrazzo floor', 'marble chip floor'],
+        materials: [
+            mat('White OPC Cement (50kg)', 0.6, 'Bags', 18500),
+            mat('Marble Chips (various sizes)', 0.04, 'm³', 85000),
+            mat('Dividing Strips (Aluminium)', 1.5, 'm', 1500),
+            mat('Colour Pigment', 0.2, 'kg', 4500),
+            mat('Grinding/Polishing Compound', 0.1, 'L', 3500),
+        ],
+        labor: [labour('mason', 0.8), labour('general', 0.4)],
+        plant: [plant('generator', 0.3)],
+        overheads: 10,
+        profit: 15,
+    },
+
+    // ══════════════════════════════════════════════════════════
+    // ENTRANCE & GATE WORKS
+    // ══════════════════════════════════════════════════════════
+    {
+        keywords: ['gate', 'main gate', 'swing gate', 'sliding gate', 'steel gate', 'pedestrian gate', 'wicket gate', 'service gate', 'entrance gate'],
+        materials: [
+            mat('Square Hollow Section Steel (50×50×3mm)', 30, 'kg', 1350),
+            mat('Steel Plate (6mm)', 8, 'kg', 1450),
+            mat('Gate Hinges (heavy-duty)', 4, 'Nr', 8500),
+            mat('Gate Lock / Padlock Set', 1, 'Nr', 18500),
+            mat('Primer + Gloss Paint (gate)', 2, 'L', 4500),
+            mat('Welding Electrodes (3.2mm)', 3, 'Pkt', 4500),
+            mat('Concrete for Gate Post (0.2m³)', 0.2, 'm³', 65000),
+        ],
+        labor: [labour('welder', 2), labour('mason', 0.3), labour('painter', 0.3), labour('general', 0.5)],
+        plant: [plant('generator', 0.5)],
+        overheads: 12,
+        profit: 12,
+    },
+
+    // ══════════════════════════════════════════════════════════
+    // FINISHES — IRONMONGERY & FIXTURES
+    // ══════════════════════════════════════════════════════════
+    {
+        keywords: ['ironmongery', 'door hardware', 'door furniture', 'door lock', 'door handle', 'butt hinge', 'door closer', 'flush bolt', 'mortice lock'],
+        materials: [
+            mat('Mortice Lock Set (3-lever)', 1, 'Nr', 18500),
+            mat('Lever Handle Set (stainless)', 1, 'Set', 12500),
+            mat('Butt Hinges (100mm, SS)', 3, 'Pair', 2800),
+            mat('Door Stopper', 1, 'Nr', 2200),
+        ],
+        labor: [labour('carpenter', 0.5), labour('general', 0.1)],
+        plant: [],
+        overheads: 10,
+        profit: 12,
+    },
 ];
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -701,7 +819,7 @@ const STRUCTURE_DEFAULTS = {
 export const getBreakdownForItem = (description, structureType) => {
     const desc = (description || '').toLowerCase();
 
-    // 1. Keyword match (most specific)
+    // 1. Keyword match (most specific) → confidence: 'keyword'
     for (const breakdown of BREAKDOWNS) {
         const matched = breakdown.keywords.some(kw => desc.includes(kw.toLowerCase()));
         if (matched) {
@@ -709,13 +827,14 @@ export const getBreakdownForItem = (description, structureType) => {
                 materials: breakdown.materials.map(m => ({ ...m, id: id() })),
                 labor: breakdown.labor.map(l => ({ ...l, id: id() })),
                 plant: breakdown.plant.map(p => ({ ...p, id: id() })),
-                overheads: 15,
-                profit: 10,
+                overheads: breakdown.overheads ?? 15,
+                profit: breakdown.profit ?? 10,
+                matchSource: 'keyword',
             };
         }
     }
 
-    // 2. Structure-type default
+    // 2. Structure-type default → confidence: 'structure-default'
     const def = STRUCTURE_DEFAULTS[structureType];
     if (def) {
         return {
@@ -724,10 +843,11 @@ export const getBreakdownForItem = (description, structureType) => {
             plant: def.plant.map(p => ({ ...p, id: id() })),
             overheads: 15,
             profit: 10,
+            matchSource: 'structure-default',
         };
     }
 
-    // 3. Absolute fallback — generic concrete mix
+    // 3. Absolute fallback — generic concrete mix → confidence: 'fallback'
     return {
         materials: [
             mat('OPC Cement (50kg)', 6.5, 'Bags', 12500),
@@ -738,6 +858,7 @@ export const getBreakdownForItem = (description, structureType) => {
         plant: [plant('concreteMixer', 0.2)],
         overheads: 15,
         profit: 10,
+        matchSource: 'fallback',
     };
 };
 

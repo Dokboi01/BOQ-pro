@@ -202,7 +202,7 @@ export function ProjectsProvider({ children }) {
     const [isCreating, setIsCreating] = useState(false);
     const [focusMode, setFocusMode] = useState(false);
     const [workspaceIntent, setWorkspaceIntent] = useState(null);
-    const [syncStatus, setSyncStatus] = useState({ state: 'synced' });
+    const [syncStatus, setSyncStatus] = useState({ state: 'synced', pendingCount: 0 });
     const [cloudWorkspaceState, setCloudWorkspaceState] = useState(null);
     const [cloudWorkspaceReady, setCloudWorkspaceReady] = useState(false);
     const lastRemoteUpdate = useRef(0);
@@ -569,6 +569,8 @@ export function ProjectsProvider({ children }) {
         if (merged) {
             setProjects(filterVisibleProjects(merged));
             toast.success('Synced with cloud!');
+        } else {
+            toast.info('Already up to date.');
         }
     }, [filterVisibleProjects, toast]);
 
