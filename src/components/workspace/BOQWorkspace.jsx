@@ -330,12 +330,21 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
   const activateBenchmarkPricing = (sectionId, item) => {
     const regionalFactor = getBenchmarkRegionalFactor(item, project?.region || 'Lagos');
-    const derivedBenchmark = item.benchmark || ((Number(item.rate) || 0) / Math.max(regionalFactor, 0.001));
+    const fallbackAutoRate = Number(item.benchmark) > 0
+      ? null
+      : buildAutoRateResult(item, {
+          structureType: project?.subtype || project?.type,
+          region: project?.region || 'Lagos'
+        });
+    const derivedBenchmark = item.benchmark
+      || Number(fallbackAutoRate?.benchmark)
+      || ((Number(item.rate) || 0) / Math.max(regionalFactor, 0.001));
 
     updateItem(sectionId, item.id, {
       useBenchmark: true,
       rateSource: 'benchmark',
-      benchmark: derivedBenchmark || 0
+      benchmark: derivedBenchmark || 0,
+      breakdown: item.breakdown || fallbackAutoRate?.breakdown || null
     });
   };
 
