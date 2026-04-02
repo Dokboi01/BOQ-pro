@@ -102,6 +102,7 @@ export const canAccessCompanyProject = (user, project) => {
     email: user.email,
   });
 
+  if (project.userId && user.id && project.userId === user.id) return true;
   if (project.user_id && user.id && project.user_id === user.id) return true;
 
   if ((project.collaborators || []).some((entry) => entry.email === userEmail)) return true;
