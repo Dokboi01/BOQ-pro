@@ -26,11 +26,26 @@ const PERCENT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
 
 const formatMoney = (value) => `₦${MONEY.format(Number(value) || 0)}`;
 
-const formatProjectDate = (value) => {
-  if (!value) return 'Recently updated';
+const parseProjectDate = (value) => {
+  if (!value) return null;
+  // ISO date string 'YYYY-MM-DD' — parse as local date to avoid UTC offset shifting the day
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(value))) {
+    const [y, m, d] = String(value).split('-').map(Number);
+    return new Date(y, m - 1, d); // local midnight, no timezone shift
+  }
+  // Firestore Timestamp object
+  if (value?.toDate) return value.toDate();
+  // Epoch ms number
+  if (typeof value === 'number') return new Date(value);
+  // Legacy locale string (e.g. '02/04/2026') — attempt parse but flag as ambiguous
   const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const formatProjectDate = (value) => {
+  const dt = parseProjectDate(value);
+  if (!dt) return 'Recently updated';
+  return dt.toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
 const toneForStatus = (status = '') => {

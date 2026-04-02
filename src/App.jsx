@@ -321,7 +321,7 @@ function App() {
                 <div className="meta-row">
                   <span className="meta-item"><MapPin size={14} /> {activeProject?.region || 'Location not set'}</span>
                   <span className="meta-item"><UserIcon size={14} /> {user?.full_name || 'Practitioner'}</span>
-                  <span className="meta-item"><Calendar size={14} /> {(() => { const d = activeProject?.date; if (!d) return 'No date'; const dt = new Date(d); const q = Math.ceil((dt.getMonth() + 1) / 3); return `Q${q} ${dt.getFullYear()}`; })()}</span>
+                  <span className="meta-item"><Calendar size={14} /> {(() => { const d = activeProject?.date; if (!d) return 'No date'; let dt; if (/^\d{4}-\d{2}-\d{2}$/.test(String(d))) { const [y, m, day] = String(d).split('-').map(Number); dt = new Date(y, m - 1, day); } else { dt = new Date(d); } if (Number.isNaN(dt.getTime())) return d; const q = Math.ceil((dt.getMonth() + 1) / 3); return `Q${q} ${dt.getFullYear()}`; })()}</span>
                 </div>
               </>
             ) : (

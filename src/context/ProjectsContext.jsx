@@ -679,7 +679,7 @@ export function ProjectsProvider({ children }) {
             type: structureId,
             status: 'Active',
             sections: processedSections,
-            date: new Date().toLocaleDateString(),
+            date: new Date().toISOString().split('T')[0],
             region: 'Lagos',
             pricingMode: 'user-entered'
         };
@@ -742,7 +742,7 @@ export function ProjectsProvider({ children }) {
             collaboration_enabled: isCustomMode,
             status: 'Active',
             sections: processedSections,
-            date: new Date().toLocaleDateString(),
+            date: new Date().toISOString().split('T')[0],
             region: projectConfig.region || 'Lagos',
             notes: projectConfig.notes || '',
             assumptions: projectConfig.assumptions || '',
@@ -794,11 +794,11 @@ export function ProjectsProvider({ children }) {
         const projectId = `local_${Date.now()}`;
         const newProj = {
             id: projectId,
-            name: `AI Draft: ${new Date().toLocaleDateString()}`,
+            name: `AI Draft: ${new Date().toISOString().split('T')[0]}`,
             type: 'AI Drawing Analysis',
             status: 'Draft',
             sections: analyzedSections,
-            date: new Date().toLocaleDateString(),
+            date: new Date().toISOString().split('T')[0],
             region: 'Lagos'
         };
 
@@ -985,7 +985,7 @@ export function ProjectsProvider({ children }) {
                     ]
                 }
             ],
-            date: new Date().toLocaleDateString(),
+            date: new Date().toISOString().split('T')[0],
             region: 'Lagos',
             pricingMode: 'user-entered'
         };
