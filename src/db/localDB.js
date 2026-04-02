@@ -18,4 +18,10 @@ localDB.version(2).stores({
   syncQueue: '++id, userId, action, projectId, createdAt, [userId+projectId+action]',
 });
 
+// v3: adds retryAfter for exponential backoff skipping in processQueue
+localDB.version(3).stores({
+  projects: 'id, userId, updatedAt',
+  syncQueue: '++id, userId, action, projectId, createdAt, retryAfter, [userId+projectId+action]',
+});
+
 export default localDB;

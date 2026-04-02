@@ -71,7 +71,9 @@ const SYNONYM_GROUPS = [
   ['waterproofing', 'waterproof', 'membrane', 'admixture']
 ];
 
-export const OUTLIER_TOLERANCE = 0.25;
+export const DEFAULT_OUTLIER_TOLERANCE = 0.25;
+/** @deprecated use DEFAULT_OUTLIER_TOLERANCE */
+export const OUTLIER_TOLERANCE = DEFAULT_OUTLIER_TOLERANCE;
 
 export const clampNumber = (value) => {
   const parsed = Number(value);
@@ -91,21 +93,24 @@ export const normalizeUnit = (unit = '') => {
 
 export const inferWorkType = (description = '') => {
   const text = String(description).toLowerCase();
-  if (/paint|emulsion|satin/.test(text)) return 'painting';
-  if (/tile|terrazzo|granite tile|ceramic/.test(text)) return 'tiling';
-  if (/plaster|render|screed/.test(text)) return 'plastering';
-  if (/block|masonry|sandcrete|brick/.test(text)) return 'masonry';
+  if (/paint|emulsion|satin|texcote|acrylic|weather.?shield/.test(text)) return 'painting';
+  if (/tile|terrazzo|granolithicterraz|ceramic|porcelain|granite tile/.test(text)) return 'tiling';
+  if (/plaster|render|screed|sand.?and.?cement|bonding coat/.test(text)) return 'plastering';
+  if (/block|masonry|sandcrete|brick|block.?wall|225mm|150mm/.test(text)) return 'masonry';
   if (/formwork|shuttering|falsework/.test(text)) return 'formwork';
-  if (/rebar|reinforcement|brc mesh|high yield/.test(text)) return 'reinforcement';
-  if (/roof|sheet|truss|purlin/.test(text)) return 'roofing';
-  if (/pipe|drain|culvert|sewer/.test(text)) return 'pipework';
-  if (/plumb|sanitary|water supply/.test(text)) return 'plumbing';
-  if (/electrical|cable|conduit|lighting/.test(text)) return 'electrical';
-  if (/steel|fabricat|weld|portal frame|i-beam/.test(text)) return 'steelwork';
-  if (/road|asphalt|kerb|paving/.test(text)) return 'roadwork';
-  if (/excavat|backfill|earthwork/.test(text)) return 'earthwork';
-  if (/backyard|gate|entrance|wicket|fence gate|service gate/.test(text)) return 'entranceworks';
-  if (/concrete|slab|beam|column|foundation|pile|abutment/.test(text)) return 'concrete';
+  if (/rebar|reinforcement|brc mesh|high yield|y12|y16|y20|y25|r10/.test(text)) return 'reinforcement';
+  if (/roof|sheet|truss|purlin|rafter|stone.?coated|long.?span|corrugated|ridge/.test(text)) return 'roofing';
+  if (/pipe|drain|culvert|sewer|u.?drain|drainage channel|manhole|catch pit|septic|soakaway|soak.?away|biodigester/.test(text)) return 'pipework';
+  if (/plumb|sanitary|water supply|wc|toilet|basin|shower|borehole|sump|overhead tank/.test(text)) return 'plumbing';
+  if (/electrical|cable|conduit|lighting|street light|distribution board|power point/.test(text)) return 'electrical';
+  if (/steel|fabricat|weld|portal frame|i.?beam|h.?section|hollow section|steel gate|gate/.test(text)) return 'steelwork';
+  if (/road|asphalt|kerb|paving|base course|sub.?base|prime coat|tack coat|wearing course/.test(text)) return 'roadwork';
+  if (/excavat|backfill|earthwork|topsoil|strip|clearance|vegetation|filling|compaction|borrow/.test(text)) return 'earthwork';
+  if (/backyard|entrance gate|wicket|fence gate|service gate/.test(text)) return 'entranceworks';
+  if (/ironmongery|door hardware|door lock|mortice|butt hinge|door closer|flush bolt|door handle|door furniture/.test(text)) return 'general'; // hardware — use general profile
+  if (/suspended ceiling|pop ceiling|gypsum|false ceiling|ceiling tile/.test(text)) return 'general';
+  if (/terrazzo|granolithic/.test(text)) return 'tiling';
+  if (/concrete|slab|beam|column|foundation|pile|abutment|raft|blinding|strip found|ground beam/.test(text)) return 'concrete';
   return 'general';
 };
 
@@ -473,16 +478,25 @@ export const applyRegionCostProfileToPricing = (pricing, region = 'Lagos') => {
   };
 };
 
+// Cache for regional benchmark factors: key = "workType|region"
+const _regionalFactorCache = new Map();
+
 export const getBenchmarkRegionalFactor = (item, region = 'Lagos') => {
   if (!region || region === 'Lagos') return 1;
 
   const workType = item?.customPricing?.workType || inferWorkType(item?.description);
+  const cacheKey = `${workType}|${region}`;
+
+  if (_regionalFactorCache.has(cacheKey)) return _regionalFactorCache.get(cacheKey);
+
   const seed = seedCustomPricingFromReference(100, workType);
   const baseRate = calculateCustomPricingSummary(seed).finalRate || 100;
   const regionalRate = calculateCustomPricingSummary(applyRegionCostProfileToPricing(seed, region)).finalRate || baseRate;
   const factor = regionalRate / baseRate;
+  const resolved = Number.isFinite(factor) && factor > 0 ? factor : Math.max(getRegionalModifier(region), 0.001);
 
-  return Number.isFinite(factor) && factor > 0 ? factor : Math.max(getRegionalModifier(region), 0.001);
+  _regionalFactorCache.set(cacheKey, resolved);
+  return resolved;
 };
 
 export const getEffectiveBenchmarkRate = (item, region = 'Lagos') => {
@@ -499,27 +513,52 @@ export const getItemTotal = (item, region = 'Lagos') => {
   return Math.max(clampNumber(item?.qty), 0) * getItemUnitRate(item, region);
 };
 
-export const isBenchmarkOutlier = (rate, benchmark, tolerance = OUTLIER_TOLERANCE) => {
+export const isBenchmarkOutlier = (rate, benchmark, tolerance = DEFAULT_OUTLIER_TOLERANCE) => {
   if (!benchmark || !rate) return false;
   const delta = Math.abs(rate - benchmark) / benchmark;
   return delta > tolerance;
 };
 
+/**
+ * Returns a human-readable benchmark confidence label based on how the breakdown was matched.
+ * 'keyword'          => 'High'   (exact description match in rateBreakdowns)
+ * 'structure-default'=> 'Medium' (structure-type fallback)
+ * 'fallback'         => 'Low'    (generic concrete mix fallback)
+ * undefined          => 'Medium' (legacy items without matchSource)
+ */
+export const getBenchmarkConfidenceLabel = (matchSource) => {
+  if (matchSource === 'keyword') return 'High';
+  if (matchSource === 'fallback') return 'Low';
+  return 'Medium';
+};
+
 export const buildAutoRateResult = (item, { structureType, region = 'Lagos', materialIndex = [] } = {}) => {
-  const sourceBreakdown = item?.breakdown
+  const rawBreakdown = item?.breakdown
     ? normalizeBreakdownForItem(item.breakdown, item)
-    : normalizeBreakdownForItem(getBreakdownForItem(item?.description, structureType), item);
+    : null;
+
+  // getBreakdownForItem now returns matchSource too
+  const breakdownResult = rawBreakdown
+    ? { ...normalizeBreakdownForItem(rawBreakdown, item), matchSource: item.breakdownMatchSource || 'keyword' }
+    : getBreakdownForItem(item?.description, structureType);
+
+  const sourceBreakdown = normalizeBreakdownForItem(breakdownResult, item);
+  const matchSource = breakdownResult.matchSource || 'keyword';
 
   const marketAligned = applyMarketRatesToBreakdown(sourceBreakdown, materialIndex);
   const regionalized = applyRegionCostProfileToBreakdown(marketAligned, region);
   const summary = calculateBreakdownSummary(regionalized);
+
+  // benchmark is always the Lagos-equivalent base rate so regional repricing works correctly
   const factor = Math.max(getBenchmarkRegionalFactor(item, region), 0.001);
+  const benchmark = region === 'Lagos' ? summary.unitRate : summary.unitRate / factor;
 
   return {
-    benchmark: summary.unitRate / factor,
+    benchmark,
     rate: summary.unitRate,
     breakdown: regionalized,
-    summary
+    summary,
+    matchSource,
   };
 };
 
