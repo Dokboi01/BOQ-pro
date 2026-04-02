@@ -13,6 +13,7 @@ import {
     startAutoSync,
     stopAutoSync,
     onSyncStatusChange,
+    onProjectSaveStateChange,
     onIdChange,
     processQueue,
 } from '../db/syncEngine';
@@ -279,6 +280,28 @@ export function ProjectsProvider({ children }) {
         });
     }, [user]);
 
+    const ensureSharedProjectVisible = useCallback(async (incomingProjects = []) => {
+        const sharedProjectId = new URLSearchParams(window.location.search).get('project');
+        if (!user || !sharedProjectId) return incomingProjects;
+        if (incomingProjects.some((project) => project.id === sharedProjectId)) {
+            return incomingProjects;
+        }
+
+        try {
+            const { getProjectById } = await import('../db/database');
+            const sharedProject = await getProjectById(sharedProjectId);
+            if (!sharedProject || !canAccessCompanyProject(user, sharedProject)) {
+                return incomingProjects;
+            }
+
+            const savedSharedProject = await saveLocal(sharedProject, { source: 'cloud' });
+            return [savedSharedProject || sharedProject, ...incomingProjects];
+        } catch (err) {
+            console.warn('Shared project link recovery failed:', err?.message || err);
+            return incomingProjects;
+        }
+    }, [user]);
+
     useEffect(() => {
         const currentUserId = user?.id || null;
         if (currentUserId === lastUserIdRef.current) return;
@@ -326,7 +349,9 @@ export function ProjectsProvider({ children }) {
         const init = async () => {
             // 1. Instant load from Dexie
             const localProjects = await loadLocal();
-            const visibleLocalProjects = filterVisibleProjects(localProjects);
+            const visibleLocalProjects = await ensureSharedProjectVisible(
+                filterVisibleProjects(localProjects)
+            );
             if (!cancelled && visibleLocalProjects.length > 0) {
                 setProjects(visibleLocalProjects);
             }
@@ -334,20 +359,23 @@ export function ProjectsProvider({ children }) {
             // 2. Background pull from cloud and merge
             const merged = await pullFromCloud();
             if (!cancelled && merged) {
-                setProjects(filterVisibleProjects(merged));
+                setProjects(await ensureSharedProjectVisible(filterVisibleProjects(merged)));
             } else if (!cancelled && visibleLocalProjects.length === 0) {
                 // If no local data and pull failed, we still load from local (empty)
                 // but also try loading from cloud directly for first-time users
                 const { getProjects } = await import('../db/database');
                 try {
                     const cloudData = await getProjects();
-                    const visibleCloudData = filterVisibleProjects(cloudData);
+                    const visibleCloudData = await ensureSharedProjectVisible(
+                        filterVisibleProjects(cloudData)
+                    );
                     if (!cancelled && visibleCloudData.length > 0) {
                         // Save to local DB for next time
+                        const cachedCloudProjects = [];
                         for (const p of visibleCloudData) {
-                            await saveLocal(p);
+                            cachedCloudProjects.push(await saveLocal(p, { source: 'cloud' }) || p);
                         }
-                        setProjects(visibleCloudData);
+                        setProjects(cachedCloudProjects);
                     }
                 } catch {
                     // Offline and no local data — that's fine
@@ -364,7 +392,7 @@ export function ProjectsProvider({ children }) {
             cancelled = true;
             stopAutoSync();
         };
-    }, [filterVisibleProjects, user]);
+    }, [ensureSharedProjectVisible, filterVisibleProjects, user]);
 
     useEffect(() => {
         if (!user?.id) return;
@@ -410,6 +438,17 @@ export function ProjectsProvider({ children }) {
         return unsubscribe;
     }, []);
 
+    useEffect(() => {
+        const unsubscribe = onProjectSaveStateChange((projectId, saveMeta) => {
+            setProjects((prev) => prev.map((project) => (
+                project.id === projectId
+                    ? { ...project, saveMeta }
+                    : project
+            )));
+        });
+        return unsubscribe;
+    }, []);
+
     // ── Listen for ID changes (when local_ gets a real cloud ID) ──
     useEffect(() => {
         const unsubscribe = onIdChange((oldId, newId) => {
@@ -449,7 +488,7 @@ export function ProjectsProvider({ children }) {
             ));
 
             // Also update local Dexie to keep in sync
-            saveLocal(remoteProject);
+            saveLocal(remoteProject, { source: 'cloud' });
         });
 
         return () => unsubscribe();
@@ -679,7 +718,7 @@ export function ProjectsProvider({ children }) {
             type: structureId,
             status: 'Active',
             sections: processedSections,
-            date: new Date().toLocaleDateString(),
+            date: new Date().toISOString().split('T')[0],
             region: 'Lagos',
             pricingMode: 'user-entered'
         };
@@ -687,11 +726,11 @@ export function ProjectsProvider({ children }) {
         setIsCreating(true);
         try {
             // 1. Save locally (instant)
-            await saveLocal(newProj);
+            const savedProject = await saveLocal(newProj, { source: 'user' });
 
             // 2. Update UI immediately
-            setProjects(prev => [newProj, ...prev]);
-            setActiveProjectId(projectId);
+            setProjects(prev => [savedProject, ...prev]);
+            setActiveProjectId(savedProject.id);
             setShowSelector(false);
             setActiveTab('workspace');
             setFocusMode(true);
@@ -699,8 +738,8 @@ export function ProjectsProvider({ children }) {
             toast.success('Project created!');
 
             // 3. Background cloud sync + activity log
-            syncToCloud(newProj);
-            logActivity(projectId, 'project_created', { name: newProj.name, type: newProj.type });
+            syncToCloud(savedProject);
+            logActivity(savedProject.id, 'project_created', { name: savedProject.name, type: savedProject.type });
         } catch (err) {
             console.error('❌ Create project failed:', err);
             toast.error('Error creating project.');
@@ -742,7 +781,7 @@ export function ProjectsProvider({ children }) {
             collaboration_enabled: isCustomMode,
             status: 'Active',
             sections: processedSections,
-            date: new Date().toLocaleDateString(),
+            date: new Date().toISOString().split('T')[0],
             region: projectConfig.region || 'Lagos',
             notes: projectConfig.notes || '',
             assumptions: projectConfig.assumptions || '',
@@ -756,15 +795,15 @@ export function ProjectsProvider({ children }) {
 
         setIsCreating(true);
         try {
-            await saveLocal(newProj);
-            setProjects(prev => [newProj, ...prev]);
-            setActiveProjectId(projectId);
+            const savedProject = await saveLocal(newProj, { source: 'user' });
+            setProjects(prev => [savedProject, ...prev]);
+            setActiveProjectId(savedProject.id);
             setShowSelector(false);
             setActiveTab('workspace');
             setFocusMode(true);
             toast.success('Project created successfully!');
-            syncToCloud(newProj);
-            logActivity(projectId, 'project_created', { name: newProj.name, type: newProj.type });
+            syncToCloud(savedProject);
+            logActivity(savedProject.id, 'project_created', { name: savedProject.name, type: savedProject.type });
         } catch (err) {
             console.error('❌ Create wizard project failed:', err);
             toast.error('Error creating project.');
@@ -794,22 +833,22 @@ export function ProjectsProvider({ children }) {
         const projectId = `local_${Date.now()}`;
         const newProj = {
             id: projectId,
-            name: `AI Draft: ${new Date().toLocaleDateString()}`,
+            name: `AI Draft: ${new Date().toISOString().split('T')[0]}`,
             type: 'AI Drawing Analysis',
             status: 'Draft',
             sections: analyzedSections,
-            date: new Date().toLocaleDateString(),
+            date: new Date().toISOString().split('T')[0],
             region: 'Lagos'
         };
 
         try {
-            await saveLocal(newProj);
-            setProjects(prev => [newProj, ...prev]);
-            setActiveProjectId(projectId);
+            const savedProject = await saveLocal(newProj, { source: 'user' });
+            setProjects(prev => [savedProject, ...prev]);
+            setActiveProjectId(savedProject.id);
             setShowAnalyzer(false);
             setActiveTab('workspace');
             setFocusMode(true);
-            syncToCloud(newProj);
+            syncToCloud(savedProject);
         } catch (err) {
             console.error('Error creating project from analysis:', err);
         }
@@ -844,10 +883,13 @@ export function ProjectsProvider({ children }) {
 
         if (updatedProject) {
             // 2. Save locally (instant)
-            await saveLocal(updatedProject);
+            const savedProject = await saveLocal(updatedProject, { source: 'user' });
+            setProjects(prev => prev.map((project) => (
+                project.id === savedProject.id ? savedProject : project
+            )));
             // 3. Background cloud sync (debounced) + activity log
-            syncToCloud(updatedProject);
-            logActivity(projectId, 'project_updated', { region: updatedProject.region });
+            syncToCloud(savedProject);
+            logActivity(projectId, 'project_updated', { region: savedProject.region });
         }
     };
 
@@ -985,15 +1027,15 @@ export function ProjectsProvider({ children }) {
                     ]
                 }
             ],
-            date: new Date().toLocaleDateString(),
+            date: new Date().toISOString().split('T')[0],
             region: 'Lagos',
             pricingMode: 'user-entered'
         };
 
         try {
-            await saveLocal(quickTestProject);
-            setProjects((prev) => [quickTestProject, ...prev]);
-            openWorkspace(projectId, {
+            const savedProject = await saveLocal(quickTestProject, { source: 'user' });
+            setProjects((prev) => [savedProject, ...prev]);
+            openWorkspace(savedProject.id, {
                 type: 'custom-pricing-test',
                 itemId
             });

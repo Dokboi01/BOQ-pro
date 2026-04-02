@@ -1,6 +1,7 @@
 import localDB from './localDB';
 import { saveProject, getProjects, deleteProject as cloudDeleteProject } from './database';
 import { auth } from './firebase';
+import { toSaveTimestamp } from '../utils/projectSaveState';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -18,11 +19,90 @@ const AUTO_SYNC_INTERVAL_MS = 15000; // was 30 s — now 15 s for faster catch-u
 let syncState = 'synced'; // 'synced' | 'syncing' | 'pending' | 'offline'
 let pendingCount = 0;
 let listeners = [];
+let projectSaveListeners = [];
 let debounceTimers = {};
 let autoSyncInterval = null;
 let visibilityListenerAdded = false;
 let migrationDone = false; // run legacy migration only once per session
 const projectIdRedirects = new Map();
+
+function getDefaultProjectSaveMeta(project, existingMeta = {}) {
+  const isCloudProject = !!project?.id && !String(project.id).startsWith('local_');
+
+  return {
+    status: existingMeta.status || (isCloudProject ? 'synced' : 'local-only'),
+    lastLocalSaveAt: toSaveTimestamp(existingMeta.lastLocalSaveAt),
+    lastCloudSyncAt: toSaveTimestamp(existingMeta.lastCloudSyncAt || project?.updated_at),
+    lastSyncAttemptAt: toSaveTimestamp(existingMeta.lastSyncAttemptAt),
+    lastSyncError: existingMeta.lastSyncError || '',
+    retryCount: Number(existingMeta.retryCount) || 0,
+    pendingChanges: existingMeta.pendingChanges === true,
+    cloudLinked: existingMeta.cloudLinked === true || isCloudProject,
+  };
+}
+
+function buildProjectSaveMeta(project, existingRecord = null, options = {}) {
+  const now = Number(options.updatedAt) || Date.now();
+  const existingMeta = {
+    ...(existingRecord?.saveMeta || {}),
+    ...(project?.saveMeta || {}),
+  };
+  const base = getDefaultProjectSaveMeta(project, existingMeta);
+
+  if (options.source === 'cloud') {
+    const cloudSyncedAt = Number(options.cloudSyncedAt)
+      || toSaveTimestamp(project?.updated_at)
+      || now;
+
+    return {
+      ...base,
+      status: base.pendingChanges ? base.status : 'synced',
+      lastCloudSyncAt: cloudSyncedAt,
+      lastSyncAttemptAt: base.lastSyncAttemptAt || cloudSyncedAt,
+      lastSyncError: base.pendingChanges ? base.lastSyncError : '',
+      retryCount: base.pendingChanges ? base.retryCount : 0,
+      pendingChanges: base.pendingChanges,
+      cloudLinked: true,
+    };
+  }
+
+  if (options.source === 'user') {
+    const nextStatus = !navigator.onLine
+      ? 'offline'
+      : auth.currentUser
+        ? 'pending'
+        : 'local-only';
+
+    return {
+      ...base,
+      status: nextStatus,
+      lastLocalSaveAt: now,
+      lastSyncError: '',
+      retryCount: 0,
+      pendingChanges: true,
+    };
+  }
+
+  if (options.metaPatch) {
+    return {
+      ...base,
+      ...options.metaPatch,
+      lastLocalSaveAt: toSaveTimestamp(options.metaPatch.lastLocalSaveAt ?? base.lastLocalSaveAt),
+      lastCloudSyncAt: toSaveTimestamp(options.metaPatch.lastCloudSyncAt ?? base.lastCloudSyncAt),
+      lastSyncAttemptAt: toSaveTimestamp(options.metaPatch.lastSyncAttemptAt ?? base.lastSyncAttemptAt),
+      retryCount: Number(options.metaPatch.retryCount ?? base.retryCount) || 0,
+      pendingChanges: options.metaPatch.pendingChanges ?? base.pendingChanges,
+      cloudLinked: options.metaPatch.cloudLinked ?? base.cloudLinked,
+      lastSyncError: options.metaPatch.lastSyncError ?? base.lastSyncError,
+    };
+  }
+
+  return base;
+}
+
+function notifyProjectSaveListeners(projectId, saveMeta) {
+  projectSaveListeners.forEach((fn) => fn(projectId, saveMeta));
+}
 
 function getLocalUserId() {
   if (auth.currentUser?.uid) return auth.currentUser.uid;
@@ -241,13 +321,20 @@ async function promoteLocalProjectId(oldProjectId, newProjectId, userId = getLoc
   }
 
   await localDB.projects.delete(oldProjectId);
-  await localDB.projects.put({
+  const promotedRecord = {
     ...(existingProject || {}),
     ...localProject,
     id: newProjectId,
     userId: existingProject?.userId || localProject.userId || userId,
     local_origin_id: existingProject?.local_origin_id || localProject.local_origin_id || oldProjectId,
-  });
+    saveMeta: {
+      ...(existingProject?.saveMeta || {}),
+      ...(localProject.saveMeta || {}),
+      cloudLinked: true,
+    },
+  };
+  await localDB.projects.put(promotedRecord);
+  notifyProjectSaveListeners(newProjectId, promotedRecord.saveMeta || null);
 
   await remapQueuedProject(userId, oldProjectId, newProjectId);
 }
@@ -259,6 +346,11 @@ function notifyListeners() {
 export function onSyncStatusChange(callback) {
   listeners.push(callback);
   return () => { listeners = listeners.filter(fn => fn !== callback); };
+}
+
+export function onProjectSaveStateChange(callback) {
+  projectSaveListeners.push(callback);
+  return () => { projectSaveListeners = projectSaveListeners.filter(fn => fn !== callback); };
 }
 
 export function getSyncStatus() {
@@ -273,6 +365,28 @@ function setSyncState(state) {
   notifyListeners();
 }
 
+async function updateProjectSaveMeta(projectId, metaPatch, userId = getLocalUserId()) {
+  if (!projectId || !userId) return null;
+
+  const resolvedProjectId = resolveProjectId(projectId);
+  const existingRecord = await localDB.projects.get(resolvedProjectId);
+  if (!existingRecord) return null;
+
+  const nextSaveMeta = buildProjectSaveMeta(existingRecord, existingRecord, {
+    metaPatch,
+    updatedAt: Date.now(),
+  });
+
+  const nextRecord = {
+    ...existingRecord,
+    saveMeta: nextSaveMeta,
+  };
+
+  await localDB.projects.put(nextRecord);
+  notifyProjectSaveListeners(resolvedProjectId, nextSaveMeta);
+  return nextRecord;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Local DB Operations
 // ─────────────────────────────────────────────────────────────────────────────
@@ -280,17 +394,31 @@ function setSyncState(state) {
 /**
  * Save a project to local Dexie DB
  */
-export async function saveLocal(project) {
-  const userId = getLocalUserId();
+export async function saveLocal(project, options = {}) {
+  const userId = options.userId || getLocalUserId();
   if (!userId) return;
 
+  const existingRecord = await localDB.projects.get(project.id);
+  const updatedAt = Number(options.updatedAt)
+    || (options.source === 'cloud' ? toSaveTimestamp(project?.updated_at) : 0)
+    || Date.now();
+  const saveMeta = buildProjectSaveMeta(project, existingRecord, {
+    source: options.source,
+    updatedAt,
+    cloudSyncedAt: options.cloudSyncedAt,
+    metaPatch: options.metaPatch,
+  });
+
   const record = {
+    ...(existingRecord || {}),
     ...project,
     userId,
-    updatedAt: Date.now(),
+    updatedAt,
+    saveMeta,
   };
 
   await localDB.projects.put(record);
+  notifyProjectSaveListeners(record.id, saveMeta);
   return record;
 }
 
@@ -357,6 +485,13 @@ export async function processQueue() {
   await Promise.allSettled(
     actionable.map(async (item) => {
       try {
+        await updateProjectSaveMeta(item.projectId, {
+          status: 'syncing',
+          lastSyncAttemptAt: Date.now(),
+          retryCount: item.retries || 0,
+          lastSyncError: '',
+        }, syncUserId);
+
         if (item.action === 'save' && item.payload) {
           const resolvedProjectId = resolveProjectId(item.projectId);
           const payload = resolvedProjectId === item.projectId
@@ -377,6 +512,15 @@ export async function processQueue() {
             }
 
             await localDB.syncQueue.delete(item.id);
+            await updateProjectSaveMeta(savedId || resolvedProjectId, {
+              status: 'synced',
+              lastCloudSyncAt: Date.now(),
+              lastSyncAttemptAt: Date.now(),
+              lastSyncError: '',
+              retryCount: 0,
+              pendingChanges: false,
+              cloudLinked: true,
+            }, syncUserId);
           } else {
             throw new Error('Save returned null');
           }
@@ -397,6 +541,13 @@ export async function processQueue() {
           lastTriedAt: Date.now(),
           retryAfter: calcRetryAfter(nextRetries),
         });
+        await updateProjectSaveMeta(item.projectId, {
+          status: nextRetries >= MAX_RETRIES ? 'attention' : (navigator.onLine ? 'pending' : 'offline'),
+          lastSyncAttemptAt: Date.now(),
+          lastSyncError: err.message || 'Unknown sync error',
+          retryCount: nextRetries,
+          pendingChanges: true,
+        }, syncUserId);
       }
     })
   );
@@ -434,10 +585,22 @@ export function syncToCloud(project) {
 
     if (!canSyncToCloudForUser(sourceUserId)) {
       await addToQueue('save', resolvedProjectId, nextProject, sourceUserId);
+      await updateProjectSaveMeta(resolvedProjectId, {
+        status: navigator.onLine ? 'pending' : 'offline',
+        pendingChanges: true,
+        cloudLinked: !resolvedProjectId.startsWith('local_'),
+      }, sourceUserId);
       return;
     }
 
     setSyncState('syncing');
+    await updateProjectSaveMeta(resolvedProjectId, {
+      status: 'syncing',
+      lastSyncAttemptAt: Date.now(),
+      lastSyncError: '',
+      pendingChanges: true,
+      cloudLinked: !resolvedProjectId.startsWith('local_'),
+    }, sourceUserId);
 
     try {
       const savedId = await saveProject(nextProject);
@@ -447,13 +610,33 @@ export function syncToCloud(project) {
           notifyIdChange(resolvedProjectId, savedId);
         }
         await clearQueuedAction(sourceUserId, resolvedProjectId, 'save');
+        await updateProjectSaveMeta(savedId || resolvedProjectId, {
+          status: 'synced',
+          lastCloudSyncAt: Date.now(),
+          lastSyncAttemptAt: Date.now(),
+          lastSyncError: '',
+          retryCount: 0,
+          pendingChanges: false,
+          cloudLinked: true,
+        }, sourceUserId);
         await refreshSyncState(sourceUserId);
       } else {
         await addToQueue('save', resolvedProjectId, nextProject, sourceUserId);
+        await updateProjectSaveMeta(resolvedProjectId, {
+          status: navigator.onLine ? 'pending' : 'offline',
+          lastSyncAttemptAt: Date.now(),
+          pendingChanges: true,
+        }, sourceUserId);
       }
     } catch (err) {
       console.warn('⚠️ Cloud sync failed, queuing:', err.message);
       await addToQueue('save', resolvedProjectId, nextProject, sourceUserId);
+      await updateProjectSaveMeta(resolvedProjectId, {
+        status: navigator.onLine ? 'pending' : 'offline',
+        lastSyncAttemptAt: Date.now(),
+        lastSyncError: err.message || 'Cloud sync failed',
+        pendingChanges: true,
+      }, sourceUserId);
     }
   }, SYNC_DEBOUNCE_MS);
 }
@@ -509,6 +692,52 @@ export async function syncDeleteToCloud(projectId) {
  * Cloud wins on conflict (by updated_at timestamp).
  * Orphan deletion is skipped for projects that have a pending save in the queue.
  */
+/**
+ * Merge a cloud-pulled project with the existing local version.
+ * Cloud wins on scalar pricing fields, but local-only fields (breakdown,
+ * customPricingHistory, full customPricing studio config) are preserved
+ * from the local copy when the cloud payload doesn't include them.
+ */
+function mergeCloudProjectWithLocal(cloudProject, localProject) {
+  if (!localProject) return cloudProject;
+
+  // Build a map of local items by id for O(1) lookup
+  const localItemMap = new Map();
+  for (const section of localProject.sections || []) {
+    for (const item of section.items || []) {
+      if (item.id) localItemMap.set(item.id, item);
+    }
+  }
+
+  const mergedSections = (cloudProject.sections || []).map(cloudSection => {
+    const mergedItems = (cloudSection.items || []).map(cloudItem => {
+      const local = localItemMap.get(cloudItem.id);
+      if (!local) return cloudItem;
+
+      // Cloud values win for pricing outputs
+      // Local values fill in fields the cloud no longer stores
+      return {
+        ...local,           // start with full local (has breakdown, history, etc.)
+        ...cloudItem,       // cloud wins on all scalar fields
+        // Restore local-only fields that are stripped before cloud upload
+        breakdown: local.breakdown || null,
+        customPricingHistory: local.customPricingHistory || null,
+        // Restore full customPricing studio config if cloud only has the summary
+        customPricing: cloudItem.customPricing
+          ? {
+              ...(local.customPricing || {}),  // local has full arrays
+              ...cloudItem.customPricing,       // cloud summary wins for scalars
+            }
+          : local.customPricing || null,
+      };
+    });
+
+    return { ...cloudSection, items: mergedItems };
+  });
+
+  return { ...cloudProject, sections: mergedSections };
+}
+
 export async function pullFromCloud() {
   const syncUserId = getAuthenticatedUserId();
   if (!canSyncToCloudForUser(syncUserId)) {
@@ -551,11 +780,18 @@ export async function pullFromCloud() {
           notifyIdChange(originLinkedLocal.id, cp.id);
         }
 
-        await localDB.projects.put({
-          ...cp,
+        // Merge cloud (stripped) with local (rich) so breakdown/customPricing detail is preserved
+        const projectToWrite = mergeCloudProjectWithLocal(cp, localVersion);
+
+        await saveLocal({
+          ...projectToWrite,
           userId: auth.currentUser.uid,
           local_origin_id: cp.local_origin_id || localVersion?.local_origin_id || null,
+        }, {
+          source: 'cloud',
+          userId: auth.currentUser.uid,
           updatedAt: cloudTime || Date.now(),
+          cloudSyncedAt: cloudTime || Date.now(),
         });
       }
     }

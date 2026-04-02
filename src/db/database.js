@@ -16,6 +16,59 @@ import {
 import { buildCompanyKey, deriveCompanyName } from '../utils/companyAccess';
 import { getSeedMaterials } from './seed_materials';
 
+/**
+ * Strip heavy, reconstructable fields from a single BOQ item before cloud upload.
+ * Keeps all pricing summary fields but removes large nested arrays that can be
+ * regenerated locally from rateBreakdowns.js.
+ */
+const stripItemForCloud = (item) => {
+    if (!item || typeof item !== 'object') return item;
+
+    // Slim down customPricing: keep summary numbers, drop full material/labor/plant arrays
+    let cloudCustomPricing = null;
+    if (item.customPricing) {
+        const cp = item.customPricing;
+        cloudCustomPricing = {
+            workType: cp.workType || null,
+            overheads: cp.overheads ?? null,
+            profit: cp.profit ?? null,
+            finalRate: cp.finalRate ?? null,
+            // keep these lightweight flags if present
+            pricingMode: cp.pricingMode || null,
+            region: cp.region || null,
+        };
+    }
+
+    return {
+        // Core identity & measurement
+        id: item.id,
+        ref: item.ref || null,
+        description: item.description || '',
+        unit: item.unit || '',
+        qty: item.qty ?? 0,
+
+        // Pricing outputs (always needed)
+        rate: item.rate ?? 0,
+        total: item.total ?? 0,
+        rateSource: item.rateSource || null,
+
+        // Benchmark data (computed, compact)
+        useBenchmark: item.useBenchmark ?? false,
+        benchmark: item.benchmark ?? 0,
+        benchmarkMatchSource: item.benchmarkMatchSource || null,
+
+        // Custom pricing summary only — no arrays
+        customPricing: cloudCustomPricing,
+
+        // VO / notes flags
+        isVO: item.isVO ?? false,
+        notes: item.notes || null,
+
+        // breakdown is intentionally NOT included — reconstructed locally
+        // customPricingHistory is NOT included — stored locally only
+    };
+};
+
 const sanitizeProjectForCloud = (project, user) => {
     const clone = JSON.parse(JSON.stringify(project || {}));
     const originalId = clone.id;
@@ -35,8 +88,23 @@ const sanitizeProjectForCloud = (project, user) => {
         email: user?.email
     });
 
+    // Strip each item in each section down to cloud-safe fields
+    const cloudSections = (clone.sections || []).map(section => ({
+        id: section.id,
+        title: section.title || '',
+        collapsed: section.collapsed ?? false,
+        items: (section.items || []).map(stripItemForCloud),
+    }));
+
+    // Flat collaborator email array for array-contains queries
+    const collaborators = clone.collaborators || [];
+    const collaborator_ids = Array.from(new Set(
+        collaborators
+            .map(c => c.email?.toLowerCase())
+            .filter(Boolean)
+    ));
+
     return {
-        ...clone,
         name: clone.name,
         type: clone.type,
         status: clone.status || 'Draft',
@@ -48,8 +116,12 @@ const sanitizeProjectForCloud = (project, user) => {
         local_origin_id: clone.local_origin_id || (String(originalId || '').startsWith('local_') ? originalId : null),
         projectMode: clone.projectMode || 'default',
         access_mode: clone.access_mode || (clone.projectMode === 'custom' ? 'company' : 'private'),
-        sections: clone.sections || [],
-        collaborators: clone.collaborators || [],
+        notes: clone.notes || null,
+        assumptions: clone.assumptions || null,
+        pricingMode: clone.pricingMode || null,
+        sections: cloudSections,
+        collaborators,
+        collaborator_ids,
         updated_at: serverTimestamp()
     };
 };
@@ -130,18 +202,16 @@ export const getProjects = async () => {
             }
         }
 
-        // Fetch shared projects (where user's email is in collaborators)
+        // Fetch shared projects: use array-contains on collaborator_ids — O(shared) not O(all)
         let sharedProjects = [];
         try {
-            const allProjectsQuery = query(collection(db, 'projects'));
-            const allSnapshot = await getDocs(allProjectsQuery);
-            sharedProjects = allSnapshot.docs
-                .filter(d => {
-                    const data = d.data();
-                    if (data.user_id === user.uid) return false; // Skip own
-                    const collabs = data.collaborators || [];
-                    return collabs.some(c => c.email === user.email?.toLowerCase());
-                })
+            const sharedQuery = query(
+                collection(db, 'projects'),
+                where('collaborator_ids', 'array-contains', user.email.toLowerCase())
+            );
+            const sharedSnapshot = await getDocs(sharedQuery);
+            sharedProjects = sharedSnapshot.docs
+                .filter(d => d.data().user_id !== user.uid) // skip own projects
                 .map(d => ({ id: d.id, ...d.data(), isOwner: false }));
         } catch (sharedErr) {
             console.warn('Could not fetch shared projects:', sharedErr.message);

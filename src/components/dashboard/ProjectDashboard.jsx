@@ -20,17 +20,33 @@ import {
 } from 'lucide-react';
 import { PLAN_LIMITS, PLAN_NAMES } from '../../data/plans';
 import { getProjectPricingAnalytics } from '../../utils/pricing';
+import { getProjectSavePresentation } from '../../utils/projectSaveState';
 
 const MONEY = new Intl.NumberFormat('en-NG', { maximumFractionDigits: 0 });
 const PERCENT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
 
 const formatMoney = (value) => `₦${MONEY.format(Number(value) || 0)}`;
 
-const formatProjectDate = (value) => {
-  if (!value) return 'Recently updated';
+const parseProjectDate = (value) => {
+  if (!value) return null;
+  // ISO date string 'YYYY-MM-DD' — parse as local date to avoid UTC offset shifting the day
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(value))) {
+    const [y, m, d] = String(value).split('-').map(Number);
+    return new Date(y, m - 1, d); // local midnight, no timezone shift
+  }
+  // Firestore Timestamp object
+  if (value?.toDate) return value.toDate();
+  // Epoch ms number
+  if (typeof value === 'number') return new Date(value);
+  // Legacy locale string (e.g. '02/04/2026') — attempt parse but flag as ambiguous
   const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const formatProjectDate = (value) => {
+  const dt = parseProjectDate(value);
+  if (!dt) return 'Recently updated';
+  return dt.toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
 const toneForStatus = (status = '') => {
@@ -65,6 +81,7 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
   const activeEntry = projectEntries[0] || null;
   const activeProject = activeEntry?.project || null;
   const activeAnalytics = activeEntry?.analytics || null;
+  const activeProjectSave = getProjectSavePresentation(activeProject);
 
   const currentTotal = activeAnalytics?.totalValue || 0;
   const commercialReadiness = activeAnalytics
@@ -270,19 +287,24 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
               const canDeleteProject = project.isOwner === true
                 || project.user_id === user?.id
                 || String(project.id || '').startsWith('local_');
+              const projectSave = getProjectSavePresentation(project);
 
               return (
               <article key={project.id} className="project-card enterprise-card" onClick={() => onSelectProject(project.id)}>
                 <div className="project-top">
                   <span className={`status-dot ${toneForStatus(project.status)}`} />
                   <span className="project-status">{project.status}</span>
-                  <span className="muted">{formatProjectDate(project.date || project.updatedAt || project.updated_at)}</span>
+                  <span className="muted">{formatProjectDate(project.updatedAt || project.updated_at || project.date)}</span>
                 </div>
                 <h4>{project.name}</h4>
                 <p className="muted">{project.type} · {analytics.totalItems} items · {analytics.totalSections} sections</p>
                 <div className="project-metrics">
                   <div><span className="eyebrow">Est. Cost</span><strong>{formatMoney(analytics.totalValue)}</strong></div>
                   <div><span className="eyebrow">Coverage</span><strong>{PERCENT.format(analytics.pricingCoveragePercent)}%</strong></div>
+                </div>
+                <div className="save-row">
+                  <span className={`save-pill ${projectSave.tone}`}>{projectSave.badgeLabel}</span>
+                  <span className="muted">{projectSave.detail}</span>
                 </div>
                 <div className="project-foot">
                   <div className="pill-row">
@@ -411,7 +433,8 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
 
           <section className="workflow enterprise-card">
             <div className="workflow-item"><Layers size={18} /><div><span className="eyebrow">Current Stage</span><strong>{pricingStage}</strong></div></div>
-            <div className="workflow-item"><Calendar size={18} /><div><span className="eyebrow">Last Modified</span><strong>{formatProjectDate(activeProject.date || activeProject.updatedAt || activeProject.updated_at)}</strong></div></div>
+            <div className="workflow-item"><Calendar size={18} /><div><span className="eyebrow">Last Modified</span><strong>{formatProjectDate(activeProject.updatedAt || activeProject.updated_at || activeProject.date)}</strong></div></div>
+            <div className="workflow-item"><CheckCircle2 size={18} /><div><span className="eyebrow">Save Integrity</span><strong>{activeProjectSave.badgeLabel}</strong><p className="workflow-note">{activeProjectSave.detail}</p></div></div>
             <div className="workflow-item"><Users size={18} /><div><span className="eyebrow">Project Controller</span><strong>{user?.role || 'Professional User'}</strong></div></div>
             <button
               className={`primary-btn approve-btn ${isApproved ? 'approved' : ''}`}
@@ -432,6 +455,7 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
       <style jsx="true">{`
         .dashboard-shell { display: flex; flex-direction: column; gap: 1.25rem; }
         .dashboard-header, .row-head, .workflow { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+        .workflow { flex-wrap: wrap; }
         .dashboard-header h2, .row-head h3 { margin: 0 0 0.3rem; color: var(--primary-900); }
         .dashboard-header p, .row-head p, .muted { margin: 0; color: var(--primary-500); font-size: 0.8rem; }
         .enterprise-card { background: white; border: 1px solid var(--border-light); border-radius: 20px; box-shadow: 0 18px 36px rgba(15, 23, 42, 0.05); }
@@ -475,8 +499,15 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
         .project-card h4 { margin: 0 0 0.35rem; }
         .project-metrics { margin: 1rem 0; align-items: flex-start; }
         .project-foot { margin-top: 0.8rem; }
+        .save-row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.85rem; flex-wrap: wrap; }
         .pill-row, .action-row, .tab-row { display: flex; align-items: center; gap: 0.45rem; }
         .pill { background: #f8fafc; color: var(--primary-600); font-size: 0.66rem; }
+        .save-pill { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 0.28rem 0.72rem; font-size: 0.68rem; font-weight: 800; }
+        .save-pill.success { background: rgba(22, 163, 74, 0.12); color: var(--success-600); }
+        .save-pill.info { background: rgba(37, 99, 235, 0.12); color: #2563eb; }
+        .save-pill.warning { background: rgba(217, 119, 6, 0.12); color: var(--warning-600); }
+        .save-pill.muted { background: rgba(148, 163, 184, 0.14); color: #64748b; }
+        .save-pill.danger { background: rgba(220, 38, 38, 0.12); color: var(--danger-600); }
         .icon-btn { border: none; background: transparent; color: var(--primary-400); cursor: pointer; }
         .icon-btn:hover { color: var(--danger-600); }
         .locked { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--primary-400); text-align: center; border-style: dashed; }
@@ -503,6 +534,7 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
         .risk-card.high { background: rgba(220, 38, 38, 0.06); }
         .risk-card.medium { background: rgba(217, 119, 6, 0.07); }
         .risk-card.low { background: #f8fafc; }
+        .workflow-note { margin: 0.2rem 0 0; color: var(--primary-500); font-size: 0.72rem; line-height: 1.4; max-width: 220px; }
         .risk-card p { margin: 0; font-size: 0.8rem; color: var(--primary-800); line-height: 1.5; }
         .workflow { padding: 1rem 1.2rem; align-items: center; }
         .workflow-item strong { color: var(--primary-900); }
