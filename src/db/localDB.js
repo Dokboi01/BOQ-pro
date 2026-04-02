@@ -24,4 +24,13 @@ localDB.version(3).stores({
   syncQueue: '++id, userId, action, projectId, createdAt, retryAfter, [userId+projectId+action]',
 });
 
+// v4: adds separate breakdowns table so heavy per-item breakdown arrays are stored
+//     independently from the project document. Projects table stays lean for fast reads.
+//     breakdowns are local-only — never synced to Firestore.
+localDB.version(4).stores({
+  projects: 'id, userId, updatedAt',
+  syncQueue: '++id, userId, action, projectId, createdAt, retryAfter, [userId+projectId+action]',
+  breakdowns: '[projectId+itemId], projectId',
+});
+
 export default localDB;

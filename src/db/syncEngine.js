@@ -509,6 +509,52 @@ export async function syncDeleteToCloud(projectId) {
  * Cloud wins on conflict (by updated_at timestamp).
  * Orphan deletion is skipped for projects that have a pending save in the queue.
  */
+/**
+ * Merge a cloud-pulled project with the existing local version.
+ * Cloud wins on scalar pricing fields, but local-only fields (breakdown,
+ * customPricingHistory, full customPricing studio config) are preserved
+ * from the local copy when the cloud payload doesn't include them.
+ */
+function mergeCloudProjectWithLocal(cloudProject, localProject) {
+  if (!localProject) return cloudProject;
+
+  // Build a map of local items by id for O(1) lookup
+  const localItemMap = new Map();
+  for (const section of localProject.sections || []) {
+    for (const item of section.items || []) {
+      if (item.id) localItemMap.set(item.id, item);
+    }
+  }
+
+  const mergedSections = (cloudProject.sections || []).map(cloudSection => {
+    const mergedItems = (cloudSection.items || []).map(cloudItem => {
+      const local = localItemMap.get(cloudItem.id);
+      if (!local) return cloudItem;
+
+      // Cloud values win for pricing outputs
+      // Local values fill in fields the cloud no longer stores
+      return {
+        ...local,           // start with full local (has breakdown, history, etc.)
+        ...cloudItem,       // cloud wins on all scalar fields
+        // Restore local-only fields that are stripped before cloud upload
+        breakdown: local.breakdown || null,
+        customPricingHistory: local.customPricingHistory || null,
+        // Restore full customPricing studio config if cloud only has the summary
+        customPricing: cloudItem.customPricing
+          ? {
+              ...(local.customPricing || {}),  // local has full arrays
+              ...cloudItem.customPricing,       // cloud summary wins for scalars
+            }
+          : local.customPricing || null,
+      };
+    });
+
+    return { ...cloudSection, items: mergedItems };
+  });
+
+  return { ...cloudProject, sections: mergedSections };
+}
+
 export async function pullFromCloud() {
   const syncUserId = getAuthenticatedUserId();
   if (!canSyncToCloudForUser(syncUserId)) {
@@ -551,8 +597,11 @@ export async function pullFromCloud() {
           notifyIdChange(originLinkedLocal.id, cp.id);
         }
 
+        // Merge cloud (stripped) with local (rich) so breakdown/customPricing detail is preserved
+        const projectToWrite = mergeCloudProjectWithLocal(cp, localVersion);
+
         await localDB.projects.put({
-          ...cp,
+          ...projectToWrite,
           userId: auth.currentUser.uid,
           local_origin_id: cp.local_origin_id || localVersion?.local_origin_id || null,
           updatedAt: cloudTime || Date.now(),
