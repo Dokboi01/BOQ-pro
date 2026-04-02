@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Shield, CheckCircle2, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
 import { auth, db } from '../../db/firebase';
 import { applyActionCode } from 'firebase/auth';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 
 const FirebaseActionHandler = ({ mode, actionCode, onContinue }) => {
     const [status, setStatus] = useState('verifying'); // verifying, success, error
@@ -26,11 +26,18 @@ const FirebaseActionHandler = ({ mode, actionCode, onContinue }) => {
                 // Apply the action code logic
                 await applyActionCode(auth, actionCode);
 
-                // Now if we have a current user, also update their firestore profile to verify
+                // Keep the Firestore profile in sync when the verifying user is signed in,
+                // but don't fail the whole verification flow if that profile write misses.
                 if (auth.currentUser) {
-                    await updateDoc(doc(db, 'profiles', auth.currentUser.uid), {
-                        is_verified: true
-                    });
+                    try {
+                        await setDoc(doc(db, 'profiles', auth.currentUser.uid), {
+                            email: auth.currentUser.email,
+                            is_verified: true,
+                            updated_at: serverTimestamp(),
+                        }, { merge: true });
+                    } catch (profileError) {
+                        console.warn('Profile verification sync failed:', profileError);
+                    }
                 }
 
                 setStatus('success');

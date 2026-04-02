@@ -279,6 +279,28 @@ export function ProjectsProvider({ children }) {
         });
     }, [user]);
 
+    const ensureSharedProjectVisible = useCallback(async (incomingProjects = []) => {
+        const sharedProjectId = new URLSearchParams(window.location.search).get('project');
+        if (!user || !sharedProjectId) return incomingProjects;
+        if (incomingProjects.some((project) => project.id === sharedProjectId)) {
+            return incomingProjects;
+        }
+
+        try {
+            const { getProjectById } = await import('../db/database');
+            const sharedProject = await getProjectById(sharedProjectId);
+            if (!sharedProject || !canAccessCompanyProject(user, sharedProject)) {
+                return incomingProjects;
+            }
+
+            await saveLocal(sharedProject);
+            return [sharedProject, ...incomingProjects];
+        } catch (err) {
+            console.warn('Shared project link recovery failed:', err?.message || err);
+            return incomingProjects;
+        }
+    }, [user]);
+
     useEffect(() => {
         const currentUserId = user?.id || null;
         if (currentUserId === lastUserIdRef.current) return;
@@ -326,7 +348,9 @@ export function ProjectsProvider({ children }) {
         const init = async () => {
             // 1. Instant load from Dexie
             const localProjects = await loadLocal();
-            const visibleLocalProjects = filterVisibleProjects(localProjects);
+            const visibleLocalProjects = await ensureSharedProjectVisible(
+                filterVisibleProjects(localProjects)
+            );
             if (!cancelled && visibleLocalProjects.length > 0) {
                 setProjects(visibleLocalProjects);
             }
@@ -334,14 +358,16 @@ export function ProjectsProvider({ children }) {
             // 2. Background pull from cloud and merge
             const merged = await pullFromCloud();
             if (!cancelled && merged) {
-                setProjects(filterVisibleProjects(merged));
+                setProjects(await ensureSharedProjectVisible(filterVisibleProjects(merged)));
             } else if (!cancelled && visibleLocalProjects.length === 0) {
                 // If no local data and pull failed, we still load from local (empty)
                 // but also try loading from cloud directly for first-time users
                 const { getProjects } = await import('../db/database');
                 try {
                     const cloudData = await getProjects();
-                    const visibleCloudData = filterVisibleProjects(cloudData);
+                    const visibleCloudData = await ensureSharedProjectVisible(
+                        filterVisibleProjects(cloudData)
+                    );
                     if (!cancelled && visibleCloudData.length > 0) {
                         // Save to local DB for next time
                         for (const p of visibleCloudData) {
@@ -364,7 +390,7 @@ export function ProjectsProvider({ children }) {
             cancelled = true;
             stopAutoSync();
         };
-    }, [filterVisibleProjects, user]);
+    }, [ensureSharedProjectVisible, filterVisibleProjects, user]);
 
     useEffect(() => {
         if (!user?.id) return;

@@ -98,9 +98,11 @@ const sanitizeProjectForCloud = (project, user) => {
 
     // Flat collaborator email array for array-contains queries
     const collaborators = clone.collaborators || [];
-    const collaborator_ids = collaborators
-        .map(c => c.email?.toLowerCase())
-        .filter(Boolean);
+    const collaborator_ids = Array.from(new Set(
+        collaborators
+            .map(c => c.email?.toLowerCase())
+            .filter(Boolean)
+    ));
 
     return {
         name: clone.name,

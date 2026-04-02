@@ -2,8 +2,6 @@ import { db, auth } from './firebase';
 import {
   doc,
   updateDoc,
-  arrayUnion,
-  arrayRemove,
   getDoc,
   collection,
   addDoc,
@@ -17,6 +15,30 @@ import {
   onSnapshot,
   Timestamp,
 } from 'firebase/firestore';
+
+const normalizeCollaboratorEmail = (email = '') => String(email).trim().toLowerCase();
+
+const dedupeCollaborators = (collaborators = []) => {
+  const byEmail = new Map();
+
+  collaborators.forEach((entry) => {
+    const email = normalizeCollaboratorEmail(entry?.email);
+    if (!email) return;
+
+    byEmail.set(email, {
+      ...entry,
+      email,
+    });
+  });
+
+  return Array.from(byEmail.values());
+};
+
+const buildCollaboratorIds = (collaborators = []) => (
+  Array.from(new Set(
+    dedupeCollaborators(collaborators).map((entry) => entry.email)
+  ))
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Collaborator Management
@@ -34,21 +56,41 @@ export async function inviteCollaborator(projectId, email, role = 'editor') {
   }
 
   try {
+    const normalizedEmail = normalizeCollaboratorEmail(email);
+    if (!normalizedEmail) {
+      return { success: false, error: 'Collaborator email is required.' };
+    }
+
     const docRef = doc(db, 'projects', projectId);
+    const snapshot = await getDoc(docRef);
+    if (!snapshot.exists()) {
+      return { success: false, error: 'Project not found.' };
+    }
+
+    const collaborators = dedupeCollaborators(snapshot.data()?.collaborators || []);
+    const existing = collaborators.find((entry) => entry.email === normalizedEmail);
     const collaborator = {
-      email: email.toLowerCase().trim(),
+      ...existing,
+      email: normalizedEmail,
       role,
-      addedAt: new Date().toISOString(),
-      addedBy: auth.currentUser?.email || 'unknown',
+      addedAt: existing?.addedAt || new Date().toISOString(),
+      addedBy: existing?.addedBy || auth.currentUser?.email || 'unknown',
+      updatedAt: new Date().toISOString(),
+      updatedBy: auth.currentUser?.email || 'unknown',
     };
+    const nextCollaborators = [
+      ...collaborators.filter((entry) => entry.email !== normalizedEmail),
+      collaborator,
+    ];
 
     await updateDoc(docRef, {
-      collaborators: arrayUnion(collaborator),
+      collaborators: nextCollaborators,
+      collaborator_ids: buildCollaboratorIds(nextCollaborators),
     });
 
     // Log the activity
     await logActivity(projectId, 'collaborator_invited', {
-      email: collaborator.email,
+      email: normalizedEmail,
       role,
     });
 
@@ -64,21 +106,28 @@ export async function inviteCollaborator(projectId, email, role = 'editor') {
  */
 export async function removeCollaborator(projectId, email) {
   try {
+    const normalizedEmail = normalizeCollaboratorEmail(email);
+    if (!normalizedEmail) {
+      return { success: false, error: 'Collaborator email is required.' };
+    }
+
     const docRef = doc(db, 'projects', projectId);
     const snapshot = await getDoc(docRef);
     if (!snapshot.exists()) return { success: false, error: 'Project not found' };
 
     const data = snapshot.data();
-    const collaborator = (data.collaborators || []).find(
-      (c) => c.email === email.toLowerCase().trim()
+    const collaborators = dedupeCollaborators(data.collaborators || []);
+    const nextCollaborators = collaborators.filter(
+      (entry) => entry.email !== normalizedEmail
     );
 
-    if (collaborator) {
+    if (nextCollaborators.length !== collaborators.length) {
       await updateDoc(docRef, {
-        collaborators: arrayRemove(collaborator),
+        collaborators: nextCollaborators,
+        collaborator_ids: buildCollaboratorIds(nextCollaborators),
       });
 
-      await logActivity(projectId, 'collaborator_removed', { email });
+      await logActivity(projectId, 'collaborator_removed', { email: normalizedEmail });
     }
 
     return { success: true };
@@ -94,7 +143,7 @@ export async function getCollaborators(projectId) {
   try {
     const snapshot = await getDoc(doc(db, 'projects', projectId));
     if (!snapshot.exists()) return [];
-    return snapshot.data().collaborators || [];
+    return dedupeCollaborators(snapshot.data().collaborators || []);
   } catch {
     return [];
   }
@@ -104,7 +153,23 @@ export async function getCollaborators(projectId) {
 // Presence System
 // ─────────────────────────────────────────────────────────────────────────────
 
-let presenceInterval = null;
+const presenceIntervals = new Map();
+
+const clearPresenceHeartbeat = (projectId = null) => {
+  if (projectId) {
+    const activeInterval = presenceIntervals.get(projectId);
+    if (activeInterval) {
+      clearInterval(activeInterval);
+      presenceIntervals.delete(projectId);
+    }
+    return;
+  }
+
+  presenceIntervals.forEach((activeInterval, activeProjectId) => {
+    clearInterval(activeInterval);
+    presenceIntervals.delete(activeProjectId);
+  });
+};
 
 /**
  * Set current user as present on a project.
@@ -112,6 +177,8 @@ let presenceInterval = null;
  */
 export function startPresence(projectId) {
   if (!projectId || projectId.startsWith('local_') || !auth.currentUser) return;
+
+  clearPresenceHeartbeat(projectId);
 
   const writePresence = async () => {
     try {
@@ -129,17 +196,14 @@ export function startPresence(projectId) {
 
   // Write immediately, then every 60s
   writePresence();
-  presenceInterval = setInterval(writePresence, 60000);
+  presenceIntervals.set(projectId, setInterval(writePresence, 60000));
 }
 
 /**
  * Stop presence heartbeat and remove this user's presence doc
  */
 export function stopPresence(projectId) {
-  if (presenceInterval) {
-    clearInterval(presenceInterval);
-    presenceInterval = null;
-  }
+  clearPresenceHeartbeat(projectId);
 
   if (projectId && !projectId.startsWith('local_') && auth.currentUser) {
     const presenceRef = doc(db, 'projects', projectId, 'presence', auth.currentUser.uid);
