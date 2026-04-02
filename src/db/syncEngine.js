@@ -12,6 +12,8 @@ const MAX_BACKOFF_MS = 300000; // 5 min
 const RECONNECT_JITTER_MS = 1500; // max random jitter on reconnect
 const SYNC_DEBOUNCE_MS = 400;   // was 800 ms — halved for snappier cloud writes
 const AUTO_SYNC_INTERVAL_MS = 15000; // was 30 s — now 15 s for faster catch-up
+const MISSING_CLOUD_GRACE_MS = 5 * 60 * 1000;
+const MISSING_CLOUD_DELETE_THRESHOLD = 3;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sync State
@@ -36,6 +38,8 @@ function getDefaultProjectSaveMeta(project, existingMeta = {}) {
     lastSyncAttemptAt: toSaveTimestamp(existingMeta.lastSyncAttemptAt),
     lastSyncError: existingMeta.lastSyncError || '',
     retryCount: Number(existingMeta.retryCount) || 0,
+    cloudMissCount: Number(existingMeta.cloudMissCount) || 0,
+    lastMissingFromCloudAt: toSaveTimestamp(existingMeta.lastMissingFromCloudAt),
     pendingChanges: existingMeta.pendingChanges === true,
     cloudLinked: existingMeta.cloudLinked === true || isCloudProject,
   };
@@ -61,6 +65,8 @@ function buildProjectSaveMeta(project, existingRecord = null, options = {}) {
       lastSyncAttemptAt: base.lastSyncAttemptAt || cloudSyncedAt,
       lastSyncError: base.pendingChanges ? base.lastSyncError : '',
       retryCount: base.pendingChanges ? base.retryCount : 0,
+      cloudMissCount: 0,
+      lastMissingFromCloudAt: 0,
       pendingChanges: base.pendingChanges,
       cloudLinked: true,
     };
@@ -79,6 +85,8 @@ function buildProjectSaveMeta(project, existingRecord = null, options = {}) {
       lastLocalSaveAt: now,
       lastSyncError: '',
       retryCount: 0,
+      cloudMissCount: 0,
+      lastMissingFromCloudAt: 0,
       pendingChanges: true,
     };
   }
@@ -91,6 +99,8 @@ function buildProjectSaveMeta(project, existingRecord = null, options = {}) {
       lastCloudSyncAt: toSaveTimestamp(options.metaPatch.lastCloudSyncAt ?? base.lastCloudSyncAt),
       lastSyncAttemptAt: toSaveTimestamp(options.metaPatch.lastSyncAttemptAt ?? base.lastSyncAttemptAt),
       retryCount: Number(options.metaPatch.retryCount ?? base.retryCount) || 0,
+      cloudMissCount: Number(options.metaPatch.cloudMissCount ?? base.cloudMissCount) || 0,
+      lastMissingFromCloudAt: toSaveTimestamp(options.metaPatch.lastMissingFromCloudAt ?? base.lastMissingFromCloudAt),
       pendingChanges: options.metaPatch.pendingChanges ?? base.pendingChanges,
       cloudLinked: options.metaPatch.cloudLinked ?? base.cloudLinked,
       lastSyncError: options.metaPatch.lastSyncError ?? base.lastSyncError,
@@ -431,6 +441,39 @@ export async function loadLocal() {
 
   try {
     const projects = await localDB.projects.where('userId').equals(userId).toArray();
+    const visibleProjectIds = new Set(projects.map((project) => project.id));
+    const queuedItems = await getQueuedItemsForUser(userId);
+
+    for (const item of queuedItems) {
+      if (item.action !== 'save' || !item.payload) continue;
+
+      const queuedProjectId = resolveProjectId(item.projectId);
+      if (visibleProjectIds.has(queuedProjectId)) continue;
+
+      const recoveredProject = await saveLocal({
+        ...item.payload,
+        id: queuedProjectId,
+        local_origin_id: item.payload.local_origin_id || (queuedProjectId !== item.projectId ? item.projectId : item.payload.local_origin_id || null),
+      }, {
+        source: 'user',
+        userId,
+        updatedAt: item.createdAt || Date.now(),
+        metaPatch: {
+          status: navigator.onLine ? 'pending' : 'offline',
+          pendingChanges: true,
+          retryCount: item.retries || 0,
+          lastSyncError: item.lastError || '',
+          lastSyncAttemptAt: item.lastTriedAt || 0,
+          cloudLinked: !String(queuedProjectId || '').startsWith('local_'),
+        }
+      });
+
+      if (recoveredProject) {
+        visibleProjectIds.add(recoveredProject.id);
+        projects.push(recoveredProject);
+      }
+    }
+
     // Sort by updatedAt descending
     return projects.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   } catch {
@@ -807,7 +850,26 @@ export async function pullFromCloud() {
       if (!cloudIds.has(lp.id) && !lp.id.startsWith('local_')) {
         // Guard: don't delete if there's a pending save queued — it may have just been created
         if (queuedSaveProjectIds.has(lp.id)) continue;
-        // Project was deleted from cloud — remove locally too
+        const lastProtectedAt = Math.max(
+          lp.updatedAt || 0,
+          toSaveTimestamp(lp?.saveMeta?.lastLocalSaveAt),
+          toSaveTimestamp(lp?.saveMeta?.lastCloudSyncAt)
+        );
+        const nextMissCount = (Number(lp?.saveMeta?.cloudMissCount) || 0) + 1;
+
+        if (Date.now() - lastProtectedAt < MISSING_CLOUD_GRACE_MS || nextMissCount < MISSING_CLOUD_DELETE_THRESHOLD) {
+          await saveLocal(lp, {
+            userId: lp.userId || syncUserId,
+            updatedAt: lp.updatedAt || Date.now(),
+            metaPatch: {
+              cloudMissCount: nextMissCount,
+              lastMissingFromCloudAt: Date.now(),
+            }
+          });
+          continue;
+        }
+
+        // Project has been missing from repeated cloud pulls long enough to treat as deleted
         await localDB.projects.delete(lp.id);
       }
       // local_ projects stay — they'll be synced via queue

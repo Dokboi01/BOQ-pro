@@ -267,6 +267,10 @@ export function ProjectsProvider({ children }) {
         return incomingProjects.filter((project) => {
             if (!project) return false;
 
+            if (project.userId === user.id || String(project.id || '').startsWith('local_')) {
+                return true;
+            }
+
             const hasCloudAccessMeta = !!project.user_id
                 || Array.isArray(project.collaborators)
                 || !!project.access_mode
@@ -276,7 +280,7 @@ export function ProjectsProvider({ children }) {
                 return canAccessCompanyProject(user, project);
             }
 
-            return project.userId === user.id || String(project.id || '').startsWith('local_');
+            return false;
         });
     }, [user]);
 
