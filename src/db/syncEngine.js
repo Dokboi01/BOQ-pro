@@ -431,6 +431,39 @@ export async function loadLocal() {
 
   try {
     const projects = await localDB.projects.where('userId').equals(userId).toArray();
+    const visibleProjectIds = new Set(projects.map((project) => project.id));
+    const queuedItems = await getQueuedItemsForUser(userId);
+
+    for (const item of queuedItems) {
+      if (item.action !== 'save' || !item.payload) continue;
+
+      const queuedProjectId = resolveProjectId(item.projectId);
+      if (visibleProjectIds.has(queuedProjectId)) continue;
+
+      const recoveredProject = await saveLocal({
+        ...item.payload,
+        id: queuedProjectId,
+        local_origin_id: item.payload.local_origin_id || (queuedProjectId !== item.projectId ? item.projectId : item.payload.local_origin_id || null),
+      }, {
+        source: 'user',
+        userId,
+        updatedAt: item.createdAt || Date.now(),
+        metaPatch: {
+          status: navigator.onLine ? 'pending' : 'offline',
+          pendingChanges: true,
+          retryCount: item.retries || 0,
+          lastSyncError: item.lastError || '',
+          lastSyncAttemptAt: item.lastTriedAt || 0,
+          cloudLinked: !String(queuedProjectId || '').startsWith('local_'),
+        }
+      });
+
+      if (recoveredProject) {
+        visibleProjectIds.add(recoveredProject.id);
+        projects.push(recoveredProject);
+      }
+    }
+
     // Sort by updatedAt descending
     return projects.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   } catch {
