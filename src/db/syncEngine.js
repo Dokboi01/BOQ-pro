@@ -6,11 +6,11 @@ import { auth } from './firebase';
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 const MAX_RETRIES = 5;
-const BASE_BACKOFF_MS = 5000; // 5 s
+const BASE_BACKOFF_MS = 2000;  // 2 s — was 5 s, gives faster first retry
 const MAX_BACKOFF_MS = 300000; // 5 min
 const RECONNECT_JITTER_MS = 1500; // max random jitter on reconnect
-const SYNC_DEBOUNCE_MS = 800;
-const AUTO_SYNC_INTERVAL_MS = 30000;
+const SYNC_DEBOUNCE_MS = 400;   // was 800 ms — halved for snappier cloud writes
+const AUTO_SYNC_INTERVAL_MS = 15000; // was 30 s — now 15 s for faster catch-up
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sync State
@@ -21,6 +21,7 @@ let listeners = [];
 let debounceTimers = {};
 let autoSyncInterval = null;
 let visibilityListenerAdded = false;
+let migrationDone = false; // run legacy migration only once per session
 const projectIdRedirects = new Map();
 
 function getLocalUserId() {
@@ -92,15 +93,14 @@ function isExhausted(item) {
 
 async function getQueuedItemsForUser(userId = getLocalUserId()) {
   if (!userId) return [];
-
-  await migrateLegacyQueueItems(userId);
+  // Migration is handled once at startup — no need to re-run on every read
   const queuedItems = await localDB.syncQueue.where('userId').equals(userId).toArray();
   return queuedItems.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
 }
 
 async function getPendingQueueCount(userId = getLocalUserId()) {
   if (!userId) return 0;
-  await migrateLegacyQueueItems(userId);
+  // Skip migration here — it runs once in startAutoSync
   return localDB.syncQueue.where('userId').equals(userId).count();
 }
 
@@ -117,7 +117,8 @@ async function refreshSyncState(userId = getLocalUserId()) {
 }
 
 async function migrateLegacyQueueItems(userId) {
-  if (!userId) return;
+  if (!userId || migrationDone) return;
+  migrationDone = true; // prevent repeat runs in the same session
 
   const legacyItems = await localDB.syncQueue
     .toCollection()
@@ -352,50 +353,53 @@ export async function processQueue() {
 
   setSyncState('syncing');
 
-  for (const item of actionable) {
-    try {
-      if (item.action === 'save' && item.payload) {
-        const resolvedProjectId = resolveProjectId(item.projectId);
-        const payload = resolvedProjectId === item.projectId
-          ? item.payload
-          : {
-              ...item.payload,
-              id: resolvedProjectId,
-              local_origin_id: item.payload.local_origin_id || item.projectId,
-            };
+  // Process all actionable items concurrently — no need to await each Firestore call serially
+  await Promise.allSettled(
+    actionable.map(async (item) => {
+      try {
+        if (item.action === 'save' && item.payload) {
+          const resolvedProjectId = resolveProjectId(item.projectId);
+          const payload = resolvedProjectId === item.projectId
+            ? item.payload
+            : {
+                ...item.payload,
+                id: resolvedProjectId,
+                local_origin_id: item.payload.local_origin_id || item.projectId,
+              };
 
-        const savedId = await saveProject(payload);
-        if (savedId) {
-          if (resolvedProjectId.startsWith('local_') && savedId !== resolvedProjectId) {
-            await promoteLocalProjectId(resolvedProjectId, savedId, syncUserId);
-            notifyIdChange(resolvedProjectId, savedId);
-          } else if (resolvedProjectId !== item.projectId) {
-            await remapQueuedProject(syncUserId, item.projectId, resolvedProjectId);
+          const savedId = await saveProject(payload);
+          if (savedId) {
+            if (resolvedProjectId.startsWith('local_') && savedId !== resolvedProjectId) {
+              await promoteLocalProjectId(resolvedProjectId, savedId, syncUserId);
+              notifyIdChange(resolvedProjectId, savedId);
+            } else if (resolvedProjectId !== item.projectId) {
+              await remapQueuedProject(syncUserId, item.projectId, resolvedProjectId);
+            }
+
+            await localDB.syncQueue.delete(item.id);
+          } else {
+            throw new Error('Save returned null');
           }
-
-          await localDB.syncQueue.delete(item.id);
-        } else {
-          throw new Error('Save returned null');
+        } else if (item.action === 'delete') {
+          const success = await cloudDeleteProject(resolveProjectId(item.projectId));
+          if (success) {
+            await localDB.syncQueue.delete(item.id);
+          } else {
+            throw new Error('Delete returned false');
+          }
         }
-      } else if (item.action === 'delete') {
-        const success = await cloudDeleteProject(resolveProjectId(item.projectId));
-        if (success) {
-          await localDB.syncQueue.delete(item.id);
-        } else {
-          throw new Error('Delete returned false');
-        }
+      } catch (err) {
+        console.warn(`⚠️ Sync failed for ${item.action} ${item.projectId}:`, err.message);
+        const nextRetries = (item.retries || 0) + 1;
+        await localDB.syncQueue.update(item.id, {
+          retries: nextRetries,
+          lastError: err.message || 'Unknown sync error',
+          lastTriedAt: Date.now(),
+          retryAfter: calcRetryAfter(nextRetries),
+        });
       }
-    } catch (err) {
-      console.warn(`⚠️ Sync failed for ${item.action} ${item.projectId}:`, err.message);
-      const nextRetries = (item.retries || 0) + 1;
-      await localDB.syncQueue.update(item.id, {
-        retries: nextRetries,
-        lastError: err.message || 'Unknown sync error',
-        lastTriedAt: Date.now(),
-        retryAfter: calcRetryAfter(nextRetries),
-      });
-    }
-  }
+    })
+  );
 
   await refreshSyncState(syncUserId);
 }
@@ -612,6 +616,10 @@ function onVisibilityChange() {
 
 export function startAutoSync() {
   if (autoSyncInterval) return;
+
+  // Run legacy migration exactly once at startup
+  const userId = getLocalUserId();
+  if (userId) migrateLegacyQueueItems(userId);
 
   // Process queue on a regular interval
   autoSyncInterval = setInterval(() => {
