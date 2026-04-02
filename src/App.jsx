@@ -294,9 +294,9 @@ function App() {
           </div>
           <div className="summary-divider"></div>
           <div className="summary-item">
-            <span className="label">SECTIONS</span>
+            <span className="label">{activeProject ? 'SECTIONS' : 'PROJECTS'}</span>
             <span className={`val ${projects.length > 0 ? 'text-success' : ''}`}>
-              {activeProject?.sections?.length || 0}
+              {activeProject ? (activeProject.sections?.length || 0) : projects.length}
             </span>
           </div>
           {activeProject && (
@@ -330,7 +330,7 @@ function App() {
 
         <header className="topbar">
           <div className="project-info">
-            {projects.length > 0 ? (
+            {activeProject ? (
               <>
                 <h1>
                   {activeProject?.name || 'Untitled Project'}
