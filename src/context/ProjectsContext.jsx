@@ -13,6 +13,7 @@ import {
     startAutoSync,
     stopAutoSync,
     onSyncStatusChange,
+    onProjectSaveStateChange,
     onIdChange,
     processQueue,
 } from '../db/syncEngine';
@@ -293,8 +294,8 @@ export function ProjectsProvider({ children }) {
                 return incomingProjects;
             }
 
-            await saveLocal(sharedProject);
-            return [sharedProject, ...incomingProjects];
+            const savedSharedProject = await saveLocal(sharedProject, { source: 'cloud' });
+            return [savedSharedProject || sharedProject, ...incomingProjects];
         } catch (err) {
             console.warn('Shared project link recovery failed:', err?.message || err);
             return incomingProjects;
@@ -370,10 +371,11 @@ export function ProjectsProvider({ children }) {
                     );
                     if (!cancelled && visibleCloudData.length > 0) {
                         // Save to local DB for next time
+                        const cachedCloudProjects = [];
                         for (const p of visibleCloudData) {
-                            await saveLocal(p);
+                            cachedCloudProjects.push(await saveLocal(p, { source: 'cloud' }) || p);
                         }
-                        setProjects(visibleCloudData);
+                        setProjects(cachedCloudProjects);
                     }
                 } catch {
                     // Offline and no local data — that's fine
@@ -436,6 +438,17 @@ export function ProjectsProvider({ children }) {
         return unsubscribe;
     }, []);
 
+    useEffect(() => {
+        const unsubscribe = onProjectSaveStateChange((projectId, saveMeta) => {
+            setProjects((prev) => prev.map((project) => (
+                project.id === projectId
+                    ? { ...project, saveMeta }
+                    : project
+            )));
+        });
+        return unsubscribe;
+    }, []);
+
     // ── Listen for ID changes (when local_ gets a real cloud ID) ──
     useEffect(() => {
         const unsubscribe = onIdChange((oldId, newId) => {
@@ -475,7 +488,7 @@ export function ProjectsProvider({ children }) {
             ));
 
             // Also update local Dexie to keep in sync
-            saveLocal(remoteProject);
+            saveLocal(remoteProject, { source: 'cloud' });
         });
 
         return () => unsubscribe();
@@ -713,11 +726,11 @@ export function ProjectsProvider({ children }) {
         setIsCreating(true);
         try {
             // 1. Save locally (instant)
-            await saveLocal(newProj);
+            const savedProject = await saveLocal(newProj, { source: 'user' });
 
             // 2. Update UI immediately
-            setProjects(prev => [newProj, ...prev]);
-            setActiveProjectId(projectId);
+            setProjects(prev => [savedProject, ...prev]);
+            setActiveProjectId(savedProject.id);
             setShowSelector(false);
             setActiveTab('workspace');
             setFocusMode(true);
@@ -725,8 +738,8 @@ export function ProjectsProvider({ children }) {
             toast.success('Project created!');
 
             // 3. Background cloud sync + activity log
-            syncToCloud(newProj);
-            logActivity(projectId, 'project_created', { name: newProj.name, type: newProj.type });
+            syncToCloud(savedProject);
+            logActivity(savedProject.id, 'project_created', { name: savedProject.name, type: savedProject.type });
         } catch (err) {
             console.error('❌ Create project failed:', err);
             toast.error('Error creating project.');
@@ -782,15 +795,15 @@ export function ProjectsProvider({ children }) {
 
         setIsCreating(true);
         try {
-            await saveLocal(newProj);
-            setProjects(prev => [newProj, ...prev]);
-            setActiveProjectId(projectId);
+            const savedProject = await saveLocal(newProj, { source: 'user' });
+            setProjects(prev => [savedProject, ...prev]);
+            setActiveProjectId(savedProject.id);
             setShowSelector(false);
             setActiveTab('workspace');
             setFocusMode(true);
             toast.success('Project created successfully!');
-            syncToCloud(newProj);
-            logActivity(projectId, 'project_created', { name: newProj.name, type: newProj.type });
+            syncToCloud(savedProject);
+            logActivity(savedProject.id, 'project_created', { name: savedProject.name, type: savedProject.type });
         } catch (err) {
             console.error('❌ Create wizard project failed:', err);
             toast.error('Error creating project.');
@@ -829,13 +842,13 @@ export function ProjectsProvider({ children }) {
         };
 
         try {
-            await saveLocal(newProj);
-            setProjects(prev => [newProj, ...prev]);
-            setActiveProjectId(projectId);
+            const savedProject = await saveLocal(newProj, { source: 'user' });
+            setProjects(prev => [savedProject, ...prev]);
+            setActiveProjectId(savedProject.id);
             setShowAnalyzer(false);
             setActiveTab('workspace');
             setFocusMode(true);
-            syncToCloud(newProj);
+            syncToCloud(savedProject);
         } catch (err) {
             console.error('Error creating project from analysis:', err);
         }
@@ -870,10 +883,13 @@ export function ProjectsProvider({ children }) {
 
         if (updatedProject) {
             // 2. Save locally (instant)
-            await saveLocal(updatedProject);
+            const savedProject = await saveLocal(updatedProject, { source: 'user' });
+            setProjects(prev => prev.map((project) => (
+                project.id === savedProject.id ? savedProject : project
+            )));
             // 3. Background cloud sync (debounced) + activity log
-            syncToCloud(updatedProject);
-            logActivity(projectId, 'project_updated', { region: updatedProject.region });
+            syncToCloud(savedProject);
+            logActivity(projectId, 'project_updated', { region: savedProject.region });
         }
     };
 
@@ -1017,9 +1033,9 @@ export function ProjectsProvider({ children }) {
         };
 
         try {
-            await saveLocal(quickTestProject);
-            setProjects((prev) => [quickTestProject, ...prev]);
-            openWorkspace(projectId, {
+            const savedProject = await saveLocal(quickTestProject, { source: 'user' });
+            setProjects((prev) => [savedProject, ...prev]);
+            openWorkspace(savedProject.id, {
                 type: 'custom-pricing-test',
                 itemId
             });

@@ -21,6 +21,7 @@ import Settings from './components/dashboard/Settings';
 import ProjectWizard from './components/dashboard/ProjectWizard';
 import DrawingAnalyzer from './components/workspace/DrawingAnalyzer';
 import CalculationMethodology from './components/workspace/CalculationMethodology';
+import { getProjectSavePresentation } from './utils/projectSaveState';
 import {
   MapPin,
   Calendar,
@@ -97,6 +98,20 @@ function App() {
     handleUpdateProject, handleAddSection, handleDeleteSectionOrItem,
     handleDeleteProject,
   } = useProjects();
+
+  const activeProjectSave = React.useMemo(
+    () => getProjectSavePresentation(activeProject, { globalSyncState: syncStatus.state }),
+    [activeProject, syncStatus.state]
+  );
+  const syncLabel = syncStatus.state === 'pending' && syncStatus.pendingCount > 0
+    ? `${syncStatus.pendingCount} Pending`
+    : syncStatus.state === 'synced'
+      ? 'Synced'
+      : syncStatus.state === 'syncing'
+        ? 'Syncing'
+        : syncStatus.state === 'pending'
+          ? 'Pending'
+          : 'Offline';
 
   // ── Intercept Firebase Auth Action URLs (like email verification) ──
   const searchParams = new URLSearchParams(window.location.search);
@@ -284,6 +299,16 @@ function App() {
               {activeProject?.sections?.length || 0}
             </span>
           </div>
+          {activeProject && (
+            <>
+              <div className="summary-divider"></div>
+              <div className="summary-item save-state">
+                <span className="label">PROJECT SAVE</span>
+                <span className="val">{activeProjectSave.badgeLabel}</span>
+                <span className={`summary-subtle ${activeProjectSave.tone}`}>{activeProjectSave.detail}</span>
+              </div>
+            </>
+          )}
           <div className="summary-item status">
             <ShieldCheck size={14} className="text-success" />
             <span className="status-text">{user?.plan?.toUpperCase()} PLAN ACTIVE</span>
@@ -299,12 +324,7 @@ function App() {
             ) : (
               <Cloud size={13} />
             )}
-            <span className="sync-label">
-              {syncStatus.state === 'synced' && 'Synced'}
-              {syncStatus.state === 'syncing' && 'Syncing'}
-              {syncStatus.state === 'pending' && 'Pending'}
-              {syncStatus.state === 'offline' && 'Offline'}
-            </span>
+            <span className="sync-label">{syncLabel}</span>
           </button>
         </div>
 
@@ -322,6 +342,8 @@ function App() {
                   <span className="meta-item"><MapPin size={14} /> {activeProject?.region || 'Location not set'}</span>
                   <span className="meta-item"><UserIcon size={14} /> {user?.full_name || 'Practitioner'}</span>
                   <span className="meta-item"><Calendar size={14} /> {(() => { const d = activeProject?.date; if (!d) return 'No date'; let dt; if (/^\d{4}-\d{2}-\d{2}$/.test(String(d))) { const [y, m, day] = String(d).split('-').map(Number); dt = new Date(y, m - 1, day); } else { dt = new Date(d); } if (Number.isNaN(dt.getTime())) return d; const q = Math.ceil((dt.getMonth() + 1) / 3); return `Q${q} ${dt.getFullYear()}`; })()}</span>
+                  <span className={`save-state-chip ${activeProjectSave.tone}`}>{activeProjectSave.badgeLabel}</span>
+                  <span className="meta-item save-detail"><Cloud size={14} /> {activeProjectSave.timestampLabel}</span>
                 </div>
               </>
             ) : (
@@ -455,6 +477,10 @@ function App() {
           flex-direction: column;
         }
 
+        .summary-item.save-state {
+          min-width: 220px;
+        }
+
         .summary-item .label {
           font-size: 0.625rem;
           font-weight: 800;
@@ -466,6 +492,18 @@ function App() {
           font-size: 0.875rem;
           font-weight: 700;
         }
+
+        .summary-subtle {
+          font-size: 0.6875rem;
+          margin-top: 0.15rem;
+          color: rgba(255,255,255,0.72);
+        }
+
+        .summary-subtle.success { color: #86efac; }
+        .summary-subtle.info { color: #93c5fd; }
+        .summary-subtle.warning { color: #fcd34d; }
+        .summary-subtle.muted { color: #cbd5e1; }
+        .summary-subtle.danger { color: #fca5a5; }
 
         .summary-divider {
           width: 1px;
@@ -566,6 +604,7 @@ function App() {
           display: flex;
           gap: 1.5rem;
           margin-top: 0.5rem;
+          flex-wrap: wrap;
         }
 
         .meta-item {
@@ -574,6 +613,45 @@ function App() {
           display: flex;
           align-items: center;
           gap: 0.4rem;
+        }
+
+        .save-state-chip {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 999px;
+          padding: 0.3rem 0.7rem;
+          font-size: 0.72rem;
+          font-weight: 800;
+        }
+
+        .save-state-chip.success {
+          background: rgba(22, 163, 74, 0.12);
+          color: var(--success-600);
+        }
+
+        .save-state-chip.info {
+          background: rgba(37, 99, 235, 0.12);
+          color: #2563eb;
+        }
+
+        .save-state-chip.warning {
+          background: rgba(217, 119, 6, 0.12);
+          color: var(--warning-600);
+        }
+
+        .save-state-chip.muted {
+          background: rgba(148, 163, 184, 0.14);
+          color: #64748b;
+        }
+
+        .save-state-chip.danger {
+          background: rgba(220, 38, 38, 0.12);
+          color: var(--danger-600);
+        }
+
+        .meta-item.save-detail {
+          font-weight: 600;
         }
 
         .topbar-actions {
