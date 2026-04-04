@@ -19,6 +19,8 @@ import { getMaterials, getMarketIndices, addMaterial, updateMaterial, deleteMate
 import { Loader2 } from 'lucide-react';
 import {
   buildMaterialBenchmarkHistoryEntry,
+  buildMaterialApprovedSnapshotEntry,
+  getMaterialApprovalSnapshotComparison,
   getMaterialBenchmarkGovernance,
   getMaterialRegionalBenchmark,
   normalizeMaterialBenchmarkRecord
@@ -75,6 +77,12 @@ const formatBenchmarkTimelineStamp = (value) => {
     hour: 'numeric',
     minute: '2-digit'
   });
+};
+
+const formatSnapshotDeltaLabel = (comparison) => {
+  if (!comparison || !Number.isFinite(comparison.deltaPercent)) return 'Approved baseline pending';
+  if (Math.abs(comparison.deltaPercent) < 0.5) return 'Aligned with approved snapshot';
+  return `${comparison.deltaPercent > 0 ? '+' : ''}${comparison.deltaPercent.toFixed(1)}% vs approved snapshot`;
 };
 
 const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
@@ -443,6 +451,31 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
       regionRates,
       sources: [...managedSource, ...preservedSources].slice(0, 6)
     };
+    const previousApprovedSnapshot = editingMaterial?.approvedSnapshot
+      || (Array.isArray(editingMaterial?.approvedSnapshots) ? editingMaterial.approvedSnapshots[0] : null);
+    const snapshotRegionSignature = JSON.stringify(regionRates);
+    const previousSnapshotSignature = JSON.stringify(previousApprovedSnapshot?.regionRates || {});
+    const shouldCreateApprovedSnapshot = approvalStatus === 'approved' && (
+      !previousApprovedSnapshot
+      || Number(previousApprovedSnapshot?.benchmark) !== Number(newMat.benchmark)
+      || snapshotRegionSignature !== previousSnapshotSignature
+      || String(previousApprovedSnapshot?.approvedBy || '') !== String(newMat.approvedBy || '')
+      || String(previousApprovedSnapshot?.approvedAt || '') !== String(newMat.approvedAt || '')
+    );
+    const approvedSnapshotEntry = shouldCreateApprovedSnapshot
+      ? buildMaterialApprovedSnapshotEntry({
+        previousSnapshot: previousApprovedSnapshot,
+        material: newMat,
+        actor: user?.displayName || user?.email || newMat.verifiedBy || 'BOQ Pro Market Review',
+        activeRegion: activeRegionLabel,
+        approvedAt: newMat.approvedAt || updatedAt,
+        note: benchmarkDeskNote || sourceNote
+      })
+      : null;
+    newMat.approvedSnapshots = approvedSnapshotEntry
+      ? [approvedSnapshotEntry, ...(Array.isArray(editingMaterial?.approvedSnapshots) ? editingMaterial.approvedSnapshots : [])].slice(0, 12)
+      : (Array.isArray(editingMaterial?.approvedSnapshots) ? editingMaterial.approvedSnapshots : []);
+    newMat.approvedSnapshot = newMat.approvedSnapshots[0] || null;
     const benchmarkHistoryEntry = buildMaterialBenchmarkHistoryEntry({
       previousMaterial: editingMaterial,
       nextMaterial: newMat,
@@ -491,6 +524,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
   const renderManageModal = () => {
     const benchmarkRegions = getManagedRegions(editingMaterial, activeRegionLabel);
     const governance = getMaterialBenchmarkGovernance(editingMaterial || {});
+    const approvalSnapshotComparison = getMaterialApprovalSnapshotComparison(editingMaterial || {}, activeRegionLabel);
 
     return (
     <div className="detail-modal-overlay" onClick={() => setEditingMaterial(null)}>
@@ -508,6 +542,12 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
             <span className={`benchmark-flag ${governance.freshnessTone}`}>{governance.freshnessLabel}</span>
             <span className="benchmark-evidence">{governance.coverageLabel}</span>
             <span className="benchmark-evidence">{governance.reviewWindowLabel}</span>
+            {approvalSnapshotComparison && (
+              <>
+                <span className="benchmark-evidence">{approvalSnapshotComparison.label}</span>
+                <span className={`benchmark-flag ${approvalSnapshotComparison.tone}`}>{formatSnapshotDeltaLabel(approvalSnapshotComparison)}</span>
+              </>
+            )}
           </div>
 
           <div className="form-section">
@@ -809,6 +849,10 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
       ? mat.history
       : [getRegionalBenchmark(mat)];
     const governance = getMaterialBenchmarkGovernance(mat);
+    const approvalSnapshotComparison = getMaterialApprovalSnapshotComparison(mat, activeRegionLabel);
+    const approvedSnapshots = Array.isArray(mat.approvedSnapshots)
+      ? mat.approvedSnapshots.slice(0, 6)
+      : [];
     const benchmarkAuditHistory = Array.isArray(mat.benchmarkHistory)
       ? mat.benchmarkHistory.slice(0, 12)
       : [];
@@ -879,6 +923,18 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 <span className="s-label">Review Window</span>
                 <span className={`s-val small benchmark-text-${governance.freshnessTone}`}>{governance.reviewWindowLabel}</span>
               </div>
+              {approvalSnapshotComparison && (
+                <>
+                  <div className="stat-box">
+                    <span className="s-label">Approved Snapshot</span>
+                    <span className="s-val small">{approvalSnapshotComparison.label}</span>
+                  </div>
+                  <div className="stat-box">
+                    <span className="s-label">Snapshot Drift</span>
+                    <span className={`s-val small benchmark-text-${approvalSnapshotComparison.tone}`}>{formatSnapshotDeltaLabel(approvalSnapshotComparison)}</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -910,8 +966,43 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 <strong className={`benchmark-text-${governance.healthTone}`}>{governance.healthLabel}</strong>
                 <small>{mat.benchmarkDeskNote || 'No benchmark desk note captured yet.'}</small>
               </div>
+              {approvalSnapshotComparison && (
+                <div className="governance-card">
+                  <span>Approved Baseline</span>
+                  <strong>{approvalSnapshotComparison.label}</strong>
+                  <small className={`benchmark-text-${approvalSnapshotComparison.tone}`}>{formatSnapshotDeltaLabel(approvalSnapshotComparison)}. {approvalSnapshotComparison.summary}</small>
+                </div>
+              )}
             </div>
           </div>
+
+          {approvedSnapshots.length > 0 && (
+            <div className="usage-notes">
+              <h4>Approved Snapshot Archive</h4>
+              <div className="history-timeline">
+                {approvedSnapshots.map((snapshot) => (
+                  <div key={snapshot.id} className="history-event history-event-static">
+                    <div className="history-event-header">
+                      <div>
+                        <strong>{snapshot.title}</strong>
+                        <span>{snapshot.approvedBy || snapshot.actor || 'BOQ Pro Market Review'}</span>
+                      </div>
+                      <span className="history-event-time">{formatBenchmarkTimelineStamp(snapshot.approvedAt)}</span>
+                    </div>
+                    <div className="history-event-meta">
+                      <span className="benchmark-evidence">Version {snapshot.version}</span>
+                      <span className="benchmark-evidence">N{Math.round(Number(snapshot.benchmark) || 0).toLocaleString()} Lagos base</span>
+                      {snapshot.sourceCount > 0 && <span className="benchmark-evidence">{snapshot.sourceCount} sources</span>}
+                    </div>
+                    <div className="history-event-body">
+                      <span>{Object.keys(snapshot.regionRates || {}).length} region rates locked in this approval snapshot.</span>
+                      {snapshot.note && <small>{snapshot.note}</small>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="usage-notes">
             <div className="history-section-header">
@@ -1084,6 +1175,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
             const regionalBenchmark = getRegionalBenchmark(mat);
             const driftMeta = getBenchmarkDriftMeta(mat);
             const governance = getMaterialBenchmarkGovernance(mat);
+            const approvalSnapshotComparison = getMaterialApprovalSnapshotComparison(mat, activeRegionLabel);
 
             return (
             <div key={mat.id} className="enterprise-card mat-intel-card glass-card" onClick={() => setSelectedMaterial(mat)}>
@@ -1121,6 +1213,12 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 <span className="benchmark-evidence">{mat.confidenceLabel} confidence</span>
                 <span className="benchmark-evidence">{governance.coverageLabel}</span>
               </div>
+              {approvalSnapshotComparison && (
+                <div className="mat-support-row mat-support-row-secondary">
+                  <span className="benchmark-evidence">{approvalSnapshotComparison.label}</span>
+                  <span className={`benchmark-flag ${approvalSnapshotComparison.tone}`}>{formatSnapshotDeltaLabel(approvalSnapshotComparison)}</span>
+                </div>
+              )}
               <div className="card-footer-l">
                 <div className="last-sync">{governance.reviewWindowLabel} - {mat.verifiedBy}</div>
                 {isManageMode ? (
@@ -1489,6 +1587,9 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 .benchmark-flag.aligned { background: rgba(22, 163, 74, 0.12); color: var(--success-600); }
                 .benchmark-flag.flagged { background: rgba(234, 88, 12, 0.12); color: #c2410c; }
                 .benchmark-flag.pending { background: rgba(148, 163, 184, 0.15); color: var(--primary-500); }
+                .benchmark-flag.watch { background: rgba(251, 191, 36, 0.16); color: #b45309; }
+                .benchmark-flag.high { background: rgba(239, 68, 68, 0.12); color: var(--danger-600); }
+                .benchmark-flag.low { background: rgba(37, 99, 235, 0.12); color: var(--accent-600); }
                 .benchmark-flag.approved { background: rgba(22, 163, 74, 0.12); color: var(--success-600); }
                 .benchmark-flag.review,
                 .benchmark-flag.due { background: rgba(245, 158, 11, 0.14); color: #b45309; }
@@ -1498,6 +1599,8 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 .benchmark-text-approved { color: var(--success-600); }
                 .benchmark-text-review,
                 .benchmark-text-due { color: #b45309; }
+                .benchmark-text-high { color: var(--danger-600); }
+                .benchmark-text-low { color: var(--accent-600); }
                 .benchmark-text-draft { color: var(--accent-600); }
                 .benchmark-text-fresh { color: #0f766e; }
                 .benchmark-text-pending { color: var(--primary-500); }

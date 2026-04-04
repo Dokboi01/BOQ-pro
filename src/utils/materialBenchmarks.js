@@ -280,6 +280,79 @@ const normalizeBenchmarkHistory = (material, context) => {
   return normalizedHistory.length ? normalizedHistory : buildDefaultBenchmarkHistory(material, context);
 };
 
+const normalizeApprovalSnapshotEntry = (entry, index, material, context) => {
+  const approvedAt = resolveDate(entry?.approvedAt || entry?.changedAt || context.approvedAt || context.updatedAt)?.toISOString()
+    || context.updatedAt
+    || new Date().toISOString();
+  const regionRates = normalizeHistoryRegionRates(entry?.regionRates || entry?.regions || context.regionRates || {});
+  const benchmark = clampNumber(entry?.benchmark ?? context.benchmark);
+
+  return {
+    id: entry?.id || `${material.id || material.name || 'material'}-approved-snapshot-${index + 1}`,
+    version: clampNumber(entry?.version) || (index + 1),
+    title: entry?.title || `Approved snapshot v${clampNumber(entry?.version) || (index + 1)}`,
+    benchmark,
+    marketRead: clampNumber(entry?.marketRead ?? context.marketRead),
+    approvedAt,
+    approvedBy: entry?.approvedBy || context.approvedBy || context.verifiedBy || 'BOQ Pro Market Review',
+    actor: entry?.actor || entry?.approvedBy || context.approvedBy || context.verifiedBy || 'BOQ Pro Market Review',
+    approvalStatus: 'approved',
+    sourceCount: clampNumber(entry?.sourceCount ?? context.sourceCount),
+    confidence: clampNumber(entry?.confidence ?? context.confidence),
+    benchmarkBand: entry?.benchmarkBand || context.benchmarkBand || '',
+    activeRegion: entry?.activeRegion || Object.keys(regionRates)[0] || 'Lagos',
+    regionRates,
+    note: entry?.note || context.benchmarkDeskNote || '',
+  };
+};
+
+const buildDefaultApprovedSnapshot = (material, context) => {
+  if (String(context.approvalStatus || '').toLowerCase().trim() !== 'approved') {
+    return [];
+  }
+
+  return [normalizeApprovalSnapshotEntry({
+    version: 1,
+    title: 'Approved snapshot v1',
+    benchmark: context.benchmark,
+    marketRead: context.marketRead,
+    approvedAt: context.approvedAt || context.updatedAt,
+    approvedBy: context.approvedBy || context.verifiedBy || 'BOQ Pro Market Review',
+    sourceCount: context.sourceCount,
+    confidence: context.confidence,
+    benchmarkBand: context.benchmarkBand,
+    activeRegion: Object.keys(context.regionRates || {})[0] || 'Lagos',
+    regionRates: context.regionRates || {},
+    note: context.benchmarkDeskNote || '',
+  }, 0, material, context)];
+};
+
+const normalizeApprovedSnapshots = (material, context) => {
+  const explicitSnapshots = Array.isArray(material.approvedSnapshots)
+    ? material.approvedSnapshots
+    : (material.approvedSnapshot ? [material.approvedSnapshot] : []);
+
+  const normalizedSnapshots = explicitSnapshots
+    .map((entry, index) => normalizeApprovalSnapshotEntry(entry, index, material, context))
+    .filter(Boolean)
+    .sort((left, right) => {
+      const leftTime = Date.parse(left.approvedAt || 0) || 0;
+      const rightTime = Date.parse(right.approvedAt || 0) || 0;
+      return rightTime - leftTime;
+    })
+    .map((entry, index) => ({
+      ...entry,
+      version: entry.version || Math.max(explicitSnapshots.length - index, index + 1),
+      title: entry.title || `Approved snapshot v${entry.version || (index + 1)}`
+    }));
+
+  if (normalizedSnapshots.length) {
+    return normalizedSnapshots;
+  }
+
+  return buildDefaultApprovedSnapshot(material, context);
+};
+
 const normalizeConfidenceValue = (value, sourceCount, updatedAt, regionCount, historyCount) => {
   if (typeof value === 'string') {
     const normalized = value.toLowerCase();
@@ -398,6 +471,86 @@ export const getMaterialBenchmarkGovernance = (material = {}) => {
     reviewCycleDays,
     regionCoverage,
     coverageLabel: `${regionCoverage} region${regionCoverage === 1 ? '' : 's'} benchmarked`
+  };
+};
+
+export const buildMaterialApprovedSnapshotEntry = ({
+  previousSnapshot = null,
+  material = {},
+  actor = 'BOQ Pro Market Review',
+  activeRegion = 'Lagos',
+  approvedAt = new Date().toISOString(),
+  note = ''
+} = {}) => {
+  const previousVersion = clampNumber(previousSnapshot?.version) || 0;
+  const regionRates = normalizeHistoryRegionRates(material?.regionRates || material?.regions || {});
+  const nextVersion = previousVersion + 1;
+
+  return {
+    id: `${material?.id || material?.name || 'material'}-approved-snapshot-${nextVersion}-${approvedAt}`,
+    version: nextVersion,
+    title: `Approved snapshot v${nextVersion}`,
+    benchmark: clampNumber(material?.benchmark),
+    marketRead: clampNumber(material?.price ?? material?.currentRead),
+    approvedAt,
+    approvedBy: material?.approvedBy || actor,
+    actor,
+    approvalStatus: 'approved',
+    sourceCount: clampNumber(material?.sourceCount),
+    confidence: clampNumber(material?.confidence),
+    benchmarkBand: material?.benchmarkBand || material?.range || '',
+    activeRegion,
+    regionRates,
+    note: note || material?.benchmarkDeskNote || '',
+  };
+};
+
+export const getMaterialApprovalSnapshotComparison = (material = {}, region = 'Lagos') => {
+  const approvedSnapshot = material?.approvedSnapshot
+    || (Array.isArray(material?.approvedSnapshots) ? material.approvedSnapshots[0] : null);
+  if (!approvedSnapshot) return null;
+
+  const currentBenchmark = getMaterialRegionalBenchmark(material, region);
+  const approvedBenchmark = getMaterialRegionalBenchmark(approvedSnapshot, region);
+  if (!approvedBenchmark) {
+    return {
+      snapshot: approvedSnapshot,
+      version: clampNumber(approvedSnapshot.version) || 1,
+      approvedBenchmark: 0,
+      currentBenchmark,
+      delta: 0,
+      deltaPercent: 0,
+      tone: 'pending',
+      label: `Approved snapshot v${clampNumber(approvedSnapshot.version) || 1}`,
+      summary: 'Approved snapshot exists but does not yet cover this region.'
+    };
+  }
+
+  const delta = currentBenchmark - approvedBenchmark;
+  const deltaPercent = approvedBenchmark > 0 ? (delta / approvedBenchmark) * 100 : 0;
+  let tone = 'aligned';
+  let summary = 'Current benchmark is aligned with the approved snapshot.';
+
+  if (Math.abs(deltaPercent) >= 5) {
+    tone = deltaPercent > 0 ? 'high' : 'low';
+    summary = deltaPercent > 0
+      ? 'Current benchmark is above the last approved snapshot.'
+      : 'Current benchmark is below the last approved snapshot.';
+  } else if (Math.abs(deltaPercent) >= 1) {
+    tone = 'watch';
+    summary = 'Current benchmark has moved slightly from the approved snapshot.';
+  }
+
+  return {
+    snapshot: approvedSnapshot,
+    version: clampNumber(approvedSnapshot.version) || 1,
+    approvedBenchmark,
+    currentBenchmark,
+    delta,
+    deltaPercent,
+    tone,
+    label: `Approved snapshot v${clampNumber(approvedSnapshot.version) || 1}`,
+    summary
   };
 };
 
@@ -538,6 +691,21 @@ export const normalizeMaterialBenchmarkRecord = (material = {}) => {
     confidence,
     benchmarkDeskNote: material.benchmarkDeskNote || material.marketDeskNote || ''
   });
+  const approvedSnapshots = normalizeApprovedSnapshots(material, {
+    benchmark,
+    marketRead,
+    regionRates,
+    updatedAt: resolvedUpdatedAt,
+    approvedAt,
+    verifiedBy: material.verifiedBy || 'BOQ Pro Market Review',
+    approvalStatus,
+    approvedBy: material.approvedBy || material.verifiedBy || 'BOQ Pro Market Review',
+    sourceCount,
+    confidence,
+    benchmarkBand,
+    benchmarkDeskNote: material.benchmarkDeskNote || material.marketDeskNote || ''
+  });
+  const approvedSnapshot = approvedSnapshots[0] || null;
 
   return {
     ...material,
@@ -559,6 +727,8 @@ export const normalizeMaterialBenchmarkRecord = (material = {}) => {
     benchmarkDeskNote: material.benchmarkDeskNote || material.marketDeskNote || '',
     benchmarkBand,
     range: material.range || benchmarkBand,
+    approvedSnapshot,
+    approvedSnapshots,
     benchmarkHistory,
     updatedAt: resolvedUpdatedAt,
     lastUpdated: resolvedUpdatedAt
@@ -572,6 +742,18 @@ export const buildMaterialBenchmarkPayload = (material = {}) => {
   const payload = {
     ...normalized,
     history: Array.isArray(normalized.history) ? [...normalized.history] : [],
+    approvedSnapshot: normalized.approvedSnapshot
+      ? {
+        ...normalized.approvedSnapshot,
+        regionRates: { ...(normalized.approvedSnapshot.regionRates || {}) }
+      }
+      : null,
+    approvedSnapshots: Array.isArray(normalized.approvedSnapshots)
+      ? normalized.approvedSnapshots.map((entry) => ({
+        ...entry,
+        regionRates: { ...(entry.regionRates || {}) }
+      }))
+      : [],
     benchmarkHistory: Array.isArray(normalized.benchmarkHistory)
       ? normalized.benchmarkHistory.map((entry) => ({
         ...entry,
