@@ -215,6 +215,21 @@ export const getMaterialRegionalBenchmark = (material, region = 'Lagos') => {
   return clampNumber(material.benchmark || material.price || material.rate);
 };
 
+export const getExactMaterialRegionalBenchmark = (material, region = 'Lagos') => {
+  if (!material) return 0;
+
+  const regionRates = material.regionRates || material.regions || {};
+  const requestedRegionKey = normalizeRegionLookup(region);
+
+  for (const [regionName, value] of Object.entries(regionRates)) {
+    if (normalizeRegionLookup(regionName) === requestedRegionKey) {
+      return clampNumber(value);
+    }
+  }
+
+  return 0;
+};
+
 export const normalizeMaterialBenchmarkRecord = (material = {}) => {
   if (!material || typeof material !== 'object') return material;
 

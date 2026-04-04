@@ -337,6 +337,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     // Derive benchmark: stored > auto-rate > rate/factor fallback
     let derivedBenchmark = Number(item.benchmark) > 0 ? item.benchmark : 0;
     let matchSource = item.benchmarkMatchSource || null;
+    let benchmarkRegionalRates = item.benchmarkRegionalRates || null;
 
     if (!derivedBenchmark) {
       const fallbackAutoRate = buildAutoRateResult(item, {
@@ -345,6 +346,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       });
       derivedBenchmark = Number(fallbackAutoRate?.benchmark) || 0;
       matchSource = fallbackAutoRate?.matchSource || matchSource;
+      benchmarkRegionalRates = fallbackAutoRate?.benchmarkRegionalRates || benchmarkRegionalRates;
 
       // Last resort: derive from current rate
       if (!derivedBenchmark && Number(item.rate) > 0) {
@@ -356,6 +358,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       useBenchmark: true,
       rateSource: 'benchmark',
       benchmark: derivedBenchmark || 0,
+      benchmarkRegionalRates,
       benchmarkMatchSource: matchSource,
       breakdown: item.breakdown || null,
     });
@@ -405,7 +408,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       items: (section.items || []).map((item) => {
         const shouldPreserveManualRate = !item.useBenchmark && Number(item.rate) > 0 && item.rateSource === 'manual';
         const autoRated = buildAutoRateResult(item, {
-          structureType: project?.type,
+          structureType: project?.subtype || project?.type,
           region: project?.region || 'Lagos',
           materialIndex
         });
@@ -413,6 +416,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         const nextItem = {
           ...item,
           benchmark: Number(item.benchmark) > 0 ? item.benchmark : autoRated.benchmark,
+          benchmarkRegionalRates: item.benchmarkRegionalRates || autoRated.benchmarkRegionalRates || null,
           breakdown: item.breakdown || autoRated.breakdown,
           benchmarkMatchSource: item.benchmarkMatchSource || autoRated.matchSource,
         };
@@ -446,7 +450,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       ...section,
       items: (section.items || []).map((item) => {
         const autoRated = buildAutoRateResult(item, {
-          structureType: project?.type,
+          structureType: project?.subtype || project?.type,
           region: project?.region || 'Lagos',
           materialIndex
         });
@@ -457,6 +461,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         const nextItem = {
           ...item,
           benchmark: autoRated.benchmark,
+          benchmarkRegionalRates: autoRated.benchmarkRegionalRates || item.benchmarkRegionalRates || null,
           breakdown: autoRated.breakdown,
           benchmarkMatchSource: autoRated.matchSource,
         };
@@ -1160,13 +1165,26 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                               <input
                                 type="number"
                                 className="ws-input ws-benchmark-override-input"
-                                value={item.benchmark || ''}
+                                value={item.benchmarkRegionalRates?.[project?.region || 'Lagos'] || item.benchmark || ''}
                                 min="0"
                                 step="any"
                                 title="Override the benchmark rate with your own market data"
-                                onChange={(e) => updateItem(section.id, item.id, {
-                                  benchmark: sanitizeNonNegativeNumber(e.target.value),
-                                })}
+                                onChange={(e) => {
+                                  const nextBenchmark = sanitizeNonNegativeNumber(e.target.value);
+                                  const nextRegion = project?.region || 'Lagos';
+                                  const nextRegionalRates = {
+                                    ...(item.benchmarkRegionalRates || {}),
+                                    [nextRegion]: nextBenchmark,
+                                  };
+                                  const nextBaseBenchmark = nextRegion === 'Lagos'
+                                    ? nextBenchmark
+                                    : (item.benchmark || (nextBenchmark / Math.max(getBenchmarkRegionalFactor(item, nextRegion), 0.001)));
+
+                                  updateItem(section.id, item.id, {
+                                    benchmark: nextBaseBenchmark,
+                                    benchmarkRegionalRates: nextRegionalRates,
+                                  });
+                                }}
                               />
                             </div>
                           )}

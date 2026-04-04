@@ -56,6 +56,7 @@ const stripItemForCloud = (item) => {
         // Benchmark data (computed, compact)
         useBenchmark: item.useBenchmark ?? false,
         benchmark: item.benchmark ?? 0,
+        benchmarkRegionalRates: item.benchmarkRegionalRates || null,
         benchmarkMatchSource: item.benchmarkMatchSource || null,
 
         // Custom pricing summary only — no arrays

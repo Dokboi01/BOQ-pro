@@ -1,6 +1,10 @@
 import { getRegionalModifier } from './aiService';
 import { getBreakdownForItem } from '../data/rateBreakdowns';
-import { getMaterialRegionalBenchmark, normalizeMaterialBenchmarkRecord } from './materialBenchmarks';
+import {
+  getExactMaterialRegionalBenchmark,
+  getMaterialRegionalBenchmark,
+  normalizeMaterialBenchmarkRecord
+} from './materialBenchmarks';
 
 export const WORK_TYPE_PROFILES = {
   concrete: { shares: { materials: 0.58, labour: 0.18, plant: 0.14, transport: 0.10 }, waste: 2.5, siteAdjustment: 3, overheads: 12, profit: 10, roundingStep: 100 },
@@ -411,6 +415,7 @@ export const buildMaterialRateIndex = (materials = []) => {
         confidenceLabel: normalizedMaterial.confidenceLabel || 'Medium',
         verifiedBy: normalizedMaterial.verifiedBy || '',
         updatedAt: normalizedMaterial.updatedAt || null,
+        regionRates: { ...(normalizedMaterial.regionRates || normalizedMaterial.regions || {}) },
         sources: Array.isArray(normalizedMaterial.sources) ? normalizedMaterial.sources.map((source) => ({ ...source })) : [],
         benchmarkBand: normalizedMaterial.benchmarkBand || normalizedMaterial.range || ''
       };
@@ -474,7 +479,9 @@ export const applyMarketRatesToBreakdown = (breakdown, materialIndex = []) => {
         benchmarkConfidenceLabel: match.confidenceLabel || 'Medium',
         benchmarkVerifiedBy: match.verifiedBy || '',
         benchmarkUpdatedAt: match.updatedAt || null,
-        benchmarkBand: match.benchmarkBand || ''
+        benchmarkBand: match.benchmarkBand || '',
+        benchmarkBaseRate: match.rate,
+        benchmarkRegionRates: { ...(match.regionRates || {}) }
       };
     })
   };
@@ -488,7 +495,17 @@ export const applyRegionCostProfileToBreakdown = (breakdown, region = 'Lagos', i
 
   return {
     ...cloneBreakdown(normalized),
-    materials: (normalized.materials || []).map((row) => ({ ...row, rate: clampNumber(row.rate) * profile.materials })),
+    materials: (normalized.materials || []).map((row) => {
+      const exactRegionalRate = getExactMaterialRegionalBenchmark({
+        benchmark: row.benchmarkBaseRate ?? row.rate,
+        regionRates: row.benchmarkRegionRates || {}
+      }, region);
+
+      return {
+        ...row,
+        rate: exactRegionalRate || (clampNumber(row.rate) * profile.materials)
+      };
+    }),
     labor: (normalized.labor || []).map((row) => ({ ...row, rate: clampNumber(row.rate) * profile.labour })),
     plant: (normalized.plant || []).map((row) => ({ ...row, rate: clampNumber(row.rate) * profile.plant })),
     transport: (normalized.transport || []).map((row) => ({ ...row, rate: clampNumber(row.rate) * profile.transport }))
@@ -514,6 +531,19 @@ const _regionalFactorCache = new Map();
 export const getBenchmarkRegionalFactor = (item, region = 'Lagos') => {
   if (!region || region === 'Lagos') return 1;
 
+  const exactRegionalRate = getExactMaterialRegionalBenchmark({
+    benchmark: item?.benchmark,
+    regionRates: item?.benchmarkRegionalRates || {}
+  }, region);
+  const lagosRate = getExactMaterialRegionalBenchmark({
+    benchmark: item?.benchmark,
+    regionRates: item?.benchmarkRegionalRates || {}
+  }, 'Lagos') || clampNumber(item?.benchmark);
+
+  if (exactRegionalRate > 0 && lagosRate > 0) {
+    return exactRegionalRate / lagosRate;
+  }
+
   const workType = item?.customPricing?.workType || inferWorkType(item?.description);
   const cacheKey = `${workType}|${region}`;
 
@@ -530,6 +560,12 @@ export const getBenchmarkRegionalFactor = (item, region = 'Lagos') => {
 };
 
 export const getEffectiveBenchmarkRate = (item, region = 'Lagos') => {
+  const exactRegionalRate = getExactMaterialRegionalBenchmark({
+    benchmark: item?.benchmark,
+    regionRates: item?.benchmarkRegionalRates || {}
+  }, region);
+  if (exactRegionalRate > 0) return exactRegionalRate;
+
   const benchmark = clampNumber(item?.benchmark);
   if (!benchmark) return 0;
   return benchmark * getBenchmarkRegionalFactor(item, region);
@@ -576,19 +612,37 @@ export const buildAutoRateResult = (item, { structureType, region = 'Lagos', mat
   const matchSource = breakdownResult.matchSource || 'keyword';
 
   const marketAligned = applyMarketRatesToBreakdown(sourceBreakdown, materialIndex);
-  const regionalized = applyRegionCostProfileToBreakdown(marketAligned, region);
+  const regionalized = applyRegionCostProfileToBreakdown(marketAligned, region, item);
   const summary = calculateBreakdownSummary(regionalized);
+  const supportedRegions = Array.from(new Set([
+    'Lagos',
+    region,
+    ...Object.keys(REGION_COST_PROFILES),
+    ...(marketAligned.materials || []).flatMap((row) => Object.keys(row.benchmarkRegionRates || {}))
+  ]));
+  const benchmarkRegionalRates = supportedRegions.reduce((acc, regionName) => {
+    const regionalSummary = calculateBreakdownSummary(
+      applyRegionCostProfileToBreakdown(marketAligned, regionName, item)
+    );
 
-  // benchmark is always the Lagos-equivalent base rate so regional repricing works correctly
-  const factor = Math.max(getBenchmarkRegionalFactor(item, region), 0.001);
-  const benchmark = region === 'Lagos' ? summary.unitRate : summary.unitRate / factor;
+    if (regionalSummary.unitRate > 0) {
+      acc[regionName] = regionalSummary.unitRate;
+    }
+
+    return acc;
+  }, {});
+
+  const benchmark = benchmarkRegionalRates.Lagos
+    || summary.unitRate
+    || clampNumber(item?.benchmark);
 
   return {
     benchmark,
-    rate: summary.unitRate,
+    rate: benchmarkRegionalRates[region] || summary.unitRate,
     breakdown: regionalized,
     summary,
     matchSource,
+    benchmarkRegionalRates,
   };
 };
 
