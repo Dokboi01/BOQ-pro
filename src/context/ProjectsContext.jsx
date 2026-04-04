@@ -762,6 +762,7 @@ export function ProjectsProvider({ children }) {
                     rate: initialRate,
                     benchmark: initialBenchmark,
                     benchmarkRegionalRates: item.benchmarkRegionalRates || fallbackAutoRate?.benchmarkRegionalRates || null,
+                    benchmarkEvidence: item.benchmarkEvidence || fallbackAutoRate?.benchmarkEvidence || null,
                     useBenchmark: false,
                     total: qty * initialRate,
                     isVO: false,

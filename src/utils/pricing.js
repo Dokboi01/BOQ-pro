@@ -85,6 +85,20 @@ export const clampNumber = (value) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const normalizeRegionKey = (value = '') => (
+  String(value)
+    .toLowerCase()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+);
+
+const parseIsoTimestamp = (value) => {
+  if (!value) return 0;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
 export const normalizeUnit = (unit = '') => {
   const value = String(unit).toLowerCase().replace(/\s+/g, '');
   if (/(mÂ³|m3|cum|cubic)/.test(value)) return 'm3';
@@ -525,6 +539,111 @@ export const applyRegionCostProfileToPricing = (pricing, region = 'Lagos') => {
   };
 };
 
+const summarizeBenchmarkEvidence = (breakdown, region = 'Lagos', matchSource = 'keyword', benchmarkRegionalRates = {}) => {
+  const materialRows = (breakdown?.materials || []).filter((row) => (
+    row?.benchmarkSource
+    || row?.benchmarkSourceCount
+    || row?.benchmarkVerifiedBy
+    || row?.benchmarkUpdatedAt
+    || row?.benchmarkBand
+    || Object.keys(row?.benchmarkRegionRates || {}).length
+  ));
+
+  const sourceLabels = Array.from(new Set(
+    materialRows.flatMap((row) => (
+      Array.isArray(row?.benchmarkSources) && row.benchmarkSources.length
+        ? row.benchmarkSources
+        : row?.benchmarkSource
+          ? [row.benchmarkSource]
+          : []
+    ))
+  )).slice(0, 4);
+
+  const sourceCount = materialRows.reduce((sum, row) => sum + clampNumber(row?.benchmarkSourceCount), 0)
+    || sourceLabels.length
+    || 0;
+  const verifiedBy = Array.from(new Set(
+    materialRows.map((row) => row?.benchmarkVerifiedBy).filter(Boolean)
+  )).join(', ') || 'BOQ Pro Market Review';
+  const exactRegions = Array.from(new Set(
+    materialRows.flatMap((row) => Object.keys(row?.benchmarkRegionRates || {}))
+  ));
+  const latestUpdatedAt = materialRows.reduce((latest, row) => {
+    const current = parseIsoTimestamp(row?.benchmarkUpdatedAt);
+    return current > latest ? current : latest;
+  }, 0);
+  const benchmarkBand = materialRows.find((row) => row?.benchmarkBand)?.benchmarkBand || '';
+  const normalizedRequestedRegion = normalizeRegionKey(region);
+  const hasExactRegionalData = normalizedRequestedRegion === 'lagos'
+    || exactRegions.some((entry) => normalizeRegionKey(entry) === normalizedRequestedRegion);
+
+  let mode = 'modeled';
+  if (!materialRows.length && matchSource === 'fallback') {
+    mode = 'fallback';
+  } else if (region === 'Lagos' && materialRows.length) {
+    mode = 'lagos-exact';
+  } else if (hasExactRegionalData && materialRows.length) {
+    mode = 'exact-region';
+  } else if (materialRows.length || Object.keys(benchmarkRegionalRates || {}).length > 1) {
+    mode = 'regional-adjusted';
+  }
+
+  return {
+    mode,
+    sourceCount,
+    sources: sourceLabels,
+    verifiedBy,
+    updatedAt: latestUpdatedAt ? new Date(latestUpdatedAt).toISOString() : null,
+    benchmarkBand,
+    exactRegions,
+    matchSource,
+    matchedMaterialCount: materialRows.length,
+  };
+};
+
+export const getItemBenchmarkEvidence = (item, region = 'Lagos') => {
+  if (!item) return null;
+
+  const baseEvidence = item.benchmarkEvidence && typeof item.benchmarkEvidence === 'object'
+    ? item.benchmarkEvidence
+    : {};
+  const normalizedRequestedRegion = normalizeRegionKey(region);
+  const exactRegionalRate = getExactMaterialRegionalBenchmark({
+    benchmark: item?.benchmark,
+    regionRates: item?.benchmarkRegionalRates || {}
+  }, region);
+  const exactRegions = Array.isArray(baseEvidence.exactRegions)
+    ? baseEvidence.exactRegions
+    : [];
+  const hasExactRegionalData = normalizedRequestedRegion === 'lagos'
+    || exactRegionalRate > 0
+    || exactRegions.some((entry) => normalizeRegionKey(entry) === normalizedRequestedRegion);
+
+  let mode = baseEvidence.mode || 'modeled';
+  if (baseEvidence.overrideRegion && normalizeRegionKey(baseEvidence.overrideRegion) === normalizedRequestedRegion) {
+    mode = 'manual-override';
+  } else if (normalizedRequestedRegion === 'lagos' && (item?.benchmark || exactRegionalRate)) {
+    mode = 'lagos-exact';
+  } else if (hasExactRegionalData) {
+    mode = 'exact-region';
+  } else if (Object.keys(item?.benchmarkRegionalRates || {}).length > 1 || item?.benchmark) {
+    mode = 'regional-adjusted';
+  }
+
+  return {
+    ...baseEvidence,
+    mode,
+    hasExactRegionalData,
+    exactRegionalRate: exactRegionalRate || 0,
+    sourceCount: clampNumber(baseEvidence.sourceCount),
+    sources: Array.isArray(baseEvidence.sources) ? baseEvidence.sources : [],
+    verifiedBy: baseEvidence.verifiedBy || '',
+    updatedAt: baseEvidence.updatedAt || null,
+    benchmarkBand: baseEvidence.benchmarkBand || '',
+    exactRegions,
+  };
+};
+
 // Cache for regional benchmark factors: key = "workType|region"
 const _regionalFactorCache = new Map();
 
@@ -642,6 +761,7 @@ export const buildAutoRateResult = (item, { structureType, region = 'Lagos', mat
     breakdown: regionalized,
     summary,
     matchSource,
+    benchmarkEvidence: summarizeBenchmarkEvidence(marketAligned, region, matchSource, benchmarkRegionalRates),
     benchmarkRegionalRates,
   };
 };
