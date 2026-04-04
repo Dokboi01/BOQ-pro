@@ -24,6 +24,17 @@ const resolveDate = (value) => {
 
 const formatCurrency = (value) => `N${Math.round(clampNumber(value)).toLocaleString()}`;
 
+const formatAbsoluteDate = (value) => {
+  const date = resolveDate(value);
+  if (!date) return 'Not scheduled';
+
+  return date.toLocaleDateString('en-NG', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  });
+};
+
 const formatRelativeDate = (value) => {
   const date = resolveDate(value);
   if (!date) return 'Recently updated';
@@ -200,6 +211,92 @@ export const getBenchmarkConfidenceLabel = (confidence) => {
   return 'Low';
 };
 
+export const getMaterialBenchmarkGovernance = (material = {}) => {
+  const updatedAt = resolveDate(
+    material.updatedAt
+    || material.updated_at
+    || material.created_at
+  );
+  const approvedAt = resolveDate(material.approvedAt || material.approved_at);
+  const reviewCycleDays = clampNumber(material.reviewCycleDays) || 14;
+  const nextReviewAt = resolveDate(material.nextReviewAt || material.next_review_at)
+    || (updatedAt ? new Date(updatedAt.getTime() + (reviewCycleDays * 86400000)) : null);
+  const approvalStatus = String(material.approvalStatus || (approvedAt ? 'approved' : 'review'))
+    .toLowerCase()
+    .trim();
+  const regionCoverage = Object.keys(material.regionRates || material.regions || {}).length;
+  const sourceCount = clampNumber(material.sourceCount);
+  const confidence = clampNumber(material.confidence);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let approvalLabel = 'Review in progress';
+  let approvalTone = 'review';
+  if (approvalStatus === 'approved') {
+    approvalLabel = 'Approved benchmark';
+    approvalTone = 'approved';
+  } else if (approvalStatus === 'draft') {
+    approvalLabel = 'Draft benchmark';
+    approvalTone = 'draft';
+  } else if (approvalStatus === 'stale') {
+    approvalLabel = 'Benchmark stale';
+    approvalTone = 'stale';
+  }
+
+  let freshnessLabel = 'Review schedule pending';
+  let freshnessTone = 'pending';
+  let reviewWindowLabel = 'Next review not scheduled';
+
+  if (nextReviewAt) {
+    const reviewDate = new Date(nextReviewAt);
+    reviewDate.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((reviewDate.getTime() - today.getTime()) / 86400000);
+
+    if (diffDays < 0 || approvalStatus === 'stale') {
+      freshnessLabel = 'Benchmark stale';
+      freshnessTone = 'stale';
+    } else if (diffDays <= 7) {
+      freshnessLabel = 'Review due soon';
+      freshnessTone = 'due';
+    } else {
+      freshnessLabel = 'Fresh benchmark';
+      freshnessTone = 'fresh';
+    }
+
+    reviewWindowLabel = `Next review ${formatAbsoluteDate(nextReviewAt)}`;
+  } else if (updatedAt) {
+    freshnessLabel = 'Freshly updated';
+    freshnessTone = 'fresh';
+    reviewWindowLabel = `Updated ${formatAbsoluteDate(updatedAt)}`;
+  }
+
+  let healthLabel = 'Benchmark watch';
+  let healthTone = 'watch';
+  if (approvalStatus === 'approved' && freshnessTone === 'fresh' && sourceCount >= 3 && confidence >= 0.72) {
+    healthLabel = 'Benchmark ready';
+    healthTone = 'ready';
+  } else if (approvalStatus === 'draft' || sourceCount <= 1) {
+    healthLabel = 'Evidence building';
+    healthTone = 'building';
+  }
+
+  return {
+    approvalStatus,
+    approvalLabel,
+    approvalTone,
+    freshnessLabel,
+    freshnessTone,
+    reviewWindowLabel,
+    healthLabel,
+    healthTone,
+    approvedAt: approvedAt ? approvedAt.toISOString() : null,
+    nextReviewAt: nextReviewAt ? nextReviewAt.toISOString() : null,
+    reviewCycleDays,
+    regionCoverage,
+    coverageLabel: `${regionCoverage} region${regionCoverage === 1 ? '' : 's'} benchmarked`
+  };
+};
+
 export const getMaterialRegionalBenchmark = (material, region = 'Lagos') => {
   if (!material) return 0;
 
@@ -261,6 +358,15 @@ export const normalizeMaterialBenchmarkRecord = (material = {}) => {
   const benchmarkBand = material.benchmarkBand
     || material.range
     || `${formatCurrency(bandLow)} - ${formatCurrency(bandHigh)}`;
+  const approvedAt = resolveDate(material.approvedAt || material.approved_at)?.toISOString() || null;
+  const reviewCycleDays = clampNumber(material.reviewCycleDays) || 14;
+  const nextReviewAt = resolveDate(material.nextReviewAt || material.next_review_at)?.toISOString()
+    || (resolvedUpdatedAt
+      ? new Date(new Date(resolvedUpdatedAt).getTime() + (reviewCycleDays * 86400000)).toISOString()
+      : null);
+  const approvalStatus = String(material.approvalStatus || (approvedAt ? 'approved' : 'review'))
+    .toLowerCase()
+    .trim() || 'review';
 
   return {
     ...material,
@@ -274,6 +380,12 @@ export const normalizeMaterialBenchmarkRecord = (material = {}) => {
     confidence,
     confidenceLabel,
     verifiedBy: material.verifiedBy || 'BOQ Pro Market Review',
+    approvalStatus,
+    approvedBy: material.approvedBy || material.verifiedBy || 'BOQ Pro Market Review',
+    approvedAt,
+    reviewCycleDays,
+    nextReviewAt,
+    benchmarkDeskNote: material.benchmarkDeskNote || material.marketDeskNote || '',
     benchmarkBand,
     range: material.range || benchmarkBand,
     updatedAt: resolvedUpdatedAt,

@@ -17,7 +17,50 @@ import {
 import { hasFeature } from '../../data/plans';
 import { getMaterials, getMarketIndices, addMaterial, updateMaterial, deleteMaterial } from '../../db/database';
 import { Loader2 } from 'lucide-react';
-import { getMaterialRegionalBenchmark, normalizeMaterialBenchmarkRecord } from '../../utils/materialBenchmarks';
+import {
+  getMaterialBenchmarkGovernance,
+  getMaterialRegionalBenchmark,
+  normalizeMaterialBenchmarkRecord
+} from '../../utils/materialBenchmarks';
+
+const MANAGED_REGIONS = ['Lagos', 'Abuja', 'Port Harcourt', 'Kano', 'Enugu', 'Ibadan'];
+
+const getRegionFieldName = (region) => `region_rate_${String(region).toLowerCase().replace(/[^a-z0-9]+/g, '_')}`;
+
+const getManagedRegions = (material, activeRegion) => (
+  Array.from(new Set([
+    activeRegion,
+    ...MANAGED_REGIONS,
+    ...Object.keys(material?.regionRates || material?.regions || {})
+  ].filter(Boolean)))
+);
+
+const toDateInputValue = (value) => {
+  if (!value) return '';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '';
+  return parsed.toISOString().slice(0, 10);
+};
+
+const toIsoDateFromInput = (value) => {
+  if (!value) return null;
+  const parsed = new Date(`${value}T12:00:00`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+};
+
+const buildMaterialBenchmarkEvidence = (material, activeRegion) => ({
+  mode: activeRegion === 'Lagos' ? 'lagos-exact' : 'exact-region',
+  sourceCount: Number(material?.sourceCount) || 0,
+  sources: Array.isArray(material?.sources)
+    ? material.sources.map((source) => source.label).filter(Boolean).slice(0, 4)
+    : [],
+  verifiedBy: material?.verifiedBy || 'BOQ Pro Market Review',
+  updatedAt: material?.updatedAt || null,
+  benchmarkBand: material?.benchmarkBand || material?.range || '',
+  exactRegions: Object.keys(material?.regionRates || material?.regions || {}),
+  matchSource: 'material-library',
+  matchedMaterialCount: 1
+});
 
 const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
   const [selectedMaterial, setSelectedMaterial] = useState(null);
@@ -307,17 +350,60 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
   const handleSaveMaterial = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
+    const benchmarkRegions = getManagedRegions(editingMaterial, activeRegionLabel);
     const marketRead = Number(formData.get('price')) || 0;
     const benchmark = Number(formData.get('benchmark')) || marketRead;
     const sourceCount = Number(formData.get('sourceCount')) || 0;
     const sourceNote = String(formData.get('sourceNote') || '').trim();
+    const sourceType = String(formData.get('sourceType') || 'market-note').trim() || 'market-note';
+    const sourceRegion = String(formData.get('sourceRegion') || activeRegionLabel).trim() || activeRegionLabel;
+    const benchmarkBand = String(formData.get('benchmarkBand') || '').trim();
+    const benchmarkDeskNote = String(formData.get('benchmarkDeskNote') || '').trim();
+    const reviewCycleDays = Number(formData.get('reviewCycleDays')) || editingMaterial?.reviewCycleDays || 14;
+    const approvalStatus = String(formData.get('approvalStatus') || editingMaterial?.approvalStatus || 'review').trim().toLowerCase();
+    const approvedAt = toIsoDateFromInput(formData.get('approvedAt'));
+    const nextReviewAt = toIsoDateFromInput(formData.get('nextReviewAt'));
+    const confidencePercent = Number(formData.get('confidence')) || 0;
     const updatedAt = new Date().toISOString();
+    const regionRates = benchmarkRegions.reduce((acc, region) => {
+      const fieldValue = Number(formData.get(getRegionFieldName(region))) || 0;
+      if (fieldValue > 0) {
+        acc[region] = fieldValue;
+      }
+      return acc;
+    }, {});
+
+    if (!Object.keys(regionRates).length && benchmark > 0) {
+      regionRates[activeRegionLabel] = benchmark;
+    }
+
+    if (!regionRates[activeRegionLabel] && benchmark > 0) {
+      regionRates[activeRegionLabel] = benchmark;
+    }
+
+    if (!regionRates.Lagos) {
+      regionRates.Lagos = benchmark || regionRates[activeRegionLabel] || marketRead;
+    }
+
+    const primaryBenchmark = regionRates.Lagos || benchmark || regionRates[activeRegionLabel] || marketRead;
+    const preservedSources = Array.isArray(editingMaterial?.sources)
+      ? editingMaterial.sources.filter((source) => source?.label && source.label !== sourceNote)
+      : [];
+    const managedSource = sourceNote ? [{
+      id: editingMaterial?.sources?.[0]?.id || `${Date.now()}-source`,
+      label: sourceNote,
+      type: sourceType,
+      region: sourceRegion,
+      rate: regionRates[sourceRegion] || regionRates[activeRegionLabel] || primaryBenchmark || marketRead,
+      capturedAt: updatedAt,
+      note: benchmarkDeskNote || 'Captured from material benchmark admin workflow'
+    }] : [];
     const newMat = {
       name: formData.get('name'),
       category: formData.get('category'),
       price: marketRead,
       unit: formData.get('unit'),
-      benchmark,
+      benchmark: primaryBenchmark,
       trend: editingMaterial?.trend || 'stable',
       delta: editingMaterial?.delta || '0.0%',
       history: [
@@ -328,20 +414,18 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
       updatedAt,
       verifiedBy: String(formData.get('verifiedBy') || '').trim() || editingMaterial?.verifiedBy || 'BOQ Pro Market Review',
       sourceCount,
-      regionRates: {
-        ...(editingMaterial?.regionRates || editingMaterial?.regions || {}),
-        [activeRegionLabel]: benchmark
-      },
-      sources: sourceNote ? [
-        {
-          label: sourceNote,
-          type: 'manual-entry',
-          region: activeRegionLabel,
-          rate: benchmark || marketRead,
-          capturedAt: updatedAt,
-          note: 'Captured from material library manage mode'
-        }
-      ] : editingMaterial?.sources
+      confidence: confidencePercent > 0 ? confidencePercent / 100 : (editingMaterial?.confidence || undefined),
+      benchmarkBand: benchmarkBand || editingMaterial?.benchmarkBand,
+      benchmarkDeskNote,
+      approvalStatus,
+      approvedBy: String(formData.get('approvedBy') || '').trim() || editingMaterial?.approvedBy || '',
+      approvedAt: approvalStatus === 'approved'
+        ? (approvedAt || editingMaterial?.approvedAt || updatedAt)
+        : null,
+      reviewCycleDays,
+      nextReviewAt: nextReviewAt || editingMaterial?.nextReviewAt || null,
+      regionRates,
+      sources: [...managedSource, ...preservedSources].slice(0, 6)
     };
 
     try {
@@ -376,58 +460,165 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
     }
   };
 
-  const renderManageModal = () => (
+  const renderManageModal = () => {
+    const benchmarkRegions = getManagedRegions(editingMaterial, activeRegionLabel);
+    const governance = getMaterialBenchmarkGovernance(editingMaterial || {});
+
+    return (
     <div className="detail-modal-overlay" onClick={() => setEditingMaterial(null)}>
       <form className="detail-modal enterprise-card" onClick={e => e.stopPropagation()} onSubmit={handleSaveMaterial}>
         <div className="modal-header">
-          <h3>{editingMaterial?.id ? 'Edit Material' : 'Add New Material'}</h3>
+          <div className="manage-header-copy">
+            <h3>{editingMaterial?.id ? 'Manage Benchmark Record' : 'Create Benchmark Record'}</h3>
+            <p className="manage-subtitle">Update regional benchmark rates, evidence, and approval state without leaving the existing library workflow.</p>
+          </div>
           <button type="button" className="close-btn" onClick={() => setEditingMaterial(null)}>×</button>
         </div>
-        <div className="modal-body form-grid">
-           <div className="form-group">
-             <label>Name</label>
-             <input type="text" name="name" defaultValue={editingMaterial?.name || ''} required />
-           </div>
-           <div className="form-group">
-             <label>Category</label>
-             <input type="text" name="category" defaultValue={editingMaterial?.category || ''} required />
-           </div>
-           <div className="form-group">
-             <label>Unit</label>
-             <input type="text" name="unit" defaultValue={editingMaterial?.unit || ''} required />
-           </div>
-           <div className="form-group">
-             <label>Rate (N)</label>
-             <input type="number" name="price" defaultValue={editingMaterial?.price || ''} required />
-           </div>
-           <div className="form-group">
-             <label>Benchmark (N)</label>
-             <input type="number" name="benchmark" defaultValue={editingMaterial?.benchmark || editingMaterial?.price || ''} required />
-           </div>
-           <div className="form-group">
-             <label>Benchmark Sources</label>
-             <input type="number" name="sourceCount" min="1" defaultValue={editingMaterial?.sourceCount || 3} />
-           </div>
-           <div className="form-group">
-             <label>Verified By</label>
-             <input type="text" name="verifiedBy" defaultValue={editingMaterial?.verifiedBy || ''} placeholder="QS lead or market desk" />
-           </div>
-           <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-             <label>Source Note</label>
-             <input type="text" name="sourceNote" defaultValue={editingMaterial?.sources?.[0]?.label || ''} placeholder="Supplier quote, spot check, or calibration note" />
-           </div>
-           <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-             <label>Usage Notes</label>
-             <textarea name="usage" defaultValue={editingMaterial?.usage || ''} rows={3} />
-           </div>
+        <div className="modal-body benchmark-admin-body">
+          <div className="benchmark-admin-banner">
+            <span className={`benchmark-flag ${governance.approvalTone}`}>{governance.approvalLabel}</span>
+            <span className={`benchmark-flag ${governance.freshnessTone}`}>{governance.freshnessLabel}</span>
+            <span className="benchmark-evidence">{governance.coverageLabel}</span>
+            <span className="benchmark-evidence">{governance.reviewWindowLabel}</span>
+          </div>
+
+          <div className="form-section">
+            <div className="form-section-header">
+              <h4>Material Identity</h4>
+              <p>Keep the benchmark record anchored to the same market item your estimators will search and apply.</p>
+            </div>
+            <div className="form-grid">
+              <div className="form-group">
+                <label>Name</label>
+                <input type="text" name="name" defaultValue={editingMaterial?.name || ''} required />
+              </div>
+              <div className="form-group">
+                <label>Category</label>
+                <input type="text" name="category" defaultValue={editingMaterial?.category || ''} required />
+              </div>
+              <div className="form-group">
+                <label>Unit</label>
+                <input type="text" name="unit" defaultValue={editingMaterial?.unit || ''} required />
+              </div>
+              <div className="form-group">
+                <label>Current Market Read (N)</label>
+                <input type="number" name="price" defaultValue={editingMaterial?.price || ''} required />
+              </div>
+              <div className="form-group">
+                <label>Lagos Base Benchmark (N)</label>
+                <input type="number" name="benchmark" defaultValue={editingMaterial?.benchmark || editingMaterial?.price || ''} required />
+              </div>
+              <div className="form-group">
+                <label>Benchmark Evidence Band</label>
+                <input type="text" name="benchmarkBand" defaultValue={editingMaterial?.benchmarkBand || editingMaterial?.range || ''} placeholder="N11,200 - N13,500" />
+              </div>
+            </div>
+          </div>
+
+          <div className="form-section">
+            <div className="form-section-header">
+              <h4>Regional Benchmark Matrix</h4>
+              <p>Maintain region-by-region benchmark rates so the BOQ engine can prefer exact market reads before applying general calibration factors.</p>
+            </div>
+            <div className="regional-benchmark-grid">
+              {benchmarkRegions.map((region) => (
+                <div className="form-group regional-rate-group" key={region}>
+                  <label>{region} Benchmark (N)</label>
+                  <input
+                    type="number"
+                    name={getRegionFieldName(region)}
+                    defaultValue={editingMaterial?.regionRates?.[region] || editingMaterial?.regions?.[region] || (region === activeRegionLabel ? editingMaterial?.benchmark : '')}
+                    placeholder={`Set ${region} benchmark`}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-section">
+            <div className="form-section-header">
+              <h4>Evidence And Governance</h4>
+              <p>Record how the benchmark was captured, who validated it, and when it needs to be reviewed again.</p>
+            </div>
+            <div className="form-grid">
+              <div className="form-group">
+                <label>Benchmark Sources</label>
+                <input type="number" name="sourceCount" min="1" defaultValue={editingMaterial?.sourceCount || 3} />
+              </div>
+              <div className="form-group">
+                <label>Confidence (%)</label>
+                <input type="number" name="confidence" min="1" max="99" defaultValue={editingMaterial?.confidence ? Math.round(editingMaterial.confidence * 100) : ''} placeholder="72" />
+              </div>
+              <div className="form-group">
+                <label>Verified By</label>
+                <input type="text" name="verifiedBy" defaultValue={editingMaterial?.verifiedBy || ''} placeholder="QS lead or market desk" />
+              </div>
+              <div className="form-group">
+                <label>Approval Status</label>
+                <select name="approvalStatus" defaultValue={editingMaterial?.approvalStatus || 'review'}>
+                  <option value="review">Review In Progress</option>
+                  <option value="approved">Approved Benchmark</option>
+                  <option value="draft">Draft Benchmark</option>
+                  <option value="stale">Mark As Stale</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Approved By</label>
+                <input type="text" name="approvedBy" defaultValue={editingMaterial?.approvedBy || ''} placeholder="Commercial manager or cost lead" />
+              </div>
+              <div className="form-group">
+                <label>Approved Date</label>
+                <input type="date" name="approvedAt" defaultValue={toDateInputValue(editingMaterial?.approvedAt)} />
+              </div>
+              <div className="form-group">
+                <label>Review Cycle (Days)</label>
+                <input type="number" name="reviewCycleDays" min="1" defaultValue={editingMaterial?.reviewCycleDays || 14} />
+              </div>
+              <div className="form-group">
+                <label>Next Review Date</label>
+                <input type="date" name="nextReviewAt" defaultValue={toDateInputValue(editingMaterial?.nextReviewAt)} />
+              </div>
+              <div className="form-group">
+                <label>Source Type</label>
+                <select name="sourceType" defaultValue={editingMaterial?.sources?.[0]?.type || 'market-note'}>
+                  <option value="supplier-read">Supplier Read</option>
+                  <option value="regional-spot-check">Regional Spot Check</option>
+                  <option value="qs-review">QS Review</option>
+                  <option value="procurement-log">Procurement Log</option>
+                  <option value="market-note">Market Note</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Source Region</label>
+                <select name="sourceRegion" defaultValue={editingMaterial?.sources?.[0]?.region || activeRegionLabel}>
+                  {benchmarkRegions.map((region) => (
+                    <option key={region} value={region}>{region}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group form-group-full">
+                <label>Source Note</label>
+                <input type="text" name="sourceNote" defaultValue={editingMaterial?.sources?.[0]?.label || ''} placeholder="Supplier quote, market call, or calibration note" />
+              </div>
+              <div className="form-group form-group-full">
+                <label>Benchmark Desk Note</label>
+                <textarea name="benchmarkDeskNote" defaultValue={editingMaterial?.benchmarkDeskNote || ''} rows={2} placeholder="Explain procurement context, drift reason, or approval comment" />
+              </div>
+              <div className="form-group form-group-full">
+                <label>Usage Notes</label>
+                <textarea name="usage" defaultValue={editingMaterial?.usage || ''} rows={3} />
+              </div>
+            </div>
+          </div>
         </div>
         <div className="modal-footer">
           <button type="button" className="btn-secondary" onClick={() => setEditingMaterial(null)}>Cancel</button>
-          <button type="submit" className="btn-primary">Save Material</button>
+          <button type="submit" className="btn-primary">Save Benchmark Record</button>
         </div>
       </form>
     </div>
   );
+  };
 
   const renderIntelligenceDashboard = () => {
     const isLocked = !hasFeature(user?.plan, 'material-intelligence');
@@ -435,6 +626,11 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
       ? Math.round((materials.reduce((sum, material) => sum + (Number(material.confidence) || 0), 0) / materials.length) * 100)
       : 0;
     const sourceCoverage = materials.reduce((sum, material) => sum + (Number(material.sourceCount) || 0), 0);
+    const approvedBenchmarks = materials.filter((material) => getMaterialBenchmarkGovernance(material).approvalStatus === 'approved').length;
+    const reviewQueue = materials.filter((material) => {
+      const governance = getMaterialBenchmarkGovernance(material);
+      return governance.freshnessTone === 'due' || governance.freshnessTone === 'stale' || governance.approvalStatus !== 'approved';
+    }).length;
 
     return (
       <div className={`intelligence-dashboard ${isLocked ? 'locked-view' : ''}`}>
@@ -457,10 +653,11 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
           </div>
           <div className="enterprise-card intel-metric">
             <div className="metric-header">
-              <span className="label">Highest Exposure Trade</span>
+              <span className="label">Approved Benchmarks</span>
               <AlertCircle size={16} className="text-warning" />
             </div>
-            <div className="metric-val">Bitumen & Oils</div>
+            <div className="metric-val">{approvedBenchmarks}</div>
+            <div className="metric-subnote">{materials.length - approvedBenchmarks} records still need approval or recalibration</div>
             <div className="metric-footer">Avg. ₦185,000 per drum</div>
           </div>
           <div className="enterprise-card intel-metric">
@@ -469,7 +666,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
               <ShieldCheck size={16} className="text-success" />
             </div>
             <div className="metric-val">{averageConfidence}%</div>
-            <div className="metric-footer">{sourceCoverage} supplier reads, spot checks, and QS calibration inputs</div>
+            <div className="metric-footer">{sourceCoverage} supplier reads, spot checks, and QS calibration inputs. {reviewQueue} in review queue.</div>
           </div>
         </div>
 
@@ -504,6 +701,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
     const benchmarkHistory = Array.isArray(mat.history) && mat.history.length
       ? mat.history
       : [getRegionalBenchmark(mat)];
+    const governance = getMaterialBenchmarkGovernance(mat);
 
     return (
     <div className="detail-modal-overlay" onClick={() => setSelectedMaterial(null)}>
@@ -563,12 +761,46 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 <span className="s-label">Verified By</span>
                 <span className="s-val small">{mat.verifiedBy}</span>
               </div>
+              <div className="stat-box">
+                <span className="s-label">Approval State</span>
+                <span className={`s-val small benchmark-text-${governance.approvalTone}`}>{governance.approvalLabel}</span>
+              </div>
+              <div className="stat-box">
+                <span className="s-label">Review Window</span>
+                <span className={`s-val small benchmark-text-${governance.freshnessTone}`}>{governance.reviewWindowLabel}</span>
+              </div>
             </div>
           </div>
 
           <div className="usage-notes">
             <h4>Standard Usage Notes</h4>
             <p>{mat.usage}</p>
+          </div>
+
+          <div className="usage-notes">
+            <h4>Benchmark Governance</h4>
+            <div className="governance-grid">
+              <div className="governance-card">
+                <span>Status</span>
+                <strong className={`benchmark-text-${governance.approvalTone}`}>{governance.approvalLabel}</strong>
+                <small>{mat.approvedBy ? `Approved by ${mat.approvedBy}` : 'Awaiting commercial approval'}</small>
+              </div>
+              <div className="governance-card">
+                <span>Review</span>
+                <strong className={`benchmark-text-${governance.freshnessTone}`}>{governance.freshnessLabel}</strong>
+                <small>{governance.reviewWindowLabel}</small>
+              </div>
+              <div className="governance-card">
+                <span>Coverage</span>
+                <strong>{governance.coverageLabel}</strong>
+                <small>{governance.reviewCycleDays}-day review cycle</small>
+              </div>
+              <div className="governance-card">
+                <span>Benchmark Health</span>
+                <strong className={`benchmark-text-${governance.healthTone}`}>{governance.healthLabel}</strong>
+                <small>{mat.benchmarkDeskNote || 'No benchmark desk note captured yet.'}</small>
+              </div>
+            </div>
           </div>
 
           <div className="usage-notes">
@@ -613,6 +845,9 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                     return {
                       ...item,
                       benchmark: benchmarkValue,
+                      benchmarkRegionalRates: { ...(mat.regionRates || mat.regions || {}) },
+                      benchmarkEvidence: buildMaterialBenchmarkEvidence(mat, activeRegionLabel),
+                      benchmarkMatchSource: 'material-library',
                       rate: benchmarkValue,
                       useBenchmark: true,
                       rateSource: 'benchmark',
@@ -654,7 +889,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
             className="btn-secondary"
             onClick={() => setIsManageMode(!isManageMode)}
           >
-            {isManageMode ? 'Exit Manage Mode' : 'Manage Custom Rate Overrides'}
+            {isManageMode ? 'Exit Benchmark Admin' : 'Manage Benchmark Engine'}
           </button>
           <button
             className="btn-primary-action"
@@ -702,6 +937,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
           {filteredMaterials.map((mat) => {
             const regionalBenchmark = getRegionalBenchmark(mat);
             const driftMeta = getBenchmarkDriftMeta(mat);
+            const governance = getMaterialBenchmarkGovernance(mat);
 
             return (
             <div key={mat.id} className="enterprise-card mat-intel-card glass-card" onClick={() => setSelectedMaterial(mat)}>
@@ -727,15 +963,20 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 <strong className="benchmark-amount">₦{regionalBenchmark.toLocaleString()}</strong>
               </div>
               <div className="mat-support-row">
+                <span className={`benchmark-flag ${governance.approvalTone}`}>{governance.approvalLabel}</span>
+                <span className={`benchmark-flag ${governance.freshnessTone}`}>{governance.freshnessLabel}</span>
+              </div>
+              <div className="mat-support-row mat-support-row-secondary">
                 <span className={`benchmark-flag ${driftMeta.tone}`}>{driftMeta.label}</span>
                 <span className="benchmark-range">Band {mat.benchmarkBand || mat.range}</span>
               </div>
               <div className="mat-support-row mat-support-row-secondary">
                 <span className="benchmark-evidence">{mat.sourceCount} sources</span>
                 <span className="benchmark-evidence">{mat.confidenceLabel} confidence</span>
+                <span className="benchmark-evidence">{governance.coverageLabel}</span>
               </div>
               <div className="card-footer-l">
-                <div className="last-sync">Updated {mat.lastUpdated} - {mat.verifiedBy}</div>
+                <div className="last-sync">{governance.reviewWindowLabel} - {mat.verifiedBy}</div>
                 {isManageMode ? (
                   <div className="manage-actions" style={{display: 'flex', gap: '0.5rem'}}>
                      <button className="btn-icon" onClick={(e) => { e.stopPropagation(); setEditingMaterial(mat); }}><Edit2 size={13}/></button>
@@ -832,19 +1073,75 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 .mb-4 { margin-bottom: 1rem; }
 
                 /* Form Grid for Manage Modal */
+                .benchmark-admin-body {
+                   display: flex;
+                   flex-direction: column;
+                   gap: 1.25rem;
+                }
+                .modal-body.benchmark-admin-body { padding: 1.5rem 2rem; }
+                .benchmark-admin-banner {
+                   display: flex;
+                   flex-wrap: wrap;
+                   gap: 0.6rem;
+                   padding: 0.9rem 1rem;
+                   border: 1px solid var(--border-light);
+                   border-radius: 12px;
+                   background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.96));
+                }
+                .form-section {
+                   display: flex;
+                   flex-direction: column;
+                   gap: 1rem;
+                   padding: 1rem;
+                   border: 1px solid var(--border-light);
+                   border-radius: 14px;
+                   background: rgba(248, 250, 252, 0.75);
+                }
+                .form-section-header {
+                   display: flex;
+                   flex-direction: column;
+                   gap: 0.25rem;
+                }
+                .form-section-header h4 {
+                   font-size: 0.95rem;
+                   color: var(--primary-900);
+                }
+                .form-section-header p {
+                   font-size: 0.78rem;
+                   color: var(--primary-500);
+                   line-height: 1.5;
+                }
                 .form-grid {
                    display: grid;
                    grid-template-columns: 1fr 1fr;
                    gap: 1rem;
-                   padding: 1.5rem 2rem;
+                }
+                .regional-benchmark-grid {
+                   display: grid;
+                   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                   gap: 0.9rem;
                 }
                 .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
                 .form-group label { font-size: 0.8125rem; font-weight: 700; color: var(--primary-600); }
-                .form-group input, .form-group textarea {
+                .form-group input, .form-group textarea, .form-group select {
                    padding: 0.6rem 0.8rem;
                    border: 1px solid var(--border-medium);
                    border-radius: var(--radius-sm);
                    font-size: 0.875rem;
+                   background: white;
+                }
+                .form-group-full { grid-column: 1 / -1; }
+                .manage-subtitle {
+                   margin-top: 0.35rem;
+                   font-size: 0.78rem;
+                   color: var(--primary-500);
+                   max-width: 580px;
+                   line-height: 1.5;
+                }
+                .manage-header-copy {
+                   display: flex;
+                   flex-direction: column;
+                   gap: 0.15rem;
                 }
                 .btn-icon { background: transparent; border: none; cursor: pointer; color: var(--primary-500); padding: 4px; border-radius: 4px; }
                 .btn-icon:hover { background: var(--bg-main); color: var(--primary-900); }
@@ -881,10 +1178,18 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                     font-weight: 800;
                     color: var(--primary-900);
                 }
+                .metric-subnote {
+                    font-size: 0.72rem;
+                    color: var(--primary-500);
+                    line-height: 1.45;
+                }
 
                 .metric-footer {
                     font-size: 0.6875rem;
                     color: var(--primary-400);
+                }
+                .dashboard-grid-mini .intel-metric:nth-child(2) .metric-footer {
+                    display: none;
                 }
 
                 .market-index-section {
@@ -1037,6 +1342,22 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 .benchmark-flag.aligned { background: rgba(22, 163, 74, 0.12); color: var(--success-600); }
                 .benchmark-flag.flagged { background: rgba(234, 88, 12, 0.12); color: #c2410c; }
                 .benchmark-flag.pending { background: rgba(148, 163, 184, 0.15); color: var(--primary-500); }
+                .benchmark-flag.approved { background: rgba(22, 163, 74, 0.12); color: var(--success-600); }
+                .benchmark-flag.review,
+                .benchmark-flag.due { background: rgba(245, 158, 11, 0.14); color: #b45309; }
+                .benchmark-flag.draft { background: rgba(59, 130, 246, 0.12); color: var(--accent-600); }
+                .benchmark-flag.stale { background: rgba(239, 68, 68, 0.12); color: var(--danger-600); }
+                .benchmark-flag.fresh { background: rgba(15, 118, 110, 0.12); color: #0f766e; }
+                .benchmark-text-approved { color: var(--success-600); }
+                .benchmark-text-review,
+                .benchmark-text-due { color: #b45309; }
+                .benchmark-text-draft { color: var(--accent-600); }
+                .benchmark-text-fresh { color: #0f766e; }
+                .benchmark-text-pending { color: var(--primary-500); }
+                .benchmark-text-building { color: var(--accent-600); }
+                .benchmark-text-stale,
+                .benchmark-text-watch { color: var(--danger-600); }
+                .benchmark-text-ready { color: #0f766e; }
                 .benchmark-range { font-size: 0.6875rem; color: var(--primary-500); font-weight: 600; }
 
                 .card-footer-l {
@@ -1092,7 +1413,8 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                     border-bottom: 1px solid var(--border-light);
                     display: flex;
                     justify-content: space-between;
-                    align-items: center;
+                    align-items: flex-start;
+                    gap: 1rem;
                 }
 
                 .mat-identity h3 { font-size: 1.25rem; margin-top: 0.25rem; }
@@ -1127,6 +1449,35 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
 
                 .regional-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem; }
                 .regional-item { display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 600; color: var(--primary-700); border-bottom: 1px dashed var(--border-light); padding-bottom: 2px; }
+                .governance-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                    gap: 0.85rem;
+                }
+                .governance-card {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.3rem;
+                    padding: 0.95rem 1rem;
+                    border: 1px solid var(--border-light);
+                    border-radius: 10px;
+                    background: rgba(248, 250, 252, 0.82);
+                }
+                .governance-card span {
+                    font-size: 0.68rem;
+                    font-weight: 700;
+                    color: var(--primary-500);
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                }
+                .governance-card strong {
+                    font-size: 0.9rem;
+                }
+                .governance-card small {
+                    font-size: 0.74rem;
+                    color: var(--primary-500);
+                    line-height: 1.45;
+                }
 
                 .usage-notes h4 { font-size: 0.875rem; margin-bottom: 0.5rem; }
                 .usage-notes p { font-size: 0.875rem; color: var(--primary-600); line-height: 1.5; }
@@ -1174,6 +1525,49 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                     justify-content: flex-end;
                     gap: 1rem;
                     background: var(--bg-main);
+                }
+
+                @media (max-width: 900px) {
+                    .library-header-premium,
+                    .listing-header,
+                    .index-header {
+                        flex-direction: column;
+                        align-items: stretch;
+                        gap: 1rem;
+                    }
+
+                    .header-actions {
+                        align-items: stretch;
+                    }
+
+                    .search-box-l {
+                        width: 100%;
+                    }
+
+                    .intelligence-dashboard,
+                    .report-grid {
+                        grid-template-columns: 1fr;
+                    }
+                }
+
+                @media (max-width: 640px) {
+                    .modal-header,
+                    .modal-body,
+                    .modal-body.benchmark-admin-body,
+                    .modal-footer {
+                        padding-left: 1rem;
+                        padding-right: 1rem;
+                    }
+
+                    .form-grid,
+                    .regional-benchmark-grid,
+                    .governance-grid {
+                        grid-template-columns: 1fr;
+                    }
+
+                    .filter-actions {
+                        flex-direction: column;
+                    }
                 }
             `}</style>
     </div>
