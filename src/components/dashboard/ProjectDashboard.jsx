@@ -102,7 +102,7 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
           ? 'Commercial Review'
           : 'Tender Ready';
 
-  const limits = PLAN_LIMITS[user?.plan] || PLAN_LIMITS[PLAN_NAMES.FREE];
+  const limits = PLAN_LIMITS[user?.plan] || PLAN_LIMITS[PLAN_NAMES.STUDENT];
   const isLimitReached = projects.length >= limits.maxProjects;
 
   const filteredProjects = useMemo(() => {
@@ -192,7 +192,7 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
           <h2>Good Afternoon, {user?.full_name || 'Practitioner'}</h2>
           <p>You have <strong>{projects.length} active projects</strong> in your commercial workspace.</p>
         </div>
-        {user?.plan === PLAN_NAMES.FREE && (
+        {(!user?.plan || user?.plan === PLAN_NAMES.STUDENT || user?.plan === 'Free' || user?.plan === 'Student & Basic') && (
           <div className="usage-card">
             <div className="usage-row">
               <span>Project Limit</span>
@@ -329,7 +329,7 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
                 </div>
               </article>
             )})}
-            {user?.plan === PLAN_NAMES.FREE && projects.length < limits.maxProjects && (
+            {(!user?.plan || user?.plan === PLAN_NAMES.STUDENT || user?.plan === 'Free' || user?.plan === 'Student & Basic') && projects.length < limits.maxProjects && (
               <article className="project-card locked enterprise-card" onClick={onCreateProject}>
                 <Lock size={24} />
                 <p>Available project slot</p>
