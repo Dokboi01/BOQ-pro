@@ -17,6 +17,7 @@ import {
 import { hasFeature } from '../../data/plans';
 import { getMaterials, getMarketIndices, addMaterial, updateMaterial, deleteMaterial } from '../../db/database';
 import { Loader2 } from 'lucide-react';
+import { getMaterialRegionalBenchmark, normalizeMaterialBenchmarkRecord } from '../../utils/materialBenchmarks';
 
 const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
   const [selectedMaterial, setSelectedMaterial] = useState(null);
@@ -31,7 +32,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
   const activeRegionLabel = activeProject?.region || 'Lagos';
 
   const getRegionalBenchmark = (material) => Number(
-    material?.regions?.[activeRegionLabel] || material?.benchmark || material?.price || 0
+    getMaterialRegionalBenchmark(material, activeRegionLabel)
   );
 
   const getBenchmarkDriftMeta = (material) => {
@@ -251,7 +252,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
       usage: 'Foundation piling for bridges, high-rise buildings, and soft-ground structures.',
       regions: { 'Lagos': 85000, 'Abuja': 90000, 'Port Harcourt': 88000 }
     },
-  ], []);
+  ].map((material) => normalizeMaterialBenchmarkRecord(material)), []);
 
   const defaultMarketIndices = React.useMemo(() => [
     { label: 'Overall CMCI', val: 148.3, delta: '+2.1%', trend: 'up' },
@@ -273,9 +274,10 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
           getMarketIndices()
         ]);
 
-        // If Supabase is empty, use defaults for visual consistency, 
-        // but ideally we seed the DB.
-        setMaterials(mats.length > 0 ? mats : defaultMaterials);
+        const normalizedMaterials = (mats.length > 0 ? mats : defaultMaterials)
+          .map((material) => normalizeMaterialBenchmarkRecord(material));
+
+        setMaterials(normalizedMaterials);
         setMarketIndices(indices.length > 0 ? indices : defaultMarketIndices);
       } catch (err) {
         console.error('Failed to load library data:', err);
@@ -305,23 +307,47 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
   const handleSaveMaterial = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
+    const marketRead = Number(formData.get('price')) || 0;
+    const benchmark = Number(formData.get('benchmark')) || marketRead;
+    const sourceCount = Number(formData.get('sourceCount')) || 0;
+    const sourceNote = String(formData.get('sourceNote') || '').trim();
+    const updatedAt = new Date().toISOString();
     const newMat = {
       name: formData.get('name'),
       category: formData.get('category'),
-      price: Number(formData.get('price')),
+      price: marketRead,
       unit: formData.get('unit'),
-      benchmark: Number(formData.get('price')), // simplified
-      trend: 'stable',
-      delta: '0.0%',
-      history: [Number(formData.get('price'))],
+      benchmark,
+      trend: editingMaterial?.trend || 'stable',
+      delta: editingMaterial?.delta || '0.0%',
+      history: [
+        ...(Array.isArray(editingMaterial?.history) ? editingMaterial.history.slice(-3) : []),
+        marketRead
+      ].filter(Boolean),
       usage: formData.get('usage'),
-      lastUpdated: new Date().toLocaleDateString()
+      updatedAt,
+      verifiedBy: String(formData.get('verifiedBy') || '').trim() || editingMaterial?.verifiedBy || 'BOQ Pro Market Review',
+      sourceCount,
+      regionRates: {
+        ...(editingMaterial?.regionRates || editingMaterial?.regions || {}),
+        [activeRegionLabel]: benchmark
+      },
+      sources: sourceNote ? [
+        {
+          label: sourceNote,
+          type: 'manual-entry',
+          region: activeRegionLabel,
+          rate: benchmark || marketRead,
+          capturedAt: updatedAt,
+          note: 'Captured from material library manage mode'
+        }
+      ] : editingMaterial?.sources
     };
 
     try {
       if (editingMaterial?.id && typeof editingMaterial.id === 'string') {
-        await updateMaterial(editingMaterial.id, newMat);
-        setMaterials(prev => prev.map(m => m.id === editingMaterial.id ? { ...m, ...newMat } : m));
+        const updated = await updateMaterial(editingMaterial.id, newMat);
+        setMaterials(prev => prev.map(m => m.id === editingMaterial.id ? updated : m));
         toast.success('Material updated successfully!');
       } else {
         const added = await addMaterial(newMat);
@@ -371,8 +397,24 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
              <input type="text" name="unit" defaultValue={editingMaterial?.unit || ''} required />
            </div>
            <div className="form-group">
-             <label>Rate (₦)</label>
+             <label>Rate (N)</label>
              <input type="number" name="price" defaultValue={editingMaterial?.price || ''} required />
+           </div>
+           <div className="form-group">
+             <label>Benchmark (N)</label>
+             <input type="number" name="benchmark" defaultValue={editingMaterial?.benchmark || editingMaterial?.price || ''} required />
+           </div>
+           <div className="form-group">
+             <label>Benchmark Sources</label>
+             <input type="number" name="sourceCount" min="1" defaultValue={editingMaterial?.sourceCount || 3} />
+           </div>
+           <div className="form-group">
+             <label>Verified By</label>
+             <input type="text" name="verifiedBy" defaultValue={editingMaterial?.verifiedBy || ''} placeholder="QS lead or market desk" />
+           </div>
+           <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+             <label>Source Note</label>
+             <input type="text" name="sourceNote" defaultValue={editingMaterial?.sources?.[0]?.label || ''} placeholder="Supplier quote, spot check, or calibration note" />
            </div>
            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
              <label>Usage Notes</label>
@@ -389,6 +431,10 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
 
   const renderIntelligenceDashboard = () => {
     const isLocked = !hasFeature(user?.plan, 'material-intelligence');
+    const averageConfidence = materials.length
+      ? Math.round((materials.reduce((sum, material) => sum + (Number(material.confidence) || 0), 0) / materials.length) * 100)
+      : 0;
+    const sourceCoverage = materials.reduce((sum, material) => sum + (Number(material.sourceCount) || 0), 0);
 
     return (
       <div className={`intelligence-dashboard ${isLocked ? 'locked-view' : ''}`}>
@@ -422,8 +468,8 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
               <span className="label">Benchmark Confidence</span>
               <ShieldCheck size={16} className="text-success" />
             </div>
-            <div className="metric-val">98.2%</div>
-            <div className="metric-footer">Based on supplier reads and QS calibration logs</div>
+            <div className="metric-val">{averageConfidence}%</div>
+            <div className="metric-footer">{sourceCoverage} supplier reads, spot checks, and QS calibration inputs</div>
           </div>
         </div>
 
@@ -454,7 +500,12 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
     );
   };
 
-  const renderDetailModal = (mat) => (
+  const renderDetailModal = (mat) => {
+    const benchmarkHistory = Array.isArray(mat.history) && mat.history.length
+      ? mat.history
+      : [getRegionalBenchmark(mat)];
+
+    return (
     <div className="detail-modal-overlay" onClick={() => setSelectedMaterial(null)}>
       <div className="detail-modal enterprise-card" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
@@ -471,9 +522,9 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
               <div className="section-title">{activeRegionLabel} Benchmark Trend (6 Months)</div>
               <div className="trend-chart-placeholder">
                 <div className="chart-bars">
-                  {mat.history.map((h, i) => (
+                  {benchmarkHistory.map((h, i) => (
                     <div key={i} className="chart-bar-group">
-                      <div className="bar" style={{ height: `${(h / Math.max(...mat.history)) * 100}%` }}></div>
+                      <div className="bar" style={{ height: `${(h / Math.max(...benchmarkHistory)) * 100}%` }}></div>
                       <span>M{i + 1}</span>
                     </div>
                   ))}
@@ -498,11 +549,19 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
               </div>
               <div className="stat-box">
                 <span className="s-label">Benchmark Confidence</span>
-                <span className="s-val text-success">HIGH</span>
+                <span className="s-val text-success">{mat.confidenceLabel.toUpperCase()}</span>
               </div>
               <div className="stat-box">
                 <span className="s-label">Benchmark Evidence Band</span>
-                <span className="s-val small">{mat.range}</span>
+                <span className="s-val small">{mat.benchmarkBand || mat.range}</span>
+              </div>
+              <div className="stat-box">
+                <span className="s-label">Evidence Sources</span>
+                <span className="s-val small">{mat.sourceCount} market inputs</span>
+              </div>
+              <div className="stat-box">
+                <span className="s-label">Verified By</span>
+                <span className="s-val small">{mat.verifiedBy}</span>
               </div>
             </div>
           </div>
@@ -512,9 +571,27 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
             <p>{mat.usage}</p>
           </div>
 
+          <div className="usage-notes">
+            <h4>Benchmark Evidence Trail</h4>
+            <div className="evidence-list">
+              {(mat.sources || []).map((source) => (
+                <div key={source.id} className="evidence-item">
+                  <div>
+                    <strong>{source.label}</strong>
+                    <span>{source.region}{source.note ? ` - ${source.note}` : ''}</span>
+                  </div>
+                  <div>
+                    <strong>{source.rate ? `N${Math.round(source.rate).toLocaleString()}` : 'Trace only'}</strong>
+                    <span>{source.capturedAt ? new Date(source.capturedAt).toLocaleDateString('en-NG') : 'Recently updated'}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="trust-disclaimer">
             <Info size={14} />
-            <span>Benchmarks are calibrated from supplier quotes, regional spot checks, and live QS pricing signals. Use custom overrides when procurement conditions differ.</span>
+            <span>Benchmarks are calibrated from {mat.sourceCount} market sources, regional spot checks, and live QS pricing signals. Use custom overrides when procurement conditions differ.</span>
           </div>
         </div>
 
@@ -556,6 +633,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
       </div>
     </div>
   );
+  };
 
   return (
     <div className="library-intelligence-view view-fade-in">
@@ -650,10 +728,14 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
               </div>
               <div className="mat-support-row">
                 <span className={`benchmark-flag ${driftMeta.tone}`}>{driftMeta.label}</span>
-                <span className="benchmark-range">Band {mat.range}</span>
+                <span className="benchmark-range">Band {mat.benchmarkBand || mat.range}</span>
+              </div>
+              <div className="mat-support-row mat-support-row-secondary">
+                <span className="benchmark-evidence">{mat.sourceCount} sources</span>
+                <span className="benchmark-evidence">{mat.confidenceLabel} confidence</span>
               </div>
               <div className="card-footer-l">
-                <div className="last-sync">Updated {mat.lastUpdated}</div>
+                <div className="last-sync">Updated {mat.lastUpdated} - {mat.verifiedBy}</div>
                 {isManageMode ? (
                   <div className="manage-actions" style={{display: 'flex', gap: '0.5rem'}}>
                      <button className="btn-icon" onClick={(e) => { e.stopPropagation(); setEditingMaterial(mat); }}><Edit2 size={13}/></button>
@@ -926,6 +1008,18 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                     gap: 0.75rem;
                     flex-wrap: wrap;
                 }
+                .mat-support-row-secondary {
+                    margin-top: 0.5rem;
+                }
+                .benchmark-evidence {
+                    font-size: 0.72rem;
+                    font-weight: 700;
+                    color: var(--primary-600);
+                    background: rgba(15, 23, 42, 0.04);
+                    border: 1px solid var(--border-light);
+                    border-radius: 999px;
+                    padding: 0.3rem 0.65rem;
+                }
                 .p-label { font-size: 0.6875rem; font-weight: 600; color: var(--primary-400); }
                 .p-val { display: flex; align-items: baseline; gap: 0.25rem; }
                 .p-val .curr { font-weight: 700; color: var(--primary-600); }
@@ -1036,6 +1130,30 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
 
                 .usage-notes h4 { font-size: 0.875rem; margin-bottom: 0.5rem; }
                 .usage-notes p { font-size: 0.875rem; color: var(--primary-600); line-height: 1.5; }
+                .evidence-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.75rem;
+                }
+                .evidence-item {
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 1rem;
+                    padding: 0.85rem 1rem;
+                    border: 1px solid var(--border-light);
+                    border-radius: 10px;
+                    background: rgba(255,255,255,0.7);
+                }
+                .evidence-item > div {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.2rem;
+                }
+                .evidence-item span {
+                    font-size: 0.75rem;
+                    color: var(--primary-500);
+                    line-height: 1.45;
+                }
 
                 .trust-disclaimer {
                     display: flex;

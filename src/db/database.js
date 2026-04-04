@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { buildCompanyKey, deriveCompanyName } from '../utils/companyAccess';
 import { getSeedMaterials } from './seed_materials';
+import { buildMaterialBenchmarkPayload, normalizeMaterialBenchmarkRecord } from '../utils/materialBenchmarks';
 
 /**
  * Strip heavy, reconstructable fields from a single BOQ item before cloud upload.
@@ -328,7 +329,7 @@ export const getWorkspaceState = async () => {
 export const getMaterials = async () => {
     try {
         const snapshot = await getDocs(query(collection(db, 'materials'), orderBy('name')));
-        const materials = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        const materials = snapshot.docs.map(d => normalizeMaterialBenchmarkRecord({ id: d.id, ...d.data() }));
         return materials.length > 0 ? materials : getSeedMaterials();
     } catch (err) {
         console.error('Error fetching materials:', err);
@@ -338,12 +339,13 @@ export const getMaterials = async () => {
 
 export const addMaterial = async (materialData) => {
     try {
+        const payload = buildMaterialBenchmarkPayload(materialData);
         const docRef = await addDoc(collection(db, 'materials'), {
-            ...materialData,
+            ...payload,
             created_at: serverTimestamp(),
             updated_at: serverTimestamp()
         });
-        return { id: docRef.id, ...materialData };
+        return normalizeMaterialBenchmarkRecord({ id: docRef.id, ...payload });
     } catch (err) {
         console.error('Error adding material:', err);
         throw err;
@@ -353,8 +355,9 @@ export const addMaterial = async (materialData) => {
 export const updateMaterial = async (id, updates) => {
     try {
         const docRef = doc(db, 'materials', id);
-        await updateDoc(docRef, { ...updates, updated_at: serverTimestamp() });
-        return true;
+        const payload = buildMaterialBenchmarkPayload(updates);
+        await updateDoc(docRef, { ...payload, updated_at: serverTimestamp() });
+        return normalizeMaterialBenchmarkRecord({ id, ...payload });
     } catch (err) {
         console.error('Error updating material:', err);
         throw err;

@@ -1,5 +1,6 @@
 import { getRegionalModifier } from './aiService';
 import { getBreakdownForItem } from '../data/rateBreakdowns';
+import { getMaterialRegionalBenchmark, normalizeMaterialBenchmarkRecord } from './materialBenchmarks';
 
 export const WORK_TYPE_PROFILES = {
   concrete: { shares: { materials: 0.58, labour: 0.18, plant: 0.14, transport: 0.10 }, waste: 2.5, siteAdjustment: 3, overheads: 12, profit: 10, roundingStep: 100 },
@@ -391,22 +392,34 @@ const expandTokens = (tokens) => {
 export const buildMaterialRateIndex = (materials = []) => {
   return materials
     .map((material) => {
-      const rate = clampNumber(material?.benchmark ?? material?.price ?? material?.rate);
-      if (!rate || !material?.name) return null;
+      const normalizedMaterial = normalizeMaterialBenchmarkRecord(material);
+      const rate = clampNumber(
+        getMaterialRegionalBenchmark(normalizedMaterial, 'Lagos')
+        || normalizedMaterial?.price
+        || normalizedMaterial?.rate
+      );
+      if (!rate || !normalizedMaterial?.name) return null;
 
-      const baseTokens = tokenize(material.name);
+      const baseTokens = tokenize(normalizedMaterial.name);
       return {
-        name: material.name,
-        normalizedName: normalizeText(material.name),
+        name: normalizedMaterial.name,
+        normalizedName: normalizeText(normalizedMaterial.name),
         tokens: expandTokens(baseTokens),
-        rate
+        rate,
+        sourceCount: normalizedMaterial.sourceCount || 0,
+        confidence: normalizedMaterial.confidence || 0,
+        confidenceLabel: normalizedMaterial.confidenceLabel || 'Medium',
+        verifiedBy: normalizedMaterial.verifiedBy || '',
+        updatedAt: normalizedMaterial.updatedAt || null,
+        sources: Array.isArray(normalizedMaterial.sources) ? normalizedMaterial.sources.map((source) => ({ ...source })) : [],
+        benchmarkBand: normalizedMaterial.benchmarkBand || normalizedMaterial.range || ''
       };
     })
     .filter(Boolean);
 };
 
-export const findMarketRateForMaterial = (row, materialIndex = []) => {
-  if (!row?.name || !materialIndex.length) return 0;
+export const findMarketMaterialMatch = (row, materialIndex = []) => {
+  if (!row?.name || !materialIndex.length) return null;
 
   const normalizedRow = normalizeText(row.name);
   const rowTokens = Array.from(expandTokens(tokenize(row.name)));
@@ -428,14 +441,18 @@ export const findMarketRateForMaterial = (row, materialIndex = []) => {
     });
 
     if (!bestMatch || score > bestMatch.score) {
-      bestMatch = { rate: candidate.rate, score };
+      bestMatch = { ...candidate, score };
     }
   });
 
-  if (!bestMatch) return 0;
-  if (bestMatch.score >= 12) return bestMatch.rate;
-  if (rowTokens.length <= 2 && bestMatch.score >= 5) return bestMatch.rate;
-  return 0;
+  if (!bestMatch) return null;
+  if (bestMatch.score >= 12) return bestMatch;
+  if (rowTokens.length <= 2 && bestMatch.score >= 5) return bestMatch;
+  return null;
+};
+
+export const findMarketRateForMaterial = (row, materialIndex = []) => {
+  return findMarketMaterialMatch(row, materialIndex)?.rate || 0;
 };
 
 export const applyMarketRatesToBreakdown = (breakdown, materialIndex = []) => {
@@ -444,8 +461,21 @@ export const applyMarketRatesToBreakdown = (breakdown, materialIndex = []) => {
   return {
     ...cloneBreakdown(breakdown),
     materials: (breakdown.materials || []).map((row) => {
-      const matchedRate = findMarketRateForMaterial(row, materialIndex);
-      return matchedRate ? { ...row, rate: matchedRate } : { ...row };
+      const match = findMarketMaterialMatch(row, materialIndex);
+      if (!match) return { ...row };
+
+      return {
+        ...row,
+        rate: match.rate,
+        benchmarkSource: match.name,
+        benchmarkSourceCount: match.sourceCount || 0,
+        benchmarkSources: Array.isArray(match.sources) ? match.sources.slice(0, 3).map((source) => source.label) : [],
+        benchmarkConfidence: match.confidence || 0,
+        benchmarkConfidenceLabel: match.confidenceLabel || 'Medium',
+        benchmarkVerifiedBy: match.verifiedBy || '',
+        benchmarkUpdatedAt: match.updatedAt || null,
+        benchmarkBand: match.benchmarkBand || ''
+      };
     })
   };
 };
