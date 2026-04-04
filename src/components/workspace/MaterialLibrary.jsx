@@ -18,6 +18,7 @@ import { hasFeature } from '../../data/plans';
 import { getMaterials, getMarketIndices, addMaterial, updateMaterial, deleteMaterial } from '../../db/database';
 import { Loader2 } from 'lucide-react';
 import {
+  buildMaterialBenchmarkHistoryEntry,
   getMaterialBenchmarkGovernance,
   getMaterialRegionalBenchmark,
   normalizeMaterialBenchmarkRecord
@@ -62,8 +63,23 @@ const buildMaterialBenchmarkEvidence = (material, activeRegion) => ({
   matchedMaterialCount: 1
 });
 
+const formatBenchmarkTimelineStamp = (value) => {
+  if (!value) return 'Recent update';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'Recent update';
+
+  return parsed.toLocaleString('en-NG', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+};
+
 const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
   const [selectedMaterial, setSelectedMaterial] = useState(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [materials, setMaterials] = useState([]);
   const [marketIndices, setMarketIndices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -427,6 +443,18 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
       regionRates,
       sources: [...managedSource, ...preservedSources].slice(0, 6)
     };
+    const benchmarkHistoryEntry = buildMaterialBenchmarkHistoryEntry({
+      previousMaterial: editingMaterial,
+      nextMaterial: newMat,
+      actor: user?.displayName || user?.email || newMat.verifiedBy || 'BOQ Pro Market Review',
+      activeRegion: activeRegionLabel,
+      changedAt: updatedAt,
+      reason: benchmarkDeskNote || sourceNote
+    });
+    newMat.benchmarkHistory = [
+      benchmarkHistoryEntry,
+      ...(Array.isArray(editingMaterial?.benchmarkHistory) ? editingMaterial.benchmarkHistory : [])
+    ].slice(0, 18);
 
     try {
       if (editingMaterial?.id && typeof editingMaterial.id === 'string') {
@@ -620,6 +648,85 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
   );
   };
 
+  const renderHistoryModal = () => {
+    const timelineEntries = materials
+      .flatMap((material) => (
+        (material.benchmarkHistory || []).map((entry) => ({
+          ...entry,
+          materialId: material.id,
+          materialName: material.name,
+          category: material.category,
+          benchmarkBand: material.benchmarkBand || material.range || ''
+        }))
+      ))
+      .sort((left, right) => {
+        const leftTime = Date.parse(left.changedAt || 0) || 0;
+        const rightTime = Date.parse(right.changedAt || 0) || 0;
+        return rightTime - leftTime;
+      })
+      .slice(0, 48);
+
+    return (
+      <div className="detail-modal-overlay" onClick={() => setShowHistoryModal(false)}>
+        <div className="detail-modal enterprise-card history-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <div className="mat-identity">
+              <span className="cat-tag">Audit Trail</span>
+              <h3>Benchmark Change History</h3>
+            </div>
+            <button className="close-btn" onClick={() => setShowHistoryModal(false)}>x</button>
+          </div>
+          <div className="modal-body">
+            <div className="history-summary-strip">
+              <span className="benchmark-evidence">{timelineEntries.length} recent benchmark events</span>
+              <span className="benchmark-evidence">{materials.length} tracked benchmark records</span>
+            </div>
+            <div className="history-timeline">
+              {timelineEntries.length === 0 && (
+                <div className="history-empty-state">No benchmark changes have been recorded yet.</div>
+              )}
+              {timelineEntries.map((entry) => (
+                <button
+                  key={entry.id}
+                  type="button"
+                  className="history-event"
+                  onClick={() => {
+                    const nextMaterial = materials.find((material) => material.id === entry.materialId);
+                    if (nextMaterial) {
+                      setSelectedMaterial(nextMaterial);
+                    }
+                    setShowHistoryModal(false);
+                  }}
+                >
+                  <div className="history-event-header">
+                    <div>
+                      <strong>{entry.title}</strong>
+                      <span>{entry.materialName} • {entry.category}</span>
+                    </div>
+                    <span className="history-event-time">{formatBenchmarkTimelineStamp(entry.changedAt)}</span>
+                  </div>
+                  <div className="history-event-meta">
+                    <span className="benchmark-evidence">{entry.actor || 'BOQ Pro Market Review'}</span>
+                    <span className={`benchmark-flag ${entry.approvalStatus || 'review'}`}>{entry.approvalStatus || 'review'}</span>
+                    {entry.sourceCount > 0 && <span className="benchmark-evidence">{entry.sourceCount} sources</span>}
+                  </div>
+                  <div className="history-event-body">
+                    <span>Benchmark: N{Math.round(Number(entry.benchmark) || 0).toLocaleString()}</span>
+                    {entry.changeSummary && <span>{entry.changeSummary}</span>}
+                    {entry.note && <small>{entry.note}</small>}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button className="btn-secondary" onClick={() => setShowHistoryModal(false)}>Close History</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderIntelligenceDashboard = () => {
     const isLocked = !hasFeature(user?.plan, 'material-intelligence');
     const averageConfidence = materials.length
@@ -676,7 +783,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
               <h3>Construction Material Cost Index (CMCI)</h3>
               <p>Regional benchmark signals calibrated from supplier reads, market spot checks, and live QS updates</p>
             </div>
-            <button className="btn-secondary small" onClick={() => toast.info('Index breakdown history will be available in the next update.')}>View Full Benchmark History</button>
+            <button className="btn-secondary small" onClick={() => setShowHistoryModal(true)}>View Full Benchmark History</button>
           </div>
           <div className="index-grid">
             {marketIndices.map((idx, i) => (
@@ -702,6 +809,9 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
       ? mat.history
       : [getRegionalBenchmark(mat)];
     const governance = getMaterialBenchmarkGovernance(mat);
+    const benchmarkAuditHistory = Array.isArray(mat.benchmarkHistory)
+      ? mat.benchmarkHistory.slice(0, 12)
+      : [];
 
     return (
     <div className="detail-modal-overlay" onClick={() => setSelectedMaterial(null)}>
@@ -800,6 +910,42 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 <strong className={`benchmark-text-${governance.healthTone}`}>{governance.healthLabel}</strong>
                 <small>{mat.benchmarkDeskNote || 'No benchmark desk note captured yet.'}</small>
               </div>
+            </div>
+          </div>
+
+          <div className="usage-notes">
+            <div className="history-section-header">
+              <h4>Benchmark Audit Trail</h4>
+              <button className="btn-secondary small" onClick={() => {
+                setSelectedMaterial(null);
+                setShowHistoryModal(true);
+              }}>Open Full History</button>
+            </div>
+            <div className="history-timeline history-timeline-inline">
+              {benchmarkAuditHistory.length === 0 && (
+                <div className="history-empty-state">No benchmark history captured yet for this material.</div>
+              )}
+              {benchmarkAuditHistory.map((entry) => (
+                <div key={entry.id} className="history-event history-event-static">
+                  <div className="history-event-header">
+                    <div>
+                      <strong>{entry.title}</strong>
+                      <span>{entry.actor || 'BOQ Pro Market Review'}</span>
+                    </div>
+                    <span className="history-event-time">{formatBenchmarkTimelineStamp(entry.changedAt)}</span>
+                  </div>
+                  <div className="history-event-meta">
+                    <span className={`benchmark-flag ${entry.approvalStatus || 'review'}`}>{entry.approvalStatus || 'review'}</span>
+                    {entry.sourceCount > 0 && <span className="benchmark-evidence">{entry.sourceCount} sources</span>}
+                    {entry.activeRegion && <span className="benchmark-evidence">{entry.activeRegion} focus</span>}
+                  </div>
+                  <div className="history-event-body">
+                    <span>Benchmark: N{Math.round(Number(entry.benchmark) || 0).toLocaleString()}</span>
+                    {entry.changeSummary && <span>{entry.changeSummary}</span>}
+                    {entry.note && <small>{entry.note}</small>}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -994,6 +1140,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
       </div>
 
       {editingMaterial && renderManageModal()}
+      {showHistoryModal && renderHistoryModal()}
       {!editingMaterial && selectedMaterial && renderDetailModal(selectedMaterial)}
 
       <style jsx="true">{`
@@ -1478,6 +1625,106 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                     color: var(--primary-500);
                     line-height: 1.45;
                 }
+                .history-section-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 0.75rem;
+                    margin-bottom: 0.85rem;
+                }
+                .history-modal {
+                    max-width: 880px;
+                }
+                .history-summary-strip {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 0.75rem;
+                    margin-bottom: 1rem;
+                }
+                .history-timeline {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.85rem;
+                }
+                .history-timeline-inline {
+                    max-height: 360px;
+                    overflow-y: auto;
+                    padding-right: 0.25rem;
+                }
+                .history-event {
+                    width: 100%;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.55rem;
+                    padding: 1rem 1.05rem;
+                    border: 1px solid var(--border-light);
+                    border-radius: 12px;
+                    background: rgba(248, 250, 252, 0.92);
+                    text-align: left;
+                    transition: all 0.2s ease;
+                    color: inherit;
+                }
+                button.history-event {
+                    cursor: pointer;
+                }
+                button.history-event:hover {
+                    border-color: var(--accent-500);
+                    box-shadow: 0 10px 24px rgba(37, 99, 235, 0.08);
+                    transform: translateY(-1px);
+                }
+                .history-event-static {
+                    cursor: default;
+                }
+                .history-event-header {
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 1rem;
+                    align-items: flex-start;
+                }
+                .history-event-header > div {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.18rem;
+                }
+                .history-event-header strong {
+                    font-size: 0.9rem;
+                    color: var(--primary-900);
+                }
+                .history-event-header span {
+                    font-size: 0.74rem;
+                    color: var(--primary-500);
+                }
+                .history-event-time {
+                    font-size: 0.72rem;
+                    font-weight: 700;
+                    color: var(--primary-500);
+                    white-space: nowrap;
+                }
+                .history-event-meta {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 0.55rem;
+                }
+                .history-event-body {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.24rem;
+                    font-size: 0.8rem;
+                    color: var(--primary-700);
+                    line-height: 1.45;
+                }
+                .history-event-body small {
+                    font-size: 0.74rem;
+                    color: var(--primary-500);
+                }
+                .history-empty-state {
+                    padding: 1rem 1.1rem;
+                    border: 1px dashed var(--border-medium);
+                    border-radius: 12px;
+                    color: var(--primary-500);
+                    font-size: 0.82rem;
+                    background: rgba(248, 250, 252, 0.78);
+                }
 
                 .usage-notes h4 { font-size: 0.875rem; margin-bottom: 0.5rem; }
                 .usage-notes p { font-size: 0.875rem; color: var(--primary-600); line-height: 1.5; }
@@ -1567,6 +1814,12 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
 
                     .filter-actions {
                         flex-direction: column;
+                    }
+
+                    .history-section-header,
+                    .history-event-header {
+                        flex-direction: column;
+                        align-items: flex-start;
                     }
                 }
             `}</style>

@@ -176,6 +176,110 @@ const normalizeSources = (material, context) => {
   return normalized.length ? normalized : buildDefaultSources(material, context);
 };
 
+const normalizeHistoryRegionRates = (regionRates = {}) => (
+  Object.entries(regionRates).reduce((acc, [region, value]) => {
+    const numericValue = clampNumber(value);
+    if (!region || !numericValue) return acc;
+    acc[region] = numericValue;
+    return acc;
+  }, {})
+);
+
+const summarizeRegionChanges = (previousRates = {}, nextRates = {}) => {
+  const regions = Array.from(new Set([
+    ...Object.keys(previousRates || {}),
+    ...Object.keys(nextRates || {})
+  ]));
+
+  return regions.reduce((changes, region) => {
+    const previousValue = clampNumber(previousRates?.[region]);
+    const nextValue = clampNumber(nextRates?.[region]);
+    if (previousValue === nextValue) return changes;
+
+    if (!previousValue && nextValue) {
+      changes.push(`${region} set to ${formatCurrency(nextValue)}`);
+    } else if (previousValue && !nextValue) {
+      changes.push(`${region} cleared from ${formatCurrency(previousValue)}`);
+    } else {
+      changes.push(`${region} ${formatCurrency(previousValue)} to ${formatCurrency(nextValue)}`);
+    }
+
+    return changes;
+  }, []);
+};
+
+const normalizeBenchmarkHistoryEntry = (entry, index, material, context) => {
+  const changedAt = resolveDate(entry?.changedAt || entry?.updatedAt || entry?.capturedAt || context.updatedAt)?.toISOString()
+    || context.updatedAt
+    || new Date().toISOString();
+  const title = String(entry?.title || entry?.label || 'Benchmark update').trim();
+  const previousRegionRates = normalizeHistoryRegionRates(entry?.previousRegionRates || {});
+  const regionRates = normalizeHistoryRegionRates(entry?.regionRates || entry?.regions || context.regionRates || {});
+  const regionChanges = Array.isArray(entry?.regionChanges)
+    ? entry.regionChanges.filter(Boolean)
+    : summarizeRegionChanges(previousRegionRates, regionRates);
+
+  return {
+    id: entry?.id || `${material.id || material.name || 'material'}-benchmark-history-${index + 1}`,
+    title,
+    action: entry?.action || 'benchmark-update',
+    actor: entry?.actor || entry?.updatedBy || context.verifiedBy || 'BOQ Pro Market Review',
+    changedAt,
+    benchmark: clampNumber(entry?.benchmark ?? context.benchmark),
+    previousBenchmark: clampNumber(entry?.previousBenchmark),
+    marketRead: clampNumber(entry?.marketRead ?? context.marketRead),
+    approvalStatus: String(entry?.approvalStatus || context.approvalStatus || 'review').toLowerCase().trim(),
+    approvedBy: entry?.approvedBy || context.approvedBy || '',
+    sourceCount: clampNumber(entry?.sourceCount ?? context.sourceCount),
+    confidence: clampNumber(entry?.confidence ?? context.confidence),
+    activeRegion: entry?.activeRegion || Object.keys(regionRates)[0] || 'Lagos',
+    regionRates,
+    previousRegionRates,
+    regionChanges,
+    changeSummary: entry?.changeSummary || regionChanges.slice(0, 4).join(' | '),
+    note: entry?.note || entry?.reason || context.benchmarkDeskNote || '',
+  };
+};
+
+const buildDefaultBenchmarkHistory = (material, context) => {
+  const defaultTimestamp = context.updatedAt || new Date().toISOString();
+
+  return [{
+    id: `${material.id || material.name || 'material'}-benchmark-history-baseline`,
+    title: 'Benchmark baseline loaded',
+    action: 'baseline',
+    actor: context.verifiedBy || 'BOQ Pro Market Review',
+    changedAt: defaultTimestamp,
+    benchmark: clampNumber(context.benchmark),
+    previousBenchmark: 0,
+    marketRead: clampNumber(context.marketRead),
+    approvalStatus: String(context.approvalStatus || 'review').toLowerCase().trim(),
+    approvedBy: context.approvedBy || '',
+    sourceCount: clampNumber(context.sourceCount),
+    confidence: clampNumber(context.confidence),
+    activeRegion: Object.keys(context.regionRates || {})[0] || 'Lagos',
+    regionRates: normalizeHistoryRegionRates(context.regionRates || {}),
+    previousRegionRates: {},
+    regionChanges: summarizeRegionChanges({}, context.regionRates || {}),
+    changeSummary: 'Initial benchmark baseline available in the library',
+    note: context.benchmarkDeskNote || ''
+  }];
+};
+
+const normalizeBenchmarkHistory = (material, context) => {
+  const explicitHistory = Array.isArray(material.benchmarkHistory) ? material.benchmarkHistory : [];
+  const normalizedHistory = explicitHistory
+    .map((entry, index) => normalizeBenchmarkHistoryEntry(entry, index, material, context))
+    .filter(Boolean)
+    .sort((left, right) => {
+      const leftTime = Date.parse(left.changedAt || 0) || 0;
+      const rightTime = Date.parse(right.changedAt || 0) || 0;
+      return rightTime - leftTime;
+    });
+
+  return normalizedHistory.length ? normalizedHistory : buildDefaultBenchmarkHistory(material, context);
+};
+
 const normalizeConfidenceValue = (value, sourceCount, updatedAt, regionCount, historyCount) => {
   if (typeof value === 'string') {
     const normalized = value.toLowerCase();
@@ -297,6 +401,61 @@ export const getMaterialBenchmarkGovernance = (material = {}) => {
   };
 };
 
+export const buildMaterialBenchmarkHistoryEntry = ({
+  previousMaterial = null,
+  nextMaterial = {},
+  actor = 'BOQ Pro Market Review',
+  activeRegion = 'Lagos',
+  changedAt = new Date().toISOString(),
+  reason = ''
+} = {}) => {
+  const previousRegionRates = normalizeHistoryRegionRates(previousMaterial?.regionRates || previousMaterial?.regions || {});
+  const nextRegionRates = normalizeHistoryRegionRates(nextMaterial?.regionRates || nextMaterial?.regions || {});
+  const previousBenchmark = clampNumber(previousMaterial?.benchmark);
+  const nextBenchmark = clampNumber(nextMaterial?.benchmark);
+  const previousApproval = String(previousMaterial?.approvalStatus || (previousMaterial?.approvedAt ? 'approved' : 'review')).toLowerCase().trim();
+  const nextApproval = String(nextMaterial?.approvalStatus || (nextMaterial?.approvedAt ? 'approved' : 'review')).toLowerCase().trim();
+  const regionChanges = summarizeRegionChanges(previousRegionRates, nextRegionRates);
+
+  let title = 'Benchmark evidence updated';
+  let action = 'benchmark-update';
+
+  if (!previousMaterial?.id && !previousMaterial?.name) {
+    title = 'Benchmark record created';
+    action = 'create';
+  } else if (previousBenchmark !== nextBenchmark) {
+    title = 'Benchmark recalibrated';
+    action = 'recalibrated';
+  } else if (regionChanges.length) {
+    title = 'Regional benchmark matrix updated';
+    action = 'regional-update';
+  } else if (previousApproval !== nextApproval) {
+    title = 'Benchmark governance updated';
+    action = 'governance-update';
+  }
+
+  return {
+    id: `${nextMaterial?.id || nextMaterial?.name || 'material'}-history-${changedAt}`,
+    title,
+    action,
+    actor,
+    changedAt,
+    benchmark: nextBenchmark,
+    previousBenchmark,
+    marketRead: clampNumber(nextMaterial?.price ?? nextMaterial?.currentRead),
+    approvalStatus: nextApproval,
+    approvedBy: nextMaterial?.approvedBy || '',
+    sourceCount: clampNumber(nextMaterial?.sourceCount),
+    confidence: clampNumber(nextMaterial?.confidence),
+    activeRegion,
+    regionRates: nextRegionRates,
+    previousRegionRates,
+    regionChanges,
+    changeSummary: regionChanges.slice(0, 4).join(' | '),
+    note: reason || nextMaterial?.benchmarkDeskNote || ''
+  };
+};
+
 export const getMaterialRegionalBenchmark = (material, region = 'Lagos') => {
   if (!material) return 0;
 
@@ -367,6 +526,18 @@ export const normalizeMaterialBenchmarkRecord = (material = {}) => {
   const approvalStatus = String(material.approvalStatus || (approvedAt ? 'approved' : 'review'))
     .toLowerCase()
     .trim() || 'review';
+  const benchmarkHistory = normalizeBenchmarkHistory(material, {
+    benchmark,
+    marketRead,
+    regionRates,
+    updatedAt: resolvedUpdatedAt,
+    verifiedBy: material.verifiedBy || 'BOQ Pro Market Review',
+    approvalStatus,
+    approvedBy: material.approvedBy || material.verifiedBy || 'BOQ Pro Market Review',
+    sourceCount,
+    confidence,
+    benchmarkDeskNote: material.benchmarkDeskNote || material.marketDeskNote || ''
+  });
 
   return {
     ...material,
@@ -388,6 +559,7 @@ export const normalizeMaterialBenchmarkRecord = (material = {}) => {
     benchmarkDeskNote: material.benchmarkDeskNote || material.marketDeskNote || '',
     benchmarkBand,
     range: material.range || benchmarkBand,
+    benchmarkHistory,
     updatedAt: resolvedUpdatedAt,
     lastUpdated: resolvedUpdatedAt
       ? formatRelativeDate(resolvedUpdatedAt)
@@ -400,6 +572,14 @@ export const buildMaterialBenchmarkPayload = (material = {}) => {
   const payload = {
     ...normalized,
     history: Array.isArray(normalized.history) ? [...normalized.history] : [],
+    benchmarkHistory: Array.isArray(normalized.benchmarkHistory)
+      ? normalized.benchmarkHistory.map((entry) => ({
+        ...entry,
+        regionRates: { ...(entry.regionRates || {}) },
+        previousRegionRates: { ...(entry.previousRegionRates || {}) },
+        regionChanges: Array.isArray(entry.regionChanges) ? [...entry.regionChanges] : []
+      }))
+      : [],
     regionRates: { ...(normalized.regionRates || {}) },
     regions: { ...(normalized.regions || {}) },
     sources: Array.isArray(normalized.sources) ? normalized.sources.map((source) => ({ ...source })) : []
