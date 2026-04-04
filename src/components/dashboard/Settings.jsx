@@ -131,15 +131,24 @@ const Settings = ({ user, onUpgrade }) => {
             </div>
 
             <div className="current-plan-card">
-              <div className="plan-badge">{user?.plan || 'Free'} Plan</div>
+              <div className="plan-badge">{user?.plan || 'Student'} Plan</div>
               <div className="plan-details">
-                <h4>{user?.plan === 'Free' ? 'Student & Basic' : 'Practitioner Pro'}</h4>
-                <p>{user?.plan === 'Free' ? 'Limited to 3 projects' : 'Unlimited professional projects'}</p>
+                <h4>{user?.plan || 'Student'}</h4>
+                <p>{(() => {
+                  const p = (user?.plan || '').toLowerCase();
+                  if (!p || p === 'student' || p === 'free' || p === 'student & basic') return 'Up to 3 active projects — free forever';
+                  if (p === 'starter') return 'Up to 10 projects — ₦5,000/month';
+                  if (p === 'professional' || p === 'practitioner') return 'Unlimited projects — ₦15,000/month';
+                  if (p === 'business') return 'Up to 5 users, unlimited projects — ₦35,000/month';
+                  if (p === 'corporate') return 'Up to 20 users, unlimited projects — ₦75,000/month';
+                  if (p === 'enterprise') return 'Unlimited everything — custom pricing';
+                  return 'Free tier';
+                })()}</p>
               </div>
-              {user?.plan === 'Free' ? (
+              {(!user?.plan || user?.plan === 'Free' || user?.plan === 'Student' || user?.plan === 'Student & Basic') ? (
                 <button className="btn-upgrade-glow" onClick={onUpgrade}>Upgrade Now</button>
               ) : (
-                <button className="btn-secondary-sm" onClick={() => toast.info('Billing portal is being synchronized with Paystack/Flutterwave.')}>Manage Billing</button>
+                <button className="btn-secondary-sm" onClick={onUpgrade}>Change Plan</button>
               )}
             </div>
 
@@ -148,16 +157,21 @@ const Settings = ({ user, onUpgrade }) => {
               <div className="limit-item">
                 <div className="limit-info">
                   <span>Active Projects</span>
-                  <span>3 / {user?.plan === 'Free' ? '3' : '∞'}</span>
+                  <span>{(() => {
+                    const p = (user?.plan || '').toLowerCase();
+                    if (!p || p === 'student' || p === 'free' || p === 'student & basic') return '3 / 3';
+                    if (p === 'starter') return '3 / 10';
+                    return '3 / ∞';
+                  })()}</span>
                 </div>
-                <div className="limit-bar"><div className="limit-fill" style={{ width: user?.plan === 'Free' ? '100%' : '5%', background: user?.plan === 'Free' ? 'var(--warning-600)' : 'var(--accent-600)' }}></div></div>
+                <div className="limit-bar"><div className="limit-fill" style={{ width: (!user?.plan || user?.plan === 'Student' || user?.plan === 'Free' || user?.plan === 'Student & Basic') ? '100%' : user?.plan === 'Starter' ? '30%' : '5%', background: (!user?.plan || user?.plan === 'Student' || user?.plan === 'Free' || user?.plan === 'Student & Basic') ? 'var(--warning-600)' : 'var(--accent-600)' }}></div></div>
               </div>
               <div className="limit-item">
                 <div className="limit-info">
                   <span>Price Library Exports</span>
-                  <span>12 / {user?.plan === 'Free' ? '15' : '∞'}</span>
+                  <span>12 / {(!user?.plan || user?.plan === 'Student' || user?.plan === 'Free' || user?.plan === 'Student & Basic') ? '15' : '∞'}</span>
                 </div>
-                <div className="limit-bar"><div className="limit-fill" style={{ width: user?.plan === 'Free' ? '80%' : '2%' }}></div></div>
+                <div className="limit-bar"><div className="limit-fill" style={{ width: (!user?.plan || user?.plan === 'Student' || user?.plan === 'Free' || user?.plan === 'Student & Basic') ? '80%' : '2%' }}></div></div>
               </div>
             </div>
 
@@ -170,14 +184,30 @@ const Settings = ({ user, onUpgrade }) => {
                   <span>Status</span>
                   <span></span>
                 </div>
-                <div className="table-row">
-                  <span>Oct 12, 2025</span>
-                  <span>₦0.00</span>
-                  <span className="badge-success">Paid</span>
-                  <button className="btn-icon" onClick={() => toast.info('Downloading invoice PDF...')}>
-                    <ArrowUpCircle size={14} />
-                  </button>
-                </div>
+                {user?.lastPayment ? (
+                  <div className="table-row">
+                    <span>{new Date(user.lastPayment.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                    <span>{(() => {
+                      const p = (user.lastPayment.plan || '').toLowerCase();
+                      if (p === 'starter') return user.lastPayment.billing === 'annual' ? '₦50,000' : '₦5,000';
+                      if (p === 'professional') return user.lastPayment.billing === 'annual' ? '₦150,000' : '₦15,000';
+                      if (p === 'business') return user.lastPayment.billing === 'annual' ? '₦350,000' : '₦35,000';
+                      if (p === 'corporate') return user.lastPayment.billing === 'annual' ? '₦750,000' : '₦75,000';
+                      return '₦0.00';
+                    })()}</span>
+                    <span className="badge-success">Paid</span>
+                    <button className="btn-icon" onClick={() => toast.info('Downloading invoice PDF...')}>
+                      <ArrowUpCircle size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="table-row">
+                    <span>—</span>
+                    <span>₦0.00</span>
+                    <span className="badge-success">Free Tier</span>
+                    <span></span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

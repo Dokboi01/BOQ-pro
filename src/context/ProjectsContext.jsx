@@ -704,7 +704,7 @@ export function ProjectsProvider({ children }) {
     }, [filterVisibleProjects, toast]);
 
     const handleCreateProject = () => {
-        const limits = PLAN_LIMITS[user?.plan] || PLAN_LIMITS[PLAN_NAMES.FREE];
+        const limits = PLAN_LIMITS[user?.plan] || PLAN_LIMITS[PLAN_NAMES.STUDENT];
         if (projects.length >= limits.maxProjects) {
             setView('pricing');
             return;

@@ -377,12 +377,22 @@ export function AuthProvider({ children }) {
         return false;
     };
 
-    const handleSelectPlan = async (plan) => {
+    const handleSelectPlan = async (plan, paystackData) => {
         setAuthError(null);
 
         if (user) {
             try {
-                const result = await updateProfile({ plan });
+                const profileUpdate = { plan };
+                // Store Paystack transaction reference if a payment was made
+                if (paystackData?.transaction) {
+                    profileUpdate.lastPayment = {
+                        reference: paystackData.transaction.reference || paystackData.transaction.ref,
+                        billing: paystackData.billing || 'monthly',
+                        plan,
+                        date: new Date().toISOString()
+                    };
+                }
+                const result = await updateProfile(profileUpdate);
                 if (result) {
                     setUser(prev => ({ ...prev, ...result }));
                     localStorage.setItem('boq_pro_profile', JSON.stringify({ ...user, ...result }));
@@ -396,7 +406,12 @@ export function AuthProvider({ children }) {
                 setView('app');
             }
         } else {
+            // User not logged in — store plan choice and go to signup
             setSelectedPlan(plan);
+            if (paystackData) {
+                // Save pending transaction for after signup
+                localStorage.setItem('boq_pro_pending_payment', JSON.stringify(paystackData));
+            }
             setView('signup');
         }
     };
