@@ -168,7 +168,9 @@ function App() {
   if (view === 'landing') return <Hero onGetStarted={() => setView(user ? 'app' : 'pricing')} onLogin={() => setView(user ? 'app' : 'login')} />;
   if (view === 'pricing') return <PricingPage
     error={authError}
+    userEmail={user?.email}
     onSelectPlan={handleSelectPlan}
+    onLogin={() => setView(user ? 'app' : 'login')}
     onBack={() => { setAuthError(null); setView(user ? 'app' : 'landing'); }}
   />;
   if (view === 'login') return <Login

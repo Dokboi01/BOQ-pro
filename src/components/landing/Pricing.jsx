@@ -1,286 +1,538 @@
-import React from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
+  BarChart3,
+  CheckCircle2,
   Check,
+  X,
   Shield,
   Zap,
   Building2,
   GraduationCap,
   ArrowLeft,
   ArrowRight,
-  Calculator,
-  FileSpreadsheet,
-  MessagesSquare,
+  Briefcase,
+  Crown,
+  Rocket,
+  Sparkles,
+  Layers3,
   Mail,
-  Phone,
-  Sparkles
+  Phone
 } from 'lucide-react';
+import { PLANS, PLAN_NAMES, PLAN_TIER_ORDER, FEATURE_COMPARISON, isPaidPlan } from '../../data/plans';
+import { paystackCheckout, isPaystackConfigured } from '../../utils/paystack';
 
-const PricingPage = ({ onSelectPlan, onBack, error }) => {
-  const [loadingPlan, setLoadingPlan] = React.useState(null);
+const PLAN_ICONS = {
+  [PLAN_NAMES.STUDENT]: GraduationCap,
+  [PLAN_NAMES.STARTER]: Rocket,
+  [PLAN_NAMES.PROFESSIONAL]: Zap,
+  [PLAN_NAMES.BUSINESS]: Briefcase,
+  [PLAN_NAMES.CORPORATE]: Crown,
+  [PLAN_NAMES.ENTERPRISE]: Building2,
+};
 
-  const plans = [
-    {
-      name: 'Student & Basic',
-      tone: 'student',
-      icon: <GraduationCap size={22} />,
-      price: 'Free',
-      period: '',
-      bestFor: 'Best for learning, coursework, and smaller practice jobs.',
-      description: 'A clean entry point for students and early-stage practitioners who need structured BOQ workflow without a monthly cost.',
-      features: [
-        'Up to 3 active projects',
-        'Core BOQ calculations',
-        'Standard PDF exports',
-        'Essential material library',
-        'Basic rate build-up support'
-      ],
-      note: 'Start here if you are learning the workflow or testing the app with light-volume jobs.',
-      cta: 'Start Free',
-      popular: false
-    },
-    {
-      name: 'Practitioner',
-      tone: 'practitioner',
-      icon: <Zap size={22} />,
-      price: 'NGN 25,000',
-      period: '/month',
-      bestFor: 'Best for active QS teams, contractors, and estimators.',
-      description: 'The strongest option for real project delivery, custom pricing, deeper reports, and the day-to-day work of commercial teams.',
-      features: [
-        'Unlimited projects',
-        'Benchmark plus custom pricing',
-        'Professional PDF and CSV exports',
-        'Advanced rate analysis',
-        'Priority support',
-        'Custom material libraries'
-      ],
-      note: 'This is the plan that fits the way BOQ Pro is built today: serious pricing work, not just trial use.',
-      cta: 'Choose Practitioner',
-      popular: true
-    },
-    {
-      name: 'Enterprise',
-      tone: 'enterprise',
-      icon: <Building2 size={22} />,
-      price: 'Custom',
-      period: '',
-      bestFor: 'Best for company rollout, admin control, and managed onboarding.',
-      description: 'For firms that want BOQ Pro set up as a company system with structured rollout, closer support, and broader deployment needs.',
-      features: [
-        'Team access and rollout support',
-        'Shared company workspace setup',
-        'Review flow and admin guidance',
-        'Priority onboarding support',
-        'Institutional licensing path',
-        'Commercial deployment assistance'
-      ],
-      note: 'If you want to onboard a whole firm, this is the conversation to have.',
-      cta: 'Talk To Sales',
-      contactEmail: 'adedokunhassan01@gmail.com',
-      contactPhone: '08151148095',
-      popular: false
+const PLAN_TONES = {
+  [PLAN_NAMES.STUDENT]: 'student',
+  [PLAN_NAMES.STARTER]: 'starter',
+  [PLAN_NAMES.PROFESSIONAL]: 'professional',
+  [PLAN_NAMES.BUSINESS]: 'business',
+  [PLAN_NAMES.CORPORATE]: 'corporate',
+  [PLAN_NAMES.ENTERPRISE]: 'enterprise',
+};
+
+const TRUST_SIGNALS = [
+  'Built for Quantity Surveyors',
+  'Built for Contractors',
+  'Built for Estimating Teams',
+  'Built for Company Rollout'
+];
+
+const VALUE_CARDS = [
+  {
+    icon: Layers3,
+    title: 'Same Workspace Story',
+    copy: 'The pricing page now feels closer to the welcome page instead of looking like a detached billing screen.'
+  },
+  {
+    icon: Zap,
+    title: 'Benchmark-First Flow',
+    copy: 'Plans are framed around BOQ Pro’s real workflow: benchmark pricing, custom build-up, exports, and review.'
+  },
+  {
+    icon: BarChart3,
+    title: 'Built To Scale',
+    copy: 'Start solo, then move into team review, admin controls, and company rollout inside the same product.'
+  }
+];
+
+const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail }) => {
+  const [billing, setBilling] = useState('monthly');
+  const [loadingPlan, setLoadingPlan] = useState(null);
+  const [localError, setLocalError] = useState(null);
+  const [showComparison, setShowComparison] = useState(false);
+  const plansRef = useRef(null);
+  const comparisonRef = useRef(null);
+
+  const displayError = error || localError;
+  const previewPlans = [PLAN_NAMES.STUDENT, PLAN_NAMES.PROFESSIONAL, PLAN_NAMES.BUSINESS];
+
+  const scrollToSection = (ref, revealComparison = false) => {
+    if (revealComparison) {
+      setShowComparison(true);
     }
-  ];
-
-  const rolloutCards = [
-    {
-      icon: <Calculator size={18} />,
-      title: 'Pricing Teams',
-      copy: 'Move from raw quantities to defendable custom rates without breaking the workflow into separate spreadsheets.'
-    },
-    {
-      icon: <MessagesSquare size={18} />,
-      title: 'Company Rollout',
-      copy: 'Give one company a single commercial workspace instead of leaving each estimator with their own disconnected files.'
-    },
-    {
-      icon: <FileSpreadsheet size={18} />,
-      title: 'Submission Output',
-      copy: 'Keep the same working BOQ all the way through to exports, reviews, and final handoff.'
-    }
-  ];
-
-  const summaryStats = [
-    { value: '1 app', label: 'Pricing, review, and export in one place' },
-    { value: 'Custom-ready', label: 'Built for benchmark and custom rate workflow' },
-    { value: 'Company-first', label: 'Designed to grow from one user to one team' }
-  ];
-
-  const handleSelect = async (planName) => {
-    setLoadingPlan(planName);
-    await onSelectPlan(planName);
-    setLoadingPlan(null);
+    requestAnimationFrame(() => {
+      setTimeout(() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+    });
   };
+
+  const handleSelect = useCallback(async (planName) => {
+    setLocalError(null);
+    const plan = PLANS[planName];
+    if (!plan) return;
+
+    // Free plan — go straight to signup
+    if (!isPaidPlan(planName)) {
+      setLoadingPlan(planName);
+      await onSelectPlan(planName);
+      setLoadingPlan(null);
+      return;
+    }
+
+    // Enterprise — mailto (handled in JSX)
+    if (planName === PLAN_NAMES.ENTERPRISE) return;
+
+    // Paid plan — Paystack checkout
+    if (!isPaystackConfigured()) {
+      // If Paystack isn't configured, fall back to direct plan selection
+      setLoadingPlan(planName);
+      await onSelectPlan(planName);
+      setLoadingPlan(null);
+      return;
+    }
+
+    const amount = billing === 'annual' ? plan.priceAnnual : plan.priceMonthly;
+    const email = userEmail || 'customer@boqpro.com';
+
+    setLoadingPlan(planName);
+    try {
+      await paystackCheckout({
+        email,
+        amount,
+        planName,
+        billing,
+        onSuccess: async (transaction) => {
+          console.log('✅ Payment complete:', transaction);
+          await onSelectPlan(planName, { transaction, billing });
+          setLoadingPlan(null);
+        },
+        onCancel: () => {
+          console.log('🚪 Payment cancelled');
+          setLoadingPlan(null);
+        }
+      });
+    } catch (err) {
+      console.error('❌ Paystack error:', err);
+      setLocalError(err.message || 'Payment failed. Please try again.');
+      setLoadingPlan(null);
+    }
+  }, [billing, onSelectPlan, userEmail]);
+
+  const savingsPercent = 17;
 
   return (
     <div className="pricing-shell">
       <div className="pricing-atmosphere" />
       <div className="pricing-grid-overlay" />
 
+      {/* ── Navigation ── */}
       <nav className="pricing-nav">
         <button className="brand-mark" onClick={onBack}>
-          <span className="brand-icon">
-            <Shield size={18} />
-          </span>
+          <span className="brand-icon"><Shield size={18} /></span>
           <span className="brand-copy">
             <strong>BOQ Pro</strong>
             <small>Commercial workspace for construction teams</small>
           </span>
         </button>
-
-        <button className="nav-back-btn" onClick={onBack}>
-          <ArrowLeft size={16} />
-          Back to home
-        </button>
+        <div className="nav-actions">
+          <button className="nav-back-btn" onClick={onBack}>
+            <ArrowLeft size={16} />
+            Back to home
+          </button>
+          {onLogin && (
+            <button className="nav-login-btn" onClick={onLogin}>
+              Log in
+            </button>
+          )}
+        </div>
       </nav>
 
       <main className="pricing-main">
-        <section className="pricing-hero">
-          <div className="pricing-copy">
+        <section className="pricing-hero-section">
+          <div className="pricing-hero-copy">
             <div className="section-kicker">
               <Sparkles size={14} />
               Pricing built around real BOQ work
             </div>
-
             <h1>
-              Choose the plan that matches
-              <span> how your team prices.</span>
+              Choose a plan that still feels like
+              <span> the same BOQ Pro product.</span>
             </h1>
-
             <p className="pricing-subtitle">
-              The same product story from the base page carries here: BOQ Pro is strongest when it
-              supports live pricing work, company rollout, and clean project handoff without the
-              usual spreadsheet sprawl.
+              The welcome page now has a stronger BOQ-Pro feel, so this page should continue that same
+              atmosphere. The plan story is clearer, but the product tone stays consistent from first visit to signup.
             </p>
 
-            {error && (
+            {displayError && (
               <div className="pricing-error-banner">
                 <span className="error-icon">!</span>
-                <span>{error}</span>
+                <span>{displayError}</span>
               </div>
             )}
 
-            <div className="summary-strip">
-              {summaryStats.map((stat) => (
-                <div key={stat.label} className="summary-card">
-                  <strong>{stat.value}</strong>
-                  <span>{stat.label}</span>
-                </div>
+            <div className="pricing-hero-actions">
+              <button className="hero-cta-primary" onClick={() => scrollToSection(plansRef)}>
+                See plan options
+                <ArrowRight size={18} />
+              </button>
+              <button className="hero-cta-secondary" onClick={() => scrollToSection(comparisonRef, true)}>
+                Compare features
+              </button>
+            </div>
+
+            <div className="billing-panel">
+              <div className="billing-copy">
+                <span>Billing preference</span>
+                <strong>{billing === 'annual' ? 'Annual billing with savings' : 'Monthly billing flexibility'}</strong>
+              </div>
+              <div className="billing-toggle">
+                <button
+                  className={`toggle-btn ${billing === 'monthly' ? 'active' : ''}`}
+                  onClick={() => setBilling('monthly')}
+                >
+                  Monthly
+                </button>
+                <button
+                  className={`toggle-btn ${billing === 'annual' ? 'active' : ''}`}
+                  onClick={() => setBilling('annual')}
+                >
+                  Annual
+                  <span className="savings-badge">Save {savingsPercent}%</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="hero-stats">
+              <div className="hero-stat-card">
+                <strong>6 tiers</strong>
+                <span>From student to enterprise rollout</span>
+              </div>
+              <div className="hero-stat-card">
+                <strong>17%</strong>
+                <span>Typical annual savings</span>
+              </div>
+              <div className="hero-stat-card">
+                <strong>1 workspace</strong>
+                <span>Same BOQ engine across every plan</span>
+              </div>
+            </div>
+
+            <div className="trust-strip">
+              {TRUST_SIGNALS.map((signal) => (
+                <span key={signal}>{signal}</span>
               ))}
             </div>
           </div>
 
-          <div className="pricing-preview">
-            <span className="preview-tag">Rollout view</span>
-            <h2>Start with one estimator. Scale into one company workspace.</h2>
+          <div className="pricing-hero-visual">
+            <div className="preview-card preview-card-main">
+              <div className="preview-card-head">
+                <div>
+                  <span className="preview-tag">Plan guide</span>
+                  <h2>How teams usually grow with BOQ Pro</h2>
+                </div>
+                <span className="preview-mode">
+                  <Sparkles size={14} />
+                  {billing === 'annual' ? 'Annual view' : 'Monthly view'}
+                </span>
+              </div>
 
-            <div className="preview-points">
-              <div className="preview-point">
-                <span className="preview-index">01</span>
-                <p>Test the workflow on a real job with clean BOQ structure and quantity takeoff.</p>
+              <div className="preview-badges">
+                <span><Layers3 size={14} /> Benchmark + custom pricing</span>
+                <span><BarChart3 size={14} /> Reports and exports included</span>
+                <span><Shield size={14} /> Secure billing flow</span>
               </div>
-              <div className="preview-point">
-                <span className="preview-index">02</span>
-                <p>Move into benchmark plus custom pricing with reviewable rate basis and notes.</p>
+
+              <div className="preview-plan-list">
+                {previewPlans.map((planName) => {
+                  const plan = PLANS[planName];
+                  const price = billing === 'annual' ? plan.displayAnnual : plan.displayMonthly;
+                  const period = plan.priceMonthly === 0 ? '' : billing === 'annual' ? '/year' : '/month';
+                  const Icon = PLAN_ICONS[planName];
+                  return (
+                    <div key={planName} className="preview-plan-row">
+                      <div>
+                        <strong>{plan.label}</strong>
+                        <small>{plan.tagline}</small>
+                      </div>
+                      <div className="preview-plan-meta">
+                        <strong>{price}{period}</strong>
+                        <span className={`preview-pill state-${PLAN_TONES[planName]}`}>
+                          <Icon size={12} />
+                          {plan.popular ? 'Recommended' : plan.maxUsers > 1 ? 'Team' : 'Solo'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="preview-point">
-                <span className="preview-index">03</span>
-                <p>Roll the same workspace into exports, review, and company handoff.</p>
+
+              <div className="preview-activity">
+                <div className="preview-activity-title">
+                  <CheckCircle2 size={15} />
+                  What Professional unlocks
+                </div>
+                {PLANS[PLAN_NAMES.PROFESSIONAL].featureLabels.slice(0, 4).map((item) => (
+                  <div key={item} className="preview-activity-row">
+                    <CheckCircle2 size={14} />
+                    <span>{item}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="preview-contact">
-              <div>
-                <span>Need a company rollout?</span>
-                <strong>Enterprise onboarding is available.</strong>
+            <div className="preview-card preview-card-side">
+              <span className="preview-tag">Recommended lane</span>
+              <h3>{PLANS[PLAN_NAMES.PROFESSIONAL].label}</h3>
+              <div className="side-metric">
+                <span>Best fit for</span>
+                <strong>Live QS and estimating work</strong>
               </div>
+              <div className="side-metric">
+                <span>{billing === 'annual' ? 'Annual price' : 'Monthly price'}</span>
+                <strong>{billing === 'annual' ? PLANS[PLAN_NAMES.PROFESSIONAL].displayAnnual : PLANS[PLAN_NAMES.PROFESSIONAL].displayMonthly}</strong>
+              </div>
+              <div className="side-metric">
+                <span>Billing note</span>
+                <strong>{billing === 'annual' ? `NGN ${Math.round((PLANS[PLAN_NAMES.PROFESSIONAL].priceAnnual / 100) / 12).toLocaleString()}/mo billed annually` : 'Change plans when needed'}</strong>
+              </div>
+              <button className="preview-side-action" onClick={() => scrollToSection(plansRef)}>
+                View plan cards
+              </button>
             </div>
           </div>
         </section>
 
-        <section className="pricing-grid">
-          {plans.map((plan) => (
-            <article key={plan.name} className={`plan-card tone-${plan.tone} ${plan.popular ? 'popular' : ''}`}>
-              <div className="plan-top-row">
-                <div className="plan-icon-container">{plan.icon}</div>
-                {plan.popular && <span className="popular-badge">Recommended</span>}
+        <section className="value-card-grid">
+          {VALUE_CARDS.map(({ icon, title, copy }) => (
+            <article key={title} className="value-card">
+              <div className="value-card-icon">
+                {React.createElement(icon, { size: 18 })}
               </div>
-
-              <h3 className="plan-name">{plan.name}</h3>
-              <p className="plan-best-for">{plan.bestFor}</p>
-
-              <div className="price-display">
-                <strong>{plan.price}</strong>
-                {plan.period && <span>{plan.period}</span>}
-              </div>
-
-              <p className="plan-desc">{plan.description}</p>
-
-              <div className="feature-list">
-                {plan.features.map((feature) => (
-                  <div key={feature} className="feature-row">
-                    <div className="check-icon">
-                      <Check size={12} strokeWidth={3} />
-                    </div>
-                    <span>{feature}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="plan-note">{plan.note}</div>
-
-              {plan.name === 'Enterprise' ? (
-                <div className="enterprise-actions">
-                  <a href={`mailto:${plan.contactEmail}`} className="plan-cta plan-cta-primary">
-                    {plan.cta}
-                    <ArrowRight size={16} />
-                  </a>
-                  <div className="enterprise-contact-meta">
-                    <span><Mail size={14} /> {plan.contactEmail}</span>
-                    <span><Phone size={14} /> {plan.contactPhone}</span>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  className={`plan-cta ${plan.popular ? 'plan-cta-primary' : 'plan-cta-secondary'} ${loadingPlan === plan.name ? 'loading' : ''}`}
-                  onClick={() => handleSelect(plan.name)}
-                  disabled={!!loadingPlan}
-                >
-                  {loadingPlan === plan.name ? 'Working...' : plan.cta}
-                  {loadingPlan !== plan.name && <ArrowRight size={16} />}
-                </button>
-              )}
+              <h3>{title}</h3>
+              <p>{copy}</p>
             </article>
           ))}
         </section>
 
-        <section className="rollout-section">
-          <div className="section-heading">
-            <span className="section-kicker">What you unlock</span>
-            <h2>Each step should feel closer to the real product, not marketing fluff.</h2>
+        <section className="plans-shell" ref={plansRef}>
+          <div className="plans-heading">
+            <span className="section-kicker">Plan options</span>
+            <h2>Pick the tier that matches how your team prices today.</h2>
             <p>
-              The design here now matches the upgraded base page: practical, lighter, and focused on
-              the actual work BOQ teams do inside the app.
+              The cards keep the current pricing logic intact, but the whole section now sits inside a layout that feels much closer to the welcoming page.
             </p>
           </div>
 
-          <div className="rollout-grid">
-            {rolloutCards.map(({ icon, title, copy }) => (
-              <article key={title} className="rollout-card">
-                <div className="rollout-icon">{icon}</div>
-                <h3>{title}</h3>
-                <p>{copy}</p>
+          <div className="pricing-cards">
+          {PLAN_TIER_ORDER.map((planName) => {
+            const plan = PLANS[planName];
+            const Icon = PLAN_ICONS[planName];
+            const tone = PLAN_TONES[planName];
+            const price = billing === 'annual' ? plan.displayAnnual : plan.displayMonthly;
+            const period = plan.priceMonthly === 0 ? '' : billing === 'annual' ? '/year' : '/month';
+            const isEnterprise = planName === PLAN_NAMES.ENTERPRISE;
+
+            return (
+              <article
+                key={planName}
+                className={`plan-card tone-${tone} ${plan.popular ? 'popular' : ''}`}
+              >
+                {plan.popular && <div className="popular-ribbon">Most Popular</div>}
+
+                <div className="plan-top-row">
+                  <div className="plan-icon-container">
+                    <Icon size={22} />
+                  </div>
+                  <span className="plan-seat-pill">
+                    {Number.isFinite(plan.maxUsers) ? `${plan.maxUsers} user${plan.maxUsers > 1 ? 's' : ''}` : 'Unlimited users'}
+                  </span>
+                </div>
+
+                <h3 className="plan-name">{plan.label}</h3>
+                <p className="plan-tagline">{plan.tagline}</p>
+
+                <div className="price-display">
+                  <strong>{price}</strong>
+                  {period && <span>{period}</span>}
+                </div>
+
+                {billing === 'annual' && plan.priceMonthly > 0 && plan.priceAnnual && (
+                  <div className="annual-note">
+                    That's ₦{((plan.priceAnnual / 100) / 12).toLocaleString()}/mo
+                  </div>
+                )}
+
+                <p className="plan-desc">{plan.description}</p>
+
+                <div className="feature-list">
+                  {plan.featureLabels.map((feature) => (
+                    <div key={feature} className="feature-row">
+                      <div className="check-icon">
+                        <Check size={12} strokeWidth={3} />
+                      </div>
+                      <span>{feature}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {isEnterprise ? (
+                  <div className="enterprise-actions">
+                    <a href={`mailto:${plan.contactEmail}`} className="plan-cta plan-cta-outline">
+                      {plan.cta}
+                      <ArrowRight size={16} />
+                    </a>
+                    <div className="enterprise-contact-meta">
+                      <span><Mail size={14} /> {plan.contactEmail}</span>
+                      <span><Phone size={14} /> {plan.contactPhone}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    className={`plan-cta ${plan.popular ? 'plan-cta-primary' : 'plan-cta-secondary'} ${loadingPlan === planName ? 'loading' : ''}`}
+                    onClick={() => handleSelect(planName)}
+                    disabled={!!loadingPlan}
+                  >
+                    {loadingPlan === planName ? (
+                      <span className="cta-loading">
+                        <span className="cta-spinner" />
+                        Processing...
+                      </span>
+                    ) : (
+                      <>
+                        {plan.cta}
+                        <ArrowRight size={16} />
+                      </>
+                    )}
+                  </button>
+                )}
               </article>
-            ))}
+            );
+          })}
           </div>
+        </section>
+
+        <section className="comparison-toggle-section" ref={comparisonRef}>
+          <button
+            className="comparison-toggle-btn"
+            onClick={() => setShowComparison(!showComparison)}
+          >
+            {showComparison ? 'Hide' : 'Show'} full feature comparison
+            <ArrowRight size={16} className={`toggle-arrow ${showComparison ? 'rotated' : ''}`} />
+          </button>
+        </section>
+
+        {showComparison && (
+          <section className="comparison-section view-fade-in">
+            <div className="plans-heading comparison-heading">
+              <span className="section-kicker">Comparison table</span>
+              <h2>A clearer view of what expands as you move up.</h2>
+              <p>
+                The detail is still here, but it now sits inside the same BOQ-Pro visual direction instead of breaking the experience.
+              </p>
+            </div>
+            <div className="comparison-table-wrapper">
+              <table className="comparison-table">
+                <thead>
+                  <tr>
+                    <th className="feature-col">Feature</th>
+                    {PLAN_TIER_ORDER.map((name) => (
+                      <th key={name} className={PLANS[name].popular ? 'highlight-col' : ''}>
+                        {PLANS[name].label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {FEATURE_COMPARISON.map(({ feature, ...planValues }) => (
+                    <tr key={feature}>
+                      <td className="feature-col">{feature}</td>
+                      {['student', 'starter', 'professional', 'business', 'corporate', 'enterprise'].map((planId) => {
+                        const val = planValues[planId];
+                        return (
+                          <td key={planId} className={planId === 'professional' ? 'highlight-col' : ''}>
+                            {val === true ? (
+                              <span className="check-cell"><Check size={16} strokeWidth={3} /></span>
+                            ) : val === false ? (
+                              <span className="x-cell"><X size={14} /></span>
+                            ) : (
+                              <span className="text-cell">{val}</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        <section className="closing-cta">
+          <div>
+            <span className="section-kicker">Ready to move?</span>
+            <h2>Start with the plan that matches your team and grow inside the same BOQ Pro experience.</h2>
+            <p>
+              No detached billing-page feeling. The welcome screen and pricing screen now feel much closer to one continuous product journey.
+            </p>
+          </div>
+          <div className="closing-actions">
+            <button className="hero-cta-primary" onClick={() => scrollToSection(plansRef)}>
+              Review plans
+              <ArrowRight size={18} />
+            </button>
+            <button className="hero-cta-secondary" onClick={onLogin || onBack}>
+              {onLogin ? 'Open existing account' : 'Back home'}
+            </button>
+          </div>
+        </section>
+
+        <section className="security-footer">
+          <Shield size={16} />
+          <span>
+            Payments are securely processed by <strong>Paystack</strong>.
+            Your card details never touch our servers. Protected by 256-bit SSL encryption.
+          </span>
         </section>
       </main>
 
+      <div className="mobile-cta-dock">
+        <button className="mobile-dock-btn mobile-dock-btn-secondary" onClick={() => scrollToSection(comparisonRef, true)}>
+          Compare
+        </button>
+        <button className="mobile-dock-btn mobile-dock-btn-primary" onClick={() => scrollToSection(plansRef)}>
+          See plans
+        </button>
+      </div>
+
       <style jsx="true">{`
+        /* ═══════════════════════════════════════════════
+           PRICING PAGE — PREMIUM DARK-LIGHT HYBRID
+           ═══════════════════════════════════════════════ */
+
         .pricing-shell {
           min-height: 100vh;
           position: relative;
-          overflow: hidden;
+          overflow-x: hidden;
           background:
             radial-gradient(circle at top left, rgba(37, 99, 235, 0.09), transparent 30%),
             radial-gradient(circle at 88% 16%, rgba(217, 119, 6, 0.08), transparent 22%),
@@ -313,10 +565,11 @@ const PricingPage = ({ onSelectPlan, onBack, error }) => {
         .pricing-main {
           position: relative;
           z-index: 2;
-          width: min(1220px, calc(100% - 2rem));
+          width: min(1320px, calc(100% - 2rem));
           margin: 0 auto;
         }
 
+        /* ── Nav ── */
         .pricing-nav {
           display: flex;
           align-items: center;
@@ -364,6 +617,12 @@ const PricingPage = ({ onSelectPlan, onBack, error }) => {
           color: var(--primary-500);
         }
 
+        .nav-actions {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.8rem;
+        }
+
         .nav-back-btn {
           display: inline-flex;
           align-items: center;
@@ -385,19 +644,43 @@ const PricingPage = ({ onSelectPlan, onBack, error }) => {
           border-color: var(--primary-400);
         }
 
+        .nav-login-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: none;
+          border-radius: 999px;
+          padding: 0.78rem 1.1rem;
+          background: var(--primary-900);
+          color: white;
+          font-size: 0.88rem;
+          font-weight: 700;
+          cursor: pointer;
+          box-shadow: 0 14px 24px rgba(15, 23, 42, 0.18);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .nav-login-btn:hover,
+        .hero-cta-primary:hover,
+        .hero-cta-secondary:hover,
+        .preview-side-action:hover,
+        .mobile-dock-btn:hover {
+          transform: translateY(-2px);
+        }
+
         .pricing-main {
           padding: 2rem 0 4rem;
+          display: flex;
+          flex-direction: column;
+          gap: 2.5rem;
         }
 
-        .pricing-hero {
+        /* ── Hero Section ── */
+        .pricing-hero-section {
           display: grid;
-          grid-template-columns: minmax(0, 1.04fr) minmax(320px, 0.96fr);
-          gap: 2rem;
-          align-items: start;
-        }
-
-        .pricing-copy {
-          padding: 1.8rem 0 1rem;
+          grid-template-columns: minmax(0, 1.02fr) minmax(320px, 0.98fr);
+          gap: 1.35rem;
+          align-items: stretch;
         }
 
         .section-kicker,
@@ -410,9 +693,6 @@ const PricingPage = ({ onSelectPlan, onBack, error }) => {
           font-weight: 800;
           text-transform: uppercase;
           letter-spacing: 0.08em;
-        }
-
-        .section-kicker {
           padding: 0.55rem 0.9rem;
           background: rgba(59, 130, 246, 0.08);
           border: 1px solid rgba(59, 130, 246, 0.16);
@@ -420,24 +700,30 @@ const PricingPage = ({ onSelectPlan, onBack, error }) => {
           box-shadow: 0 8px 18px rgba(59, 130, 246, 0.08);
         }
 
-        .pricing-copy h1 {
-          margin: 1.25rem 0 1rem;
-          font-size: clamp(2.9rem, 7vw, 5rem);
-          line-height: 0.96;
-          letter-spacing: -0.05em;
-          color: var(--primary-950);
+        .pricing-hero-copy {
+          text-align: left;
+          padding-top: 0.3rem;
         }
 
-        .pricing-copy h1 span {
+        .pricing-hero-section h1 {
+          margin: 1.25rem 0 1rem;
+          font-size: clamp(3rem, 7vw, 5rem);
+          line-height: 0.94;
+          letter-spacing: -0.06em;
+          color: var(--primary-950);
+          max-width: 10.4ch;
+        }
+
+        .pricing-hero-section h1 span {
           display: block;
           color: var(--accent-600);
         }
 
         .pricing-subtitle {
-          max-width: 700px;
+          max-width: 680px;
           margin: 0;
           color: var(--primary-600);
-          font-size: 1.04rem;
+          font-size: 1rem;
           line-height: 1.75;
         }
 
@@ -446,7 +732,7 @@ const PricingPage = ({ onSelectPlan, onBack, error }) => {
           align-items: center;
           gap: 0.75rem;
           margin-top: 1.4rem;
-          max-width: 620px;
+          max-width: 640px;
           padding: 0.9rem 1rem;
           border-radius: 16px;
           background: rgba(248, 113, 113, 0.1);
@@ -470,159 +756,499 @@ const PricingPage = ({ onSelectPlan, onBack, error }) => {
           font-weight: 900;
         }
 
-        .summary-strip {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+        /* ── Billing Toggle ── */
+        .pricing-hero-actions,
+        .closing-actions {
+          display: flex;
+          flex-wrap: wrap;
           gap: 0.9rem;
-          margin-top: 2rem;
+          margin-top: 1.5rem;
         }
 
-        .summary-card {
-          padding: 1rem 1.05rem;
-          border-radius: 20px;
-          background: white;
-          border: 1px solid var(--border-light);
-          box-shadow: var(--shadow-sm);
-        }
-
-        .summary-card strong {
-          display: block;
-          color: var(--primary-900);
-          font-size: 0.98rem;
-          font-weight: 800;
-        }
-
-        .summary-card span {
-          display: block;
-          margin-top: 0.28rem;
-          color: var(--primary-500);
-          font-size: 0.78rem;
-          line-height: 1.5;
-        }
-
-        .pricing-preview {
-          padding: 1.4rem;
-          border-radius: 30px;
-          border: 1px solid var(--border-light);
-          background: rgba(255, 255, 255, 0.9);
-          box-shadow: var(--shadow-xl);
-          backdrop-filter: blur(14px);
-        }
-
-        .preview-tag {
-          padding: 0.42rem 0.72rem;
-          background: rgba(37, 99, 235, 0.08);
-          border: 1px solid rgba(37, 99, 235, 0.14);
-          color: var(--accent-600);
-        }
-
-        .pricing-preview h2 {
-          margin: 0.9rem 0 1rem;
-          font-size: 1.35rem;
-          line-height: 1.2;
-          color: var(--primary-950);
-        }
-
-        .preview-points {
-          display: grid;
-          gap: 0.8rem;
-        }
-
-        .preview-point {
-          display: grid;
-          grid-template-columns: auto 1fr;
-          gap: 0.8rem;
-          align-items: start;
-          padding: 0.9rem 0.95rem;
-          border-radius: 18px;
-          background: white;
-          border: 1px solid var(--border-light);
-        }
-
-        .preview-index {
+        .hero-cta-primary,
+        .hero-cta-secondary {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          width: 36px;
-          height: 36px;
-          border-radius: 12px;
-          background: var(--primary-50);
-          color: var(--accent-600);
-          font-size: 0.78rem;
-          font-weight: 900;
+          gap: 0.55rem;
+          border-radius: 18px;
+          padding: 1rem 1.25rem;
+          border: none;
+          cursor: pointer;
+          font-size: 0.95rem;
+          font-weight: 800;
+          transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
         }
 
-        .preview-point p {
-          margin: 0;
+        .hero-cta-primary {
+          background: linear-gradient(135deg, var(--primary-900), #1e3a5f);
+          color: white;
+          box-shadow: 0 18px 32px rgba(15, 23, 42, 0.18);
+        }
+
+        .hero-cta-secondary {
+          background: rgba(255, 255, 255, 0.86);
           color: var(--primary-700);
-          font-size: 0.86rem;
-          line-height: 1.65;
+          border: 1px solid var(--border-medium);
         }
 
-        .preview-contact {
+        .billing-panel {
+          margin-top: 1.35rem;
+          padding: 1rem;
+          border-radius: 24px;
+          border: 1px solid var(--border-light);
+          background: rgba(255, 255, 255, 0.86);
+          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.05);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 1rem;
+        }
+
+        .billing-copy {
+          display: flex;
+          flex-direction: column;
+          gap: 0.2rem;
+        }
+
+        .billing-copy span {
+          font-size: 0.74rem;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: var(--primary-500);
+        }
+
+        .billing-copy strong {
+          color: var(--primary-900);
+          font-size: 0.98rem;
+        }
+
+        .billing-toggle {
+          display: inline-flex;
+          align-items: center;
+          gap: 0;
+          margin-top: 0;
+          padding: 5px;
+          border-radius: 999px;
+          background: var(--primary-100);
+          border: 1px solid var(--border-light);
+          box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+        }
+
+        .toggle-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.65rem 1.4rem;
+          border-radius: 999px;
+          border: none;
+          font-size: 0.88rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.25s ease;
+          background: transparent;
+          color: var(--primary-600);
+        }
+
+        .toggle-btn.active {
+          background: white;
+          color: var(--primary-900);
+          box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+        }
+
+        .savings-badge {
+          display: inline-flex;
+          align-items: center;
+          padding: 0.2rem 0.55rem;
+          border-radius: 999px;
+          font-size: 0.68rem;
+          font-weight: 800;
+          background: linear-gradient(135deg, #10b981, #059669);
+          color: white;
+          letter-spacing: 0.02em;
+          text-transform: uppercase;
+        }
+
+        .hero-stats {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 0.9rem;
+          margin-top: 1.5rem;
+        }
+
+        .hero-stat-card {
+          padding: 1rem;
+          border-radius: 22px;
+          background: rgba(255, 255, 255, 0.88);
+          border: 1px solid rgba(203, 213, 225, 0.72);
+          box-shadow: 0 14px 26px rgba(15, 23, 42, 0.05);
+        }
+
+        .hero-stat-card strong {
+          display: block;
+          font-size: 1.46rem;
+          letter-spacing: -0.04em;
+        }
+
+        .hero-stat-card span {
+          display: block;
+          margin-top: 0.35rem;
+          color: var(--primary-600);
+          font-size: 0.84rem;
+          line-height: 1.5;
+        }
+
+        .trust-strip {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 0.65rem;
+          margin-top: 1rem;
+        }
+
+        .trust-strip span {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          border-radius: 16px;
+          padding: 0.85rem 0.95rem;
+          background: rgba(248, 250, 252, 0.95);
+          border: 1px solid rgba(203, 213, 225, 0.72);
+          color: var(--primary-600);
+          font-size: 0.82rem;
+          font-weight: 700;
+        }
+
+        .pricing-hero-visual {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(220px, 0.44fr);
+          gap: 1rem;
+          align-items: stretch;
+        }
+
+        .preview-card {
+          border-radius: 30px;
+          border: 1px solid rgba(203, 213, 225, 0.72);
+          background: rgba(255, 255, 255, 0.92);
+          box-shadow: 0 24px 46px rgba(15, 23, 42, 0.08);
+        }
+
+        .preview-card-main {
+          padding: 1.45rem;
+        }
+
+        .preview-card-side {
+          padding: 1.2rem;
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+          background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(239, 246, 255, 0.82));
+        }
+
+        .preview-card-head {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 1rem;
+        }
+
+        .preview-card-head h2,
+        .plans-heading h2,
+        .comparison-heading h2,
+        .closing-cta h2 {
+          margin: 0.65rem 0 0;
+          color: var(--primary-950);
+          letter-spacing: -0.04em;
+        }
+
+        .preview-card-head h2 {
+          font-size: 1.38rem;
+          line-height: 1.12;
+        }
+
+        .preview-mode,
+        .preview-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          border-radius: 999px;
+          padding: 0.5rem 0.75rem;
+          font-size: 0.74rem;
+          font-weight: 800;
+        }
+
+        .preview-mode {
+          background: var(--primary-50);
+          color: var(--primary-700);
+          border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .preview-badges {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 0.65rem;
+          margin-top: 1rem;
+        }
+
+        .preview-badges span {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.4rem;
+          border-radius: 16px;
+          padding: 0.8rem 0.7rem;
+          background: rgba(248, 250, 252, 0.96);
+          border: 1px solid var(--border-light);
+          color: var(--primary-600);
+          font-size: 0.76rem;
+          font-weight: 700;
+          text-align: center;
+        }
+
+        .preview-plan-list {
+          margin-top: 1rem;
+          display: grid;
+          gap: 0.85rem;
+        }
+
+        .preview-plan-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 1rem;
+          padding: 0.95rem 1rem;
+          border-radius: 20px;
+          background: white;
+          border: 1px solid var(--border-light);
+        }
+
+        .preview-plan-row strong {
+          display: block;
+          color: var(--primary-900);
+        }
+
+        .preview-plan-row small {
+          display: block;
+          margin-top: 0.2rem;
+          color: var(--primary-500);
+          font-size: 0.78rem;
+          line-height: 1.45;
+        }
+
+        .preview-plan-meta {
+          display: flex;
+          align-items: center;
+          gap: 0.7rem;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+        }
+
+        .preview-pill {
+          background: rgba(37, 99, 235, 0.08);
+          color: var(--accent-600);
+        }
+
+        .preview-pill.state-student {
+          background: rgba(15, 23, 42, 0.06);
+          color: var(--primary-800);
+        }
+
+        .preview-pill.state-starter {
+          background: rgba(16, 185, 129, 0.1);
+          color: #059669;
+        }
+
+        .preview-pill.state-business {
+          background: rgba(124, 58, 237, 0.1);
+          color: #7c3aed;
+        }
+
+        .preview-activity {
           margin-top: 1rem;
           padding: 1rem;
-          border-radius: 20px;
+          border-radius: 22px;
           background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.96));
           color: white;
         }
 
-        .preview-contact span {
-          display: block;
-          font-size: 0.72rem;
+        .preview-activity-title {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          color: rgba(255, 255, 255, 0.72);
+          font-size: 0.78rem;
+          font-weight: 800;
+          letter-spacing: 0.04em;
           text-transform: uppercase;
-          letter-spacing: 0.08em;
-          color: rgba(255, 255, 255, 0.55);
         }
 
-        .preview-contact strong {
+        .preview-activity-row {
+          display: flex;
+          align-items: flex-start;
+          gap: 0.55rem;
+          margin-top: 0.85rem;
+          font-size: 0.84rem;
+          line-height: 1.55;
+        }
+
+        .preview-card-side h3 {
+          margin: 0;
+          font-size: 1.42rem;
+          color: var(--primary-950);
+        }
+
+        .side-metric {
+          padding: 0.95rem;
+          border-radius: 20px;
+          background: white;
+          border: 1px solid var(--border-light);
+        }
+
+        .side-metric span {
           display: block;
-          margin-top: 0.35rem;
-          font-size: 0.95rem;
+          font-size: 0.74rem;
+          font-weight: 800;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: var(--primary-500);
         }
 
-        .pricing-grid {
+        .side-metric strong {
+          display: block;
+          margin-top: 0.4rem;
+          color: var(--primary-900);
+          font-size: 0.95rem;
+          line-height: 1.45;
+        }
+
+        .preview-side-action {
+          margin-top: auto;
+          border: none;
+          border-radius: 18px;
+          background: var(--primary-900);
+          color: white;
+          padding: 0.95rem 1rem;
+          font-weight: 800;
+          cursor: pointer;
+          box-shadow: 0 16px 28px rgba(15, 23, 42, 0.16);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .value-card-grid {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 1rem;
-          margin-top: 2.6rem;
+        }
+
+        .value-card {
+          padding: 1.35rem;
+          border-radius: 24px;
+          background: white;
+          border: 1px solid var(--border-light);
+          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.05);
+        }
+
+        .value-card-icon {
+          width: 42px;
+          height: 42px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 14px;
+          background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(15, 23, 42, 0.06));
+          color: var(--accent-600);
+        }
+
+        .value-card h3 {
+          margin: 1rem 0 0.45rem;
+          font-size: 1rem;
+          color: var(--primary-950);
+        }
+
+        .value-card p,
+        .plans-heading p,
+        .comparison-heading p {
+          margin: 0;
+          color: var(--primary-600);
+          font-size: 0.84rem;
+          line-height: 1.65;
+        }
+
+        .plans-shell {
+          display: flex;
+          flex-direction: column;
+          gap: 1.25rem;
+        }
+
+        .plans-heading,
+        .comparison-heading {
+          max-width: 760px;
+        }
+
+        .plans-heading h2 {
+          margin: 1rem 0 0.7rem;
+          font-size: clamp(2rem, 4vw, 3rem);
+          line-height: 1.06;
+        }
+
+        /* ── Plan Cards Grid ── */
+        .pricing-cards {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 1rem;
         }
 
         .plan-card {
           display: flex;
           flex-direction: column;
           padding: 1.5rem;
-          border-radius: 28px;
+          border-radius: 24px;
           background: rgba(255, 255, 255, 0.94);
           border: 1px solid var(--border-light);
-          box-shadow: var(--shadow-sm);
-          transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+          position: relative;
+          transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+          overflow: hidden;
         }
 
         .plan-card:hover {
           transform: translateY(-4px);
-          box-shadow: var(--shadow-md);
+          box-shadow: 0 12px 32px rgba(0,0,0,0.08);
         }
 
         .plan-card.popular {
-          border-color: rgba(37, 99, 235, 0.3);
-          box-shadow: 0 18px 40px rgba(37, 99, 235, 0.12);
+          border-color: rgba(37, 99, 235, 0.35);
+          box-shadow: 0 18px 44px rgba(37, 99, 235, 0.14);
+          background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(239,246,255,0.6) 100%);
         }
 
-        .tone-student .plan-icon-container {
-          background: rgba(15, 23, 42, 0.06);
-          color: var(--primary-800);
+        .popular-ribbon {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          text-align: center;
+          padding: 0.38rem 0;
+          background: linear-gradient(135deg, var(--primary-900), var(--accent-600));
+          color: white;
+          font-size: 0.68rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
         }
 
-        .tone-practitioner .plan-icon-container {
-          background: rgba(37, 99, 235, 0.1);
-          color: var(--accent-600);
+        .plan-card.popular .plan-top-row {
+          margin-top: 1.2rem;
         }
 
-        .tone-enterprise .plan-icon-container {
-          background: rgba(217, 119, 6, 0.1);
-          color: #b45309;
-        }
+        /* ── Plan Card Tone Colors ── */
+        .tone-student .plan-icon-container { background: rgba(15, 23, 42, 0.06); color: var(--primary-800); }
+        .tone-starter .plan-icon-container { background: rgba(16, 185, 129, 0.1); color: #059669; }
+        .tone-professional .plan-icon-container { background: rgba(37, 99, 235, 0.1); color: var(--accent-600); }
+        .tone-business .plan-icon-container { background: rgba(124, 58, 237, 0.1); color: #7c3aed; }
+        .tone-corporate .plan-icon-container { background: rgba(217, 119, 6, 0.1); color: #b45309; }
+        .tone-enterprise .plan-icon-container { background: rgba(15, 23, 42, 0.08); color: var(--primary-700); }
 
         .plan-top-row {
           display: flex;
@@ -631,48 +1257,52 @@ const PricingPage = ({ onSelectPlan, onBack, error }) => {
           gap: 1rem;
         }
 
+        .plan-seat-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          border-radius: 999px;
+          padding: 0.5rem 0.75rem;
+          font-size: 0.74rem;
+          font-weight: 800;
+          background: var(--primary-50);
+          color: var(--primary-700);
+          border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
         .plan-icon-container {
-          width: 52px;
-          height: 52px;
+          width: 48px;
+          height: 48px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          border-radius: 16px;
-        }
-
-        .popular-badge {
-          padding: 0.42rem 0.72rem;
-          border-radius: 999px;
-          background: rgba(37, 99, 235, 0.1);
-          color: var(--accent-600);
-          font-size: 0.68rem;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.07em;
+          border-radius: 14px;
         }
 
         .plan-name {
-          margin: 1rem 0 0.35rem;
-          font-size: 1.34rem;
+          margin: 0.85rem 0 0.2rem;
+          font-size: 1.2rem;
           color: var(--primary-950);
         }
 
-        .plan-best-for {
+        .plan-tagline {
           margin: 0;
           color: var(--primary-500);
-          font-size: 0.78rem;
-          line-height: 1.55;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
         }
 
         .price-display {
           display: flex;
           align-items: baseline;
-          gap: 0.35rem;
-          margin: 1.15rem 0 0.5rem;
+          gap: 0.3rem;
+          margin: 1rem 0 0.25rem;
         }
 
         .price-display strong {
-          font-size: 2rem;
+          font-size: 1.85rem;
           font-weight: 900;
           color: var(--primary-950);
           letter-spacing: -0.04em;
@@ -680,22 +1310,29 @@ const PricingPage = ({ onSelectPlan, onBack, error }) => {
 
         .price-display span {
           color: var(--primary-500);
-          font-size: 0.9rem;
+          font-size: 0.85rem;
           font-weight: 700;
+        }
+
+        .annual-note {
+          font-size: 0.75rem;
+          color: #059669;
+          font-weight: 700;
+          margin-bottom: 0.4rem;
         }
 
         .plan-desc {
           margin: 0;
           color: var(--primary-600);
-          font-size: 0.86rem;
-          line-height: 1.7;
+          font-size: 0.82rem;
+          line-height: 1.65;
         }
 
         .feature-list {
           display: grid;
-          gap: 0.72rem;
-          margin: 1.4rem 0;
-          padding-top: 1.25rem;
+          gap: 0.62rem;
+          margin: 1.15rem 0;
+          padding-top: 1rem;
           border-top: 1px solid var(--border-light);
           flex: 1;
         }
@@ -703,59 +1340,53 @@ const PricingPage = ({ onSelectPlan, onBack, error }) => {
         .feature-row {
           display: flex;
           align-items: flex-start;
-          gap: 0.7rem;
+          gap: 0.6rem;
           color: var(--primary-700);
-          font-size: 0.84rem;
-          line-height: 1.55;
+          font-size: 0.8rem;
+          line-height: 1.5;
         }
 
         .check-icon {
-          width: 20px;
-          height: 20px;
+          width: 18px;
+          height: 18px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          border-radius: 6px;
+          border-radius: 5px;
           background: rgba(34, 197, 94, 0.12);
           color: #16a34a;
           flex-shrink: 0;
+          margin-top: 1px;
         }
 
-        .plan-note {
-          padding: 0.9rem;
-          border-radius: 16px;
-          background: var(--primary-50);
-          border: 1px solid rgba(203, 213, 225, 0.65);
-          color: var(--primary-600);
-          font-size: 0.8rem;
-          line-height: 1.6;
-        }
-
+        /* ── CTA Buttons ── */
         .plan-cta {
           display: inline-flex;
           align-items: center;
           justify-content: center;
           gap: 0.55rem;
           width: 100%;
-          margin-top: 1rem;
-          padding: 0.95rem 1rem;
-          border-radius: 16px;
+          margin-top: auto;
+          padding: 0.85rem 1rem;
+          border-radius: 14px;
           border: 1px solid transparent;
-          font-size: 0.92rem;
+          font-size: 0.88rem;
           font-weight: 800;
           text-decoration: none;
           cursor: pointer;
           transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
         }
 
-        .plan-cta:hover {
-          transform: translateY(-2px);
-        }
+        .plan-cta:hover { transform: translateY(-2px); }
 
         .plan-cta-primary {
-          background: var(--primary-900);
+          background: linear-gradient(135deg, var(--primary-900), #1e3a5f);
           color: white;
-          box-shadow: 0 16px 30px rgba(15, 23, 42, 0.16);
+          box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+        }
+
+        .plan-cta-primary:hover {
+          box-shadow: 0 16px 36px rgba(15, 23, 42, 0.25);
         }
 
         .plan-cta-secondary {
@@ -769,97 +1400,270 @@ const PricingPage = ({ onSelectPlan, onBack, error }) => {
           border-color: var(--primary-400);
         }
 
+        .plan-cta-outline {
+          background: transparent;
+          color: var(--primary-800);
+          border-color: var(--border-medium);
+        }
+
+        .plan-cta-outline:hover {
+          background: var(--primary-50);
+        }
+
         .plan-cta.loading {
           pointer-events: none;
-          opacity: 0.7;
+          opacity: 0.75;
+        }
+
+        .cta-loading {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .cta-spinner {
+          width: 16px;
+          height: 16px;
+          border: 2px solid rgba(255,255,255,0.3);
+          border-top-color: white;
+          border-radius: 50%;
+          animation: spin 0.7s linear infinite;
+        }
+
+        .plan-cta-secondary .cta-spinner {
+          border-color: rgba(15,23,42,0.15);
+          border-top-color: var(--primary-700);
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
 
         .enterprise-actions {
-          margin-top: 1rem;
+          margin-top: auto;
         }
 
         .enterprise-contact-meta {
           display: grid;
-          gap: 0.45rem;
-          margin-top: 0.85rem;
+          gap: 0.35rem;
+          margin-top: 0.75rem;
           color: var(--primary-600);
-          font-size: 0.82rem;
+          font-size: 0.78rem;
         }
 
         .enterprise-contact-meta span {
           display: inline-flex;
           align-items: center;
-          gap: 0.45rem;
+          gap: 0.4rem;
         }
 
-        .rollout-section {
-          margin-top: 3.3rem;
+        /* ── Feature Comparison Section ── */
+        .comparison-toggle-section {
+          text-align: center;
+          margin-top: 2.5rem;
         }
 
-        .section-heading {
-          max-width: 760px;
-        }
-
-        .section-heading h2 {
-          margin: 1rem 0 0.7rem;
-          font-size: clamp(2rem, 4vw, 3rem);
-          line-height: 1.06;
-          letter-spacing: -0.04em;
-          color: var(--primary-950);
-        }
-
-        .section-heading p {
-          margin: 0;
-          max-width: 720px;
-          color: var(--primary-600);
-          line-height: 1.75;
-        }
-
-        .rollout-grid {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 1rem;
-          margin-top: 1.4rem;
-        }
-
-        .rollout-card {
-          padding: 1.35rem;
-          border-radius: 24px;
-          background: white;
-          border: 1px solid var(--border-light);
-          box-shadow: var(--shadow-sm);
-        }
-
-        .rollout-icon {
-          width: 42px;
-          height: 42px;
+        .comparison-toggle-btn {
           display: inline-flex;
           align-items: center;
-          justify-content: center;
-          border-radius: 14px;
-          background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(15, 23, 42, 0.06));
+          gap: 0.5rem;
+          padding: 0.85rem 1.6rem;
+          border-radius: 999px;
+          border: 1px solid var(--border-medium);
+          background: white;
+          color: var(--primary-700);
+          font-size: 0.88rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .comparison-toggle-btn:hover {
+          background: var(--primary-50);
+          border-color: var(--primary-400);
+          transform: translateY(-2px);
+        }
+
+        .toggle-arrow {
+          transition: transform 0.3s ease;
+        }
+
+        .toggle-arrow.rotated {
+          transform: rotate(90deg);
+        }
+
+        .comparison-section {
+          margin-top: 2rem;
+        }
+
+        .comparison-section h2 {
+          font-size: 1.5rem;
+          color: var(--primary-950);
+          margin-bottom: 1.25rem;
+        }
+
+        .comparison-table-wrapper {
+          overflow-x: auto;
+          border-radius: 20px;
+          border: 1px solid var(--border-light);
+          box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+        }
+
+        .comparison-table {
+          width: 100%;
+          border-collapse: collapse;
+          background: white;
+          font-size: 0.82rem;
+          min-width: 900px;
+        }
+
+        .comparison-table thead {
+          background: var(--primary-50);
+        }
+
+        .comparison-table th {
+          padding: 1rem 0.8rem;
+          text-align: center;
+          font-weight: 800;
+          color: var(--primary-800);
+          font-size: 0.8rem;
+          border-bottom: 2px solid var(--border-light);
+          white-space: nowrap;
+        }
+
+        .comparison-table th.feature-col {
+          text-align: left;
+          min-width: 180px;
+        }
+
+        .comparison-table th.highlight-col {
+          background: rgba(37, 99, 235, 0.08);
           color: var(--accent-600);
         }
 
-        .rollout-card h3 {
-          margin: 1rem 0 0.45rem;
-          font-size: 1rem;
-          color: var(--primary-950);
+        .comparison-table td {
+          padding: 0.75rem 0.8rem;
+          text-align: center;
+          border-bottom: 1px solid var(--border-light);
+          color: var(--primary-700);
         }
 
-        .rollout-card p {
-          margin: 0;
+        .comparison-table td.feature-col {
+          text-align: left;
+          font-weight: 600;
+          color: var(--primary-800);
+        }
+
+        .comparison-table td.highlight-col {
+          background: rgba(37, 99, 235, 0.03);
+        }
+
+        .comparison-table tbody tr:hover {
+          background: rgba(37, 99, 235, 0.02);
+        }
+
+        .check-cell {
+          color: #16a34a;
+          display: inline-flex;
+        }
+
+        .x-cell {
+          color: var(--primary-300);
+          display: inline-flex;
+        }
+
+        .text-cell {
+          font-weight: 600;
+          color: var(--primary-700);
+        }
+
+        /* ── Security Footer ── */
+        .security-footer {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.6rem;
+          margin-top: 3rem;
+          padding: 1.2rem;
+          border-radius: 16px;
+          background: rgba(15, 23, 42, 0.03);
+          border: 1px solid var(--border-light);
           color: var(--primary-600);
-          font-size: 0.84rem;
-          line-height: 1.65;
+          font-size: 0.82rem;
+          text-align: center;
         }
 
+        .security-footer strong {
+          color: var(--primary-900);
+        }
+
+        .closing-cta {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 1.4rem;
+          padding: 1.4rem;
+          border-radius: 30px;
+          background: white;
+          border: 1px solid var(--border-light);
+          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.05);
+        }
+
+        .closing-cta p {
+          margin-top: 0.7rem;
+          max-width: 720px;
+        }
+
+        .mobile-cta-dock {
+          display: none;
+        }
+
+        .mobile-dock-btn {
+          border: none;
+          border-radius: 18px;
+          padding: 0.95rem 1rem;
+          font-size: 0.92rem;
+          font-weight: 800;
+          cursor: pointer;
+          transition: transform 0.2s ease;
+        }
+
+        .mobile-dock-btn-primary {
+          background: var(--primary-900);
+          color: white;
+          box-shadow: 0 14px 24px rgba(15, 23, 42, 0.18);
+        }
+
+        .mobile-dock-btn-secondary {
+          background: white;
+          color: var(--primary-700);
+          border: 1px solid var(--border-medium);
+        }
+
+        /* ═══════════════════════════════════════
+           RESPONSIVE BREAKPOINTS
+           ═══════════════════════════════════════ */
+
+        /* 6-column → 3-column */
+        @media (min-width: 1081px) {
+          .pricing-cards {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
+        }
+
+        /* 2-column for tablet */
         @media (max-width: 1080px) {
-          .pricing-hero,
-          .pricing-grid,
-          .rollout-grid,
-          .summary-strip {
+          .pricing-hero-section,
+          .value-card-grid {
             grid-template-columns: 1fr;
+          }
+
+          .pricing-hero-visual {
+            grid-template-columns: 1fr;
+          }
+
+          .pricing-cards {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
           }
         }
 
@@ -870,15 +1674,33 @@ const PricingPage = ({ onSelectPlan, onBack, error }) => {
             flex-direction: column;
           }
 
-          .pricing-copy h1 {
-            font-size: clamp(2.6rem, 12vw, 4rem);
+          .nav-actions {
+            width: 100%;
+            justify-content: space-between;
+          }
+
+          .pricing-hero-section h1 {
+            font-size: clamp(2rem, 8vw, 3rem);
+          }
+
+          .hero-stats,
+          .trust-strip,
+          .preview-badges {
+            grid-template-columns: 1fr;
+          }
+
+          .billing-panel,
+          .closing-cta {
+            flex-direction: column;
+            align-items: flex-start;
           }
         }
 
+        /* 1-column for mobile */
         @media (max-width: 640px) {
           .pricing-nav,
           .pricing-main {
-            width: min(1220px, calc(100% - 1.25rem));
+            width: min(1320px, calc(100% - 1.25rem));
           }
 
           .pricing-nav {
@@ -900,52 +1722,58 @@ const PricingPage = ({ onSelectPlan, onBack, error }) => {
             display: none;
           }
 
-          .pricing-copy {
-            padding-top: 0.4rem;
+          .pricing-cards {
+            grid-template-columns: 1fr;
           }
 
-          .section-kicker {
+          .value-card-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .plan-card,
+          .comparison-table-wrapper,
+          .preview-card,
+          .value-card,
+          .closing-cta {
+            border-radius: 20px;
+          }
+
+          .plan-card {
+            padding: 1.15rem;
+          }
+
+          .price-display strong {
+            font-size: 1.65rem;
+          }
+
+          .billing-toggle {
+            flex-direction: column;
+            border-radius: 16px;
+            padding: 4px;
+          }
+
+          .toggle-btn {
+            width: 100%;
+            justify-content: center;
+          }
+
+          .section-kicker,
+          .preview-tag {
             width: 100%;
             justify-content: center;
             text-align: center;
           }
 
-          .pricing-copy h1 {
-            font-size: clamp(2.25rem, 12vw, 3rem);
-            line-height: 1.02;
-          }
-
-          .summary-strip {
-            display: flex;
-            overflow-x: auto;
+          .mobile-cta-dock {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 0.75rem;
-            padding-bottom: 0.2rem;
-            scroll-snap-type: x proximity;
-          }
-
-          .summary-card {
-            min-width: 220px;
-            flex: 0 0 auto;
-            scroll-snap-align: start;
-          }
-
-          .pricing-preview,
-          .plan-card,
-          .rollout-card {
-            border-radius: 22px;
-          }
-
-          .plan-card,
-          .rollout-card {
-            padding: 1.15rem;
-          }
-
-          .price-display strong {
-            font-size: 1.8rem;
-          }
-
-          .rollout-grid {
-            gap: 0.85rem;
+            position: sticky;
+            bottom: 0;
+            z-index: 25;
+            padding: 0.85rem 1rem calc(0.85rem + env(safe-area-inset-bottom));
+            background: linear-gradient(180deg, rgba(248, 250, 252, 0), rgba(248, 250, 252, 0.96) 35%);
+            backdrop-filter: blur(8px);
           }
         }
       `}</style>
