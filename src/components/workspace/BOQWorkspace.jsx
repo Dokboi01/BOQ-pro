@@ -14,6 +14,7 @@ import {
   buildAutoRateResult,
   buildMaterialRateIndex,
   getBenchmarkConfidenceLabel,
+  getItemBenchmarkEvidence,
   getBenchmarkRegionalFactor,
   getEffectiveBenchmarkRate,
   getItemTotal,
@@ -88,6 +89,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const { user } = useAuth();
   const isCustomWorkspace = project?.projectMode === 'custom';
   const marketRegionLabel = project?.region || 'Lagos';
+  const marketRegionDisplay = marketRegionLabel.replace(/_/g, ' ');
 
   React.useEffect(() => {
     if (project?.sections) {
@@ -337,6 +339,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     // Derive benchmark: stored > auto-rate > rate/factor fallback
     let derivedBenchmark = Number(item.benchmark) > 0 ? item.benchmark : 0;
     let matchSource = item.benchmarkMatchSource || null;
+    let benchmarkRegionalRates = item.benchmarkRegionalRates || null;
+    let benchmarkEvidence = item.benchmarkEvidence || null;
 
     if (!derivedBenchmark) {
       const fallbackAutoRate = buildAutoRateResult(item, {
@@ -345,6 +349,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       });
       derivedBenchmark = Number(fallbackAutoRate?.benchmark) || 0;
       matchSource = fallbackAutoRate?.matchSource || matchSource;
+      benchmarkRegionalRates = fallbackAutoRate?.benchmarkRegionalRates || benchmarkRegionalRates;
+      benchmarkEvidence = fallbackAutoRate?.benchmarkEvidence || benchmarkEvidence;
 
       // Last resort: derive from current rate
       if (!derivedBenchmark && Number(item.rate) > 0) {
@@ -356,6 +362,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       useBenchmark: true,
       rateSource: 'benchmark',
       benchmark: derivedBenchmark || 0,
+      benchmarkRegionalRates,
+      benchmarkEvidence,
       benchmarkMatchSource: matchSource,
       breakdown: item.breakdown || null,
     });
@@ -405,7 +413,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       items: (section.items || []).map((item) => {
         const shouldPreserveManualRate = !item.useBenchmark && Number(item.rate) > 0 && item.rateSource === 'manual';
         const autoRated = buildAutoRateResult(item, {
-          structureType: project?.type,
+          structureType: project?.subtype || project?.type,
           region: project?.region || 'Lagos',
           materialIndex
         });
@@ -413,6 +421,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         const nextItem = {
           ...item,
           benchmark: Number(item.benchmark) > 0 ? item.benchmark : autoRated.benchmark,
+          benchmarkRegionalRates: item.benchmarkRegionalRates || autoRated.benchmarkRegionalRates || null,
+          benchmarkEvidence: item.benchmarkEvidence || autoRated.benchmarkEvidence || null,
           breakdown: item.breakdown || autoRated.breakdown,
           benchmarkMatchSource: item.benchmarkMatchSource || autoRated.matchSource,
         };
@@ -446,7 +456,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       ...section,
       items: (section.items || []).map((item) => {
         const autoRated = buildAutoRateResult(item, {
-          structureType: project?.type,
+          structureType: project?.subtype || project?.type,
           region: project?.region || 'Lagos',
           materialIndex
         });
@@ -457,6 +467,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         const nextItem = {
           ...item,
           benchmark: autoRated.benchmark,
+          benchmarkRegionalRates: autoRated.benchmarkRegionalRates || item.benchmarkRegionalRates || null,
+          benchmarkEvidence: autoRated.benchmarkEvidence || item.benchmarkEvidence || null,
           breakdown: autoRated.breakdown,
           benchmarkMatchSource: autoRated.matchSource,
         };
@@ -573,6 +585,76 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     }
 
     return segments.join(' • ');
+  };
+
+  const formatEvidenceUpdatedLabel = (value) => {
+    if (!value) return '';
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return '';
+
+    return parsed.toLocaleDateString('en-NG', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  const getBenchmarkEvidenceMeta = (item) => {
+    const evidence = getItemBenchmarkEvidence(item, project?.region || 'Lagos');
+    const benchmarkRate = getEffectiveBenchmarkRate(item, project?.region || 'Lagos');
+    if (!evidence || (!benchmarkRate && !item?.benchmark)) return null;
+
+    let title = `${marketRegionDisplay} benchmark generated`;
+    let chip = `${marketRegionDisplay} benchmark`;
+    let tone = 'benchmark';
+
+    if (evidence.mode === 'manual-override') {
+      title = `${marketRegionDisplay} benchmark override active`;
+      chip = 'Benchmark override';
+      tone = 'custom';
+    } else if (evidence.mode === 'exact-region') {
+      title = `Exact ${marketRegionDisplay} benchmark used`;
+      chip = `Exact ${marketRegionDisplay}`;
+    } else if (evidence.mode === 'lagos-exact') {
+      title = 'Exact Lagos benchmark used';
+      chip = 'Exact Lagos';
+    } else if (evidence.mode === 'regional-adjusted') {
+      title = `${marketRegionDisplay} benchmark calibrated from market factors`;
+      chip = `${marketRegionDisplay} calibrated`;
+      tone = 'muted';
+    } else if (evidence.mode === 'fallback') {
+      title = 'Modeled benchmark estimate';
+      chip = 'Modeled benchmark';
+      tone = 'warning';
+    }
+
+    const detailParts = [];
+    if (evidence.sourceCount > 0) {
+      detailParts.push(`${evidence.sourceCount} market source${evidence.sourceCount === 1 ? '' : 's'}`);
+    } else if (evidence.matchedMaterialCount > 0) {
+      detailParts.push(`${evidence.matchedMaterialCount} material benchmark match${evidence.matchedMaterialCount === 1 ? '' : 'es'}`);
+    }
+    if (evidence.verifiedBy) {
+      detailParts.push(`Verified by ${evidence.verifiedBy}`);
+    }
+    if (evidence.updatedAt) {
+      detailParts.push(`Updated ${formatEvidenceUpdatedLabel(evidence.updatedAt)}`);
+    }
+    if (evidence.benchmarkBand) {
+      detailParts.push(`Band ${evidence.benchmarkBand}`);
+    }
+
+    return {
+      ...evidence,
+      title,
+      referenceTitle: `Benchmark reference: ${chip} available`,
+      chip,
+      tone,
+      detail: detailParts.join(' | '),
+      rateLabel: `Using ${marketRegionDisplay} benchmark of N${Math.round(benchmarkRate).toLocaleString()} per ${item?.unit || 'unit'}`,
+      referenceRateLabel: `Current ${marketRegionDisplay} benchmark: N${Math.round(benchmarkRate).toLocaleString()} per ${item?.unit || 'unit'}`
+    };
   };
 
   const getQuantityFeedbackMeta = (item, benchmarkRate, unitRate) => {
@@ -975,6 +1057,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                     const itemTotal = getItemTotal(item, project?.region || 'Lagos');
                     const rateSourceMeta = getRateSourceMeta(item);
                     const benchmarkDeltaMeta = getBenchmarkDeltaMeta(item);
+                    const benchmarkEvidenceMeta = getBenchmarkEvidenceMeta(item);
                     const quantityFeedbackMeta = getQuantityFeedbackMeta(item, benchmarkRate, rate);
                     const automationMeta = getAutomationMeta(item, benchmarkRate, rate);
                     const itemStatusMeta = getItemStatusMeta(item, benchmarkRate, rate);
@@ -1134,6 +1217,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                                 {getBenchmarkConfidenceLabel(item.benchmarkMatchSource)} confidence
                               </span>
                             )}
+                            {benchmarkEvidenceMeta && hasBenchmarkRate && (
+                              <span
+                                className={`ws-rate-chip ws-rate-chip-${item.useBenchmark ? benchmarkEvidenceMeta.tone : 'muted'}`}
+                                title={item.useBenchmark ? benchmarkEvidenceMeta.title : benchmarkEvidenceMeta.referenceTitle}
+                              >
+                                {benchmarkEvidenceMeta.chip}
+                              </span>
+                            )}
                             {benchmarkDeltaMeta && (
                               <span className={`ws-rate-chip ws-rate-chip-${benchmarkDeltaMeta.tone}`}>{benchmarkDeltaMeta.text}</span>
                             )}
@@ -1152,6 +1243,13 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                               </button>
                             )}
                           </div>
+                          {benchmarkEvidenceMeta && hasBenchmarkRate && (
+                            <div className={`ws-benchmark-evidence ws-benchmark-evidence-${item.useBenchmark ? benchmarkEvidenceMeta.tone : 'muted'}`}>
+                              <strong>{item.useBenchmark ? benchmarkEvidenceMeta.title : benchmarkEvidenceMeta.referenceTitle}</strong>
+                              <span>{item.useBenchmark ? benchmarkEvidenceMeta.rateLabel : benchmarkEvidenceMeta.referenceRateLabel}</span>
+                              {benchmarkEvidenceMeta.detail && <small>{benchmarkEvidenceMeta.detail}</small>}
+                            </div>
+                          )}
                           {/* Manual benchmark override when benchmark pricing is active */}
                           {item.useBenchmark && (
                             <div className="ws-benchmark-override">
@@ -1160,13 +1258,32 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                               <input
                                 type="number"
                                 className="ws-input ws-benchmark-override-input"
-                                value={item.benchmark || ''}
+                                value={item.benchmarkRegionalRates?.[project?.region || 'Lagos'] || item.benchmark || ''}
                                 min="0"
                                 step="any"
                                 title="Override the benchmark rate with your own market data"
-                                onChange={(e) => updateItem(section.id, item.id, {
-                                  benchmark: sanitizeNonNegativeNumber(e.target.value),
-                                })}
+                                onChange={(e) => {
+                                  const nextBenchmark = sanitizeNonNegativeNumber(e.target.value);
+                                  const nextRegion = project?.region || 'Lagos';
+                                  const nextRegionalRates = {
+                                    ...(item.benchmarkRegionalRates || {}),
+                                    [nextRegion]: nextBenchmark,
+                                  };
+                                  const nextBaseBenchmark = nextRegion === 'Lagos'
+                                    ? nextBenchmark
+                                    : (item.benchmark || (nextBenchmark / Math.max(getBenchmarkRegionalFactor(item, nextRegion), 0.001)));
+
+                                  updateItem(section.id, item.id, {
+                                    benchmark: nextBaseBenchmark,
+                                    benchmarkRegionalRates: nextRegionalRates,
+                                    benchmarkEvidence: {
+                                      ...(item.benchmarkEvidence || {}),
+                                      mode: 'manual-override',
+                                      overrideRegion: nextRegion,
+                                      updatedAt: new Date().toISOString()
+                                    },
+                                  });
+                                }}
                               />
                             </div>
                           )}
@@ -1360,6 +1477,20 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                               </div>
                               <div className="ws-rate-meta ws-rate-meta-mobile">
                                 <span className={`ws-rate-chip ws-rate-chip-${rateSourceMeta.tone}`}>{rateSourceMeta.label}</span>
+                                {item.useBenchmark && hasBenchmarkRate && (
+                                  <span className={`ws-rate-chip ws-rate-chip-bm-confidence ws-rate-chip-bm-${getBenchmarkConfidenceLabel(item.benchmarkMatchSource).toLowerCase()}`}
+                                    title="Benchmark confidence based on breakdown match quality">
+                                    {getBenchmarkConfidenceLabel(item.benchmarkMatchSource)} confidence
+                                  </span>
+                                )}
+                                {benchmarkEvidenceMeta && hasBenchmarkRate && (
+                                  <span
+                                    className={`ws-rate-chip ws-rate-chip-${item.useBenchmark ? benchmarkEvidenceMeta.tone : 'muted'}`}
+                                    title={item.useBenchmark ? benchmarkEvidenceMeta.title : benchmarkEvidenceMeta.referenceTitle}
+                                  >
+                                    {benchmarkEvidenceMeta.chip}
+                                  </span>
+                                )}
                                 {benchmarkDeltaMeta && (
                                   <span className={`ws-rate-chip ws-rate-chip-${benchmarkDeltaMeta.tone}`}>{benchmarkDeltaMeta.text}</span>
                                 )}
@@ -1373,6 +1504,13 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                                   </button>
                                 )}
                               </div>
+                              {benchmarkEvidenceMeta && hasBenchmarkRate && (
+                                <div className={`ws-benchmark-evidence ws-benchmark-evidence-${item.useBenchmark ? benchmarkEvidenceMeta.tone : 'muted'}`}>
+                                  <strong>{item.useBenchmark ? benchmarkEvidenceMeta.title : benchmarkEvidenceMeta.referenceTitle}</strong>
+                                  <span>{item.useBenchmark ? benchmarkEvidenceMeta.rateLabel : benchmarkEvidenceMeta.referenceRateLabel}</span>
+                                  {benchmarkEvidenceMeta.detail && <small>{benchmarkEvidenceMeta.detail}</small>}
+                                </div>
+                              )}
                               <div className={`ws-rate-note ws-rate-note-${automationMeta.tone}`}>
                                 <strong>{automationMeta.title}</strong>
                                 <span>{automationMeta.detail}</span>
@@ -1733,6 +1871,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
         .ws-mobile-field-block .ws-rate-note {
           align-items: flex-start;
+        }
+        .ws-mobile-field-block .ws-benchmark-evidence {
+          align-items: flex-start;
+          text-align: left;
         }
         .ws-mobile-field-block .ws-qty-display,
         .ws-mobile-field-block .ws-qty-meta {
@@ -2252,6 +2394,54 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-rate-chip-aligned { background: #f0fdf4; color: #15803d; }
         .ws-rate-chip-high { background: #fff7ed; color: #c2410c; }
         .ws-rate-chip-low { background: #eff6ff; color: #2563eb; }
+        .ws-rate-chip-muted { background: #f1f5f9; color: #64748b; }
+        .ws-rate-chip-warning { background: #fff7ed; color: #c2410c; }
+        .ws-benchmark-evidence {
+          margin-top: 0.26rem;
+          padding: 0.42rem 0.56rem;
+          border-radius: 10px;
+          border: 1px solid #dbe4ee;
+          background: #f8fafc;
+          display: flex;
+          flex-direction: column;
+          gap: 0.14rem;
+          align-items: flex-end;
+        }
+        .ws-benchmark-evidence strong {
+          font-size: 0.6rem;
+          font-weight: 900;
+          letter-spacing: 0.03em;
+          text-transform: uppercase;
+        }
+        .ws-benchmark-evidence span,
+        .ws-benchmark-evidence small {
+          font-size: 0.6rem;
+          line-height: 1.35;
+          color: inherit;
+        }
+        .ws-benchmark-evidence small {
+          opacity: 0.85;
+        }
+        .ws-benchmark-evidence-benchmark {
+          border-color: #bfdbfe;
+          background: linear-gradient(180deg, #f8fbff 0%, #eff6ff 100%);
+          color: #1d4ed8;
+        }
+        .ws-benchmark-evidence-custom {
+          border-color: #99f6e4;
+          background: linear-gradient(180deg, #f4fffd 0%, #ecfeff 100%);
+          color: #0f766e;
+        }
+        .ws-benchmark-evidence-muted {
+          border-color: #dbe4ee;
+          background: #f8fafc;
+          color: #475569;
+        }
+        .ws-benchmark-evidence-warning {
+          border-color: #fdba74;
+          background: linear-gradient(180deg, #fffaf5 0%, #fff7ed 100%);
+          color: #c2410c;
+        }
         .ws-rate-note {
           margin-top: 0.22rem;
           font-size: 0.62rem;

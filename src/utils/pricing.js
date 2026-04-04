@@ -1,5 +1,10 @@
 import { getRegionalModifier } from './aiService';
 import { getBreakdownForItem } from '../data/rateBreakdowns';
+import {
+  getExactMaterialRegionalBenchmark,
+  getMaterialRegionalBenchmark,
+  normalizeMaterialBenchmarkRecord
+} from './materialBenchmarks';
 
 export const WORK_TYPE_PROFILES = {
   concrete: { shares: { materials: 0.58, labour: 0.18, plant: 0.14, transport: 0.10 }, waste: 2.5, siteAdjustment: 3, overheads: 12, profit: 10, roundingStep: 100 },
@@ -77,6 +82,20 @@ export const OUTLIER_TOLERANCE = DEFAULT_OUTLIER_TOLERANCE;
 
 export const clampNumber = (value) => {
   const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const normalizeRegionKey = (value = '') => (
+  String(value)
+    .toLowerCase()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+);
+
+const parseIsoTimestamp = (value) => {
+  if (!value) return 0;
+  const parsed = Date.parse(value);
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
@@ -391,22 +410,35 @@ const expandTokens = (tokens) => {
 export const buildMaterialRateIndex = (materials = []) => {
   return materials
     .map((material) => {
-      const rate = clampNumber(material?.benchmark ?? material?.price ?? material?.rate);
-      if (!rate || !material?.name) return null;
+      const normalizedMaterial = normalizeMaterialBenchmarkRecord(material);
+      const rate = clampNumber(
+        getMaterialRegionalBenchmark(normalizedMaterial, 'Lagos')
+        || normalizedMaterial?.price
+        || normalizedMaterial?.rate
+      );
+      if (!rate || !normalizedMaterial?.name) return null;
 
-      const baseTokens = tokenize(material.name);
+      const baseTokens = tokenize(normalizedMaterial.name);
       return {
-        name: material.name,
-        normalizedName: normalizeText(material.name),
+        name: normalizedMaterial.name,
+        normalizedName: normalizeText(normalizedMaterial.name),
         tokens: expandTokens(baseTokens),
-        rate
+        rate,
+        sourceCount: normalizedMaterial.sourceCount || 0,
+        confidence: normalizedMaterial.confidence || 0,
+        confidenceLabel: normalizedMaterial.confidenceLabel || 'Medium',
+        verifiedBy: normalizedMaterial.verifiedBy || '',
+        updatedAt: normalizedMaterial.updatedAt || null,
+        regionRates: { ...(normalizedMaterial.regionRates || normalizedMaterial.regions || {}) },
+        sources: Array.isArray(normalizedMaterial.sources) ? normalizedMaterial.sources.map((source) => ({ ...source })) : [],
+        benchmarkBand: normalizedMaterial.benchmarkBand || normalizedMaterial.range || ''
       };
     })
     .filter(Boolean);
 };
 
-export const findMarketRateForMaterial = (row, materialIndex = []) => {
-  if (!row?.name || !materialIndex.length) return 0;
+export const findMarketMaterialMatch = (row, materialIndex = []) => {
+  if (!row?.name || !materialIndex.length) return null;
 
   const normalizedRow = normalizeText(row.name);
   const rowTokens = Array.from(expandTokens(tokenize(row.name)));
@@ -428,14 +460,18 @@ export const findMarketRateForMaterial = (row, materialIndex = []) => {
     });
 
     if (!bestMatch || score > bestMatch.score) {
-      bestMatch = { rate: candidate.rate, score };
+      bestMatch = { ...candidate, score };
     }
   });
 
-  if (!bestMatch) return 0;
-  if (bestMatch.score >= 12) return bestMatch.rate;
-  if (rowTokens.length <= 2 && bestMatch.score >= 5) return bestMatch.rate;
-  return 0;
+  if (!bestMatch) return null;
+  if (bestMatch.score >= 12) return bestMatch;
+  if (rowTokens.length <= 2 && bestMatch.score >= 5) return bestMatch;
+  return null;
+};
+
+export const findMarketRateForMaterial = (row, materialIndex = []) => {
+  return findMarketMaterialMatch(row, materialIndex)?.rate || 0;
 };
 
 export const applyMarketRatesToBreakdown = (breakdown, materialIndex = []) => {
@@ -444,8 +480,23 @@ export const applyMarketRatesToBreakdown = (breakdown, materialIndex = []) => {
   return {
     ...cloneBreakdown(breakdown),
     materials: (breakdown.materials || []).map((row) => {
-      const matchedRate = findMarketRateForMaterial(row, materialIndex);
-      return matchedRate ? { ...row, rate: matchedRate } : { ...row };
+      const match = findMarketMaterialMatch(row, materialIndex);
+      if (!match) return { ...row };
+
+      return {
+        ...row,
+        rate: match.rate,
+        benchmarkSource: match.name,
+        benchmarkSourceCount: match.sourceCount || 0,
+        benchmarkSources: Array.isArray(match.sources) ? match.sources.slice(0, 3).map((source) => source.label) : [],
+        benchmarkConfidence: match.confidence || 0,
+        benchmarkConfidenceLabel: match.confidenceLabel || 'Medium',
+        benchmarkVerifiedBy: match.verifiedBy || '',
+        benchmarkUpdatedAt: match.updatedAt || null,
+        benchmarkBand: match.benchmarkBand || '',
+        benchmarkBaseRate: match.rate,
+        benchmarkRegionRates: { ...(match.regionRates || {}) }
+      };
     })
   };
 };
@@ -458,7 +509,17 @@ export const applyRegionCostProfileToBreakdown = (breakdown, region = 'Lagos', i
 
   return {
     ...cloneBreakdown(normalized),
-    materials: (normalized.materials || []).map((row) => ({ ...row, rate: clampNumber(row.rate) * profile.materials })),
+    materials: (normalized.materials || []).map((row) => {
+      const exactRegionalRate = getExactMaterialRegionalBenchmark({
+        benchmark: row.benchmarkBaseRate ?? row.rate,
+        regionRates: row.benchmarkRegionRates || {}
+      }, region);
+
+      return {
+        ...row,
+        rate: exactRegionalRate || (clampNumber(row.rate) * profile.materials)
+      };
+    }),
     labor: (normalized.labor || []).map((row) => ({ ...row, rate: clampNumber(row.rate) * profile.labour })),
     plant: (normalized.plant || []).map((row) => ({ ...row, rate: clampNumber(row.rate) * profile.plant })),
     transport: (normalized.transport || []).map((row) => ({ ...row, rate: clampNumber(row.rate) * profile.transport }))
@@ -478,11 +539,129 @@ export const applyRegionCostProfileToPricing = (pricing, region = 'Lagos') => {
   };
 };
 
+const summarizeBenchmarkEvidence = (breakdown, region = 'Lagos', matchSource = 'keyword', benchmarkRegionalRates = {}) => {
+  const materialRows = (breakdown?.materials || []).filter((row) => (
+    row?.benchmarkSource
+    || row?.benchmarkSourceCount
+    || row?.benchmarkVerifiedBy
+    || row?.benchmarkUpdatedAt
+    || row?.benchmarkBand
+    || Object.keys(row?.benchmarkRegionRates || {}).length
+  ));
+
+  const sourceLabels = Array.from(new Set(
+    materialRows.flatMap((row) => (
+      Array.isArray(row?.benchmarkSources) && row.benchmarkSources.length
+        ? row.benchmarkSources
+        : row?.benchmarkSource
+          ? [row.benchmarkSource]
+          : []
+    ))
+  )).slice(0, 4);
+
+  const sourceCount = materialRows.reduce((sum, row) => sum + clampNumber(row?.benchmarkSourceCount), 0)
+    || sourceLabels.length
+    || 0;
+  const verifiedBy = Array.from(new Set(
+    materialRows.map((row) => row?.benchmarkVerifiedBy).filter(Boolean)
+  )).join(', ') || 'BOQ Pro Market Review';
+  const exactRegions = Array.from(new Set(
+    materialRows.flatMap((row) => Object.keys(row?.benchmarkRegionRates || {}))
+  ));
+  const latestUpdatedAt = materialRows.reduce((latest, row) => {
+    const current = parseIsoTimestamp(row?.benchmarkUpdatedAt);
+    return current > latest ? current : latest;
+  }, 0);
+  const benchmarkBand = materialRows.find((row) => row?.benchmarkBand)?.benchmarkBand || '';
+  const normalizedRequestedRegion = normalizeRegionKey(region);
+  const hasExactRegionalData = normalizedRequestedRegion === 'lagos'
+    || exactRegions.some((entry) => normalizeRegionKey(entry) === normalizedRequestedRegion);
+
+  let mode = 'modeled';
+  if (!materialRows.length && matchSource === 'fallback') {
+    mode = 'fallback';
+  } else if (region === 'Lagos' && materialRows.length) {
+    mode = 'lagos-exact';
+  } else if (hasExactRegionalData && materialRows.length) {
+    mode = 'exact-region';
+  } else if (materialRows.length || Object.keys(benchmarkRegionalRates || {}).length > 1) {
+    mode = 'regional-adjusted';
+  }
+
+  return {
+    mode,
+    sourceCount,
+    sources: sourceLabels,
+    verifiedBy,
+    updatedAt: latestUpdatedAt ? new Date(latestUpdatedAt).toISOString() : null,
+    benchmarkBand,
+    exactRegions,
+    matchSource,
+    matchedMaterialCount: materialRows.length,
+  };
+};
+
+export const getItemBenchmarkEvidence = (item, region = 'Lagos') => {
+  if (!item) return null;
+
+  const baseEvidence = item.benchmarkEvidence && typeof item.benchmarkEvidence === 'object'
+    ? item.benchmarkEvidence
+    : {};
+  const normalizedRequestedRegion = normalizeRegionKey(region);
+  const exactRegionalRate = getExactMaterialRegionalBenchmark({
+    benchmark: item?.benchmark,
+    regionRates: item?.benchmarkRegionalRates || {}
+  }, region);
+  const exactRegions = Array.isArray(baseEvidence.exactRegions)
+    ? baseEvidence.exactRegions
+    : [];
+  const hasExactRegionalData = normalizedRequestedRegion === 'lagos'
+    || exactRegionalRate > 0
+    || exactRegions.some((entry) => normalizeRegionKey(entry) === normalizedRequestedRegion);
+
+  let mode = baseEvidence.mode || 'modeled';
+  if (baseEvidence.overrideRegion && normalizeRegionKey(baseEvidence.overrideRegion) === normalizedRequestedRegion) {
+    mode = 'manual-override';
+  } else if (normalizedRequestedRegion === 'lagos' && (item?.benchmark || exactRegionalRate)) {
+    mode = 'lagos-exact';
+  } else if (hasExactRegionalData) {
+    mode = 'exact-region';
+  } else if (Object.keys(item?.benchmarkRegionalRates || {}).length > 1 || item?.benchmark) {
+    mode = 'regional-adjusted';
+  }
+
+  return {
+    ...baseEvidence,
+    mode,
+    hasExactRegionalData,
+    exactRegionalRate: exactRegionalRate || 0,
+    sourceCount: clampNumber(baseEvidence.sourceCount),
+    sources: Array.isArray(baseEvidence.sources) ? baseEvidence.sources : [],
+    verifiedBy: baseEvidence.verifiedBy || '',
+    updatedAt: baseEvidence.updatedAt || null,
+    benchmarkBand: baseEvidence.benchmarkBand || '',
+    exactRegions,
+  };
+};
+
 // Cache for regional benchmark factors: key = "workType|region"
 const _regionalFactorCache = new Map();
 
 export const getBenchmarkRegionalFactor = (item, region = 'Lagos') => {
   if (!region || region === 'Lagos') return 1;
+
+  const exactRegionalRate = getExactMaterialRegionalBenchmark({
+    benchmark: item?.benchmark,
+    regionRates: item?.benchmarkRegionalRates || {}
+  }, region);
+  const lagosRate = getExactMaterialRegionalBenchmark({
+    benchmark: item?.benchmark,
+    regionRates: item?.benchmarkRegionalRates || {}
+  }, 'Lagos') || clampNumber(item?.benchmark);
+
+  if (exactRegionalRate > 0 && lagosRate > 0) {
+    return exactRegionalRate / lagosRate;
+  }
 
   const workType = item?.customPricing?.workType || inferWorkType(item?.description);
   const cacheKey = `${workType}|${region}`;
@@ -500,6 +679,12 @@ export const getBenchmarkRegionalFactor = (item, region = 'Lagos') => {
 };
 
 export const getEffectiveBenchmarkRate = (item, region = 'Lagos') => {
+  const exactRegionalRate = getExactMaterialRegionalBenchmark({
+    benchmark: item?.benchmark,
+    regionRates: item?.benchmarkRegionalRates || {}
+  }, region);
+  if (exactRegionalRate > 0) return exactRegionalRate;
+
   const benchmark = clampNumber(item?.benchmark);
   if (!benchmark) return 0;
   return benchmark * getBenchmarkRegionalFactor(item, region);
@@ -546,19 +731,38 @@ export const buildAutoRateResult = (item, { structureType, region = 'Lagos', mat
   const matchSource = breakdownResult.matchSource || 'keyword';
 
   const marketAligned = applyMarketRatesToBreakdown(sourceBreakdown, materialIndex);
-  const regionalized = applyRegionCostProfileToBreakdown(marketAligned, region);
+  const regionalized = applyRegionCostProfileToBreakdown(marketAligned, region, item);
   const summary = calculateBreakdownSummary(regionalized);
+  const supportedRegions = Array.from(new Set([
+    'Lagos',
+    region,
+    ...Object.keys(REGION_COST_PROFILES),
+    ...(marketAligned.materials || []).flatMap((row) => Object.keys(row.benchmarkRegionRates || {}))
+  ]));
+  const benchmarkRegionalRates = supportedRegions.reduce((acc, regionName) => {
+    const regionalSummary = calculateBreakdownSummary(
+      applyRegionCostProfileToBreakdown(marketAligned, regionName, item)
+    );
 
-  // benchmark is always the Lagos-equivalent base rate so regional repricing works correctly
-  const factor = Math.max(getBenchmarkRegionalFactor(item, region), 0.001);
-  const benchmark = region === 'Lagos' ? summary.unitRate : summary.unitRate / factor;
+    if (regionalSummary.unitRate > 0) {
+      acc[regionName] = regionalSummary.unitRate;
+    }
+
+    return acc;
+  }, {});
+
+  const benchmark = benchmarkRegionalRates.Lagos
+    || summary.unitRate
+    || clampNumber(item?.benchmark);
 
   return {
     benchmark,
-    rate: summary.unitRate,
+    rate: benchmarkRegionalRates[region] || summary.unitRate,
     breakdown: regionalized,
     summary,
     matchSource,
+    benchmarkEvidence: summarizeBenchmarkEvidence(marketAligned, region, matchSource, benchmarkRegionalRates),
+    benchmarkRegionalRates,
   };
 };
 

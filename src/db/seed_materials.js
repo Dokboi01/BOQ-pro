@@ -1,5 +1,6 @@
 import { db } from './firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { buildMaterialBenchmarkPayload, normalizeMaterialBenchmarkRecord } from '../utils/materialBenchmarks';
 
 const materialsToSeed = [
 
@@ -626,7 +627,7 @@ const materialsToSeed = [
     },
 ];
 
-export const getSeedMaterials = () => materialsToSeed.map((material) => ({
+export const getSeedMaterials = () => materialsToSeed.map((material) => normalizeMaterialBenchmarkRecord({
     ...material,
     history: Array.isArray(material.history) ? [...material.history] : [],
     regions: material.regions ? { ...material.regions } : {},
@@ -649,9 +650,11 @@ export const seedMarketData = async () => {
         // Seed Materials to Firestore
         for (const mat of materialsToSeed) {
             const docId = mat.name.replace(/\s+/g, '_').toLowerCase();
+            const payload = buildMaterialBenchmarkPayload(mat);
             await setDoc(doc(db, 'materials', docId), {
-                ...mat,
-                created_at: serverTimestamp()
+                ...payload,
+                created_at: serverTimestamp(),
+                updated_at: serverTimestamp()
             });
         }
         console.log(`✅ ${materialsToSeed.length} materials seeded successfully.`);

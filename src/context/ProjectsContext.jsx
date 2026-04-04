@@ -24,16 +24,41 @@ import ProjectsContext from './projects-context';
 import { buildCompanyKey, canAccessCompanyProject, deriveCompanyName } from '../utils/companyAccess';
 import { buildAutoRateResult } from '../utils/pricing';
 
-const RESTORABLE_WORKSPACE_TABS = new Set(['workspace', 'reports', 'library']);
+const PROJECT_SCOPED_TABS = new Set(['workspace', 'reports', 'library']);
+const RESTORABLE_APP_TABS = new Set(['dashboard', 'workspace', 'reports', 'library', 'settings', 'methodology']);
 
-const normalizeWorkspaceTab = (tab) => (
-    RESTORABLE_WORKSPACE_TABS.has(tab) ? tab : 'workspace'
+const isProjectScopedTab = (tab) => PROJECT_SCOPED_TABS.has(tab);
+
+const normalizeProjectTab = (tab) => (
+    PROJECT_SCOPED_TABS.has(tab) ? tab : 'workspace'
 );
+
+const normalizeAppTab = (tab, fallback = 'dashboard') => (
+    RESTORABLE_APP_TABS.has(tab) ? tab : fallback
+);
+
+const shouldPersistFocusMode = (tab) => (
+    tab === 'workspace' || tab === 'reports' || tab === 'library'
+);
+
+const inferLegacyAppTab = (rawState, projects = {}, fallbackProjectId = null) => {
+    const explicitTab = normalizeProjectTab(rawState?.activeTab || rawState?.lastActiveTab);
+    if (explicitTab === 'reports' || explicitTab === 'library') {
+        return explicitTab;
+    }
+
+    const fallbackTab = normalizeProjectTab(projects?.[fallbackProjectId]?.activeTab);
+    if (fallbackTab === 'reports' || fallbackTab === 'library') {
+        return fallbackTab;
+    }
+
+    return 'dashboard';
+};
 
 const getWorkspaceTimestamp = (value) => (
     Date.parse(
-        value?.projects?.[value?.lastProjectId]?.savedAt
-        || value?.savedAt
+        value?.savedAt
+        || value?.projects?.[value?.lastProjectId]?.savedAt
         || ''
     ) || 0
 );
@@ -42,17 +67,24 @@ const normalizeWorkspaceSnapshot = (rawState) => {
     if (!rawState || typeof rawState !== 'object') return null;
 
     if (rawState.projectId) {
-        const activeTab = normalizeWorkspaceTab(rawState.activeTab);
-        const focusMode = activeTab === 'workspace' ? true : rawState.focusMode !== false;
+        const projectTab = normalizeProjectTab(rawState.activeTab);
+        const appTab = rawState.lastAppTab
+            ? normalizeAppTab(rawState.lastAppTab)
+            : inferLegacyAppTab(rawState, {
+                [rawState.projectId]: { activeTab: projectTab }
+            }, rawState.projectId);
+        const focusMode = shouldPersistFocusMode(projectTab) ? rawState.focusMode === true : false;
         const savedAt = rawState.savedAt || '';
 
         return {
-            version: 1,
+            version: 2,
+            lastAppTab: appTab,
             lastProjectId: rawState.projectId,
+            lastFocusMode: shouldPersistFocusMode(appTab) ? focusMode : false,
             savedAt,
             projects: {
                 [rawState.projectId]: {
-                    activeTab,
+                    activeTab: projectTab,
                     focusMode,
                     savedAt,
                 }
@@ -63,10 +95,10 @@ const normalizeWorkspaceSnapshot = (rawState) => {
     const projects = Object.entries(rawState.projects || {}).reduce((acc, [projectId, value]) => {
         if (!projectId) return acc;
 
-        const activeTab = normalizeWorkspaceTab(value?.activeTab);
+        const activeTab = normalizeProjectTab(value?.activeTab);
         acc[projectId] = {
             activeTab,
-            focusMode: activeTab === 'workspace' ? true : value?.focusMode !== false,
+            focusMode: shouldPersistFocusMode(activeTab) ? value?.focusMode === true : false,
             savedAt: value?.savedAt || '',
         };
 
@@ -74,21 +106,33 @@ const normalizeWorkspaceSnapshot = (rawState) => {
     }, {});
 
     const fallbackProjectId = rawState.lastProjectId || Object.keys(projects)[0] || null;
-    if (!fallbackProjectId) return null;
+    const savedAt = rawState.savedAt || projects[fallbackProjectId]?.savedAt || '';
+    const inferredAppTab = rawState.lastAppTab
+        ? normalizeAppTab(rawState.lastAppTab)
+        : inferLegacyAppTab(rawState, projects, fallbackProjectId);
+    const lastAppTab = isProjectScopedTab(inferredAppTab) && !fallbackProjectId
+        ? 'dashboard'
+        : inferredAppTab;
 
-    if (!projects[fallbackProjectId]) {
-        const activeTab = normalizeWorkspaceTab(rawState.activeTab || rawState.lastActiveTab);
+    if (fallbackProjectId && !projects[fallbackProjectId]) {
+        const activeTab = normalizeProjectTab(rawState.activeTab || rawState.lastActiveTab);
         projects[fallbackProjectId] = {
             activeTab,
-            focusMode: activeTab === 'workspace' ? true : rawState.lastFocusMode !== false && rawState.focusMode !== false,
-            savedAt: rawState.savedAt || '',
+            focusMode: shouldPersistFocusMode(activeTab)
+                ? (rawState.lastFocusMode === true || rawState.focusMode === true)
+                : false,
+            savedAt,
         };
     }
 
     return {
-        version: 1,
+        version: 2,
+        lastAppTab,
         lastProjectId: fallbackProjectId,
-        savedAt: projects[fallbackProjectId]?.savedAt || rawState.savedAt || '',
+        lastFocusMode: shouldPersistFocusMode(lastAppTab)
+            ? (rawState.lastFocusMode === true || projects[fallbackProjectId]?.focusMode === true)
+            : false,
+        savedAt,
         projects,
     };
 };
@@ -105,32 +149,36 @@ const pickPreferredWorkspaceSnapshot = (localState, cloudState) => {
         : normalizedLocal;
 };
 
-const buildWorkspaceSnapshot = (baseState, projectId, activeTab, focusMode) => {
-    if (!projectId) return null;
-
+const buildWorkspaceSnapshot = (baseState, { projectId = null, activeTab = 'dashboard', focusMode = false } = {}) => {
     const normalizedBase = normalizeWorkspaceSnapshot(baseState) || {
-        version: 1,
+        version: 2,
+        lastAppTab: 'dashboard',
         lastProjectId: null,
+        lastFocusMode: false,
         savedAt: '',
         projects: {},
     };
 
-    const nextTab = normalizeWorkspaceTab(activeTab);
-    const nextFocusMode = nextTab === 'workspace' ? true : focusMode !== false;
+    const nextAppTab = normalizeAppTab(activeTab);
+    const nextFocusMode = shouldPersistFocusMode(nextAppTab) ? focusMode === true : false;
     const savedAt = new Date().toISOString();
+    const nextProjects = { ...normalizedBase.projects };
+
+    if (projectId && isProjectScopedTab(nextAppTab)) {
+        nextProjects[projectId] = {
+            activeTab: normalizeProjectTab(nextAppTab),
+            focusMode: nextFocusMode,
+            savedAt,
+        };
+    }
 
     return {
-        version: 1,
-        lastProjectId: projectId,
+        version: 2,
+        lastAppTab: nextAppTab,
+        lastProjectId: projectId || normalizedBase.lastProjectId || null,
+        lastFocusMode: nextFocusMode,
         savedAt,
-        projects: {
-            ...normalizedBase.projects,
-            [projectId]: {
-                activeTab: nextTab,
-                focusMode: nextFocusMode,
-                savedAt,
-            }
-        }
+        projects: nextProjects,
     };
 };
 
@@ -164,6 +212,8 @@ const remapWorkspaceSnapshotProjectId = (baseState, oldId, newId) => {
     return {
         ...normalizedBase,
         lastProjectId: normalizedBase.lastProjectId === oldId ? newId : normalizedBase.lastProjectId,
+        lastAppTab: normalizeAppTab(normalizedBase.lastAppTab),
+        lastFocusMode: shouldPersistFocusMode(normalizedBase.lastAppTab) ? normalizedBase.lastFocusMode === true : false,
         projects: nextProjects,
         savedAt: nextProjects[normalizedBase.lastProjectId === oldId ? newId : normalizedBase.lastProjectId]?.savedAt || normalizedBase.savedAt,
     };
@@ -177,15 +227,18 @@ const removeWorkspaceSnapshotProject = (baseState, projectId) => {
     delete nextProjects[projectId];
 
     const remainingProjectIds = Object.keys(nextProjects);
-    if (!remainingProjectIds.length) return null;
-
     const nextLastProjectId = normalizedBase.lastProjectId === projectId
-        ? remainingProjectIds[0]
+        ? (remainingProjectIds[0] || null)
         : normalizedBase.lastProjectId;
+    const nextAppTab = isProjectScopedTab(normalizedBase.lastAppTab) && !nextLastProjectId
+        ? 'dashboard'
+        : normalizeAppTab(normalizedBase.lastAppTab);
 
     return {
-        version: 1,
+        version: 2,
+        lastAppTab: nextAppTab,
         lastProjectId: nextLastProjectId,
+        lastFocusMode: shouldPersistFocusMode(nextAppTab) ? normalizedBase.lastFocusMode === true : false,
         savedAt: nextProjects[nextLastProjectId]?.savedAt || normalizedBase.savedAt,
         projects: nextProjects,
     };
@@ -499,7 +552,7 @@ export function ProjectsProvider({ children }) {
     }, [activeProjectId]);
 
     const activeProject = useMemo(() => {
-        return projects.find(p => p.id === activeProjectId) || projects[0] || null;
+        return projects.find(p => p.id === activeProjectId) || null;
     }, [projects, activeProjectId]);
 
     useEffect(() => {
@@ -519,20 +572,33 @@ export function ProjectsProvider({ children }) {
         );
         hasRestoredWorkspaceRef.current = true;
 
-        if (!savedWorkspaceState?.lastProjectId) return;
+        const nextAppTab = normalizeAppTab(savedWorkspaceState?.lastAppTab);
+        const matchingProject = savedWorkspaceState?.lastProjectId
+            ? projects.find((project) => project.id === savedWorkspaceState.lastProjectId)
+            : null;
 
-        const matchingProject = projects.find((project) => project.id === savedWorkspaceState.lastProjectId);
-        if (!matchingProject) {
-            persistWorkspaceState(removeWorkspaceSnapshotProject(savedWorkspaceState, savedWorkspaceState.lastProjectId));
+        if (isProjectScopedTab(nextAppTab)) {
+            if (!matchingProject) {
+                persistWorkspaceState(removeWorkspaceSnapshotProject(savedWorkspaceState, savedWorkspaceState.lastProjectId));
+                setActiveProjectId(null);
+                setActiveTab('dashboard');
+                setFocusMode(false);
+                return;
+            }
+
+            const projectWorkspaceState = savedWorkspaceState.projects?.[matchingProject.id];
+            const nextTab = normalizeProjectTab(projectWorkspaceState?.activeTab || nextAppTab);
+
+            setActiveProjectId(matchingProject.id);
+            setActiveTab(nextTab);
+            setFocusMode(projectWorkspaceState?.focusMode === true);
+            setWorkspaceIntent(null);
             return;
         }
 
-        const projectWorkspaceState = savedWorkspaceState.projects?.[matchingProject.id];
-        const nextTab = normalizeWorkspaceTab(projectWorkspaceState?.activeTab);
-
-        setActiveProjectId(matchingProject.id);
-        setActiveTab(nextTab);
-        setFocusMode(projectWorkspaceState?.focusMode !== false || nextTab === 'workspace');
+        setActiveProjectId(null);
+        setActiveTab(nextAppTab);
+        setFocusMode(false);
         setWorkspaceIntent(null);
     }, [cloudWorkspaceReady, cloudWorkspaceState, persistWorkspaceState, projects, readSavedWorkspaceState, user?.id]);
 
@@ -541,13 +607,19 @@ export function ProjectsProvider({ children }) {
     ), [activeProjectId, projects]);
 
     useEffect(() => {
-        if (!user?.id || !activeProjectId || !hasActiveProject) {
+        if (!user?.id) {
             return;
         }
 
-        const nextTab = activeTab === 'dashboard' ? 'workspace' : activeTab;
-        const nextFocusMode = nextTab === 'workspace' ? true : focusMode !== false;
-        const nextSignature = `${activeProjectId}:${nextTab}:${nextFocusMode ? '1' : '0'}`;
+        const nextAppTab = normalizeAppTab(activeTab);
+        const nextProjectId = hasActiveProject ? activeProjectId : null;
+
+        if (isProjectScopedTab(nextAppTab) && !nextProjectId) {
+            return;
+        }
+
+        const nextFocusMode = shouldPersistFocusMode(nextAppTab) ? focusMode === true : false;
+        const nextSignature = `${nextProjectId || 'none'}:${nextAppTab}:${nextFocusMode ? '1' : '0'}`;
 
         if (lastPersistedWorkspaceSignatureRef.current === nextSignature) {
             return;
@@ -558,9 +630,11 @@ export function ProjectsProvider({ children }) {
         persistWorkspaceState(
             buildWorkspaceSnapshot(
                 pickPreferredWorkspaceSnapshot(readSavedWorkspaceState(), cloudWorkspaceState),
-                activeProjectId,
-                nextTab,
-                nextFocusMode
+                {
+                    projectId: nextProjectId,
+                    activeTab: nextAppTab,
+                    focusMode: nextFocusMode
+                }
             )
         );
     }, [activeProjectId, activeTab, cloudWorkspaceState, focusMode, hasActiveProject, persistWorkspaceState, readSavedWorkspaceState, user?.id]);
@@ -594,17 +668,29 @@ export function ProjectsProvider({ children }) {
     }, [activeProjectId, activeTab, cloudWorkspaceState, focusMode, persistWorkspaceState, projects, readSavedWorkspaceState, user]);
 
     const calculateTotalValue = useMemo(() => {
-        try {
-            if (!activeProject || !activeProject.sections) return 0;
-            return activeProject.sections.reduce((acc, section) => {
+        const sumProjectTotal = (project) => {
+            if (!project || !project.sections) return 0;
+            return project.sections.reduce((acc, section) => {
                 if (!section || !section.items) return acc;
                 return acc + section.items.reduce((itemAcc, item) => itemAcc + (item.total || 0), 0);
             }, 0);
+        };
+
+        try {
+            if (activeProject) {
+                return sumProjectTotal(activeProject);
+            }
+
+            if (activeTab === 'dashboard') {
+                return projects.reduce((acc, project) => acc + sumProjectTotal(project), 0);
+            }
+
+            return 0;
         } catch (err) {
             console.error('calculateTotalValue error:', err);
             return 0;
         }
-    }, [activeProject]);
+    }, [activeProject, activeTab, projects]);
 
     const forceSync = useCallback(async () => {
         await processQueue();
@@ -675,6 +761,8 @@ export function ProjectsProvider({ children }) {
                     qty,
                     rate: initialRate,
                     benchmark: initialBenchmark,
+                    benchmarkRegionalRates: item.benchmarkRegionalRates || fallbackAutoRate?.benchmarkRegionalRates || null,
+                    benchmarkEvidence: item.benchmarkEvidence || fallbackAutoRate?.benchmarkEvidence || null,
                     useBenchmark: false,
                     total: qty * initialRate,
                     isVO: false,
