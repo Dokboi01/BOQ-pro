@@ -17,7 +17,7 @@ import AuthContext from './auth-context';
 import { useToast } from '../components/ui/useToast';
 import { buildCompanyKey, deriveCompanyName } from '../utils/companyAccess';
 
-const PUBLIC_VIEWS = new Set(['landing', 'pricing', 'login', 'signup', 'forgot-password']);
+const PUBLIC_VIEWS = new Set(['landing', 'pricing', 'login', 'signup', 'forgot-password', 'terms', 'privacy']);
 
 export function AuthProvider({ children }) {
     const toast = useToast();

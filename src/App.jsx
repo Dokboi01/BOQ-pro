@@ -8,6 +8,7 @@ import { analytics } from './db/firebase';
 import { logEvent } from 'firebase/analytics';
 import Hero from './components/landing/Hero';
 import PricingPage from './components/landing/Pricing';
+import LegalPage from './components/landing/LegalPage';
 import Login from './components/auth/Login';
 import SignUp from './components/auth/SignUp';
 import Onboarding from './components/onboarding/Onboarding';
@@ -173,6 +174,8 @@ function App() {
     onLogin={() => setView(user ? 'app' : 'login')}
     onBack={() => { setAuthError(null); setView(user ? 'app' : 'landing'); }}
   />;
+  if (view === 'terms') return <LegalPage mode="terms" onBack={() => setView(user ? 'app' : 'signup')} />;
+  if (view === 'privacy') return <LegalPage mode="privacy" onBack={() => setView(user ? 'app' : 'signup')} />;
   if (view === 'login') return <Login
     error={authError}
     onLogin={handleLogin}
@@ -181,7 +184,7 @@ function App() {
     onForgotPassword={() => setView('forgot-password')}
     onBack={() => setView(user ? 'app' : 'landing')}
   />;
-  if (view === 'signup') return <SignUp error={authError} selectedPlan={selectedPlan} onSignUp={handleSignUp} onSwitchToLogin={(target) => { setAuthError(null); setView(target); }} />;
+  if (view === 'signup') return <SignUp error={authError} selectedPlan={selectedPlan} onSignUp={handleSignUp} onSwitchToLogin={(target) => { setAuthError(null); setView(target); }} onViewTerms={() => setView('terms')} onViewPrivacy={() => setView('privacy')} />;
   if (view === 'verification') return (
     <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white', flexDirection: 'column', gap: '1.5rem', textAlign: 'center', padding: '2rem' }}>
       <div style={{ borderRadius: '50%', background: 'rgba(37, 99, 235, 0.2)', padding: '20px', marginBottom: '10px' }}>

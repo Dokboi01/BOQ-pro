@@ -14,7 +14,7 @@ import {
   User
 } from 'lucide-react';
 
-const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin }) => {
+const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, onViewPrivacy }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState(null);
   const [formData, setFormData] = useState({
@@ -287,7 +287,7 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin }) => {
                   onChange={(e) => setFormData({ ...formData, agreeToTerms: e.target.checked })}
                 />
                 <label htmlFor="terms">
-                  I agree to the <button type="button" className="text-link">Terms of Service</button> and <button type="button" className="text-link">Privacy Policy</button>
+                  I agree to the <button type="button" className="text-link" onClick={(e) => { e.preventDefault(); onViewTerms?.(); }}>Terms of Service</button> and <button type="button" className="text-link" onClick={(e) => { e.preventDefault(); onViewPrivacy?.(); }}>Privacy Policy</button>
                 </label>
               </div>
 
