@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import { autoTable } from 'jspdf-autotable';
 import { getItemTotal, getItemUnitRate } from './pricing';
 
 const NAIRA = '\u20A6';
@@ -265,7 +265,7 @@ export const exportToPDF = (projectInfo, boqData, isUnpriced) => {
     ]);
   });
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: 36,
     head: [['ITEM', 'DESCRIPTION OF WORK', 'UNIT', 'QTY', `RATE (${NAIRA})`, `AMOUNT (${NAIRA})`]],
     body: tableData,
@@ -297,7 +297,7 @@ export const exportToPDF = (projectInfo, boqData, isUnpriced) => {
     ];
   });
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: 40,
     head: [['REF', 'ELEMENT / SECTION DESCRIPTION', 'ITEMS', `AMOUNT (${NAIRA})`]],
     body: summaryRows,
@@ -377,7 +377,7 @@ export const exportMaterialsToPDF = (projectInfo, materialData) => {
     material.usage
   ]);
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: 65,
     head: [['SN', 'MATERIAL DESCRIPTION', 'UNIT', 'TOTAL QTY', 'PROJECT USAGE SEGMENTS']],
     body: tableRows,
