@@ -2,7 +2,6 @@ import localDB from './localDB';
 import { saveProject, getProjects, deleteProject as cloudDeleteProject } from './database';
 import { auth } from './firebase';
 import { toSaveTimestamp } from '../utils/projectSaveState';
-import { safeStorageGet } from '../utils/safeStorage';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -119,7 +118,7 @@ function getLocalUserId() {
   if (auth.currentUser?.uid) return auth.currentUser.uid;
 
   try {
-    const cached = safeStorageGet('boq_pro_profile');
+    const cached = localStorage.getItem('boq_pro_profile');
     if (!cached) return null;
     const parsed = JSON.parse(cached);
     return parsed?.id || null;

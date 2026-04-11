@@ -12,7 +12,6 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       VitePWA({
-        selfDestroying: true,
         registerType: 'autoUpdate',
         includeAssets: ['pwa-192x192.png', 'pwa-512x512.png'],
         workbox: {
@@ -62,9 +61,6 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 3000, // Increase warning limit to 3MB
       rollupOptions: {
         output: {
-          entryFileNames: 'assets/app.js',
-          chunkFileNames: 'assets/[name]-[hash].js',
-          assetFileNames: 'assets/[name]-[hash][extname]',
           manualChunks: (id) => {
             if (id.includes('node_modules')) {
               if (id.includes('lucide-react')) return 'vendor-icons';
