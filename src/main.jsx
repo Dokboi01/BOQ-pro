@@ -101,8 +101,11 @@ window.addEventListener('unhandledrejection', async (event) => {
 })
 
 let updateSW = () => {}
+const shouldRegisterSW = import.meta.env.PROD
+  && typeof window !== 'undefined'
+  && window.location.protocol !== 'file:'
 
-if (import.meta.env.PROD) {
+if (shouldRegisterSW) {
   updateSW = registerSW({
     onNeedRefresh() {
       if (confirm('New content available! Reload to update?')) {
