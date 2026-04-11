@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { useLocation, matchPath, useNavigate } from 'react-router-dom';
 import { STRUCTURE_DATA } from '../data/structures';
 import { PLAN_LIMITS, PLAN_NAMES } from '../data/plans';
 import { useAuth } from './useAuth';
@@ -24,7 +23,6 @@ import { getWorkspaceState as getCloudWorkspaceState, saveWorkspaceState as save
 import ProjectsContext from './projects-context';
 import { buildCompanyKey, canAccessCompanyProject, deriveCompanyName } from '../utils/companyAccess';
 import { buildAutoRateResult } from '../utils/pricing';
-import { safeStorageGet, safeStorageRemove, safeStorageSet } from '../utils/safeStorage';
 
 const PROJECT_SCOPED_TABS = new Set(['workspace', 'reports', 'library']);
 const RESTORABLE_APP_TABS = new Set(['dashboard', 'workspace', 'reports', 'library', 'settings', 'methodology']);
@@ -251,53 +249,8 @@ export function ProjectsProvider({ children }) {
     const toast = useToast();
 
     const [projects, setProjects] = useState([]);
-    
-    // Router integration
-    const location = useLocation();
-    const navigate = useNavigate();
-    
-    const projectMatch = matchPath({ path: "/project/:projectId/*" }, location.pathname);
-    const activeProjectId = projectMatch?.params?.projectId || null;
-    
-    let activeTab = 'dashboard';
-    if (location.pathname.includes('/workspace')) activeTab = 'workspace';
-    else if (location.pathname.includes('/library')) activeTab = 'library';
-    else if (location.pathname.includes('/reports')) activeTab = 'reports';
-    else if (location.pathname.includes('/settings')) activeTab = 'settings';
-    else if (location.pathname.includes('/methodology')) activeTab = 'methodology';
-
-    const buildProjectRoute = useCallback((projectId, tab = 'workspace') => (
-        `/project/${projectId}/${normalizeProjectTab(tab)}`
-    ), []);
-
-    const setActiveTab = useCallback((tab, projectIdOverride = null) => {
-        const nextTab = normalizeAppTab(tab);
-        if (!isProjectScopedTab(nextTab)) {
-            navigate(`/${nextTab}`);
-            return;
-        }
-
-        const targetProjectId = projectIdOverride || activeProjectId;
-        if (!targetProjectId) {
-            navigate('/dashboard');
-            return;
-        }
-
-        navigate(buildProjectRoute(targetProjectId, nextTab));
-    }, [activeProjectId, buildProjectRoute, navigate]);
-
-    const setActiveProjectId = useCallback((id, nextTab = null) => {
-        if (!id) {
-           navigate('/dashboard');
-           return;
-        }
-
-        const preservedTab = activeTab === 'library' || activeTab === 'reports'
-            ? activeTab
-            : 'workspace';
-        const destinationTab = nextTab || preservedTab;
-        navigate(buildProjectRoute(id, destinationTab));
-    }, [activeTab, buildProjectRoute, navigate]);
+    const [activeProjectId, setActiveProjectId] = useState(null);
+    const [activeTab, setActiveTab] = useState('dashboard');
     const [showSelector, setShowSelector] = useState(false);
     const [showAnalyzer, setShowAnalyzer] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
@@ -321,7 +274,7 @@ export function ProjectsProvider({ children }) {
         if (!storageKey) return null;
 
         try {
-            const raw = safeStorageGet(storageKey);
+            const raw = localStorage.getItem(storageKey);
             return raw ? normalizeWorkspaceSnapshot(JSON.parse(raw)) : null;
         } catch {
             return null;
@@ -333,11 +286,11 @@ export function ProjectsProvider({ children }) {
         if (!storageKey) return;
 
         if (!nextState) {
-            safeStorageRemove(storageKey);
+            localStorage.removeItem(storageKey);
             return;
         }
 
-        safeStorageSet(storageKey, JSON.stringify(normalizeWorkspaceSnapshot(nextState)));
+        localStorage.setItem(storageKey, JSON.stringify(normalizeWorkspaceSnapshot(nextState)));
     }, [getWorkspaceStateStorageKey]);
 
     const persistWorkspaceState = useCallback((nextState) => {
@@ -431,7 +384,7 @@ export function ProjectsProvider({ children }) {
         if (!currentUserId) {
             setProjects([]);
         }
-    }, [setActiveProjectId, setActiveTab, user?.id]);
+    }, [user?.id]);
 
     useEffect(() => {
         return () => {
@@ -574,7 +527,7 @@ export function ProjectsProvider({ children }) {
             }
         });
         return unsubscribe;
-    }, [activeProjectId, cloudWorkspaceState, persistWorkspaceState, readSavedWorkspaceState, setActiveProjectId]);
+    }, [activeProjectId, cloudWorkspaceState, persistWorkspaceState, readSavedWorkspaceState]);
 
     // ── Real-time listener for active project (live collaboration) ──
     useEffect(() => {
@@ -636,7 +589,8 @@ export function ProjectsProvider({ children }) {
             const projectWorkspaceState = savedWorkspaceState.projects?.[matchingProject.id];
             const nextTab = normalizeProjectTab(projectWorkspaceState?.activeTab || nextAppTab);
 
-            setActiveProjectId(matchingProject.id, nextTab);
+            setActiveProjectId(matchingProject.id);
+            setActiveTab(nextTab);
             setFocusMode(projectWorkspaceState?.focusMode === true);
             setWorkspaceIntent(null);
             return;
@@ -646,7 +600,7 @@ export function ProjectsProvider({ children }) {
         setActiveTab(nextAppTab);
         setFocusMode(false);
         setWorkspaceIntent(null);
-    }, [cloudWorkspaceReady, cloudWorkspaceState, persistWorkspaceState, projects, readSavedWorkspaceState, setActiveProjectId, setActiveTab, user?.id]);
+    }, [cloudWorkspaceReady, cloudWorkspaceState, persistWorkspaceState, projects, readSavedWorkspaceState, user?.id]);
 
     const hasActiveProject = useMemo(() => (
         !!activeProjectId && projects.some((project) => project.id === activeProjectId)
@@ -711,7 +665,7 @@ export function ProjectsProvider({ children }) {
                 setFocusMode(false);
             }
         }
-    }, [activeProjectId, activeTab, cloudWorkspaceState, focusMode, persistWorkspaceState, projects, readSavedWorkspaceState, setActiveProjectId, setActiveTab, user]);
+    }, [activeProjectId, activeTab, cloudWorkspaceState, focusMode, persistWorkspaceState, projects, readSavedWorkspaceState, user]);
 
     const calculateTotalValue = useMemo(() => {
         const sumProjectTotal = (project) => {
@@ -763,14 +717,15 @@ export function ProjectsProvider({ children }) {
     }, []);
 
     const openWorkspace = useCallback((projectId, intent = null) => {
-        navigate(`/project/${projectId}/workspace`);
+        setActiveProjectId(projectId);
+        setActiveTab('workspace');
         setFocusMode(true);
         setWorkspaceIntent(intent ? {
             ...intent,
             projectId,
             nonce: Date.now()
         } : null);
-    }, [navigate]);
+    }, []);
 
     const buildProjectSections = useCallback((sections = [], { unpriced = true, structureType = null, region = 'Lagos' } = {}) => {
         return sections.map(section => ({
@@ -867,8 +822,9 @@ export function ProjectsProvider({ children }) {
 
             // 2. Update UI immediately
             setProjects(prev => [savedProject, ...prev]);
-            setActiveProjectId(savedProject.id, 'workspace');
+            setActiveProjectId(savedProject.id);
             setShowSelector(false);
+            setActiveTab('workspace');
             setFocusMode(true);
 
             toast.success('Project created!');
@@ -933,8 +889,9 @@ export function ProjectsProvider({ children }) {
         try {
             const savedProject = await saveLocal(newProj, { source: 'user' });
             setProjects(prev => [savedProject, ...prev]);
-            setActiveProjectId(savedProject.id, 'workspace');
+            setActiveProjectId(savedProject.id);
             setShowSelector(false);
+            setActiveTab('workspace');
             setFocusMode(true);
             toast.success('Project created successfully!');
             syncToCloud(savedProject);
@@ -979,8 +936,9 @@ export function ProjectsProvider({ children }) {
         try {
             const savedProject = await saveLocal(newProj, { source: 'user' });
             setProjects(prev => [savedProject, ...prev]);
-            setActiveProjectId(savedProject.id, 'workspace');
+            setActiveProjectId(savedProject.id);
             setShowAnalyzer(false);
+            setActiveTab('workspace');
             setFocusMode(true);
             syncToCloud(savedProject);
         } catch (err) {

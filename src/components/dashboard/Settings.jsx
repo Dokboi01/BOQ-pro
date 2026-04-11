@@ -186,7 +186,7 @@ const Settings = ({ user, onUpgrade }) => {
                 </div>
                 {user?.lastPayment ? (
                   <div className="table-row">
-                    <span>{user.lastPayment.date ? new Date(user.lastPayment.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}</span>
+                    <span>{new Date(user.lastPayment.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
                     <span>{(() => {
                       const p = (user.lastPayment.plan || '').toLowerCase();
                       if (p === 'starter') return user.lastPayment.billing === 'annual' ? '₦50,000' : '₦5,000';

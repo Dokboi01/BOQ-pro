@@ -22,16 +22,6 @@ export const db = initializeFirestore(app, {
     experimentalAutoDetectLongPolling: true
 });
 
-let analyticsInstance = null;
-
-if (typeof window !== 'undefined') {
-    try {
-        analyticsInstance = getAnalytics(app);
-    } catch (error) {
-        console.warn('Analytics disabled for this runtime:', error?.message || error);
-    }
-}
-
-export const analytics = analyticsInstance;
+export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
 export default app;

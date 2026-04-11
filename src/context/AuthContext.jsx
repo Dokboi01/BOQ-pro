@@ -16,7 +16,6 @@ import { getProfile, updateProfile } from '../db/database';
 import AuthContext from './auth-context';
 import { useToast } from '../components/ui/useToast';
 import { buildCompanyKey, deriveCompanyName } from '../utils/companyAccess';
-import { safeStorageGet, safeStorageRemove, safeStorageSet } from '../utils/safeStorage';
 
 const PUBLIC_VIEWS = new Set(['landing', 'pricing', 'login', 'signup', 'forgot-password', 'terms', 'privacy']);
 
@@ -24,7 +23,7 @@ export function AuthProvider({ children }) {
     const toast = useToast();
 
     // Initialize from cache for instant UI
-    const cachedProfile = safeStorageGet('boq_pro_profile');
+    const cachedProfile = localStorage.getItem('boq_pro_profile');
     let initialUser = null;
     let initialView = 'loading';
     if (cachedProfile) {
@@ -83,7 +82,7 @@ export function AuthProvider({ children }) {
                             fullUser = { ...fullUser, is_onboarded: true };
                         }
                     }
-                    safeStorageSet('boq_pro_profile', JSON.stringify(fullUser));
+                    localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
                     return fullUser;
                 });
             }
@@ -113,7 +112,7 @@ export function AuthProvider({ children }) {
                 }
 
                 // If we already have a cached user, skip blocking on Firestore
-                const cached = safeStorageGet('boq_pro_profile');
+                const cached = localStorage.getItem('boq_pro_profile');
                 if (cached) {
                     try {
                         const cachedUser = JSON.parse(cached);
@@ -143,7 +142,7 @@ export function AuthProvider({ children }) {
                         email: firebaseUser.email
                     });
                     setUser(fullUser);
-                    safeStorageSet('boq_pro_profile', JSON.stringify(fullUser));
+                    localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
                     initializationComplete.current = true;
 
                     if (profile && profile.is_onboarded) {
@@ -164,7 +163,7 @@ export function AuthProvider({ children }) {
                         company_key: buildCompanyKey({ email: firebaseUser.email })
                     };
                     setUser(basicUser);
-                    safeStorageSet('boq_pro_profile', JSON.stringify(basicUser));
+                    localStorage.setItem('boq_pro_profile', JSON.stringify(basicUser));
                     initializationComplete.current = true;
 
                     // If we suspect they are already onboarded (or we just don't know), 
@@ -173,7 +172,7 @@ export function AuthProvider({ children }) {
                 }
             } else {
                 // User is signed out
-                safeStorageRemove('boq_pro_profile');
+                localStorage.removeItem('boq_pro_profile');
                 setUser(null);
                 setPendingUser(null);
                 setVerificationEmailStatus('idle');
@@ -212,7 +211,7 @@ export function AuthProvider({ children }) {
                 role: 'Quantity Surveyor'
             };
             setUser(guestUser);
-            safeStorageSet('boq_pro_profile', JSON.stringify(guestUser));
+            localStorage.setItem('boq_pro_profile', JSON.stringify(guestUser));
             setView('app');
             return;
         }
@@ -238,7 +237,7 @@ export function AuthProvider({ children }) {
                 company_key: buildCompanyKey({ email: result.user.email })
             };
             setUser(optimisticUser);
-            safeStorageSet('boq_pro_profile', JSON.stringify(optimisticUser));
+            localStorage.setItem('boq_pro_profile', JSON.stringify(optimisticUser));
             initializationComplete.current = true; // ⚡ IMPORTANT: Prevents the timeout from kicking us out
             setView('app');
 
@@ -352,19 +351,19 @@ export function AuthProvider({ children }) {
             if (updatedProfile) {
                 const updatedUser = { ...user, ...updatedProfile, is_onboarded: true };
                 setUser(updatedUser);
-                safeStorageSet('boq_pro_profile', JSON.stringify(updatedUser));
+                localStorage.setItem('boq_pro_profile', JSON.stringify(updatedUser));
             } else {
                 // Even if Firestore update didn't return data, update local state
                 const updatedUser = { ...user, role: data.userType, is_onboarded: true };
                 setUser(updatedUser);
-                safeStorageSet('boq_pro_profile', JSON.stringify(updatedUser));
+                localStorage.setItem('boq_pro_profile', JSON.stringify(updatedUser));
             }
         } catch (err) {
             console.error('❌ Onboarding profile update failed:', err);
             // Still update local state so user isn't stuck
             const updatedUser = { ...user, role: data.userType, is_onboarded: true };
             setUser(updatedUser);
-            safeStorageSet('boq_pro_profile', JSON.stringify(updatedUser));
+            localStorage.setItem('boq_pro_profile', JSON.stringify(updatedUser));
         } finally {
             // Guarantee navigation to dashboard
             setView('app');
@@ -396,7 +395,7 @@ export function AuthProvider({ children }) {
                 const result = await updateProfile(profileUpdate);
                 if (result) {
                     setUser(prev => ({ ...prev, ...result }));
-                    safeStorageSet('boq_pro_profile', JSON.stringify({ ...user, ...result }));
+                    localStorage.setItem('boq_pro_profile', JSON.stringify({ ...user, ...result }));
                 } else {
                     setUser(prev => ({ ...prev, plan }));
                 }
@@ -411,7 +410,7 @@ export function AuthProvider({ children }) {
             setSelectedPlan(plan);
             if (paystackData) {
                 // Save pending transaction for after signup
-                safeStorageSet('boq_pro_pending_payment', JSON.stringify(paystackData));
+                localStorage.setItem('boq_pro_pending_payment', JSON.stringify(paystackData));
             }
             setView('signup');
         }
@@ -424,7 +423,7 @@ export function AuthProvider({ children }) {
             console.error('❌ Logout error:', err);
         } finally {
             // Guarantee local cleanup and navigation
-            safeStorageRemove('boq_pro_profile');
+            localStorage.removeItem('boq_pro_profile');
             setUser(null);
             setView('landing');
         }
