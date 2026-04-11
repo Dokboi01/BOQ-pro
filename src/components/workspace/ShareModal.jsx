@@ -7,7 +7,7 @@ import { sendReportEmail, shareViaWhatsApp, shareViaNative, copyShareTextToClipb
 import { getItemTotal, getItemUnitRate } from '../../utils/pricing';
 import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import { autoTable } from 'jspdf-autotable';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -106,7 +106,7 @@ const ShareModal = ({ isOpen, onClose, projectInfo, boqData, grandTotal }) => {
 
         tableData[tableData.length - 1][1].content = `₦${grandTotal.toLocaleString()}`;
 
-        doc.autoTable({
+        autoTable(doc, {
           startY: 40,
           head: [['Item', 'Description', 'Unit', 'Qty', 'Rate', 'Total']],
           body: tableData,

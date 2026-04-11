@@ -32,3 +32,6 @@ release
 
 # Health app folder
 health app/
+
+# Temporary debug and preview artifacts
+tmp/
