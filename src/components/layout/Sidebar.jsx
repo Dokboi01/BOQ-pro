@@ -1,4 +1,6 @@
 import React from 'react';
+import { NavLink } from 'react-router-dom';
+import { useProjects } from '../../context/useProjects';
 import {
   LayoutDashboard,
   FileSpreadsheet,
@@ -9,19 +11,21 @@ import {
   ChevronRight,
   LogOut,
   Building2,
-  Gavel,
   BookOpen
 } from 'lucide-react';
 
-const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
+const Sidebar = ({ user, onLogout, onViewPlans }) => {
   const [collapsed, setCollapsed] = React.useState(false);
+  const { activeProjectId } = useProjects();
+
+  const baseProjectRoute = activeProjectId ? `/project/${activeProjectId}` : '';
 
   const menuItems = [
-    { id: 'dashboard', label: 'Project Dashboard', icon: LayoutDashboard },
-    { id: 'workspace', label: 'BOQ Workspace', icon: FileSpreadsheet },
-    { id: 'library', label: 'Price Library', icon: Database },
-    { id: 'reports', label: 'Documents & Export', icon: FileText },
-    { id: 'methodology', label: 'Calculations Guide', icon: BookOpen },
+    { id: 'dashboard', label: 'Project Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+    { id: 'workspace', label: 'BOQ Workspace', icon: FileSpreadsheet, path: activeProjectId ? `${baseProjectRoute}/workspace` : '/dashboard' },
+    { id: 'library', label: 'Price Library', icon: Database, path: activeProjectId ? `${baseProjectRoute}/library` : '/dashboard' },
+    { id: 'reports', label: 'Documents & Export', icon: FileText, path: activeProjectId ? `${baseProjectRoute}/reports` : '/dashboard' },
+    { id: 'methodology', label: 'Calculations Guide', icon: BookOpen, path: '/methodology' },
   ];
 
   return (
@@ -42,14 +46,14 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
 
       <nav className="sidebar-nav">
         {menuItems.map((item) => (
-          <button
+          <NavLink
             key={item.id}
-            className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
-            onClick={() => setActiveTab(item.id)}
+            to={item.path}
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
           >
             <item.icon size={20} />
             {!collapsed && <span>{item.label}</span>}
-          </button>
+          </NavLink>
         ))}
       </nav>
 
@@ -73,10 +77,10 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
             </div>
           </div>
         )}
-        <button className="nav-item" onClick={() => setActiveTab('settings')}>
+        <NavLink to="/settings" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
           <Settings size={20} />
           {!collapsed && <span>Settings</span>}
-        </button>
+        </NavLink>
         <button className="nav-item text-danger" onClick={onLogout}>
           <LogOut size={20} />
           {!collapsed && <span>Sign Out</span>}
@@ -164,6 +168,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           cursor: pointer;
           position: relative;
+          text-decoration: none;
         }
 
         .nav-item:hover {
@@ -302,7 +307,6 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
           background: rgba(248, 113, 113, 0.1);
         }
 
-        /* ── MOBILE: Bottom Navigation Bar ── */
         @media (max-width: 768px) {
           .sidebar {
             position: fixed;
