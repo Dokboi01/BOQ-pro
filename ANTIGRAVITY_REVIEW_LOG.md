@@ -51,6 +51,56 @@ Lead review decision:
 
 Add the newest task at the top of this section.
 
+## Task: BOQ Pro Architecture Upgrade (React Router Migration)
+
+Status: Approved
+Owner: antigravity
+Lead Reviewer: codex
+
+Summary:
+- What is being changed? Transitioning the entire view state and navigation logic from memory (`ProjectsContext`) to a native hash-based URL structure (`react-router-dom`).
+- Why is it needed? To support deep-linking, prevent unexpected full-page unmounts of layout elements (topbar/sidebar), and to lay the groundwork for history (Back/Forward arrows) features.
+
+Files to touch:
+- C:/Users/adedo/.gemini/another one/package.json
+- C:/Users/adedo/.gemini/another one/package-lock.json
+- C:/Users/adedo/.gemini/another one/src/components/layout/Sidebar.jsx
+- C:/Users/adedo/.gemini/another one/src/components/layout/AppLayout.jsx
+- C:/Users/adedo/.gemini/another one/src/App.jsx
+- C:/Users/adedo/.gemini/another one/src/context/ProjectsContext.jsx
+
+Planned edits:
+- Install `react-router-dom` and `framer-motion` (via package.json).
+- Extract shared wrapper elements (Sidebar, topbar) into `AppLayout`.
+- Modify `App.jsx` to declare URL routes using `react-router-dom`.
+- Change `<button>` links in `Sidebar` to `<NavLink>`s.
+- Sync `ProjectsContext` with `useLocation()` state derived from route params.
+
+Code written:
+- Wrote `AppLayout.jsx` wrapper component with `Outlet`.
+- Converted Navigation items to React Router DOM's `NavLink` elements in `Sidebar.jsx`.
+- Cleaned monolithic layout and implemented Routes in `App.jsx` inside a `HashRouter`.
+- Derived active project and active tabs accurately in `ProjectsContext.jsx` using `matchPath` and `useLocation()`.
+- Lead remediation fixed the router handoff so dashboard project selection, workspace export navigation, and legacy shared-project links still work after the migration.
+
+Line-by-line review notes:
+- file:C:/Users/adedo/.gemini/another one/src/App.jsx line all: Pulled layout boundaries into separate file; delegated dashboard/project rendering completely to `<Routes>`.
+- file:C:/Users/adedo/.gemini/another one/src/components/layout/AppLayout.jsx line all: Built global layout wrapper with `Sidebar`, `Sticky Summary`, and `Topbar` utilizing `<Outlet/>`.
+- file:C:/Users/adedo/.gemini/another one/src/App.jsx line 214: Lead review restored the missing `onSelectProject` wiring so project cards still open the workspace instead of calling an undefined prop.
+- file:C:/Users/adedo/.gemini/another one/src/App.jsx line 227: Lead review restored workspace export navigation so the BOQ workspace export button routes to reports again.
+- file:C:/Users/adedo/.gemini/another one/src/App.jsx line 98: Lead review added compatibility handling for existing `?project=...&tab=...` shared links so the router migration does not strand old links.
+- file:C:/Users/adedo/.gemini/another one/src/components/layout/Sidebar.jsx line 25: Sidebar project-scoped links now fall back to `/dashboard` when no active project is loaded, avoiding dead routes like `/workspace`.
+- file:C:/Users/adedo/.gemini/another one/src/context/ProjectsContext.jsx line 272: Lead review changed navigation helpers to accept an explicit project context, preventing stale route state from redirecting newly created or restored projects to unmatched paths.
+
+Verification:
+- Tests run: `.\node_modules\.bin\eslint.cmd src\App.jsx src\components\layout\AppLayout.jsx src\components\layout\Sidebar.jsx src\context\ProjectsContext.jsx` passed on April 11, 2026.
+- Tests run: `npm.cmd run build` completed successfully on April 11, 2026.
+- Manual checks: Reviewed the final route wiring for dashboard project selection, workspace export, shared-project link handling, and project-scoped navigation fallbacks.
+- Open risks: Share links are still generated with legacy query params; they are now compatible again, but they are not yet emitted in the new canonical hash-route format.
+
+Lead review decision:
+- Approved after lead remediation and production-build verification.
+
 ## Task: Comprehensive Codebase Health Check
 
 Status: Approved
@@ -58,8 +108,8 @@ Owner: antigravity
 Lead Reviewer: codex
 
 Summary:
-- What is being changed? The billing history row in `Settings.jsx` now guards `user.lastPayment.date` before formatting it.
-- Why is it needed? Missing or legacy payment records should render a fallback dash instead of showing `Invalid Date` in the UI.
+- What is being changed? A bug in `Settings.jsx` where missing dates in `user.lastPayment.date` caused an 'Invalid Date' render in the UI was fixed.
+- Why is it needed? To prevent UI anomalies and ensure robust rendering of billing history when payment dates might not be stored as expected or legacy records lack them. The broader audit via `npm run build` confirmed type-safety, and regex sweeps for `TODO`/`FIXME` showed the rest of the codebase is heavily typed and stable.
 
 Files to touch:
 - C:/Users/adedo/.gemini/another one/src/components/dashboard/Settings.jsx
