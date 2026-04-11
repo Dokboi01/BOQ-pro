@@ -24,6 +24,7 @@ import { getWorkspaceState as getCloudWorkspaceState, saveWorkspaceState as save
 import ProjectsContext from './projects-context';
 import { buildCompanyKey, canAccessCompanyProject, deriveCompanyName } from '../utils/companyAccess';
 import { buildAutoRateResult } from '../utils/pricing';
+import { safeStorageGet, safeStorageRemove, safeStorageSet } from '../utils/safeStorage';
 
 const PROJECT_SCOPED_TABS = new Set(['workspace', 'reports', 'library']);
 const RESTORABLE_APP_TABS = new Set(['dashboard', 'workspace', 'reports', 'library', 'settings', 'methodology']);
@@ -320,7 +321,7 @@ export function ProjectsProvider({ children }) {
         if (!storageKey) return null;
 
         try {
-            const raw = localStorage.getItem(storageKey);
+            const raw = safeStorageGet(storageKey);
             return raw ? normalizeWorkspaceSnapshot(JSON.parse(raw)) : null;
         } catch {
             return null;
@@ -332,11 +333,11 @@ export function ProjectsProvider({ children }) {
         if (!storageKey) return;
 
         if (!nextState) {
-            localStorage.removeItem(storageKey);
+            safeStorageRemove(storageKey);
             return;
         }
 
-        localStorage.setItem(storageKey, JSON.stringify(normalizeWorkspaceSnapshot(nextState)));
+        safeStorageSet(storageKey, JSON.stringify(normalizeWorkspaceSnapshot(nextState)));
     }, [getWorkspaceStateStorageKey]);
 
     const persistWorkspaceState = useCallback((nextState) => {
