@@ -31,12 +31,25 @@ const stripItemForCloud = (item) => {
         const cp = item.customPricing;
         cloudCustomPricing = {
             workType: cp.workType || null,
-            overheads: cp.overheads ?? null,
-            profit: cp.profit ?? null,
+            materialsCost: cp.materialsCost ?? null,
+            labourCost: cp.labourCost ?? null,
+            plantCost: cp.plantCost ?? null,
+            transportCost: cp.transportCost ?? null,
+            wastePercent: cp.wastePercent ?? null,
+            siteAdjustmentPercent: cp.siteAdjustmentPercent ?? null,
+            overheadsPercent: cp.overheadsPercent ?? cp.overheads ?? null,
+            profitPercent: cp.profitPercent ?? cp.profit ?? null,
+            roundingStep: cp.roundingStep ?? null,
+            pricingReference: cp.pricingReference || null,
+            supplierQuote: cp.supplierQuote || null,
+            notes: cp.notes || null,
+            benchmarkRate: cp.benchmarkRate ?? null,
+            rawRate: cp.rawRate ?? null,
             finalRate: cp.finalRate ?? null,
             // keep these lightweight flags if present
             pricingMode: cp.pricingMode || null,
             region: cp.region || null,
+            savedAt: cp.savedAt || null,
         };
     }
 

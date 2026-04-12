@@ -629,7 +629,18 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
                     Import from rate build-up
                   </button>
                 )}
-                <button className="summary-action-btn summary-action-btn-primary" onClick={onOpenDetailedAnalysis}>
+                <button
+                  className="summary-action-btn summary-action-btn-primary"
+                  onClick={() => onOpenDetailedAnalysis?.({
+                    ...pricing,
+                    workType: activeWorkType,
+                    benchmarkRate: seeded.benchmarkRate,
+                    rawRate: summary.rawRate,
+                    finalRate: summary.finalRate,
+                    pricingMode: 'custom-studio-draft',
+                    region
+                  })}
+                >
                   <Calculator size={15} />
                   Open detailed rate analysis
                 </button>
