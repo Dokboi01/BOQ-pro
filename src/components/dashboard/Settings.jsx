@@ -3,6 +3,9 @@ import { useToast } from '../ui/useToast';
 import {
   User,
   CreditCard,
+  Monitor,
+  Moon,
+  SunMedium,
   Shield,
   Bell,
   ArrowUpCircle,
@@ -16,13 +19,15 @@ import {
 import { getSetting, saveSetting } from '../../db/database';
 import { seedMarketData } from '../../db/database';
 import { Loader2 } from 'lucide-react';
+import { THEME_OPTIONS } from '../../utils/theme';
 
-const Settings = ({ user, onUpgrade }) => {
+const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChange }) => {
   const [activeTab, setActiveTab] = useState('profile');
   const toast = useToast();
 
   const tabs = [
     { id: 'profile', label: 'My Profile', icon: User },
+    { id: 'appearance', label: 'Appearance', icon: Monitor },
     { id: 'subscription', label: 'Subscription', icon: CreditCard },
     { id: 'advanced', label: 'Professional API', icon: Key },
     { id: 'security', label: 'Security', icon: Shield },
@@ -36,6 +41,7 @@ const Settings = ({ user, onUpgrade }) => {
   const [isSeeding, setIsSeeding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingOpenAI, setIsSavingOpenAI] = useState(false);
+  const [isSavingTheme, setIsSavingTheme] = useState(false);
 
   const geminiConnected = !!import.meta.env.VITE_GEMINI_API_KEY;
   const openaiConnected = !!import.meta.env.VITE_OPENAI_API_KEY;
@@ -70,6 +76,40 @@ const Settings = ({ user, onUpgrade }) => {
     await saveSetting('preferred_ai_provider', aiProvider);
     setIsSavingOpenAI(false);
     toast.success('AI configuration saved successfully.');
+  };
+
+  const themeOptions = [
+    {
+      id: THEME_OPTIONS.LIGHT,
+      label: 'Light',
+      description: 'Keep the current BOQ Pro bright workspace look.',
+      icon: SunMedium,
+    },
+    {
+      id: THEME_OPTIONS.DARK,
+      label: 'Dark',
+      description: 'Use a darker commercial workspace for longer pricing sessions.',
+      icon: Moon,
+    },
+    {
+      id: THEME_OPTIONS.SYSTEM,
+      label: 'System',
+      description: 'Follow the device appearance automatically.',
+      icon: Monitor,
+    },
+  ];
+
+  const handleSelectTheme = async (nextTheme) => {
+    if (!onThemeChange || nextTheme === themePreference) return;
+
+    setIsSavingTheme(true);
+    await onThemeChange(nextTheme);
+    setIsSavingTheme(false);
+
+    const label = nextTheme === THEME_OPTIONS.SYSTEM
+      ? 'device preference'
+      : `${nextTheme} mode`;
+    toast.success(`Appearance updated to ${label}.`);
   };
 
   const renderContent = () => {
@@ -119,6 +159,65 @@ const Settings = ({ user, onUpgrade }) => {
                   Save Changes
                 </button>
               </div>
+            </div>
+          </div>
+        );
+      case 'appearance':
+        return (
+          <div className="settings-panel view-fade-in">
+            <div className="settings-header">
+              <h3>Appearance</h3>
+              <p>Choose how BOQ Pro looks across the landing pages, dashboard, workspace, and reports.</p>
+            </div>
+
+            <div className="appearance-hero">
+              <div>
+                <span className="appearance-badge">Theme active</span>
+                <h4>{resolvedTheme === THEME_OPTIONS.DARK ? 'Dark workspace mode' : 'Light workspace mode'}</h4>
+                <p>
+                  {themePreference === THEME_OPTIONS.SYSTEM
+                    ? 'The app is following your device appearance right now.'
+                    : 'This preference is saved to your account and reused on your next login.'}
+                </p>
+              </div>
+              <div className="appearance-preview">
+                <div className={`preview-screen ${resolvedTheme}`}>
+                  <div className="preview-toolbar" />
+                  <div className="preview-cards">
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="theme-option-grid">
+              {themeOptions.map(({ id, label, description, icon }) => (
+                <button
+                  key={id}
+                  className={`theme-option-card ${themePreference === id ? 'active' : ''}`}
+                  onClick={() => handleSelectTheme(id)}
+                  disabled={isSavingTheme}
+                >
+                  <div className="theme-option-head">
+                    <div className="theme-option-icon">
+                      {React.createElement(icon, { size: 18 })}
+                    </div>
+                    <span className="theme-option-check">{themePreference === id ? 'Selected' : 'Choose'}</span>
+                  </div>
+                  <strong>{label}</strong>
+                  <p>{description}</p>
+                </button>
+              ))}
+            </div>
+
+            <div className="appearance-note">
+              <Monitor size={16} />
+              <span>
+                Current render mode: <strong>{resolvedTheme}</strong>
+                {themePreference === THEME_OPTIONS.SYSTEM ? ' via system sync' : ' from your saved preference'}.
+              </span>
             </div>
           </div>
         );
@@ -459,7 +558,7 @@ const Settings = ({ user, onUpgrade }) => {
           padding: 0.75rem 1rem;
           border: none;
           background: transparent;
-          color: var(--primary-600);
+          color: var(--text-secondary);
           border-radius: 10px;
           font-weight: 600;
           font-size: 0.875rem;
@@ -470,7 +569,7 @@ const Settings = ({ user, onUpgrade }) => {
 
         .settings-tab:hover {
           background: var(--bg-main);
-          color: var(--primary-900);
+          color: var(--text-primary);
           transform: translateX(4px);
         }
 
@@ -482,10 +581,11 @@ const Settings = ({ user, onUpgrade }) => {
         }
 
         .settings-content {
-          background: white;
+          background: var(--bg-card);
           border-radius: var(--radius-md);
           border: 1px solid var(--border-light);
           padding: 2rem;
+          box-shadow: var(--shadow-sm);
         }
 
         .settings-header {
@@ -495,7 +595,7 @@ const Settings = ({ user, onUpgrade }) => {
         }
 
         .settings-header h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
-        .settings-header p { color: var(--primary-500); font-size: 0.875rem; }
+        .settings-header p { color: var(--text-muted); font-size: 0.875rem; }
 
         .settings-form {
           display: flex;
@@ -540,7 +640,7 @@ const Settings = ({ user, onUpgrade }) => {
         .form-item label {
           font-size: 0.75rem;
           font-weight: 700;
-          color: var(--primary-700);
+          color: var(--text-secondary);
           text-transform: uppercase;
         }
 
@@ -550,6 +650,8 @@ const Settings = ({ user, onUpgrade }) => {
           border-radius: 10px;
           font-size: 0.875rem;
           transition: all 0.3s;
+          background: var(--bg-card);
+          color: var(--text-primary);
         }
 
         .settings-input:focus {
@@ -569,7 +671,8 @@ const Settings = ({ user, onUpgrade }) => {
         }
 
         .current-plan-card {
-          background: var(--bg-main);
+          background: var(--bg-card-muted);
+          border: 1px solid var(--border-light);
           border-radius: var(--radius-md);
           padding: 1.5rem;
           display: flex;
@@ -589,7 +692,7 @@ const Settings = ({ user, onUpgrade }) => {
 
         .plan-details { flex: 1; }
         .plan-details h4 { margin-bottom: 0.25rem; }
-        .plan-details p { font-size: 0.875rem; color: var(--primary-500); }
+        .plan-details p { font-size: 0.875rem; color: var(--text-muted); }
 
         .btn-upgrade-glow {
           background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
@@ -649,7 +752,7 @@ const Settings = ({ user, onUpgrade }) => {
           background: var(--bg-main);
           font-size: 0.75rem;
           font-weight: 700;
-          color: var(--primary-500);
+          color: var(--text-muted);
           text-transform: uppercase;
         }
 
@@ -661,6 +764,7 @@ const Settings = ({ user, onUpgrade }) => {
           font-size: 0.875rem;
           border-top: 1px solid var(--border-light);
           transition: background 0.2s;
+          background: var(--bg-card);
         }
 
         .table-row:hover {
@@ -675,7 +779,7 @@ const Settings = ({ user, onUpgrade }) => {
         .btn-icon {
           background: transparent;
           border: none;
-          color: var(--primary-400);
+          color: var(--text-muted);
           cursor: pointer;
         }
 
@@ -685,9 +789,222 @@ const Settings = ({ user, onUpgrade }) => {
           align-items: center;
           justify-content: center;
           padding: 4rem;
-          color: var(--primary-400);
+          color: var(--text-muted);
           text-align: center;
           gap: 1rem;
+        }
+
+        .appearance-hero {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 220px;
+          gap: 1rem;
+          align-items: center;
+          padding: 1.35rem;
+          border: 1px solid var(--border-light);
+          border-radius: 20px;
+          background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(15, 23, 42, 0.04));
+          margin-bottom: 1.25rem;
+        }
+
+        .appearance-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 999px;
+          padding: 0.35rem 0.7rem;
+          font-size: 0.7rem;
+          font-weight: 800;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: var(--accent-600);
+          background: rgba(37, 99, 235, 0.12);
+          margin-bottom: 0.8rem;
+        }
+
+        .appearance-hero h4 {
+          margin: 0 0 0.45rem;
+          font-size: 1.15rem;
+          color: var(--text-heading);
+        }
+
+        .appearance-hero p {
+          margin: 0;
+          color: var(--text-secondary);
+          line-height: 1.65;
+          max-width: 560px;
+        }
+
+        .appearance-preview {
+          display: flex;
+          justify-content: flex-end;
+        }
+
+        .preview-screen {
+          width: 180px;
+          padding: 0.9rem;
+          border-radius: 18px;
+          border: 1px solid var(--border-light);
+          box-shadow: var(--shadow-lg);
+        }
+
+        .preview-screen.light {
+          background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        }
+
+        .preview-screen.dark {
+          background: linear-gradient(180deg, #0f172a 0%, #111c2f 100%);
+          border-color: rgba(148, 163, 184, 0.2);
+        }
+
+        .preview-toolbar {
+          height: 22px;
+          border-radius: 999px;
+          margin-bottom: 0.7rem;
+          background: rgba(148, 163, 184, 0.18);
+        }
+
+        .preview-cards {
+          display: grid;
+          gap: 0.45rem;
+        }
+
+        .preview-cards span {
+          display: block;
+          height: 30px;
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.65);
+        }
+
+        .preview-screen.dark .preview-cards span {
+          background: rgba(15, 23, 42, 0.7);
+          border: 1px solid rgba(148, 163, 184, 0.14);
+        }
+
+        .theme-option-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+          gap: 1rem;
+          margin-bottom: 1rem;
+        }
+
+        .theme-option-card {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+          padding: 1.15rem;
+          border-radius: 18px;
+          border: 1px solid var(--border-light);
+          background: var(--bg-card);
+          text-align: left;
+          color: var(--text-primary);
+          box-shadow: var(--shadow-sm);
+          transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .theme-option-card:hover:not(:disabled) {
+          transform: translateY(-2px);
+          border-color: var(--accent-400);
+          box-shadow: var(--shadow-md);
+        }
+
+        .theme-option-card:disabled {
+          opacity: 0.72;
+          cursor: wait;
+        }
+
+        .theme-option-card.active {
+          border-color: var(--accent-500);
+          background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(59, 130, 246, 0.04));
+        }
+
+        .theme-option-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.75rem;
+        }
+
+        .theme-option-icon {
+          width: 38px;
+          height: 38px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 12px;
+          background: var(--bg-card-muted);
+          color: var(--accent-600);
+        }
+
+        .theme-option-check {
+          font-size: 0.72rem;
+          font-weight: 800;
+          color: var(--text-muted);
+        }
+
+        .theme-option-card strong {
+          font-size: 0.98rem;
+        }
+
+        .theme-option-card p {
+          margin: 0;
+          color: var(--text-secondary);
+          line-height: 1.55;
+          font-size: 0.84rem;
+        }
+
+        .appearance-note {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.6rem;
+          padding: 0.75rem 0.95rem;
+          border-radius: 14px;
+          background: var(--bg-card-muted);
+          border: 1px solid var(--border-light);
+          color: var(--text-secondary);
+          font-size: 0.84rem;
+        }
+
+        .appearance-note strong {
+          color: var(--text-primary);
+        }
+
+        @media (max-width: 900px) {
+          .settings-wrapper {
+            grid-template-columns: 1fr;
+          }
+
+          .settings-nav {
+            flex-direction: row;
+            overflow-x: auto;
+            padding-bottom: 0.4rem;
+          }
+
+          .settings-tab {
+            white-space: nowrap;
+          }
+
+          .appearance-hero {
+            grid-template-columns: 1fr;
+          }
+
+          .appearance-preview {
+            justify-content: flex-start;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .settings-content {
+            padding: 1.25rem;
+          }
+
+          .grid-2 {
+            grid-template-columns: 1fr;
+          }
+
+          .current-plan-card {
+            flex-direction: column;
+            align-items: flex-start;
+          }
         }
       `}</style>
     </div>
