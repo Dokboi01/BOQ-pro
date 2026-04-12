@@ -13,6 +13,7 @@ import {
   FileText
 } from 'lucide-react';
 import { getRegionalModifier } from '../../utils/aiService';
+import { buildSuggestedCustomPricingLists } from '../../utils/customPricing';
 
 const MONEY = new Intl.NumberFormat('en-NG', { maximumFractionDigits: 2 });
 const PERCENT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
@@ -273,7 +274,7 @@ const seedFromPreset = (preset, referenceRate = 0) => {
   };
 };
 
-const normalizeSavedPricing = (pricing, profile) => ({
+const normalizeSavedPricing = (pricing, profile, suggestedLists = {}) => ({
   workType: pricing.workType || 'general',
   materialsCost: clamp(pricing.materialsCost),
   labourCost: clamp(pricing.labourCost),
@@ -287,25 +288,26 @@ const normalizeSavedPricing = (pricing, profile) => ({
   pricingReference: pricing.pricingReference || '',
   supplierQuote: pricing.supplierQuote || '',
   notes: pricing.notes || '',
-  materialsUsed: pricing.materialsUsed || '',
-  labourUsed: pricing.labourUsed || '',
-  plantUsed: pricing.plantUsed || '',
-  transportUsed: pricing.transportUsed || '',
+  materialsUsed: pricing.materialsUsed || suggestedLists.materialsUsed || '',
+  labourUsed: pricing.labourUsed || suggestedLists.labourUsed || '',
+  plantUsed: pricing.plantUsed || suggestedLists.plantUsed || '',
+  transportUsed: pricing.transportUsed || suggestedLists.transportUsed || '',
   otherAllowances: pricing.otherAllowances || ''
 });
 
-const buildSeedState = (item, region) => {
+const buildSeedState = (item, region, structureType) => {
   const workType = item?.customPricing?.workType || inferWorkType(item?.description);
   const profile = WORK_TYPE_PROFILES[workType] || WORK_TYPE_PROFILES.general;
   const benchmarkRate = clamp(item?.benchmark) * getRegionalModifier(region);
   const currentRate = !item?.useBenchmark ? clamp(item?.rate) : benchmarkRate;
   const referenceRate = currentRate || benchmarkRate || 0;
+  const suggestedLists = buildSuggestedCustomPricingLists(item, { region, structureType });
 
   if (item?.customPricing) {
     return {
       workType,
       benchmarkRate,
-      pricing: normalizeSavedPricing(item.customPricing, profile)
+      pricing: normalizeSavedPricing(item.customPricing, profile, suggestedLists)
     };
   }
 
@@ -313,19 +315,25 @@ const buildSeedState = (item, region) => {
     return {
       workType,
       benchmarkRate,
-      pricing: seedFromBreakdown(item, profile)
+      pricing: {
+        ...seedFromBreakdown(item, profile),
+        ...suggestedLists
+      }
     };
   }
 
   return {
     workType,
     benchmarkRate,
-    pricing: seedFromReference(referenceRate, profile)
+    pricing: {
+      ...seedFromReference(referenceRate, profile),
+      ...suggestedLists
+    }
   };
 };
 
-const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnalysis }) => {
-  const seeded = useMemo(() => buildSeedState(item, region), [item, region]);
+const CustomPricingModal = ({ item, region, structureType, onClose, onSave, onOpenDetailedAnalysis }) => {
+  const seeded = useMemo(() => buildSeedState(item, region, structureType), [item, region, structureType]);
   const [pricing, setPricing] = useState(seeded.pricing);
 
   React.useEffect(() => {

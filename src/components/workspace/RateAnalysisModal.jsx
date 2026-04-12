@@ -166,7 +166,10 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
           .some((field) => Number(item.customPricing?.[field]) > 0);
 
       if (hasDetailedCustomPricing) {
-        return normalizeBreakdown(buildRateAnalysisBreakdownFromCustomPricing(item, item.customPricing));
+        return normalizeBreakdown(buildRateAnalysisBreakdownFromCustomPricing(item, item.customPricing, {
+          region,
+          structureType,
+        }));
       }
       if (item.breakdown) return normalizeBreakdown(item.breakdown);
       return applyRegionCostProfileToBreakdown(

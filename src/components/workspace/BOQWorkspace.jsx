@@ -1612,6 +1612,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           key={customPricingItem.item.id}
           item={customPricingItem.item}
           region={project?.region}
+          structureType={project?.type}
           onClose={() => setCustomPricingItem(null)}
           onSave={handleCustomPricingSave}
           onOpenDetailedAnalysis={(draftCustomPricing) => openDetailedAnalysis(customPricingItem.sectionId, customPricingItem.item, draftCustomPricing)}
