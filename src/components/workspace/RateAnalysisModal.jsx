@@ -124,6 +124,11 @@ const getLineTotal = (category, row) => {
   return Number(row.qty || 0) * Number(row.rate || 0);
 };
 
+const splitNamedEntries = (value = '') => String(value)
+  .split(/\r?\n|;|,/)
+  .map((entry) => entry.trim())
+  .filter(Boolean);
+
 const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onSave }) => {
   const normalizeBreakdown = (bd) => {
     const unit = normalizeUnit(item?.unit);
@@ -149,6 +154,7 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
       pricingReference: bd.pricingReference || '',
       supplierQuote: bd.supplierQuote || '',
       notes: bd.notes || '',
+      otherAllowances: bd.otherAllowances || '',
       linkedCustomPricing: bd.linkedCustomPricing || null,
     };
   };
@@ -262,6 +268,15 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
   const linkedCustomSummary = linkedCustomPricing
     ? buildCustomPricingSummary(linkedCustomPricing)
     : null;
+  const customPricingScope = linkedCustomPricing
+    ? [
+      { key: 'materials', label: 'Materials used', entries: splitNamedEntries(linkedCustomPricing.materialsUsed) },
+      { key: 'labour', label: 'Labour used', entries: splitNamedEntries(linkedCustomPricing.labourUsed) },
+      { key: 'plant', label: 'Plant / equipment used', entries: splitNamedEntries(linkedCustomPricing.plantUsed) },
+      { key: 'transport', label: 'Transport / logistics used', entries: splitNamedEntries(linkedCustomPricing.transportUsed) },
+      { key: 'allowances', label: 'Other allowances', entries: splitNamedEntries(linkedCustomPricing.otherAllowances) },
+    ].filter((group) => group.entries.length > 0)
+    : [];
 
   const sections = [
     { key: 'materials', step: 1, label: 'Material Cost', icon: Package, color: '#059669', mode: 'materials', total: matTotal },
@@ -321,7 +336,7 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
             </div>
           </div>
 
-          {(breakdown.pricingReference || breakdown.supplierQuote || breakdown.notes) && (
+          {(breakdown.pricingReference || breakdown.supplierQuote || breakdown.notes || breakdown.otherAllowances) && (
             <div className="pricing-basis-card">
               <div className="pricing-basis-head">
                 <Info size={14} />
@@ -331,6 +346,28 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
                 {breakdown.pricingReference && <div><strong>Reference:</strong> {breakdown.pricingReference}</div>}
                 {breakdown.supplierQuote && <div><strong>Supplier / Quote:</strong> {breakdown.supplierQuote}</div>}
                 {breakdown.notes && <div><strong>Notes:</strong> {breakdown.notes}</div>}
+                {breakdown.otherAllowances && <div><strong>Other allowances:</strong> {breakdown.otherAllowances}</div>}
+              </div>
+            </div>
+          )}
+
+          {customPricingScope.length > 0 && (
+            <div className="pricing-basis-card custom-scope-card">
+              <div className="pricing-basis-head">
+                <Info size={14} />
+                <span>Named inputs carried from custom pricing</span>
+              </div>
+              <div className="custom-scope-grid">
+                {customPricingScope.map((group) => (
+                  <div key={group.key} className="custom-scope-group">
+                    <strong>{group.label}</strong>
+                    <div className="custom-scope-tags">
+                      {group.entries.map((entry) => (
+                        <span key={`${group.key}-${entry}`} className="custom-scope-tag">{entry}</span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -615,6 +652,46 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
           color: #334155;
           line-height: 1.55;
         }
+        .custom-scope-card {
+          background: linear-gradient(135deg, #fff, #f8fafc);
+          border-color: #cbd5e1;
+        }
+        .custom-scope-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.75rem;
+        }
+        .custom-scope-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.45rem;
+          padding: 0.8rem 0.85rem;
+          border-radius: 10px;
+          border: 1px solid #e2e8f0;
+          background: rgba(255, 255, 255, 0.9);
+        }
+        .custom-scope-group strong {
+          font-size: 0.72rem;
+          font-weight: 800;
+          color: #0f172a;
+        }
+        .custom-scope-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.4rem;
+        }
+        .custom-scope-tag {
+          display: inline-flex;
+          align-items: center;
+          padding: 0.34rem 0.55rem;
+          border-radius: 999px;
+          background: #eff6ff;
+          border: 1px solid #bfdbfe;
+          color: #1d4ed8;
+          font-size: 0.68rem;
+          font-weight: 700;
+          line-height: 1.2;
+        }
 
         .step-badge {
           display: inline-flex;
@@ -833,6 +910,7 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
           .analysis-row { grid-template-columns: 1fr !important; }
           .table-header-row { display: none; }
           .formula-banner { flex-direction: column; gap: 0.5rem; }
+          .custom-scope-grid { grid-template-columns: 1fr; }
           .linked-custom-grid { grid-template-columns: 1fr; }
         }
       `}</style>

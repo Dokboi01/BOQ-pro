@@ -78,6 +78,11 @@ export const normalizeCustomPricingRecord = (pricing = {}, fallbackWorkType = 'g
     pricingReference: pricing.pricingReference || '',
     supplierQuote: pricing.supplierQuote || '',
     notes: pricing.notes || '',
+    materialsUsed: pricing.materialsUsed || '',
+    labourUsed: pricing.labourUsed || '',
+    plantUsed: pricing.plantUsed || '',
+    transportUsed: pricing.transportUsed || '',
+    otherAllowances: pricing.otherAllowances || '',
     benchmarkRate: clampPricingValue(pricing.benchmarkRate),
     pricingMode: pricing.pricingMode || null,
     region: pricing.region || null,
@@ -131,6 +136,53 @@ const getRateAnalysisLineTotal = (category, row) => {
   return qty * rate;
 };
 
+const splitCustomPricingEntries = (value) => String(value || '')
+  .split(/\r?\n|;|,/)
+  .map((entry) => entry.trim())
+  .filter(Boolean);
+
+const joinCustomPricingEntries = (rows = [], fallbackLabel = '') => {
+  const names = rows
+    .map((row) => String(row?.name || '').trim())
+    .filter(Boolean);
+
+  const uniqueNames = [...new Set(names)];
+  if (uniqueNames.length === 0) return fallbackLabel;
+  return uniqueNames.join('\n');
+};
+
+const buildAllowanceRows = ({ category, item, totalCost, listText, fallbackLabel, unit, wastePercent = 0 }) => {
+  const names = splitCustomPricingEntries(listText);
+  const entryNames = names.length > 0 ? names : [fallbackLabel];
+  const evenRate = entryNames.length > 0 ? totalCost / entryNames.length : totalCost;
+
+  return entryNames.map((name, index) => {
+    const baseRow = {
+      id: `cp-${category}-${item?.id || 'item'}-${index}`,
+      name,
+      qty: 1,
+      unit,
+      rate: evenRate,
+    };
+
+    if (category === 'materials') {
+      return {
+        ...baseRow,
+        waste: wastePercent,
+      };
+    }
+
+    if (category === 'labor' || category === 'plant') {
+      return {
+        ...baseRow,
+        output: 1,
+      };
+    }
+
+    return baseRow;
+  });
+};
+
 export const buildRateAnalysisBreakdownFromCustomPricing = (item, customPricing) => {
   const normalized = normalizeCustomPricingRecord(
     customPricing,
@@ -141,43 +193,46 @@ export const buildRateAnalysisBreakdownFromCustomPricing = (item, customPricing)
 
   return {
     analysisMode: 'custom-pricing-linked',
-    materials: [{
-      id: `cp-material-${item?.id || 'item'}`,
-      name: `${workTypeLabel} material allowance`,
-      qty: 1,
+    materials: buildAllowanceRows({
+      category: 'materials',
+      item,
+      totalCost: normalized.materialsCost,
+      listText: normalized.materialsUsed,
+      fallbackLabel: `${workTypeLabel} material allowance`,
       unit: rowUnit,
-      rate: normalized.materialsCost,
-      waste: normalized.wastePercent,
-    }],
-    labor: [{
-      id: `cp-labour-${item?.id || 'item'}`,
-      name: `${workTypeLabel} labour allowance`,
-      qty: 1,
+      wastePercent: normalized.wastePercent,
+    }),
+    labor: buildAllowanceRows({
+      category: 'labor',
+      item,
+      totalCost: normalized.labourCost,
+      listText: normalized.labourUsed,
+      fallbackLabel: `${workTypeLabel} labour allowance`,
       unit: 'Allowance',
-      rate: normalized.labourCost,
-      output: 1,
-    }],
-    plant: [{
-      id: `cp-plant-${item?.id || 'item'}`,
-      name: `${workTypeLabel} plant allowance`,
-      qty: 1,
+    }),
+    plant: buildAllowanceRows({
+      category: 'plant',
+      item,
+      totalCost: normalized.plantCost,
+      listText: normalized.plantUsed,
+      fallbackLabel: `${workTypeLabel} plant allowance`,
       unit: 'Allowance',
-      rate: normalized.plantCost,
-      output: 1,
-    }],
-    transport: [{
-      id: `cp-transport-${item?.id || 'item'}`,
-      name: `${workTypeLabel} transport allowance`,
-      qty: 1,
+    }),
+    transport: buildAllowanceRows({
+      category: 'transport',
+      item,
+      totalCost: normalized.transportCost,
+      listText: normalized.transportUsed,
+      fallbackLabel: `${workTypeLabel} transport allowance`,
       unit: 'Allowance',
-      rate: normalized.transportCost,
-    }],
+    }),
     siteAdjustment: normalized.siteAdjustmentPercent,
     overheads: normalized.overheadsPercent,
     profit: normalized.profitPercent,
     pricingReference: normalized.pricingReference,
     supplierQuote: normalized.supplierQuote,
     notes: normalized.notes,
+    otherAllowances: normalized.otherAllowances,
     linkedCustomPricing: normalized,
   };
 };
@@ -206,6 +261,23 @@ export const buildCustomPricingFromRateAnalysis = (item, breakdown = {}, fallbac
     pricingReference: breakdown.pricingReference || fallbackCustomPricing?.pricingReference,
     supplierQuote: breakdown.supplierQuote || fallbackCustomPricing?.supplierQuote,
     notes: breakdown.notes || fallbackCustomPricing?.notes,
+    materialsUsed: joinCustomPricingEntries(
+      breakdown.materials,
+      fallbackCustomPricing?.materialsUsed || ''
+    ),
+    labourUsed: joinCustomPricingEntries(
+      breakdown.labor,
+      fallbackCustomPricing?.labourUsed || ''
+    ),
+    plantUsed: joinCustomPricingEntries(
+      breakdown.plant,
+      fallbackCustomPricing?.plantUsed || ''
+    ),
+    transportUsed: joinCustomPricingEntries(
+      breakdown.transport,
+      fallbackCustomPricing?.transportUsed || ''
+    ),
+    otherAllowances: breakdown.otherAllowances || fallbackCustomPricing?.otherAllowances || '',
     benchmarkRate: fallbackCustomPricing?.benchmarkRate,
     pricingMode: fallbackCustomPricing?.pricingMode || 'custom-rate-analysis',
     region: fallbackCustomPricing?.region || null,

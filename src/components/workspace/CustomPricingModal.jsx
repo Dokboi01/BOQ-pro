@@ -208,7 +208,12 @@ const seedFromReference = (referenceRate, profile) => {
     roundingStep: profile.roundingStep,
     pricingReference: '',
     supplierQuote: '',
-    notes: ''
+    notes: '',
+    materialsUsed: '',
+    labourUsed: '',
+    plantUsed: '',
+    transportUsed: '',
+    otherAllowances: ''
   };
 
   const baseDirect = Math.max(referenceRate * 0.78, 0);
@@ -245,7 +250,12 @@ const seedFromBreakdown = (item, profile) => {
     roundingStep: profile.roundingStep,
     pricingReference: 'Imported from detailed rate build-up',
     supplierQuote: '',
-    notes: ''
+    notes: '',
+    materialsUsed: '',
+    labourUsed: '',
+    plantUsed: '',
+    transportUsed: '',
+    otherAllowances: ''
   };
 };
 
@@ -276,7 +286,12 @@ const normalizeSavedPricing = (pricing, profile) => ({
   roundingStep: clamp(pricing.roundingStep ?? profile.roundingStep),
   pricingReference: pricing.pricingReference || '',
   supplierQuote: pricing.supplierQuote || '',
-  notes: pricing.notes || ''
+  notes: pricing.notes || '',
+  materialsUsed: pricing.materialsUsed || '',
+  labourUsed: pricing.labourUsed || '',
+  plantUsed: pricing.plantUsed || '',
+  transportUsed: pricing.transportUsed || '',
+  otherAllowances: pricing.otherAllowances || ''
 });
 
 const buildSeedState = (item, region) => {
@@ -501,6 +516,53 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
                 <label className="custom-field">
                   <span><Truck size={14} /> Transport per {item.unit}</span>
                   <input type="number" value={pricing.transportCost ?? ''} onChange={(event) => updateNumber('transportCost', event.target.value)} />
+                </label>
+              </div>
+              <div className="custom-grid two-up detail-list-grid">
+                <label className="custom-field">
+                  <span>Materials used</span>
+                  <textarea
+                    value={pricing.materialsUsed || ''}
+                    onChange={(event) => updateText('materialsUsed', event.target.value)}
+                    rows={4}
+                    placeholder={`Cement\nSharp sand\n12mm bars`}
+                  />
+                </label>
+                <label className="custom-field">
+                  <span>Labour used</span>
+                  <textarea
+                    value={pricing.labourUsed || ''}
+                    onChange={(event) => updateText('labourUsed', event.target.value)}
+                    rows={4}
+                    placeholder={`Mason\nForeman\nLabourers`}
+                  />
+                </label>
+                <label className="custom-field">
+                  <span>Plant / equipment used</span>
+                  <textarea
+                    value={pricing.plantUsed || ''}
+                    onChange={(event) => updateText('plantUsed', event.target.value)}
+                    rows={4}
+                    placeholder={`Concrete mixer\nPoker vibrator\nCutting machine`}
+                  />
+                </label>
+                <label className="custom-field">
+                  <span>Transport / logistics used</span>
+                  <textarea
+                    value={pricing.transportUsed || ''}
+                    onChange={(event) => updateText('transportUsed', event.target.value)}
+                    rows={4}
+                    placeholder={`Material delivery\nSite haulage\nOffloading`}
+                  />
+                </label>
+                <label className="custom-field custom-field-full">
+                  <span>Other allowances to show in analysis</span>
+                  <textarea
+                    value={pricing.otherAllowances || ''}
+                    onChange={(event) => updateText('otherAllowances', event.target.value)}
+                    rows={3}
+                    placeholder="Security, access control, scaffolding, temporary power, standby generator, supervision..."
+                  />
                 </label>
               </div>
             </div>
@@ -829,6 +891,11 @@ const CustomPricingModal = ({ item, region, onClose, onSave, onOpenDetailedAnaly
         }
         .custom-grid.two-up {
           grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .detail-list-grid {
+          margin-top: 0.9rem;
+          padding-top: 0.9rem;
+          border-top: 1px dashed #cbd5e1;
         }
         .custom-field {
           display: flex;
