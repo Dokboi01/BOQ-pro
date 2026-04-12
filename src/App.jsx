@@ -6,6 +6,7 @@ import { ProjectsProvider } from './context/ProjectsContext';
 import { useProjects } from './context/useProjects';
 import { analytics } from './db/firebase';
 import { logEvent } from 'firebase/analytics';
+import { getSetting, saveSetting } from './db/database';
 import Hero from './components/landing/Hero';
 import PricingPage from './components/landing/Pricing';
 import LegalPage from './components/landing/LegalPage';
@@ -24,6 +25,17 @@ import DrawingAnalyzer from './components/workspace/DrawingAnalyzer';
 import CalculationMethodology from './components/workspace/CalculationMethodology';
 import { getProjectSavePresentation } from './utils/projectSaveState';
 import {
+  applyResolvedTheme,
+  getNextThemePreference,
+  getSystemTheme,
+  normalizeThemePreference,
+  readStoredThemePreference,
+  resolveThemePreference,
+  THEME_OPTIONS,
+  THEME_SETTING_KEY,
+  writeStoredThemePreference,
+} from './utils/theme';
+import {
   MapPin,
   Calendar,
   User as UserIcon,
@@ -36,9 +48,11 @@ import {
   ChevronLeft,
   Maximize2,
   Minimize2,
+  Moon,
   Cloud,
   RefreshCw,
-  SlidersHorizontal
+  SlidersHorizontal,
+  SunMedium,
 } from 'lucide-react';
 
 // Class-based Error Boundary to catch render errors
@@ -70,6 +84,13 @@ class ErrorBoundary extends React.Component {
 function App() {
   console.log('App Rendering...');
 
+  const [themePreference, setThemePreference] = React.useState(() => readStoredThemePreference());
+  const [systemTheme, setSystemTheme] = React.useState(() => getSystemTheme());
+  const resolvedTheme = React.useMemo(
+    () => resolveThemePreference(themePreference, systemTheme),
+    [themePreference, systemTheme]
+  );
+
   // Track app load
   React.useEffect(() => {
     if (analytics) {
@@ -78,6 +99,30 @@ function App() {
     }
   }, []);
 
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined;
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = (event) => {
+      setSystemTheme(event.matches ? THEME_OPTIONS.DARK : THEME_OPTIONS.LIGHT);
+    };
+
+    setSystemTheme(mediaQuery.matches ? THEME_OPTIONS.DARK : THEME_OPTIONS.LIGHT);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
+  }, []);
+
+  React.useEffect(() => {
+    writeStoredThemePreference(themePreference);
+    applyResolvedTheme(resolvedTheme);
+  }, [resolvedTheme, themePreference]);
+
   // Consume contexts
   const {
     user, view, setView, authError, setAuthError,
@@ -85,6 +130,51 @@ function App() {
     handleLogin, handleSignUp, handleResendCode,
     handleOnboardingComplete, handleSendMagicLink, handleSelectPlan, logout,
   } = useAuth();
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const loadThemePreference = async () => {
+      const localPreference = readStoredThemePreference();
+
+      if (!user?.uid) {
+        if (!cancelled) {
+          setThemePreference(localPreference);
+        }
+        return;
+      }
+
+      const savedPreference = await getSetting(THEME_SETTING_KEY);
+      if (cancelled) return;
+
+      const nextPreference = savedPreference
+        ? normalizeThemePreference(savedPreference)
+        : localPreference;
+
+      setThemePreference(nextPreference);
+      writeStoredThemePreference(nextPreference);
+    };
+
+    loadThemePreference();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.uid]);
+
+  const handleThemeChange = React.useCallback(async (nextPreference) => {
+    const normalizedPreference = normalizeThemePreference(nextPreference);
+    setThemePreference(normalizedPreference);
+    writeStoredThemePreference(normalizedPreference);
+
+    if (user?.uid) {
+      await saveSetting(THEME_SETTING_KEY, normalizedPreference);
+    }
+  }, [user?.uid]);
+
+  const handleThemeToggle = React.useCallback(() => (
+    handleThemeChange(getNextThemePreference(themePreference, resolvedTheme))
+  ), [handleThemeChange, resolvedTheme, themePreference]);
 
   const {
     projects, activeProjectId, setActiveProjectId, activeProject,
@@ -160,19 +250,21 @@ function App() {
 
   // ── Early returns for auth views ──
   if (view === 'loading') return (
-    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white' }}>
+    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
       <div className="loading-spinner"></div>
       <div style={{ marginLeft: '10px' }}>Loading BOQ Pro...</div>
     </div>
   );
 
-  if (view === 'landing') return <Hero onGetStarted={() => setView(user ? 'app' : 'pricing')} onLogin={() => setView(user ? 'app' : 'login')} />;
+  if (view === 'landing') return <Hero onGetStarted={() => setView(user ? 'app' : 'pricing')} onLogin={() => setView(user ? 'app' : 'login')} resolvedTheme={resolvedTheme} onToggleTheme={handleThemeToggle} />;
   if (view === 'pricing') return <PricingPage
     error={authError}
     userEmail={user?.email}
     onSelectPlan={handleSelectPlan}
     onLogin={() => setView(user ? 'app' : 'login')}
     onBack={() => { setAuthError(null); setView(user ? 'app' : 'landing'); }}
+    resolvedTheme={resolvedTheme}
+    onToggleTheme={handleThemeToggle}
   />;
   if (view === 'terms') return <LegalPage mode="terms" onBack={() => setView(user ? 'app' : 'signup')} />;
   if (view === 'privacy') return <LegalPage mode="privacy" onBack={() => setView(user ? 'app' : 'signup')} />;
@@ -183,20 +275,22 @@ function App() {
     onSwitchToSignUp={() => { setAuthError(null); setView('signup'); }}
     onForgotPassword={() => setView('forgot-password')}
     onBack={() => setView(user ? 'app' : 'landing')}
+    resolvedTheme={resolvedTheme}
+    onToggleTheme={handleThemeToggle}
   />;
-  if (view === 'signup') return <SignUp error={authError} selectedPlan={selectedPlan} onSignUp={handleSignUp} onSwitchToLogin={(target) => { setAuthError(null); setView(target); }} onViewTerms={() => setView('terms')} onViewPrivacy={() => setView('privacy')} />;
+  if (view === 'signup') return <SignUp error={authError} selectedPlan={selectedPlan} onSignUp={handleSignUp} onSwitchToLogin={(target) => { setAuthError(null); setView(target); }} onViewTerms={() => setView('terms')} onViewPrivacy={() => setView('privacy')} resolvedTheme={resolvedTheme} onToggleTheme={handleThemeToggle} />;
   if (view === 'verification') return (
-    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white', flexDirection: 'column', gap: '1.5rem', textAlign: 'center', padding: '2rem' }}>
-      <div style={{ borderRadius: '50%', background: 'rgba(37, 99, 235, 0.2)', padding: '20px', marginBottom: '10px' }}>
+    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)', color: 'var(--text-primary)', flexDirection: 'column', gap: '1.5rem', textAlign: 'center', padding: '2rem' }}>
+      <div style={{ borderRadius: '50%', background: 'rgba(37, 99, 235, 0.16)', padding: '20px', marginBottom: '10px' }}>
         <Mail size={48} className="text-accent" />
       </div>
       <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>
         {verificationEmailStatus === 'failed' ? 'Verification email not sent yet' : 'Check your inbox'}
       </h2>
-      <p style={{ color: '#94a3b8', maxWidth: '420px', lineHeight: 1.6 }}>
+      <p style={{ color: 'var(--text-muted)', maxWidth: '420px', lineHeight: 1.6 }}>
         {verificationEmailStatus === 'failed'
-          ? <>Your account was created for <strong style={{ color: 'white' }}>{pendingUser?.email || user?.email}</strong>, but the verification email did not go out. Use <strong style={{ color: 'white' }}>Resend Email</strong> to try again.</>
-          : <>We've sent a verification link to<br/><strong style={{ color: 'white' }}>{pendingUser?.email || user?.email}</strong>. Please click the link to activate your account.</>}
+          ? <>Your account was created for <strong style={{ color: 'var(--text-primary)' }}>{pendingUser?.email || user?.email}</strong>, but the verification email did not go out. Use <strong style={{ color: 'var(--text-primary)' }}>Resend Email</strong> to try again.</>
+          : <>We've sent a verification link to<br/><strong style={{ color: 'var(--text-primary)' }}>{pendingUser?.email || user?.email}</strong>. Please click the link to activate your account.</>}
       </p>
       {authError && (
         <div style={{
@@ -215,16 +309,16 @@ function App() {
         </div>
       )}
       <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-        <button onClick={handleResendCode} style={{ padding: '0.75rem 1.5rem', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontWeight: 600, cursor: 'pointer' }}>Resend Email</button>
-        <button onClick={() => setView('login')} style={{ padding: '0.75rem 1.5rem', background: '#2563eb', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>Back to Login</button>
+        <button onClick={handleResendCode} style={{ padding: '0.75rem 1.5rem', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-light)', borderRadius: '12px', fontWeight: 600, cursor: 'pointer' }}>Resend Email</button>
+        <button onClick={() => setView('login')} style={{ padding: '0.75rem 1.5rem', background: 'var(--accent-600)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>Back to Login</button>
       </div>
     </div>
   );
   if (view === 'forgot-password') return (
-    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white', flexDirection: 'column', gap: '1rem', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)', color: 'var(--text-primary)', flexDirection: 'column', gap: '1rem', fontFamily: 'Inter, sans-serif' }}>
       <h2>🔑 Password Reset</h2>
-      <p style={{ color: '#94a3b8', maxWidth: '400px', textAlign: 'center' }}>Password reset is handled via Firebase. Please use the Firebase Console or contact support to reset your password.</p>
-      <button onClick={() => setView('login')} style={{ padding: '0.75rem 2rem', background: '#2563eb', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: '1rem' }}>Back to Login</button>
+      <p style={{ color: 'var(--text-muted)', maxWidth: '400px', textAlign: 'center' }}>Password reset is handled via Firebase. Please use the Firebase Console or contact support to reset your password.</p>
+      <button onClick={() => setView('login')} style={{ padding: '0.75rem 2rem', background: 'var(--accent-600)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: '1rem' }}>Back to Login</button>
     </div>
   );
   if (view === 'onboarding') return <Onboarding onComplete={handleOnboardingComplete} />;
@@ -267,7 +361,7 @@ function App() {
       case 'reports':
         return <div className="view-fade-in"><Reports user={user} projects={projects} activeProjectId={activeProjectId} onUpgrade={() => { setView('pricing'); }} /></div>;
       case 'settings':
-        return <div className="view-fade-in"><Settings user={user} onUpgrade={() => setView('pricing')} /></div>;
+        return <div className="view-fade-in"><Settings user={user} onUpgrade={() => setView('pricing')} themePreference={themePreference} resolvedTheme={resolvedTheme} onThemeChange={handleThemeChange} /></div>;
       case 'methodology':
         return <div className="view-fade-in"><CalculationMethodology /></div>;
       default:
@@ -361,6 +455,10 @@ function App() {
           <div className="topbar-actions">
             <button className="btn-secondary" onClick={handleQuickCustomPricingTest}>
               <SlidersHorizontal size={16} /> Quick Test Pricing
+            </button>
+            <button className="btn-secondary" onClick={handleThemeToggle}>
+              {resolvedTheme === THEME_OPTIONS.DARK ? <SunMedium size={16} /> : <Moon size={16} />}
+              {resolvedTheme === THEME_OPTIONS.DARK ? 'Light Mode' : 'Dark Mode'}
             </button>
             {activeTab === 'workspace' && (
               <button
@@ -592,7 +690,7 @@ function App() {
 
         .subtitle {
           font-size: 0.8125rem;
-          color: var(--primary-500);
+          color: var(--text-muted);
           margin-top: 0.25rem;
         }
 
@@ -614,7 +712,7 @@ function App() {
 
         .meta-item {
           font-size: 0.875rem;
-          color: var(--primary-500);
+          color: var(--text-secondary);
           display: flex;
           align-items: center;
           gap: 0.4rem;
@@ -665,7 +763,7 @@ function App() {
         }
 
         .btn-secondary {
-          background: white;
+          background: var(--bg-card);
           border: 1px solid var(--border-medium);
           padding: 0.625rem 1.25rem;
           border-radius: var(--radius-sm);
@@ -673,6 +771,7 @@ function App() {
           display: flex;
           align-items: center;
           gap: 0.5rem;
+          color: var(--text-primary);
         }
 
         .text-success { color: #4ade80; }

@@ -19,6 +19,11 @@ import {
 import { generateAIInsight } from '../../utils/aiService';
 import { getBreakdownForItem } from '../../data/rateBreakdowns';
 import { applyRegionCostProfileToBreakdown } from '../../utils/pricing';
+import {
+  buildCustomPricingFromRateAnalysis,
+  buildRateAnalysisBreakdownFromCustomPricing,
+  buildCustomPricingSummary,
+} from '../../utils/customPricing';
 
 const normalizeUnit = (unit = '') => {
   const value = String(unit).toLowerCase().replace(/\s+/g, '');
@@ -122,11 +127,12 @@ const getLineTotal = (category, row) => {
 const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onSave }) => {
   const normalizeBreakdown = (bd) => {
     const unit = normalizeUnit(item?.unit);
-    const workType = inferWorkType(item?.description);
+    const workType = bd?.linkedCustomPricing?.workType || inferWorkType(item?.description);
     const defaults = DEFAULTS[workType] || DEFAULTS.general;
 
     return {
       ...bd,
+      analysisMode: bd.analysisMode || (item?.customPricing ? 'custom-pricing-linked' : 'detailed-analysis'),
       materials: (bd.materials || []).map((row) => ({ ...row, waste: row.waste ?? defaults.waste })),
       labor: (bd.labor || []).map((row) => ({
         ...row,
@@ -137,13 +143,25 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
         output: row.output ?? getSuggestedOutput({ category: 'plant', rowName: row.name || '', workType, unit }),
       })),
       transport: bd.transport || [],
+      siteAdjustment: bd.siteAdjustment ?? 0,
       overheads: bd.overheads ?? defaults.overheads,
       profit: bd.profit ?? defaults.profit,
+      pricingReference: bd.pricingReference || '',
+      supplierQuote: bd.supplierQuote || '',
+      notes: bd.notes || '',
+      linkedCustomPricing: bd.linkedCustomPricing || null,
     };
   };
 
   const [breakdown, setBreakdown] = useState(() => {
     try {
+      const hasDetailedCustomPricing = item.customPricing
+        && ['materialsCost', 'labourCost', 'plantCost', 'transportCost']
+          .some((field) => Number(item.customPricing?.[field]) > 0);
+
+      if (hasDetailedCustomPricing) {
+        return normalizeBreakdown(buildRateAnalysisBreakdownFromCustomPricing(item, item.customPricing));
+      }
       if (item.breakdown) return normalizeBreakdown(item.breakdown);
       return applyRegionCostProfileToBreakdown(
         normalizeBreakdown(getBreakdownForItem(item.description, structureType)),
@@ -211,24 +229,39 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
     }));
   };
 
-  const matTotal = breakdown.materials.reduce((acc, row) => acc + getLineTotal('materials', row), 0);
+  const materialBaseTotal = breakdown.materials.reduce((acc, row) => acc + (Number(row.qty || 0) * Number(row.rate || 0)), 0);
+  const materialWasteTotal = breakdown.materials.reduce((acc, row) => {
+    const baseAmount = Number(row.qty || 0) * Number(row.rate || 0);
+    return acc + (baseAmount * ((Number(row.waste || 0)) / 100));
+  }, 0);
+  const matTotal = materialBaseTotal + materialWasteTotal;
   const labTotal = breakdown.labor.reduce((acc, row) => acc + getLineTotal('labor', row), 0);
   const plaTotal = breakdown.plant.reduce((acc, row) => acc + getLineTotal('plant', row), 0);
   const transTotal = breakdown.transport.reduce((acc, row) => acc + getLineTotal('transport', row), 0);
   const itemQuantity = Math.max(Number(item?.qty) || 0, 0);
 
-  const primeCost = matTotal + labTotal + plaTotal + transTotal;
-  const overheadsVal = (Number(breakdown.overheads || 0) / 100) * primeCost;
-  const profitVal = (Number(breakdown.profit || 0) / 100) * (primeCost + overheadsVal);
-  const unitRate = primeCost + overheadsVal + profitVal;
-  const totalMaterialAmount = matTotal * itemQuantity;
+  const directCost = materialBaseTotal + labTotal + plaTotal + transTotal;
+  const siteAdjustmentVal = (Number(breakdown.siteAdjustment || 0) / 100) * (directCost + materialWasteTotal);
+  const subtotalBeforeOverheads = directCost + materialWasteTotal + siteAdjustmentVal;
+  const overheadsVal = (Number(breakdown.overheads || 0) / 100) * subtotalBeforeOverheads;
+  const profitVal = (Number(breakdown.profit || 0) / 100) * (subtotalBeforeOverheads + overheadsVal);
+  const unitRate = subtotalBeforeOverheads + overheadsVal + profitVal;
+  const totalMaterialAmount = materialBaseTotal * itemQuantity;
+  const totalWasteAmount = materialWasteTotal * itemQuantity;
   const totalLaborAmount = labTotal * itemQuantity;
   const totalPlantAmount = plaTotal * itemQuantity;
   const totalTransportAmount = transTotal * itemQuantity;
-  const totalPrimeCost = primeCost * itemQuantity;
+  const totalDirectCost = directCost * itemQuantity;
+  const totalSiteAdjustmentAmount = siteAdjustmentVal * itemQuantity;
   const totalOverheadsAmount = overheadsVal * itemQuantity;
   const totalProfitAmount = profitVal * itemQuantity;
   const totalAmount = unitRate * itemQuantity;
+  const linkedCustomPricing = breakdown.analysisMode === 'custom-pricing-linked'
+    ? buildCustomPricingFromRateAnalysis(item, breakdown, item?.customPricing)
+    : null;
+  const linkedCustomSummary = linkedCustomPricing
+    ? buildCustomPricingSummary(linkedCustomPricing)
+    : null;
 
   const sections = [
     { key: 'materials', step: 1, label: 'Material Cost', icon: Package, color: '#059669', mode: 'materials', total: matTotal },
@@ -278,11 +311,29 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
             <div className="formula-label"><TrendingUp size={14} /> QS Rate Formula</div>
             <div className="formula-stack">
               <div className="formula-text">
-                Rate = Materials with waste + Labour by output + Plant by output + Transport + Overheads% + Profit%
+                Rate = Direct cost + material waste + site adjustment + overheads + profit
               </div>
-              <div className="formula-subtext">Amount = Quantity x Unit Rate</div>
+              <div className="formula-subtext">
+                {breakdown.analysisMode === 'custom-pricing-linked'
+                  ? 'Aligned to the current custom pricing studio build-up'
+                  : 'Amount = Quantity x Unit Rate'}
+              </div>
             </div>
           </div>
+
+          {(breakdown.pricingReference || breakdown.supplierQuote || breakdown.notes) && (
+            <div className="pricing-basis-card">
+              <div className="pricing-basis-head">
+                <Info size={14} />
+                <span>{breakdown.analysisMode === 'custom-pricing-linked' ? 'Custom pricing basis' : 'Rate basis'}</span>
+              </div>
+              <div className="pricing-basis-body">
+                {breakdown.pricingReference && <div><strong>Reference:</strong> {breakdown.pricingReference}</div>}
+                {breakdown.supplierQuote && <div><strong>Supplier / Quote:</strong> {breakdown.supplierQuote}</div>}
+                {breakdown.notes && <div><strong>Notes:</strong> {breakdown.notes}</div>}
+              </div>
+            </div>
+          )}
 
           {sections.map(({ key, step, label, icon, color, mode, total }) => {
             const isCollapsed = collapsedSteps[key];
@@ -359,31 +410,65 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
           })}
 
           <div className="prime-cost-bar">
-            <div className="pc-label">Prime Cost Per Unit (Steps 1-4)</div>
+            <div className="pc-label">Direct Cost Per Unit (Steps 1-4)</div>
             <div className="pc-breakdown">
-              <span className="pc-chip" style={{ background: 'rgba(5,150,105,0.1)', color: '#059669' }}>Mat: NGN {matTotal.toLocaleString()}</span>
+              <span className="pc-chip" style={{ background: 'rgba(5,150,105,0.1)', color: '#059669' }}>Mat base: NGN {materialBaseTotal.toLocaleString()}</span>
               <span className="pc-chip" style={{ background: 'rgba(217,119,6,0.1)', color: '#d97706' }}>Lab: NGN {labTotal.toLocaleString()}</span>
               <span className="pc-chip" style={{ background: 'rgba(124,58,237,0.1)', color: '#7c3aed' }}>Plt: NGN {plaTotal.toLocaleString()}</span>
               <span className="pc-chip" style={{ background: 'rgba(2,132,199,0.1)', color: '#0284c7' }}>Trn: NGN {transTotal.toLocaleString()}</span>
             </div>
-            <div className="pc-total">NGN {primeCost.toLocaleString()} / {item.unit}</div>
+            <div className="pc-total">NGN {directCost.toLocaleString()} / {item.unit}</div>
           </div>
 
           <div className="prime-cost-bar quantity-bar">
             <div className="pc-label">Quantity-Scaled Amount Preview</div>
             <div className="pc-breakdown">
-              <span className="pc-chip" style={{ background: 'rgba(5,150,105,0.1)', color: '#059669' }}>Mat x Qty: NGN {totalMaterialAmount.toLocaleString()}</span>
+              <span className="pc-chip" style={{ background: 'rgba(5,150,105,0.1)', color: '#059669' }}>Mat base x Qty: NGN {totalMaterialAmount.toLocaleString()}</span>
+              <span className="pc-chip" style={{ background: 'rgba(13,148,136,0.1)', color: '#0f766e' }}>Waste x Qty: NGN {totalWasteAmount.toLocaleString()}</span>
               <span className="pc-chip" style={{ background: 'rgba(217,119,6,0.1)', color: '#d97706' }}>Lab x Qty: NGN {totalLaborAmount.toLocaleString()}</span>
               <span className="pc-chip" style={{ background: 'rgba(124,58,237,0.1)', color: '#7c3aed' }}>Plt x Qty: NGN {totalPlantAmount.toLocaleString()}</span>
               <span className="pc-chip" style={{ background: 'rgba(2,132,199,0.1)', color: '#0284c7' }}>Trn x Qty: NGN {totalTransportAmount.toLocaleString()}</span>
             </div>
-            <div className="pc-total">Prime Cost Amount: NGN {totalPrimeCost.toLocaleString()}</div>
+            <div className="pc-total">Direct Cost Amount: NGN {totalDirectCost.toLocaleString()}</div>
           </div>
 
           <section className="analysis-summary">
             <div className="summary-row">
               <div className="summary-label">
-                <span className="step-badge" style={{ background: '#dc2626' }}>5</span>
+                <span className="step-badge" style={{ background: '#0f766e' }}>5</span>
+                <Package size={14} />
+                Material Waste
+              </div>
+              <div className="summary-controls summary-controls-static">
+                <span className="percent-sign">{Number(breakdown.materials?.length || 0)} line{Number(breakdown.materials?.length || 0) === 1 ? '' : 's'}</span>
+              </div>
+              <span className="summary-val">NGN {materialWasteTotal.toLocaleString()} / {item.unit}</span>
+            </div>
+            <div className="overhead-hint">
+              Derived from the waste allowance set on the material lines above.
+            </div>
+            <div className="summary-amount-note">Amount at current quantity: NGN {totalWasteAmount.toLocaleString()}</div>
+
+            <div className="summary-row">
+              <div className="summary-label">
+                <span className="step-badge" style={{ background: '#0891b2' }}>6</span>
+                <Truck size={14} />
+                Site Adjustment
+              </div>
+              <div className="summary-controls">
+                <input type="number" className="percent-input" value={breakdown.siteAdjustment} onChange={(e) => setBreakdown((prev) => ({ ...prev, siteAdjustment: Number(e.target.value) || 0 }))} />
+                <span className="percent-sign">%</span>
+              </div>
+              <span className="summary-val">NGN {siteAdjustmentVal.toLocaleString()} / {item.unit}</span>
+            </div>
+            <div className="overhead-hint">
+              Access difficulty, constrained site logistics, security, remote location or abnormal supervision.
+            </div>
+            <div className="summary-amount-note">Amount at current quantity: NGN {totalSiteAdjustmentAmount.toLocaleString()}</div>
+
+            <div className="summary-row">
+              <div className="summary-label">
+                <span className="step-badge" style={{ background: '#dc2626' }}>7</span>
                 <Percent size={14} />
                 Overheads
               </div>
@@ -399,7 +484,7 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
             <div className="summary-amount-note">Amount at current quantity: NGN {totalOverheadsAmount.toLocaleString()}</div>
             <div className="summary-row">
               <div className="summary-label">
-                <span className="step-badge" style={{ background: '#ea580c' }}>6</span>
+                <span className="step-badge" style={{ background: '#ea580c' }}>8</span>
                 <TrendingUp size={14} />
                 Profit & Risk
               </div>
@@ -413,6 +498,20 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
               Use higher margins for volatile, remote or risk-heavy work packages.
             </div>
             <div className="summary-amount-note">Amount at current quantity: NGN {totalProfitAmount.toLocaleString()}</div>
+
+            {linkedCustomSummary && (
+              <div className="linked-custom-summary">
+                <span className="summary-eyebrow">Custom pricing alignment</span>
+                <div className="linked-custom-grid">
+                  <div><span>Direct cost</span><strong>NGN {linkedCustomSummary.directCost.toLocaleString()}</strong></div>
+                  <div><span>Waste</span><strong>NGN {linkedCustomSummary.wasteValue.toLocaleString()}</strong></div>
+                  <div><span>Site adj.</span><strong>NGN {linkedCustomSummary.siteValue.toLocaleString()}</strong></div>
+                  <div><span>Overheads</span><strong>NGN {linkedCustomSummary.overheadValue.toLocaleString()}</strong></div>
+                  <div><span>Profit</span><strong>NGN {linkedCustomSummary.profitValue.toLocaleString()}</strong></div>
+                  <div><span>Final custom rate</span><strong>NGN {linkedCustomSummary.finalRate.toLocaleString()}</strong></div>
+                </div>
+              </div>
+            )}
 
             <div className="final-rate-row">
               <div>
@@ -435,7 +534,7 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
         <footer className="analysis-footer">
           <button className="btn-secondary" onClick={onClose}>Cancel</button>
           <button className="btn-primary-glow" onClick={() => onSave(unitRate, breakdown)}>
-            <CheckCircle size={18} /> Apply Rate - NGN {unitRate.toLocaleString()}/{item.unit}
+            <CheckCircle size={18} /> {breakdown.analysisMode === 'custom-pricing-linked' ? 'Apply aligned custom rate' : 'Apply rate'} - NGN {unitRate.toLocaleString()}/{item.unit}
           </button>
         </footer>
       </div>
@@ -488,6 +587,34 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
         .formula-stack { display: flex; flex-direction: column; gap: 0.2rem; }
         .formula-text { font-size: 0.75rem; font-weight: 600; color: rgba(255,255,255,0.85); font-family: 'SF Mono', 'Fira Code', monospace; }
         .formula-subtext { font-size: 0.7rem; font-weight: 700; color: #bfdbfe; }
+
+        .pricing-basis-card {
+          background: linear-gradient(135deg, #f8fafc, #eff6ff);
+          border: 1px solid #dbeafe;
+          border-radius: 10px;
+          padding: 0.9rem 1rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        .pricing-basis-head {
+          display: flex;
+          align-items: center;
+          gap: 0.45rem;
+          font-size: 0.68rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: #1d4ed8;
+        }
+        .pricing-basis-body {
+          display: flex;
+          flex-direction: column;
+          gap: 0.35rem;
+          font-size: 0.74rem;
+          color: #334155;
+          line-height: 1.55;
+        }
 
         .step-badge {
           display: inline-flex;
@@ -603,10 +730,50 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
         .summary-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.8125rem; font-weight: 600; color: #475569; }
         .summary-label { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; }
         .summary-controls { display: flex; align-items: center; gap: 2px; }
+        .summary-controls-static { justify-content: flex-end; min-width: 92px; }
         .summary-val { font-weight: 800; color: #1e293b; min-width: 100px; text-align: right; }
         .percent-sign { font-size: 0.75rem; color: #94a3b8; font-weight: 700; }
         .overhead-hint { font-size: 0.625rem; color: #94a3b8; padding-left: 2.5rem; margin-top: -0.25rem; font-style: italic; }
         .summary-amount-note { font-size: 0.6875rem; color: #475569; padding-left: 2.5rem; margin-top: -0.1rem; font-weight: 700; }
+        .summary-eyebrow {
+          display: block;
+          font-size: 0.64rem;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #64748b;
+          margin-bottom: 0.55rem;
+        }
+        .linked-custom-summary {
+          border-top: 1px dashed #cbd5e1;
+          margin-top: 0.35rem;
+          padding-top: 0.9rem;
+        }
+        .linked-custom-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.65rem;
+        }
+        .linked-custom-grid div {
+          display: flex;
+          flex-direction: column;
+          gap: 0.16rem;
+          padding: 0.7rem 0.75rem;
+          border-radius: 10px;
+          background: rgba(255,255,255,0.72);
+          border: 1px solid #dbeafe;
+        }
+        .linked-custom-grid span {
+          font-size: 0.64rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: #64748b;
+        }
+        .linked-custom-grid strong {
+          font-size: 0.82rem;
+          color: #0f172a;
+        }
 
         .final-rate-row { border-top: 2px solid #cbd5e1; padding-top: 1rem; margin-top: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
         .total-amount-row { border-top-color: #93c5fd; }
@@ -666,6 +833,7 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
           .analysis-row { grid-template-columns: 1fr !important; }
           .table-header-row { display: none; }
           .formula-banner { flex-direction: column; gap: 0.5rem; }
+          .linked-custom-grid { grid-template-columns: 1fr; }
         }
       `}</style>
     </div>

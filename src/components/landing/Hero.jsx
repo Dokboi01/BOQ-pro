@@ -14,10 +14,12 @@ import {
   Building2,
   ClipboardCheck,
   FileText,
-  TrendingUp
+  TrendingUp,
+  Moon,
+  SunMedium
 } from 'lucide-react';
 
-const Hero = ({ onGetStarted, onLogin }) => {
+const Hero = ({ onGetStarted, onLogin, resolvedTheme, onToggleTheme }) => {
   const headlineStats = [
     { value: '24 hrs', label: 'Typical tender turnaround' },
     { value: '1 workspace', label: 'Pricing, notes, reports, and handoff' },
@@ -112,6 +114,10 @@ const Hero = ({ onGetStarted, onLogin }) => {
         </button>
 
         <div className="nav-actions">
+          <button className="theme-toggle-btn" onClick={onToggleTheme}>
+            {resolvedTheme === 'dark' ? <SunMedium size={16} /> : <Moon size={16} />}
+            {resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}
+          </button>
           <button className="nav-link" onClick={onLogin}>Log in</button>
           <button className="nav-cta" onClick={onGetStarted}>Start free</button>
         </div>

@@ -10,6 +10,7 @@ import StructuralAnalyzer from './StructuralAnalyzer';
 import ProjectNotesAccordion from './ProjectNotesAccordion';
 import { getMaterials } from '../../db/database';
 import { buildCompanyKey, deriveCompanyName } from '../../utils/companyAccess';
+import { buildCustomPricingFromRateAnalysis, WORK_TYPE_LABELS } from '../../utils/customPricing';
 import {
   buildAutoRateResult,
   buildMaterialRateIndex,
@@ -50,25 +51,6 @@ import {
   RefreshCcw,
   Pencil
 } from 'lucide-react';
-
-const WORK_TYPE_LABELS = {
-  general: 'General Building',
-  concrete: 'Concrete',
-  masonry: 'Masonry',
-  plastering: 'Plastering',
-  tiling: 'Tiling',
-  painting: 'Painting',
-  formwork: 'Formwork',
-  reinforcement: 'Reinforcement',
-  roofing: 'Roofing',
-  pipework: 'Pipework',
-  plumbing: 'Plumbing',
-  electrical: 'Electrical',
-  steelwork: 'Steelwork',
-  roadwork: 'Roadwork',
-  earthwork: 'Earthwork',
-  entranceworks: 'Entrance / Gate Works'
-};
 
 const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, onAddSection, onExport, onDelete }) => {
   const [sections, setSections] = useState(project?.sections || []);
@@ -262,12 +244,31 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
   const handleRateApply = (rate, breakdown) => {
     if (!analyzingItem) return;
+    const shouldPreserveCustomPricing = analyzingItem.preserveCustomPricing || Boolean(analyzingItem.item?.customPricing);
+    const nextCustomPricing = shouldPreserveCustomPricing
+      ? {
+          ...buildCustomPricingFromRateAnalysis(
+            analyzingItem.item,
+            breakdown,
+            analyzingItem.item?.customPricing
+          ),
+          savedAt: new Date().toISOString()
+        }
+      : null;
+    const nextBreakdown = shouldPreserveCustomPricing
+      ? {
+          ...breakdown,
+          analysisMode: 'custom-pricing-linked',
+          linkedCustomPricing: nextCustomPricing
+        }
+      : breakdown;
+
     updateItem(analyzingItem.sectionId, analyzingItem.item.id, {
       rate: rate,
-      rateSource: 'calculated',
+      rateSource: shouldPreserveCustomPricing ? 'custom' : 'calculated',
       useBenchmark: false,
-      breakdown: breakdown,
-      customPricing: null
+      breakdown: nextBreakdown,
+      customPricing: nextCustomPricing
     });
     setAnalyzingItem(null);
   };
@@ -296,9 +297,16 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     });
   };
 
-  const openDetailedAnalysis = (sectionId, item) => {
+  const openDetailedAnalysis = (sectionId, item, draftCustomPricing = null) => {
     setCustomPricingItem(null);
-    setAnalyzingItem({ sectionId, item });
+    setAnalyzingItem({
+      sectionId,
+      preserveCustomPricing: Boolean(draftCustomPricing || item?.customPricing),
+      item: {
+        ...item,
+        customPricing: draftCustomPricing || item?.customPricing || null
+      }
+    });
   };
 
   const openCustomPricingStudio = (sectionId, item) => {
@@ -1606,7 +1614,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           region={project?.region}
           onClose={() => setCustomPricingItem(null)}
           onSave={handleCustomPricingSave}
-          onOpenDetailedAnalysis={() => openDetailedAnalysis(customPricingItem.sectionId, customPricingItem.item)}
+          onOpenDetailedAnalysis={(draftCustomPricing) => openDetailedAnalysis(customPricingItem.sectionId, customPricingItem.item, draftCustomPricing)}
         />
       )}
       {calculatingQtyForItem && (
