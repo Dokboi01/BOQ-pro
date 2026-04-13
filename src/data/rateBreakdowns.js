@@ -938,8 +938,10 @@ const scoreKeywordMatch = (keyword, normalizedDescription, descriptionTokens) =>
     const normalizedKeyword = normalizeLookupText(keyword);
     if (!normalizedKeyword) return 0;
     const keywordWordCount = normalizedKeyword.split(' ').filter(Boolean).length;
+    const paddedDescription = ` ${normalizedDescription} `;
+    const paddedKeyword = ` ${normalizedKeyword} `;
 
-    if (normalizedDescription.includes(normalizedKeyword)) {
+    if (paddedDescription.includes(paddedKeyword)) {
         return keywordWordCount > 1
             ? 18 + (keywordWordCount * 6) + (normalizedKeyword.length / 100)
             : 8 + (normalizedKeyword.length / 100);
@@ -961,6 +963,8 @@ const scoreKeywordMatch = (keyword, normalizedDescription, descriptionTokens) =>
 
     return 0;
 };
+
+const matchesTradePattern = (text = '', pattern) => pattern.test(text);
 
 const getBestKeywordBreakdownMatch = (description = '') => {
     const normalizedDescription = normalizeLookupText(description);
@@ -1010,23 +1014,23 @@ const getBestKeywordBreakdownMatch = (description = '') => {
 const inferBreakdownTrade = (description = '') => {
     const text = normalizeLookupText(description);
 
-    if (/security door|flush door|panel door|timber door|wooden door|hdf door|window|ironmongery/.test(text)) return 'joinery';
-    if (/gutter|downpipe|fascia|soffit|roof|sheet|truss|purlin|rafter/.test(text)) return 'roofing';
-    if (/gate|entrance gate|pedestrian gate/.test(text)) return 'entranceworks';
-    if (/burglar proof|balustrade|handrail|railing|steel frame|fabricat|structural steel/.test(text)) return 'steelwork';
-    if (/water closet|wash hand basin|urinal|sanitary|plumb|ppr pipe|water pipe|soil pipe|drain pipe/.test(text)) return 'plumbing';
-    if (/light fitting|lighting point|socket outlet|switch|distribution board|consumer unit|electrical|wiring|cable|conduit/.test(text)) return 'electrical';
-    if (/dpm|dpc|damp proof|waterproof|membrane|tanking/.test(text)) return 'waterproofing';
-    if (/interlocking|block paving|cobblestone|kerb|asphalt|wearing course|binder course|road/.test(text)) return 'roadwork';
-    if (/u drain|manhole|catch pit|inspection chamber|culvert|soakaway|storm drain|drainage/.test(text)) return 'drainage';
-    if (/excavation|backfill|earthwork|laterite|hardcore|site clearance|topsoil/.test(text)) return 'earthwork';
-    if (/paint|emulsion|satin|gloss|texcote/.test(text)) return 'painting';
-    if (/tile|terrazzo|granolithic/.test(text)) return 'tiling';
-    if (/plaster|render|screed/.test(text)) return 'plastering';
-    if (/block|masonry|brick|partition/.test(text)) return 'masonry';
-    if (/reinforcement|rebar|steel bar|high yield|brc mesh|y12|y16|y20|y25|r10/.test(text)) return 'reinforcement';
-    if (/formwork|shuttering|falsework/.test(text)) return 'formwork';
-    if (/column|beam|slab|lintel|foundation|concrete|blinding|raft|pile cap/.test(text)) return 'concrete';
+    if (matchesTradePattern(text, /\bsecurity door\b|\bflush door\b|\bpanel door\b|\btimber door\b|\bwooden door\b|\bhdf door\b|\bwindow\b|\bironmongery\b/)) return 'joinery';
+    if (matchesTradePattern(text, /\bgutter\b|\bdownpipe\b|\bfascia\b|\bsoffit\b|\broof(?:ing)?\b|\bsheet\b|\btruss\b|\bpurlin\b|\brafter\b/)) return 'roofing';
+    if (matchesTradePattern(text, /\bgate\b|\bentrance gate\b|\bpedestrian gate\b/)) return 'entranceworks';
+    if (matchesTradePattern(text, /\bburglar proof\b|\bbalustrade\b|\bhandrail\b|\brailing\b|\bsteel frame\b|\bfabricat\w*\b|\bstructural steel\b/)) return 'steelwork';
+    if (matchesTradePattern(text, /\bwater closet\b|\bwash hand basin\b|\burinal\b|\bsanitary\b|\bplumb\w*\b|\bppr pipe\b|\bwater pipe\b|\bsoil pipe\b|\bdrain pipe\b/)) return 'plumbing';
+    if (matchesTradePattern(text, /\blight fitting\b|\blighting point\b|\bsocket outlet\b|\bswitch(?:es)?\b|\bdistribution board\b|\bconsumer unit\b|\belectrical\b|\bwiring\b|\bcable\b|\bconduit\b/)) return 'electrical';
+    if (matchesTradePattern(text, /\bdpm\b|\bdpc\b|\bdamp proof\b|\bwaterproof\w*\b|\bmembrane\b|\btanking\b/)) return 'waterproofing';
+    if (matchesTradePattern(text, /\binterlocking\b|\bblock paving\b|\bcobblestone\b|\bkerb\b|\basphalt\b|\bwearing course\b|\bbinder course\b|\broad\b/)) return 'roadwork';
+    if (matchesTradePattern(text, /\bu drain\b|\bmanhole\b|\bcatch pit\b|\binspection chamber\b|\bculvert\b|\bsoakaway\b|\bstorm drain\b|\bdrainage\b/)) return 'drainage';
+    if (matchesTradePattern(text, /\bexcavation\b|\bbackfill(?:ing)?\b|\bearthwork(?:s)?\b|\blaterite\b|\bhardcore\b|\bsite clearance\b|\btopsoil\b/)) return 'earthwork';
+    if (matchesTradePattern(text, /\bpaint\w*\b|\bemulsion\b|\bsatin\b|\bgloss\b|\btexcote\b/)) return 'painting';
+    if (matchesTradePattern(text, /\btile\w*\b|\bterrazzo\b|\bgranolithic\b/)) return 'tiling';
+    if (matchesTradePattern(text, /\bplaster\w*\b|\brender\w*\b|\bscreed\b/)) return 'plastering';
+    if (matchesTradePattern(text, /\bblock\w*\b|\bmason\w*\b|\bbrick\w*\b|\bpartition\b/)) return 'masonry';
+    if (matchesTradePattern(text, /\breinforcement\b|\brebar\b|\bsteel bar\b|\bhigh yield\b|\bbrc mesh\b|\by12\b|\by16\b|\by20\b|\by25\b|\br10\b/)) return 'reinforcement';
+    if (matchesTradePattern(text, /\bformwork\b|\bshuttering\b|\bfalsework\b/)) return 'formwork';
+    if (matchesTradePattern(text, /\bcolumn\b|\bbeam\b|\bslab\b|\blintel\b|\bfoundation\b|\bconcrete\b|\bblinding\b|\braft\b|\bpile cap\b/)) return 'concrete';
 
     return 'general';
 };
@@ -1072,10 +1076,12 @@ export const getBreakdownForItem = (description, structureType) => {
     }
 
     const desc = (description || '').toLowerCase();
+    const normalizedDescription = normalizeLookupText(desc);
+    const descriptionTokens = tokenizeLookupText(normalizedDescription);
 
     // 1. Keyword match (most specific) → confidence: 'keyword'
     for (const breakdown of BREAKDOWNS) {
-        const matched = breakdown.keywords.some(kw => desc.includes(kw.toLowerCase()));
+        const matched = breakdown.keywords.some((kw) => scoreKeywordMatch(kw, normalizedDescription, descriptionTokens) > 0);
         if (matched) {
             return {
                 materials: breakdown.materials.map(m => ({ ...m, id: id() })),
