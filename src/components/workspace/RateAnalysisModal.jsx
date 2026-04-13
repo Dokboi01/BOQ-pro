@@ -282,11 +282,34 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
     : [];
 
   const sections = [
-    { key: 'materials', step: 1, label: 'Material Cost', icon: Package, color: '#059669', mode: 'materials', total: matTotal },
-    { key: 'labor', step: 2, label: 'Labour Productivity', icon: HardHat, color: '#d97706', mode: 'output', total: labTotal },
-    { key: 'plant', step: 3, label: 'Plant & Equipment', icon: Wrench, color: '#7c3aed', mode: 'output', total: plaTotal },
-    { key: 'transport', step: 4, label: 'Transportation', icon: Truck, color: '#0284c7', mode: 'simple', total: transTotal },
-  ];
+    { key: 'materials', label: 'Material Cost', icon: Package, color: '#059669', mode: 'materials', total: matTotal },
+    { key: 'labor', label: 'Labour Productivity', icon: HardHat, color: '#d97706', mode: 'output', total: labTotal },
+    { key: 'plant', label: 'Plant & Equipment', icon: Wrench, color: '#7c3aed', mode: 'output', total: plaTotal },
+    { key: 'transport', label: 'Transportation', icon: Truck, color: '#0284c7', mode: 'simple', total: transTotal },
+  ]
+    .filter((section) => (breakdown[section.key] || []).length > 0 || Number(section.total) > 0)
+    .map((section, index) => ({ ...section, step: index + 1 }));
+
+  const directCostChips = [
+    { key: 'materials', label: 'Mat base', value: materialBaseTotal, style: { background: 'rgba(5,150,105,0.1)', color: '#059669' } },
+    { key: 'labour', label: 'Lab', value: labTotal, style: { background: 'rgba(217,119,6,0.1)', color: '#d97706' } },
+    { key: 'plant', label: 'Plt', value: plaTotal, style: { background: 'rgba(124,58,237,0.1)', color: '#7c3aed' } },
+    { key: 'transport', label: 'Trn', value: transTotal, style: { background: 'rgba(2,132,199,0.1)', color: '#0284c7' } },
+  ].filter((chip) => chip.value > 0);
+
+  const quantityPreviewChips = [
+    { key: 'materials', label: 'Mat base x Qty', value: totalMaterialAmount, style: { background: 'rgba(5,150,105,0.1)', color: '#059669' } },
+    { key: 'waste', label: 'Waste x Qty', value: totalWasteAmount, style: { background: 'rgba(13,148,136,0.1)', color: '#0f766e' } },
+    { key: 'labour', label: 'Lab x Qty', value: totalLaborAmount, style: { background: 'rgba(217,119,6,0.1)', color: '#d97706' } },
+    { key: 'plant', label: 'Plt x Qty', value: totalPlantAmount, style: { background: 'rgba(124,58,237,0.1)', color: '#7c3aed' } },
+    { key: 'transport', label: 'Trn x Qty', value: totalTransportAmount, style: { background: 'rgba(2,132,199,0.1)', color: '#0284c7' } },
+  ].filter((chip) => chip.value > 0);
+
+  const showMaterialWaste = breakdown.materials.length > 0 || materialWasteTotal > 0;
+  const materialWasteStep = sections.length + 1;
+  const siteAdjustmentStep = materialWasteStep + (showMaterialWaste ? 1 : 0);
+  const overheadStep = siteAdjustmentStep + 1;
+  const profitStep = overheadStep + 1;
 
   return (
     <div className="analysis-overlay">
@@ -450,12 +473,13 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
           })}
 
           <div className="prime-cost-bar">
-            <div className="pc-label">Direct Cost Per Unit (Steps 1-4)</div>
+            <div className="pc-label">Direct Cost Per Unit (Steps 1-{Math.max(sections.length, 1)})</div>
             <div className="pc-breakdown">
-              <span className="pc-chip" style={{ background: 'rgba(5,150,105,0.1)', color: '#059669' }}>Mat base: NGN {materialBaseTotal.toLocaleString()}</span>
-              <span className="pc-chip" style={{ background: 'rgba(217,119,6,0.1)', color: '#d97706' }}>Lab: NGN {labTotal.toLocaleString()}</span>
-              <span className="pc-chip" style={{ background: 'rgba(124,58,237,0.1)', color: '#7c3aed' }}>Plt: NGN {plaTotal.toLocaleString()}</span>
-              <span className="pc-chip" style={{ background: 'rgba(2,132,199,0.1)', color: '#0284c7' }}>Trn: NGN {transTotal.toLocaleString()}</span>
+              {directCostChips.map((chip) => (
+                <span key={chip.key} className="pc-chip" style={chip.style}>
+                  {chip.label}: NGN {chip.value.toLocaleString()}
+                </span>
+              ))}
             </div>
             <div className="pc-total">NGN {directCost.toLocaleString()} / {item.unit}</div>
           </div>
@@ -463,35 +487,39 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
           <div className="prime-cost-bar quantity-bar">
             <div className="pc-label">Quantity-Scaled Amount Preview</div>
             <div className="pc-breakdown">
-              <span className="pc-chip" style={{ background: 'rgba(5,150,105,0.1)', color: '#059669' }}>Mat base x Qty: NGN {totalMaterialAmount.toLocaleString()}</span>
-              <span className="pc-chip" style={{ background: 'rgba(13,148,136,0.1)', color: '#0f766e' }}>Waste x Qty: NGN {totalWasteAmount.toLocaleString()}</span>
-              <span className="pc-chip" style={{ background: 'rgba(217,119,6,0.1)', color: '#d97706' }}>Lab x Qty: NGN {totalLaborAmount.toLocaleString()}</span>
-              <span className="pc-chip" style={{ background: 'rgba(124,58,237,0.1)', color: '#7c3aed' }}>Plt x Qty: NGN {totalPlantAmount.toLocaleString()}</span>
-              <span className="pc-chip" style={{ background: 'rgba(2,132,199,0.1)', color: '#0284c7' }}>Trn x Qty: NGN {totalTransportAmount.toLocaleString()}</span>
+              {quantityPreviewChips.map((chip) => (
+                <span key={chip.key} className="pc-chip" style={chip.style}>
+                  {chip.label}: NGN {chip.value.toLocaleString()}
+                </span>
+              ))}
             </div>
             <div className="pc-total">Direct Cost Amount: NGN {totalDirectCost.toLocaleString()}</div>
           </div>
 
           <section className="analysis-summary">
-            <div className="summary-row">
-              <div className="summary-label">
-                <span className="step-badge" style={{ background: '#0f766e' }}>5</span>
-                <Package size={14} />
-                Material Waste
-              </div>
-              <div className="summary-controls summary-controls-static">
-                <span className="percent-sign">{Number(breakdown.materials?.length || 0)} line{Number(breakdown.materials?.length || 0) === 1 ? '' : 's'}</span>
-              </div>
-              <span className="summary-val">NGN {materialWasteTotal.toLocaleString()} / {item.unit}</span>
-            </div>
-            <div className="overhead-hint">
-              Derived from the waste allowance set on the material lines above.
-            </div>
-            <div className="summary-amount-note">Amount at current quantity: NGN {totalWasteAmount.toLocaleString()}</div>
+            {showMaterialWaste && (
+              <>
+                <div className="summary-row">
+                  <div className="summary-label">
+                    <span className="step-badge" style={{ background: '#0f766e' }}>{materialWasteStep}</span>
+                    <Package size={14} />
+                    Material Waste
+                  </div>
+                  <div className="summary-controls summary-controls-static">
+                    <span className="percent-sign">{Number(breakdown.materials?.length || 0)} line{Number(breakdown.materials?.length || 0) === 1 ? '' : 's'}</span>
+                  </div>
+                  <span className="summary-val">NGN {materialWasteTotal.toLocaleString()} / {item.unit}</span>
+                </div>
+                <div className="overhead-hint">
+                  Derived from the waste allowance set on the material lines above.
+                </div>
+                <div className="summary-amount-note">Amount at current quantity: NGN {totalWasteAmount.toLocaleString()}</div>
+              </>
+            )}
 
             <div className="summary-row">
               <div className="summary-label">
-                <span className="step-badge" style={{ background: '#0891b2' }}>6</span>
+                <span className="step-badge" style={{ background: '#0891b2' }}>{siteAdjustmentStep}</span>
                 <Truck size={14} />
                 Site Adjustment
               </div>
@@ -508,7 +536,7 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
 
             <div className="summary-row">
               <div className="summary-label">
-                <span className="step-badge" style={{ background: '#dc2626' }}>7</span>
+                <span className="step-badge" style={{ background: '#dc2626' }}>{overheadStep}</span>
                 <Percent size={14} />
                 Overheads
               </div>
@@ -524,7 +552,7 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
             <div className="summary-amount-note">Amount at current quantity: NGN {totalOverheadsAmount.toLocaleString()}</div>
             <div className="summary-row">
               <div className="summary-label">
-                <span className="step-badge" style={{ background: '#ea580c' }}>8</span>
+                <span className="step-badge" style={{ background: '#ea580c' }}>{profitStep}</span>
                 <TrendingUp size={14} />
                 Profit & Risk
               </div>
@@ -905,6 +933,105 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
         .ai-summary { font-size: 0.75rem; color: #1e293b; line-height: 1.5; margin: 0; font-weight: 500; }
         .ai-recommendation { font-size: 0.6875rem; color: #2563eb; background: rgba(37, 99, 235, 0.08); padding: 0.5rem 0.75rem; border-radius: 6px; font-weight: 600; border-left: 3px solid #2563eb; }
         .text-primary { color: #2563eb; }
+
+        :root[data-theme='dark'] .analysis-overlay {
+          background: rgba(2, 6, 23, 0.82);
+        }
+        :root[data-theme='dark'] .analysis-modal {
+          background: var(--bg-card);
+          box-shadow: -20px 0 50px rgba(2, 6, 23, 0.7);
+        }
+        :root[data-theme='dark'] .analysis-header {
+          background: linear-gradient(135deg, #020617, #0f172a);
+        }
+        :root[data-theme='dark'] .formula-banner,
+        :root[data-theme='dark'] .pricing-basis-card,
+        :root[data-theme='dark'] .prime-cost-bar,
+        :root[data-theme='dark'] .analysis-summary,
+        :root[data-theme='dark'] .ai-advisor-panel {
+          border-color: var(--border-light);
+          box-shadow: none;
+        }
+        :root[data-theme='dark'] .pricing-basis-card,
+        :root[data-theme='dark'] .custom-scope-card,
+        :root[data-theme='dark'] .analysis-summary,
+        :root[data-theme='dark'] .prime-cost-bar,
+        :root[data-theme='dark'] .quantity-bar,
+        :root[data-theme='dark'] .ai-advisor-panel {
+          background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(17, 28, 47, 0.92));
+        }
+        :root[data-theme='dark'] .custom-scope-group,
+        :root[data-theme='dark'] .linked-custom-grid div {
+          background: rgba(9, 17, 31, 0.82);
+          border-color: var(--border-medium);
+        }
+        :root[data-theme='dark'] .section-head {
+          border-color: var(--border-light);
+        }
+        :root[data-theme='dark'] .section-head .title,
+        :root[data-theme='dark'] .subtotal,
+        :root[data-theme='dark'] .line-total,
+        :root[data-theme='dark'] .custom-scope-group strong,
+        :root[data-theme='dark'] .linked-custom-grid strong,
+        :root[data-theme='dark'] .summary-val,
+        :root[data-theme='dark'] .final-label {
+          color: var(--text-primary);
+        }
+        :root[data-theme='dark'] .pricing-basis-body,
+        :root[data-theme='dark'] .overhead-hint,
+        :root[data-theme='dark'] .summary-amount-note,
+        :root[data-theme='dark'] .summary-row,
+        :root[data-theme='dark'] .pc-label,
+        :root[data-theme='dark'] .pc-total,
+        :root[data-theme='dark'] .ai-summary,
+        :root[data-theme='dark'] .advisor-loading {
+          color: var(--text-secondary);
+        }
+        :root[data-theme='dark'] .table-header-row {
+          border-color: var(--border-light);
+          color: var(--text-muted);
+        }
+        :root[data-theme='dark'] .analysis-row {
+          border-color: rgba(51, 65, 85, 0.6);
+        }
+        :root[data-theme='dark'] .analysis-row:hover {
+          background: rgba(15, 23, 42, 0.65);
+        }
+        :root[data-theme='dark'] .name-input,
+        :root[data-theme='dark'] .num-input,
+        :root[data-theme='dark'] .unit-input-sm,
+        :root[data-theme='dark'] .rate-input-sm,
+        :root[data-theme='dark'] .output-input,
+        :root[data-theme='dark'] .percent-input {
+          background: var(--bg-card-muted);
+          border-color: var(--border-medium);
+          color: var(--text-primary);
+        }
+        :root[data-theme='dark'] .name-input:focus,
+        :root[data-theme='dark'] .num-input:focus,
+        :root[data-theme='dark'] .unit-input-sm:focus,
+        :root[data-theme='dark'] .rate-input-sm:focus,
+        :root[data-theme='dark'] .output-input:focus,
+        :root[data-theme='dark'] .percent-input:focus {
+          background: var(--bg-card);
+        }
+        :root[data-theme='dark'] .output-input {
+          background: rgba(120, 53, 15, 0.25);
+          border-color: rgba(251, 191, 36, 0.35);
+        }
+        :root[data-theme='dark'] .btn-icon-small {
+          background: var(--bg-card-alt);
+          color: var(--text-secondary);
+        }
+        :root[data-theme='dark'] .analysis-footer {
+          background: var(--bg-card);
+          border-color: var(--border-light);
+        }
+        :root[data-theme='dark'] .btn-secondary {
+          background: var(--bg-card-muted);
+          border-color: var(--border-medium);
+          color: var(--text-primary);
+        }
 
         @media (max-width: 768px) {
           .analysis-modal { width: 100%; }

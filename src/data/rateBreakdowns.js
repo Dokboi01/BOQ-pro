@@ -57,6 +57,18 @@ const labour = (key, qty) => ({ id: id(), ...LABOUR[key], qty });
 const plant = (key, qty) => ({ id: id(), ...PLANT[key], qty });
 const mat = (name, qty, unit, rate) => ({ id: id(), name, qty, unit, rate });
 
+const normalizeLookupText = (value = '') => (
+    String(value)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+);
+
+const tokenizeLookupText = (value = '') => normalizeLookupText(value)
+    .split(' ')
+    .filter(Boolean);
+
 // ─── BREAKDOWN DEFINITIONS PER ITEM TYPE ──────────────────────────────────
 // Each entry has: keywords[], materials[], labor[], plant[]
 
@@ -716,6 +728,103 @@ const BREAKDOWNS = [
         overheads: 10,
         profit: 12,
     },
+    {
+        keywords: ['flush door', 'panel door', 'timber door', 'wooden door', 'hdf door', 'door leaf', 'internal door'],
+        materials: [
+            mat('Flush Door Leaf (900x2100mm)', 1, 'Nr', 65000),
+            mat('Hardwood Door Frame', 1, 'Set', 28000),
+            mat('Butt Hinges (100mm, SS)', 3, 'Pair', 2800),
+            mat('Mortice Lock Set (3-lever)', 1, 'Nr', 18500),
+            mat('Wood Screws / Fixings', 1, 'Pkt', 1800),
+            mat('Wood Primer / Undercoat', 0.5, 'L', 4200),
+        ],
+        labor: [labour('carpenter', 0.8), labour('general', 0.2)],
+        plant: [],
+        overheads: 10,
+        profit: 12,
+    },
+    {
+        keywords: ['security door', 'steel door', 'fire rated door', 'metal door', 'security entrance door'],
+        materials: [
+            mat('Security Steel Door Set', 1, 'Nr', 185000),
+            mat('Steel Door Frame Anchors', 6, 'Nr', 450),
+            mat('Heavy Duty Hinges', 3, 'Pair', 6500),
+            mat('Security Lockset / Cylinder', 1, 'Set', 28000),
+            mat('Foam / Sealant Packing', 1, 'Can', 4500),
+        ],
+        labor: [labour('welder', 0.5), labour('carpenter', 0.3), labour('general', 0.2)],
+        plant: [plant('generator', 0.1)],
+        overheads: 12,
+        profit: 12,
+    },
+    {
+        keywords: ['gutter', 'downpipe', 'rainwater pipe', 'rainwater goods', 'fascia board', 'soffit'],
+        materials: [
+            mat('Aluminium Gutter (0.7mm)', 1.05, 'm', 6500),
+            mat('uPVC Downpipe (100mm)', 0.35, 'm', 4200),
+            mat('Gutter Brackets / Clips', 2, 'Nr', 280),
+            mat('Fascia Board / Cover Flashing', 0.2, 'm', 3500),
+            mat('Roofing Fixings / Screws', 6, 'Nr', 120),
+        ],
+        labor: [labour('roofing', 0.35), labour('general', 0.15)],
+        plant: [],
+        overheads: 10,
+        profit: 12,
+    },
+    {
+        keywords: ['water closet', 'wc', 'wash hand basin', 'urinal', 'sanitary appliance', 'basin mixer', 'sink mixer'],
+        materials: [
+            mat('Close Coupled WC Set', 1, 'Nr', 95000),
+            mat('Wash Hand Basin (Pedestal)', 1, 'Nr', 68000),
+            mat('Bottle Trap / Waste Fittings', 1, 'Set', 6500),
+            mat('Angle Valves & Flexibles', 2, 'Set', 4200),
+            mat('Sanitary Sealant', 1, 'Cartridge', 2500),
+        ],
+        labor: [labour('plumber', 0.9), labour('general', 0.2)],
+        plant: [],
+        overheads: 10,
+        profit: 12,
+    },
+    {
+        keywords: ['light fitting', 'lighting point', 'socket outlet', 'switch accessory', 'distribution board', 'consumer unit'],
+        materials: [
+            mat('PVC Conduit (20mm)', 2.5, 'Length', 850),
+            mat('Single Core Cable (2.5mm2)', 8, 'm', 420),
+            mat('Socket / Switch Accessory', 1, 'Nr', 4800),
+            mat('Junction Box / Pattress', 1, 'Nr', 2500),
+            mat('Light Fitting / Lamp Holder', 1, 'Nr', 5500),
+        ],
+        labor: [labour('electrician', 0.8), labour('general', 0.2)],
+        plant: [],
+        overheads: 10,
+        profit: 12,
+    },
+    {
+        keywords: ['burglar proof', 'balustrade', 'handrail', 'railing', 'stair rail', 'guard rail'],
+        materials: [
+            mat('Square Hollow Section Steel (25x25x2mm)', 22, 'kg', 1350),
+            mat('Flat Bar / Handrail Plate', 8, 'kg', 1280),
+            mat('Welding Electrodes (3.2mm)', 2, 'Pkt', 4500),
+            mat('Anti-Rust Primer Paint', 0.5, 'L', 3500),
+            mat('Gloss Paint Finish', 0.5, 'L', 4500),
+        ],
+        labor: [labour('welder', 1.2), labour('painter', 0.2), labour('general', 0.3)],
+        plant: [plant('generator', 0.2)],
+        overheads: 12,
+        profit: 12,
+    },
+    {
+        keywords: ['dpm', 'dpc', 'damp proof membrane', 'damp proof course', 'polythene sheet'],
+        materials: [
+            mat('1000 Gauge Polythene Sheet', 1.05, 'm²', 850),
+            mat('Bituminous Felt / DPC', 1.05, 'm', 1800),
+            mat('Cement Mortar Bedding', 0.01, 'm³', 95000),
+        ],
+        labor: [labour('mason', 0.15), labour('general', 0.1)],
+        plant: [],
+        overheads: 8,
+        profit: 10,
+    },
 ];
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -816,7 +925,152 @@ const STRUCTURE_DEFAULTS = {
  * @param {string} structureType - One of STRUCTURE_TYPES values
  * @returns {{ materials, labor, plant, overheads, profit }}
  */
+const cloneBreakdownTemplate = (template = {}, matchSource = 'keyword') => ({
+    materials: (template.materials || []).map((row) => ({ ...row, id: id() })),
+    labor: (template.labor || []).map((row) => ({ ...row, id: id() })),
+    plant: (template.plant || []).map((row) => ({ ...row, id: id() })),
+    overheads: template.overheads ?? 15,
+    profit: template.profit ?? 10,
+    matchSource,
+});
+
+const scoreKeywordMatch = (keyword, normalizedDescription, descriptionTokens) => {
+    const normalizedKeyword = normalizeLookupText(keyword);
+    if (!normalizedKeyword) return 0;
+    const keywordWordCount = normalizedKeyword.split(' ').filter(Boolean).length;
+
+    if (normalizedDescription.includes(normalizedKeyword)) {
+        return keywordWordCount > 1
+            ? 18 + (keywordWordCount * 6) + (normalizedKeyword.length / 100)
+            : 8 + (normalizedKeyword.length / 100);
+    }
+
+    const keywordTokens = tokenizeLookupText(normalizedKeyword);
+    if (!keywordTokens.length) return 0;
+
+    const matchedTokens = keywordTokens.filter((token) => descriptionTokens.has(token)).length;
+    if (!matchedTokens) return 0;
+    if (matchedTokens === keywordTokens.length) {
+        return 4 + (keywordTokens.length * 2);
+    }
+
+    const coverage = matchedTokens / keywordTokens.length;
+    if (coverage >= 0.75 && keywordTokens.length >= 2) {
+        return 1 + (coverage * keywordTokens.length);
+    }
+
+    return 0;
+};
+
+const getBestKeywordBreakdownMatch = (description = '') => {
+    const normalizedDescription = normalizeLookupText(description);
+    if (!normalizedDescription) return null;
+
+    const descriptionTokens = new Set(tokenizeLookupText(normalizedDescription));
+    let bestMatch = null;
+
+    for (const breakdown of BREAKDOWNS) {
+        const keywordScores = (breakdown.keywords || [])
+            .map((keyword) => ({
+                keyword,
+                score: scoreKeywordMatch(keyword, normalizedDescription, descriptionTokens),
+            }))
+            .filter((entry) => entry.score > 0);
+
+        if (!keywordScores.length) continue;
+
+        const totalScore = keywordScores.reduce((sum, entry) => sum + entry.score, 0);
+        const strongestScore = Math.max(...keywordScores.map((entry) => entry.score));
+        const longestKeywordLength = keywordScores.reduce((max, entry) => (
+            Math.max(max, normalizeLookupText(entry.keyword).length)
+        ), 0);
+
+        const candidate = {
+            breakdown,
+            totalScore,
+            strongestScore,
+            matchedKeywordCount: keywordScores.length,
+            longestKeywordLength,
+        };
+
+        if (
+            !bestMatch
+            || candidate.totalScore > bestMatch.totalScore
+            || (candidate.totalScore === bestMatch.totalScore && candidate.strongestScore > bestMatch.strongestScore)
+            || (candidate.totalScore === bestMatch.totalScore && candidate.strongestScore === bestMatch.strongestScore && candidate.matchedKeywordCount > bestMatch.matchedKeywordCount)
+            || (candidate.totalScore === bestMatch.totalScore && candidate.strongestScore === bestMatch.strongestScore && candidate.matchedKeywordCount === bestMatch.matchedKeywordCount && candidate.longestKeywordLength > bestMatch.longestKeywordLength)
+        ) {
+            bestMatch = candidate;
+        }
+    }
+
+    return bestMatch;
+};
+
+const inferBreakdownTrade = (description = '') => {
+    const text = normalizeLookupText(description);
+
+    if (/security door|flush door|panel door|timber door|wooden door|hdf door|window|ironmongery/.test(text)) return 'joinery';
+    if (/gutter|downpipe|fascia|soffit|roof|sheet|truss|purlin|rafter/.test(text)) return 'roofing';
+    if (/gate|entrance gate|pedestrian gate/.test(text)) return 'entranceworks';
+    if (/burglar proof|balustrade|handrail|railing|steel frame|fabricat|structural steel/.test(text)) return 'steelwork';
+    if (/water closet|wash hand basin|urinal|sanitary|plumb|ppr pipe|water pipe|soil pipe|drain pipe/.test(text)) return 'plumbing';
+    if (/light fitting|lighting point|socket outlet|switch|distribution board|consumer unit|electrical|wiring|cable|conduit/.test(text)) return 'electrical';
+    if (/dpm|dpc|damp proof|waterproof|membrane|tanking/.test(text)) return 'waterproofing';
+    if (/interlocking|block paving|cobblestone|kerb|asphalt|wearing course|binder course|road/.test(text)) return 'roadwork';
+    if (/u drain|manhole|catch pit|inspection chamber|culvert|soakaway|storm drain|drainage/.test(text)) return 'drainage';
+    if (/excavation|backfill|earthwork|laterite|hardcore|site clearance|topsoil/.test(text)) return 'earthwork';
+    if (/paint|emulsion|satin|gloss|texcote/.test(text)) return 'painting';
+    if (/tile|terrazzo|granolithic/.test(text)) return 'tiling';
+    if (/plaster|render|screed/.test(text)) return 'plastering';
+    if (/block|masonry|brick|partition/.test(text)) return 'masonry';
+    if (/reinforcement|rebar|steel bar|high yield|brc mesh|y12|y16|y20|y25|r10/.test(text)) return 'reinforcement';
+    if (/formwork|shuttering|falsework/.test(text)) return 'formwork';
+    if (/column|beam|slab|lintel|foundation|concrete|blinding|raft|pile cap/.test(text)) return 'concrete';
+
+    return 'general';
+};
+
+const TRADE_FALLBACK_QUERIES = {
+    concrete: 'structural concrete grade 25',
+    reinforcement: 'reinforcement steel',
+    formwork: 'formwork shuttering',
+    masonry: '150mm sandcrete block wall',
+    roofing: 'long span roofing sheet',
+    plastering: 'sand and cement plaster',
+    tiling: 'ceramic floor tile',
+    painting: 'internal emulsion paint',
+    waterproofing: 'damp proof membrane',
+    roadwork: 'block paving',
+    drainage: 'drainage channel',
+    earthwork: 'backfilling and compaction',
+    plumbing: 'water closet sanitary appliance',
+    electrical: 'lighting point',
+    steelwork: 'balustrade handrail',
+    entranceworks: 'steel entrance gate',
+    joinery: 'flush door',
+    general: '',
+};
+
+const getTradeDefaultBreakdown = (trade) => {
+    const seedQuery = TRADE_FALLBACK_QUERIES[trade];
+    if (!seedQuery) return null;
+    const matched = getBestKeywordBreakdownMatch(seedQuery);
+    return matched?.breakdown || null;
+};
+
 export const getBreakdownForItem = (description, structureType) => {
+    const keywordMatch = getBestKeywordBreakdownMatch(description);
+    if (keywordMatch?.breakdown) {
+        return cloneBreakdownTemplate(keywordMatch.breakdown, 'keyword');
+    }
+
+    const inferredTrade = inferBreakdownTrade(description);
+    const tradeDefault = getTradeDefaultBreakdown(inferredTrade);
+    if (tradeDefault) {
+        return cloneBreakdownTemplate(tradeDefault, 'trade-default');
+    }
+
     const desc = (description || '').toLowerCase();
 
     // 1. Keyword match (most specific) → confidence: 'keyword'

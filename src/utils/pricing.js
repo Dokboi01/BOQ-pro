@@ -79,6 +79,9 @@ const SYNONYM_GROUPS = [
 export const DEFAULT_OUTLIER_TOLERANCE = 0.25;
 /** @deprecated use DEFAULT_OUTLIER_TOLERANCE */
 export const OUTLIER_TOLERANCE = DEFAULT_OUTLIER_TOLERANCE;
+export const BENCHMARK_REFRESH_CHANGE_TOLERANCE = 0.01;
+export const BENCHMARK_REFRESH_REVIEW_THRESHOLD = 0.05;
+export const BENCHMARK_REFRESH_HIGH_THRESHOLD = 0.12;
 
 export const clampNumber = (value) => {
   const parsed = Number(value);
@@ -763,6 +766,229 @@ export const buildAutoRateResult = (item, { structureType, region = 'Lagos', mat
     matchSource,
     benchmarkEvidence: summarizeBenchmarkEvidence(marketAligned, region, matchSource, benchmarkRegionalRates),
     benchmarkRegionalRates,
+  };
+};
+
+const getRefreshRateFromAutoResult = (item, autoRated, region) => {
+  if (!autoRated?.benchmark) return 0;
+
+  return getEffectiveBenchmarkRate({
+    ...item,
+    benchmark: autoRated.benchmark,
+    benchmarkRegionalRates: autoRated.benchmarkRegionalRates || {}
+  }, region) || clampNumber(autoRated.rate);
+};
+
+export const getItemBenchmarkRefreshInsight = (
+  item,
+  {
+    structureType,
+    region = 'Lagos',
+    materialIndex = [],
+    changeTolerance = BENCHMARK_REFRESH_CHANGE_TOLERANCE,
+    reviewThreshold = BENCHMARK_REFRESH_REVIEW_THRESHOLD,
+    highThreshold = BENCHMARK_REFRESH_HIGH_THRESHOLD,
+  } = {}
+) => {
+  if (!item) return null;
+
+  const currentBenchmarkRate = getEffectiveBenchmarkRate(item, region);
+  const autoRated = buildAutoRateResult(item, { structureType, region, materialIndex });
+  const latestBenchmarkRate = getRefreshRateFromAutoResult(item, autoRated, region);
+  const hasCurrentBenchmark = currentBenchmarkRate > 0 || clampNumber(item?.benchmark) > 0;
+  const hasLatestBenchmark = latestBenchmarkRate > 0 || clampNumber(autoRated?.benchmark) > 0;
+
+  let deltaPercent = 0;
+  if (currentBenchmarkRate > 0 && latestBenchmarkRate > 0) {
+    deltaPercent = ((latestBenchmarkRate - currentBenchmarkRate) / currentBenchmarkRate) * 100;
+  }
+
+  const changeThresholdPercent = changeTolerance * 100;
+  const reviewThresholdPercent = reviewThreshold * 100;
+  const highThresholdPercent = highThreshold * 100;
+  const absDeltaPercent = Math.abs(deltaPercent);
+  const benchmarkNowAvailable = !hasCurrentBenchmark && hasLatestBenchmark;
+  const benchmarkReferenceMissing = hasCurrentBenchmark && !hasLatestBenchmark;
+  const hasMeaningfulChange = hasCurrentBenchmark
+    && hasLatestBenchmark
+    && absDeltaPercent >= changeThresholdPercent;
+  const canApplyRefresh = (benchmarkNowAvailable || hasMeaningfulChange) && hasLatestBenchmark;
+  const needsReviewOnly = benchmarkReferenceMissing;
+
+  let severity = 'calm';
+  if (benchmarkReferenceMissing || absDeltaPercent >= highThresholdPercent) {
+    severity = 'high';
+  } else if (benchmarkNowAvailable || absDeltaPercent >= reviewThresholdPercent) {
+    severity = 'medium';
+  } else if (canApplyRefresh) {
+    severity = 'low';
+  }
+
+  let tone = 'aligned';
+  if (benchmarkReferenceMissing) {
+    tone = 'warning';
+  } else if (benchmarkNowAvailable) {
+    tone = 'benchmark';
+  } else if (hasMeaningfulChange) {
+    tone = deltaPercent >= 0 ? 'high' : 'down';
+  }
+
+  let title = 'Benchmark reference current';
+  let chip = 'Benchmark current';
+  let detail = 'This item is already aligned with the latest market benchmark.';
+
+  if (benchmarkNowAvailable) {
+    title = 'Benchmark now available';
+    chip = 'New benchmark';
+    detail = 'A verified market benchmark is now available for this item.';
+  } else if (benchmarkReferenceMissing) {
+    title = 'Benchmark source needs review';
+    chip = 'Review benchmark';
+    detail = 'The saved benchmark could not be rebuilt from the current market library, so review is needed before relying on it.';
+  } else if (hasMeaningfulChange) {
+    title = deltaPercent >= 0 ? 'Market benchmark moved upward' : 'Market benchmark moved downward';
+    chip = `${deltaPercent >= 0 ? '+' : ''}${deltaPercent.toFixed(1)}% market shift`;
+    detail = `Latest ${region.replace(/_/g, ' ')} benchmark moved from N${Math.round(currentBenchmarkRate).toLocaleString()} to N${Math.round(latestBenchmarkRate).toLocaleString()} per ${item?.unit || 'unit'}.`;
+  } else if (hasLatestBenchmark) {
+    detail = `Current ${region.replace(/_/g, ' ')} benchmark is N${Math.round(latestBenchmarkRate).toLocaleString()} per ${item?.unit || 'unit'}.`;
+  } else {
+    tone = 'warning';
+    title = 'No live benchmark reference';
+    chip = 'Benchmark missing';
+    detail = 'This item does not have a live benchmark reference yet.';
+  }
+
+  let actionLabel = 'Refresh benchmark';
+  let actionDetail = item?.useBenchmark
+    ? 'Refreshing will update the live benchmark amount for this item.'
+    : 'Refreshing will keep the current rate and update the saved market reference only.';
+
+  if (!canApplyRefresh) {
+    actionLabel = needsReviewOnly ? 'Review benchmark' : 'Benchmark current';
+    actionDetail = needsReviewOnly
+      ? 'No live market rebuild was found for this saved benchmark, so this item needs a manual commercial review.'
+      : 'This item is already aligned with the latest market benchmark.';
+  } else if (!item?.useBenchmark) {
+    actionLabel = hasCurrentBenchmark ? 'Update reference' : 'Link benchmark';
+  }
+
+  return {
+    pricingMode: getItemPricingMode(item),
+    currentBenchmarkRate,
+    latestBenchmarkRate,
+    deltaPercent,
+    absDeltaPercent,
+    benchmarkNowAvailable,
+    benchmarkReferenceMissing,
+    hasMeaningfulChange,
+    canApplyRefresh,
+    needsReviewOnly,
+    actionable: canApplyRefresh || needsReviewOnly,
+    preservesRate: !item?.useBenchmark,
+    severity,
+    tone,
+    title,
+    chip,
+    detail,
+    actionLabel,
+    actionDetail,
+    currentTotal: getItemTotal(item, region),
+    nextTotal: item?.useBenchmark && hasLatestBenchmark
+      ? Math.max(clampNumber(item?.qty), 0) * latestBenchmarkRate
+      : getItemTotal(item, region),
+    autoRated,
+  };
+};
+
+export const applyBenchmarkRefreshToItem = (item, insight, region = 'Lagos') => {
+  if (!item || !insight?.autoRated || (!insight.canApplyRefresh && !insight.needsReviewOnly)) {
+    return item;
+  }
+
+  if (insight.needsReviewOnly) {
+    return item;
+  }
+
+  const nextItem = {
+    ...item,
+    benchmark: insight.autoRated.benchmark,
+    benchmarkRegionalRates: insight.autoRated.benchmarkRegionalRates || item.benchmarkRegionalRates || null,
+    benchmarkEvidence: insight.autoRated.benchmarkEvidence || item.benchmarkEvidence || null,
+    benchmarkMatchSource: insight.autoRated.matchSource || item.benchmarkMatchSource || null,
+  };
+
+  const shouldRefreshBreakdown = item.useBenchmark
+    || !item.breakdown
+    || (!item.customPricing && item.rateSource !== 'calculated');
+
+  if (shouldRefreshBreakdown && insight.autoRated.breakdown) {
+    nextItem.breakdown = insight.autoRated.breakdown;
+  }
+
+  nextItem.total = getItemTotal(nextItem, region);
+  return nextItem;
+};
+
+export const getProjectBenchmarkRefreshAnalytics = (
+  project = {},
+  {
+    structureType,
+    region = 'Lagos',
+    materialIndex = [],
+  } = {}
+) => {
+  const itemMap = {};
+  const sectionMap = {};
+  const entries = [];
+
+  (project?.sections || []).forEach((section) => {
+    const sectionEntries = (section.items || []).map((item) => {
+      const insight = getItemBenchmarkRefreshInsight(item, {
+        structureType,
+        region,
+        materialIndex,
+      });
+      const entry = {
+        sectionId: section.id,
+        sectionTitle: section.title,
+        itemId: item.id,
+        description: item.description,
+        insight,
+      };
+
+      itemMap[`${section.id}:${item.id}`] = insight;
+      return entry;
+    });
+
+    const refreshableItems = sectionEntries.filter((entry) => entry.insight?.canApplyRefresh).length;
+    const reviewItems = sectionEntries.filter((entry) => entry.insight?.needsReviewOnly).length;
+
+    sectionMap[section.id] = {
+      actionableItems: sectionEntries.filter((entry) => entry.insight?.actionable).length,
+      refreshableItems,
+      reviewItems,
+      benchmarkItems: sectionEntries.filter((entry) => entry.insight?.pricingMode === 'benchmark' && entry.insight?.canApplyRefresh).length,
+      protectedItems: sectionEntries.filter((entry) => entry.insight?.preservesRate && entry.insight?.canApplyRefresh).length,
+    };
+
+    entries.push(...sectionEntries);
+  });
+
+  const actionableEntries = entries.filter((entry) => entry.insight?.actionable);
+  const refreshableEntries = actionableEntries.filter((entry) => entry.insight?.canApplyRefresh);
+  const reviewEntries = actionableEntries.filter((entry) => entry.insight?.needsReviewOnly);
+
+  return {
+    itemMap,
+    sectionMap,
+    entries,
+    actionableItems: actionableEntries.length,
+    refreshableItems: refreshableEntries.length,
+    reviewItems: reviewEntries.length,
+    benchmarkRateUpdates: refreshableEntries.filter((entry) => entry.insight?.pricingMode === 'benchmark').length,
+    referenceOnlyUpdates: refreshableEntries.filter((entry) => entry.insight?.preservesRate).length,
+    newBenchmarkLinks: refreshableEntries.filter((entry) => entry.insight?.benchmarkNowAvailable).length,
+    highPriorityItems: actionableEntries.filter((entry) => entry.insight?.severity === 'high').length,
   };
 };
 
