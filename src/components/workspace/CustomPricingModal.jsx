@@ -13,7 +13,10 @@ import {
   FileText
 } from 'lucide-react';
 import { getRegionalModifier } from '../../utils/aiService';
-import { buildSuggestedCustomPricingLists } from '../../utils/customPricing';
+import {
+  buildSuggestedCustomPricingLists,
+  buildSuggestedCustomPricingMix
+} from '../../utils/customPricing';
 
 const MONEY = new Intl.NumberFormat('en-NG', { maximumFractionDigits: 2 });
 const PERCENT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
@@ -199,7 +202,8 @@ const scaleSeedToReference = (seeded, referenceRate) => {
   return nextSeed;
 };
 
-const seedFromReference = (referenceRate, profile) => {
+const seedFromReference = (referenceRate, profile, sharesOverride = null) => {
+  const shares = sharesOverride || profile.shares;
   const defaults = {
     workType: 'general',
     wastePercent: profile.waste,
@@ -220,10 +224,10 @@ const seedFromReference = (referenceRate, profile) => {
   const baseDirect = Math.max(referenceRate * 0.78, 0);
   let seeded = {
     ...defaults,
-      materialsCost: baseDirect * profile.shares.materials,
-      labourCost: baseDirect * profile.shares.labour,
-      plantCost: baseDirect * profile.shares.plant,
-      transportCost: baseDirect * profile.shares.transport
+      materialsCost: baseDirect * (shares.materials ?? profile.shares.materials),
+      labourCost: baseDirect * (shares.labour ?? profile.shares.labour),
+      plantCost: baseDirect * (shares.plant ?? profile.shares.plant),
+      transportCost: baseDirect * (shares.transport ?? profile.shares.transport)
   };
 
   return scaleSeedToReference(seeded, referenceRate);
@@ -302,6 +306,16 @@ const buildSeedState = (item, region, structureType) => {
   const currentRate = !item?.useBenchmark ? clamp(item?.rate) : benchmarkRate;
   const referenceRate = currentRate || benchmarkRate || 0;
   const suggestedLists = buildSuggestedCustomPricingLists(item, { region, structureType });
+  const suggestedMix = buildSuggestedCustomPricingMix(item, { region, structureType, workType });
+  const directMixTotal = suggestedMix.directCost;
+  const suggestedShares = directMixTotal > 0
+    ? {
+        materials: suggestedMix.materials / directMixTotal,
+        labour: suggestedMix.labour / directMixTotal,
+        plant: suggestedMix.plant / directMixTotal,
+        transport: suggestedMix.transport / directMixTotal
+      }
+    : null;
 
   if (item?.customPricing) {
     return {
@@ -326,7 +340,7 @@ const buildSeedState = (item, region, structureType) => {
     workType,
     benchmarkRate,
     pricing: {
-      ...seedFromReference(referenceRate, profile),
+      ...seedFromReference(referenceRate, profile, suggestedShares),
       ...suggestedLists
     }
   };
@@ -397,8 +411,18 @@ const CustomPricingModal = ({ item, region, structureType, onClose, onSave, onOp
   const resetToReference = () => {
     const profile = WORK_TYPE_PROFILES[activeWorkType] || WORK_TYPE_PROFILES.general;
     const referenceRate = currentRate || seeded.benchmarkRate || 0;
+    const suggestedMix = buildSuggestedCustomPricingMix(item, { region, structureType, workType: activeWorkType });
+    const directMixTotal = suggestedMix.directCost;
+    const suggestedShares = directMixTotal > 0
+      ? {
+          materials: suggestedMix.materials / directMixTotal,
+          labour: suggestedMix.labour / directMixTotal,
+          plant: suggestedMix.plant / directMixTotal,
+          transport: suggestedMix.transport / directMixTotal
+        }
+      : null;
     setPricing({
-      ...seedFromReference(referenceRate, profile),
+      ...seedFromReference(referenceRate, profile, suggestedShares),
       workType: activeWorkType
     });
   };
@@ -1113,6 +1137,72 @@ const CustomPricingModal = ({ item, region, structureType, onClose, onSave, onOp
           background: linear-gradient(135deg, #0f766e, #2563eb);
           color: white;
           box-shadow: 0 16px 30px rgba(37, 99, 235, 0.22);
+        }
+        :root[data-theme='dark'] .custom-pricing-overlay {
+          background: rgba(2, 6, 23, 0.84);
+        }
+        :root[data-theme='dark'] .custom-pricing-modal {
+          background: var(--bg-main);
+          box-shadow: 0 32px 80px rgba(2, 6, 23, 0.7);
+        }
+        :root[data-theme='dark'] .custom-pricing-header {
+          background: linear-gradient(135deg, #020617, #0f172a);
+        }
+        :root[data-theme='dark'] .custom-chip,
+        :root[data-theme='dark'] .custom-section-card,
+        :root[data-theme='dark'] .summary-card,
+        :root[data-theme='dark'] .profile-helper-card {
+          background: var(--bg-card);
+          border-color: var(--border-light);
+          color: var(--text-primary);
+          box-shadow: none;
+        }
+        :root[data-theme='dark'] .preset-card {
+          background: linear-gradient(135deg, rgba(30, 41, 59, 0.96), rgba(51, 65, 85, 0.92));
+          border-color: rgba(251, 191, 36, 0.2);
+        }
+        :root[data-theme='dark'] .preset-btn {
+          background: rgba(9, 17, 31, 0.88);
+          border-color: rgba(148, 163, 184, 0.22);
+        }
+        :root[data-theme='dark'] .preset-label,
+        :root[data-theme='dark'] .custom-section-head,
+        :root[data-theme='dark'] .mix-row span,
+        :root[data-theme='dark'] .mix-row strong,
+        :root[data-theme='dark'] .formula-list strong,
+        :root[data-theme='dark'] .variance-value {
+          color: var(--text-primary);
+        }
+        :root[data-theme='dark'] .preset-copy,
+        :root[data-theme='dark'] .profile-helper-card p,
+        :root[data-theme='dark'] .custom-field span,
+        :root[data-theme='dark'] .mix-row small,
+        :root[data-theme='dark'] .formula-list div,
+        :root[data-theme='dark'] .variance-copy {
+          color: var(--text-secondary);
+        }
+        :root[data-theme='dark'] .custom-field input,
+        :root[data-theme='dark'] .custom-field select,
+        :root[data-theme='dark'] .custom-field textarea,
+        :root[data-theme='dark'] .summary-action-btn {
+          background: var(--bg-card-muted);
+          border-color: var(--border-medium);
+          color: var(--text-primary);
+        }
+        :root[data-theme='dark'] .custom-field input:focus,
+        :root[data-theme='dark'] .custom-field select:focus,
+        :root[data-theme='dark'] .custom-field textarea:focus {
+          background: var(--bg-card);
+        }
+        :root[data-theme='dark'] .custom-pricing-footer {
+          background: rgba(9, 17, 31, 0.94);
+          border-color: var(--border-light);
+        }
+        :root[data-theme='dark'] .custom-footer-btn.secondary,
+        :root[data-theme='dark'] .profile-helper-btn {
+          background: var(--bg-card-muted);
+          border-color: var(--border-medium);
+          color: var(--text-primary);
         }
         @media (max-width: 960px) {
           .custom-pricing-content {

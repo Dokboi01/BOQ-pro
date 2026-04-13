@@ -139,6 +139,78 @@ const getRateAnalysisLineTotal = (category, row) => {
   return qty * rate;
 };
 
+const normalizeAnalysisUnit = (unit = '') => {
+  const value = String(unit).toLowerCase().replace(/\s+/g, '');
+  if (/(m³|m3|cum|cubic)/.test(value)) return 'm3';
+  if (/(m²|m2|sqm|sq\.m|square)/.test(value)) return 'm2';
+  if (/^(m|lm|rm|linm|mtr|meter|metre)$/.test(value)) return 'm';
+  if (/^(kg|kilogram)$/.test(value)) return 'kg';
+  if (/^(ton|t|tonne)$/.test(value)) return 'ton';
+  if (/^(nr|no|nos|pcs|pc|item|sum)$/.test(String(unit).trim().toLowerCase())) return 'nr';
+  return 'm3';
+};
+
+const getSuggestedAnalysisOutput = ({ category, rowName = '', workType = 'general', unit = 'nr' }) => {
+  const name = String(rowName).toLowerCase();
+
+  if (category === 'labor') {
+    if (workType === 'concrete') return unit === 'm3' ? 5 : 4;
+    if (workType === 'masonry') return unit === 'm2' ? (name.includes('general') ? 18 : 9) : 5;
+    if (workType === 'plastering') return unit === 'm2' ? (name.includes('general') ? 25 : 14) : 10;
+    if (workType === 'tiling') return unit === 'm2' ? 10 : 6;
+    if (workType === 'painting') return unit === 'm2' ? 28 : 18;
+    if (workType === 'formwork') return unit === 'm2' ? 8 : 5;
+    if (workType === 'reinforcement') return unit === 'kg' ? 350 : unit === 'ton' ? 0.35 : 1;
+    if (workType === 'roofing') return unit === 'm2' ? 18 : 10;
+    if (workType === 'pipework' || workType === 'plumbing') return unit === 'm' ? 12 : 4;
+    if (workType === 'electrical') return unit === 'm' ? 25 : 6;
+    if (workType === 'steelwork') return unit === 'kg' ? 250 : unit === 'ton' ? 0.25 : 3;
+    if (workType === 'roadwork') return unit === 'm2' ? 120 : unit === 'm3' ? 25 : 15;
+    if (workType === 'earthwork') return unit === 'm3' ? 12 : 20;
+  }
+
+  if (category === 'plant') {
+    if (name.includes('excavator')) return unit === 'm3' ? 80 : 40;
+    if (name.includes('mixer')) return unit === 'm3' ? 6 : 4;
+    if (name.includes('vibrator')) return unit === 'm3' ? 12 : 6;
+    if (name.includes('roller')) return unit === 'm2' ? 400 : 200;
+    if (name.includes('grader')) return unit === 'm2' ? 800 : 250;
+    if (name.includes('compactor')) return unit === 'm2' ? 150 : 30;
+    if (name.includes('pump')) return unit === 'm3' ? 30 : 10;
+    if (name.includes('formwork')) return unit === 'm2' ? 12 : 8;
+    if (name.includes('crane')) return unit === 'ton' ? 8 : unit === 'nr' ? 6 : 4;
+    if (name.includes('generator')) return unit === 'm2' ? 80 : unit === 'm3' ? 15 : 20;
+    if (name.includes('truck')) return unit === 'm3' ? 30 : 15;
+  }
+
+  if (unit === 'm3') return category === 'plant' ? 20 : 5;
+  if (unit === 'm2') return category === 'plant' ? 80 : 12;
+  if (unit === 'm') return category === 'plant' ? 100 : 15;
+  if (unit === 'kg') return category === 'plant' ? 600 : 300;
+  if (unit === 'ton') return category === 'plant' ? 0.8 : 0.3;
+  return 1;
+};
+
+const getTemplateRowTotal = (category, row, workType, unit) => {
+  const qty = clampPricingValue(row?.qty);
+  const rate = clampPricingValue(row?.rate);
+
+  if (category === 'materials') {
+    return qty * rate;
+  }
+
+  if (category === 'labor' || category === 'plant') {
+    const output = Math.max(
+      clampPricingValue(row?.output)
+        || getSuggestedAnalysisOutput({ category, rowName: row?.name, workType, unit }),
+      0.001
+    );
+    return (qty * rate) / output;
+  }
+
+  return qty * rate;
+};
+
 const splitCustomPricingEntries = (value) => String(value || '')
   .split(/\r?\n|;|,/)
   .map((entry) => entry.trim())
@@ -193,6 +265,27 @@ const buildNamedListFromRows = (rows = []) => {
   return [...new Set(names)].join('\n');
 };
 
+export const buildSuggestedCustomPricingMix = (item = {}, options = {}) => {
+  const workType = options.workType || inferCustomPricingWorkType(item?.description);
+  const unit = normalizeAnalysisUnit(item?.unit);
+  const materials = getTemplateCategoryRows(item, 'materials', options)
+    .reduce((sum, row) => sum + getTemplateRowTotal('materials', row, workType, unit), 0);
+  const labour = getTemplateCategoryRows(item, 'labor', options)
+    .reduce((sum, row) => sum + getTemplateRowTotal('labor', row, workType, unit), 0);
+  const plant = getTemplateCategoryRows(item, 'plant', options)
+    .reduce((sum, row) => sum + getTemplateRowTotal('plant', row, workType, unit), 0);
+  const transport = getTemplateCategoryRows(item, 'transport', options)
+    .reduce((sum, row) => sum + getTemplateRowTotal('transport', row, workType, unit), 0);
+
+  return {
+    materials,
+    labour,
+    plant,
+    transport,
+    directCost: materials + labour + plant + transport,
+  };
+};
+
 const joinCustomPricingEntries = (rows = [], fallbackLabel = '') => {
   const names = rows
     .map((row) => String(row?.name || '').trim())
@@ -203,10 +296,18 @@ const joinCustomPricingEntries = (rows = [], fallbackLabel = '') => {
   return uniqueNames.join('\n');
 };
 
-const buildRowsFromTemplate = ({ category, item, totalCost, templateRows = [], wastePercent = 0 }) => {
+const buildRowsFromTemplate = ({
+  category,
+  item,
+  totalCost,
+  templateRows = [],
+  wastePercent = 0,
+  workType = 'general',
+}) => {
   const normalizedCategory = category === 'labor' ? 'labor' : category;
+  const unit = normalizeAnalysisUnit(item?.unit);
   const templateTotal = templateRows.reduce(
-    (sum, row) => sum + getRateAnalysisLineTotal(normalizedCategory, row),
+    (sum, row) => sum + getTemplateRowTotal(normalizedCategory, row, workType, unit),
     0
   );
   const scale = templateTotal > 0 ? totalCost / templateTotal : 0;
@@ -219,7 +320,11 @@ const buildRowsFromTemplate = ({ category, item, totalCost, templateRows = [], w
       ? clampPricingValue(row?.waste ?? wastePercent)
       : row?.waste,
     output: category === 'labor' || category === 'plant'
-      ? Math.max(clampPricingValue(row?.output) || 1, 0.001)
+      ? Math.max(
+        clampPricingValue(row?.output)
+          || getSuggestedAnalysisOutput({ category, rowName: row?.name, workType, unit }),
+        0.001
+      )
       : row?.output,
   }));
 };
@@ -233,21 +338,28 @@ const buildAllowanceRows = ({
   unit,
   wastePercent = 0,
   templateRows = [],
+  workType = 'general',
 }) => {
   const names = splitCustomPricingEntries(listText);
+  const normalizedTotalCost = clampPricingValue(totalCost);
+
+  if (names.length === 0 && normalizedTotalCost <= 0) {
+    return [];
+  }
 
   if (names.length === 0 && templateRows.length > 0) {
     return buildRowsFromTemplate({
       category,
       item,
-      totalCost,
+      totalCost: normalizedTotalCost,
       templateRows,
       wastePercent,
+      workType,
     });
   }
 
   const entryNames = names.length > 0 ? names : [fallbackLabel];
-  const evenRate = entryNames.length > 0 ? totalCost / entryNames.length : totalCost;
+  const evenRate = entryNames.length > 0 ? normalizedTotalCost / entryNames.length : normalizedTotalCost;
 
   return entryNames.map((name, index) => {
     const baseRow = {
@@ -314,6 +426,7 @@ export const buildRateAnalysisBreakdownFromCustomPricing = (item, customPricing,
       unit: rowUnit,
       wastePercent: normalized.wastePercent,
       templateRows: templateRows.materials,
+      workType: normalized.workType,
     }),
     labor: buildAllowanceRows({
       category: 'labor',
@@ -323,6 +436,7 @@ export const buildRateAnalysisBreakdownFromCustomPricing = (item, customPricing,
       fallbackLabel: contextualLabels.labor,
       unit: 'Allowance',
       templateRows: templateRows.labor,
+      workType: normalized.workType,
     }),
     plant: buildAllowanceRows({
       category: 'plant',
@@ -332,6 +446,7 @@ export const buildRateAnalysisBreakdownFromCustomPricing = (item, customPricing,
       fallbackLabel: contextualLabels.plant,
       unit: 'Allowance',
       templateRows: templateRows.plant,
+      workType: normalized.workType,
     }),
     transport: buildAllowanceRows({
       category: 'transport',
@@ -341,6 +456,7 @@ export const buildRateAnalysisBreakdownFromCustomPricing = (item, customPricing,
       fallbackLabel: contextualLabels.transport,
       unit: 'Allowance',
       templateRows: templateRows.transport,
+      workType: normalized.workType,
     }),
     siteAdjustment: normalized.siteAdjustmentPercent,
     overheads: normalized.overheadsPercent,
