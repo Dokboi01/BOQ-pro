@@ -12,14 +12,17 @@ import { getMaterials } from '../../db/database';
 import { buildCompanyKey, deriveCompanyName } from '../../utils/companyAccess';
 import { buildCustomPricingFromRateAnalysis, WORK_TYPE_LABELS } from '../../utils/customPricing';
 import {
+  applyBenchmarkRefreshToItem,
   buildAutoRateResult,
   buildMaterialRateIndex,
+  getItemBenchmarkRefreshInsight,
   getBenchmarkConfidenceLabel,
   getItemBenchmarkEvidence,
   getBenchmarkRegionalFactor,
   getEffectiveBenchmarkRate,
   getItemTotal,
   getItemUnitRate,
+  getProjectBenchmarkRefreshAnalytics,
   getProjectPricingAnalytics,
   isBenchmarkOutlier,
   repriceSectionsForRegion
@@ -66,6 +69,12 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const [showTeamHub, setShowTeamHub] = useState(false);
   const [presenceUsers, setPresenceUsers] = useState([]);
   const [activityLog, setActivityLog] = useState([]);
+  const [benchmarkMaterialIndex, setBenchmarkMaterialIndex] = useState(null);
+  const [benchmarkSyncState, setBenchmarkSyncState] = useState({
+    status: 'idle',
+    checkedAt: null,
+    error: '',
+  });
 
   const toast = useToast();
   const { user } = useAuth();
@@ -73,11 +82,83 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const marketRegionLabel = project?.region || 'Lagos';
   const marketRegionDisplay = marketRegionLabel.replace(/_/g, ' ');
 
+  const loadMarketBenchmarks = async ({ silent = false } = {}) => {
+    try {
+      setBenchmarkSyncState((prev) => ({
+        ...prev,
+        status: 'loading',
+        error: '',
+      }));
+
+      const dbMaterials = await getMaterials();
+      const nextMaterialIndex = buildMaterialRateIndex(dbMaterials);
+
+      setBenchmarkMaterialIndex(nextMaterialIndex);
+      setBenchmarkSyncState({
+        status: 'ready',
+        checkedAt: new Date().toISOString(),
+        error: '',
+      });
+
+      return nextMaterialIndex;
+    } catch (error) {
+      setBenchmarkSyncState({
+        status: 'error',
+        checkedAt: null,
+        error: error?.message || 'Unable to load market benchmark data.',
+      });
+
+      if (!silent) {
+        toast.error('We could not load the latest benchmark library just now.');
+      }
+
+      return null;
+    }
+  };
+
   React.useEffect(() => {
     if (project?.sections) {
       setSections(project.sections);
     }
   }, [project]);
+
+  useEffect(() => {
+    let active = true;
+
+    const hydrateBenchmarks = async () => {
+      try {
+        setBenchmarkSyncState((prev) => ({
+          ...prev,
+          status: 'loading',
+          error: '',
+        }));
+
+        const dbMaterials = await getMaterials();
+        const nextMaterialIndex = buildMaterialRateIndex(dbMaterials);
+        if (!active) return;
+
+        setBenchmarkMaterialIndex(nextMaterialIndex);
+        setBenchmarkSyncState({
+          status: 'ready',
+          checkedAt: new Date().toISOString(),
+          error: '',
+        });
+      } catch (error) {
+        if (!active) return;
+        setBenchmarkSyncState({
+          status: 'error',
+          checkedAt: null,
+          error: error?.message || 'Unable to load market benchmark data.',
+        });
+      }
+    };
+
+    hydrateBenchmarks();
+
+    return () => {
+      active = false;
+    };
+  }, [project?.id, project?.region, project?.subtype, project?.type]);
 
   useEffect(() => {
     if (!project?.id || !isCustomWorkspace || !user?.email) return;
@@ -353,7 +434,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     if (!derivedBenchmark) {
       const fallbackAutoRate = buildAutoRateResult(item, {
         structureType: project?.subtype || project?.type,
-        region: project?.region || 'Lagos'
+        region: project?.region || 'Lagos',
+        materialIndex: benchmarkMaterialIndex || []
       });
       derivedBenchmark = Number(fallbackAutoRate?.benchmark) || 0;
       matchSource = fallbackAutoRate?.matchSource || matchSource;
@@ -411,8 +493,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   };
 
   const autoRateProject = async () => {
-    const dbMaterials = await getMaterials();
-    const materialIndex = buildMaterialRateIndex(dbMaterials);
+    const materialIndex = await loadMarketBenchmarks({ silent: true }) || benchmarkMaterialIndex || [];
     let updatedCount = 0;
     let benchmarkedCount = 0;
 
@@ -455,39 +536,128 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     toast.success(`Auto-rated ${updatedCount} item${updatedCount === 1 ? '' : 's'} and benchmarked ${benchmarkedCount} item${benchmarkedCount === 1 ? '' : 's'}.`);
   };
 
-  const refreshBenchmarks = async () => {
-    const dbMaterials = await getMaterials();
-    const materialIndex = buildMaterialRateIndex(dbMaterials);
-    let refreshedCount = 0;
+  const buildBenchmarkRefreshResult = (materialIndex, { targetSectionId = null, targetItemId = null } = {}) => {
+    const region = project?.region || 'Lagos';
+    const structureType = project?.subtype || project?.type;
+    let appliedCount = 0;
+    let benchmarkRateUpdates = 0;
+    let referenceOnlyUpdates = 0;
+    let newBenchmarkLinks = 0;
+    let reviewCount = 0;
 
-    const updated = sections.map((section) => ({
-      ...section,
-      items: (section.items || []).map((item) => {
-        const autoRated = buildAutoRateResult(item, {
-          structureType: project?.subtype || project?.type,
-          region: project?.region || 'Lagos',
-          materialIndex
+    const updated = sections.map((section) => {
+      if (targetSectionId && section.id !== targetSectionId) {
+        return section;
+      }
+
+      let sectionChanged = false;
+      const nextItems = (section.items || []).map((item) => {
+        if (targetItemId && item.id !== targetItemId) {
+          return item;
+        }
+
+        const insight = getItemBenchmarkRefreshInsight(item, {
+          structureType,
+          region,
+          materialIndex,
         });
 
-        if (autoRated.benchmark <= 0) return item;
+        if (!insight?.actionable) {
+          return item;
+        }
 
-        refreshedCount += 1;
-        const nextItem = {
-          ...item,
-          benchmark: autoRated.benchmark,
-          benchmarkRegionalRates: autoRated.benchmarkRegionalRates || item.benchmarkRegionalRates || null,
-          benchmarkEvidence: autoRated.benchmarkEvidence || item.benchmarkEvidence || null,
-          breakdown: autoRated.breakdown,
-          benchmarkMatchSource: autoRated.matchSource,
-        };
-        nextItem.total = getItemTotal(nextItem, project?.region || 'Lagos');
+        if (insight.needsReviewOnly) {
+          reviewCount += 1;
+          return item;
+        }
+
+        const nextItem = applyBenchmarkRefreshToItem(item, insight, region);
+        if (nextItem === item) {
+          return item;
+        }
+
+        sectionChanged = true;
+        appliedCount += 1;
+
+        if (insight.pricingMode === 'benchmark') {
+          benchmarkRateUpdates += 1;
+        }
+        if (insight.preservesRate) {
+          referenceOnlyUpdates += 1;
+        }
+        if (insight.benchmarkNowAvailable) {
+          newBenchmarkLinks += 1;
+        }
+
         return nextItem;
-      })
-    }));
+      });
+
+      return sectionChanged ? { ...section, items: nextItems } : section;
+    });
+
+    return {
+      updated,
+      appliedCount,
+      benchmarkRateUpdates,
+      referenceOnlyUpdates,
+      newBenchmarkLinks,
+      reviewCount,
+    };
+  };
+
+  const applyBenchmarkRefresh = async ({ targetSectionId = null, targetItemId = null, scope = 'project' } = {}) => {
+    const materialIndex = await loadMarketBenchmarks();
+    if (!materialIndex) return;
+
+    const {
+      updated,
+      appliedCount,
+      benchmarkRateUpdates,
+      referenceOnlyUpdates,
+      newBenchmarkLinks,
+      reviewCount,
+    } = buildBenchmarkRefreshResult(materialIndex, { targetSectionId, targetItemId });
+
+    if (appliedCount <= 0) {
+      if (reviewCount > 0) {
+        toast.warning(`${reviewCount} item${reviewCount === 1 ? '' : 's'} still need benchmark review before we refresh anything.`);
+      } else if (scope === 'item') {
+        toast.info('This item already matches the latest market benchmark.');
+      } else if (scope === 'section') {
+        toast.info('This section is already aligned with the latest benchmark library.');
+      } else {
+        toast.info('Project benchmarks already match the latest market library.');
+      }
+      return;
+    }
 
     setSections(updated);
     onUpdate(project.id, updated, project?.region);
-    toast.success(`Refreshed benchmarks for ${refreshedCount} item${refreshedCount === 1 ? '' : 's'} using latest market data.`);
+
+    const summary = [
+      `${appliedCount} benchmark reference${appliedCount === 1 ? '' : 's'} refreshed`,
+      benchmarkRateUpdates > 0 ? `${benchmarkRateUpdates} live benchmark amount${benchmarkRateUpdates === 1 ? '' : 's'} updated` : '',
+      referenceOnlyUpdates > 0 ? `${referenceOnlyUpdates} custom/manual item${referenceOnlyUpdates === 1 ? '' : 's'} kept their saved rate` : '',
+      newBenchmarkLinks > 0 ? `${newBenchmarkLinks} item${newBenchmarkLinks === 1 ? '' : 's'} gained a fresh benchmark link` : '',
+    ].filter(Boolean).join(' · ');
+
+    toast.success(summary);
+
+    if (reviewCount > 0) {
+      toast.warning(`${reviewCount} item${reviewCount === 1 ? '' : 's'} still need benchmark review because no live market rebuild was found.`);
+    }
+  };
+
+  const refreshBenchmarks = async () => {
+    await applyBenchmarkRefresh({ scope: 'project' });
+  };
+
+  const refreshSectionBenchmarks = async (sectionId) => {
+    await applyBenchmarkRefresh({ targetSectionId: sectionId, scope: 'section' });
+  };
+
+  const refreshItemBenchmark = async (sectionId, itemId) => {
+    await applyBenchmarkRefresh({ targetSectionId: sectionId, targetItemId: itemId, scope: 'item' });
   };
 
   const toggleVO = (sectionId, itemId) => {
@@ -605,6 +775,20 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       day: 'numeric',
       month: 'short',
       year: 'numeric'
+    });
+  };
+
+  const formatBenchmarkSyncLabel = (value) => {
+    if (!value) return '';
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return '';
+
+    return parsed.toLocaleString('en-NG', {
+      day: 'numeric',
+      month: 'short',
+      hour: 'numeric',
+      minute: '2-digit'
     });
   };
 
@@ -840,6 +1024,27 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const workspaceAnalytics = React.useMemo(() => (
     getProjectPricingAnalytics({ ...project, sections })
   ), [project, sections]);
+  const benchmarkRefreshAnalytics = React.useMemo(() => {
+    if (!Array.isArray(benchmarkMaterialIndex)) {
+      return {
+        itemMap: {},
+        sectionMap: {},
+        actionableItems: 0,
+        refreshableItems: 0,
+        reviewItems: 0,
+        benchmarkRateUpdates: 0,
+        referenceOnlyUpdates: 0,
+        newBenchmarkLinks: 0,
+        highPriorityItems: 0,
+      };
+    }
+
+    return getProjectBenchmarkRefreshAnalytics({ ...project, sections }, {
+      structureType: project?.subtype || project?.type,
+      region: project?.region || 'Lagos',
+      materialIndex: benchmarkMaterialIndex,
+    });
+  }, [benchmarkMaterialIndex, project, sections]);
 
   const calculateGrandTotal = workspaceAnalytics.totalValue;
   const totalQuantity = workspaceAnalytics.totalQuantity;
@@ -848,6 +1053,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const totalColumnCount = viewMode === 'valuation' ? 9 : 8;
   const sectionHeaderSpan = viewMode === 'valuation' ? 8 : 7;
   const subtotalLeadingSpan = viewMode === 'valuation' ? 6 : 5;
+  const benchmarkSyncLabel = formatBenchmarkSyncLabel(benchmarkSyncState.checkedAt);
 
   return (
     <div className="ws-container">
@@ -926,8 +1132,12 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           <button className="ws-btn ws-btn-ghost" onClick={autoRateProject} title="Auto-Assign Rates">
             <Zap size={14} className="text-accent-500" /> Auto-Rate
           </button>
-          <button className="ws-btn ws-btn-ghost" onClick={refreshBenchmarks} title="Recalculate all benchmarks with latest material prices">
-            <RefreshCcw size={14} /> Refresh Benchmarks
+          <button
+            className="ws-btn ws-btn-ghost"
+            onClick={refreshBenchmarks}
+            title="Refresh benchmark references with the latest market prices"
+          >
+            <RefreshCcw size={14} /> {benchmarkSyncState.status === 'loading' ? 'Checking Market...' : 'Refresh Benchmarks'}
           </button>
           <button className="ws-btn ws-btn-ghost" onClick={() => toast.success('Project saved as a reusable template.')} title="Save as Template">
             <Save size={14} /> Save Template
@@ -997,6 +1207,59 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         </div>
       </div>
 
+      <div className={`ws-refresh-banner ${
+        benchmarkSyncState.status === 'error'
+          ? 'ws-refresh-banner-warning'
+          : benchmarkRefreshAnalytics.actionableItems > 0
+            ? 'ws-refresh-banner-active'
+            : 'ws-refresh-banner-calm'
+      }`}>
+        <div className="ws-refresh-banner-copy">
+          <span className="ws-refresh-banner-eyebrow">Benchmark Refresh Workflow</span>
+          {benchmarkSyncState.status === 'loading' && !benchmarkSyncLabel ? (
+            <>
+              <strong>Loading the latest market benchmark library</strong>
+              <p>We are pulling fresh benchmark references so drift alerts and refresh actions stay reliable.</p>
+            </>
+          ) : benchmarkSyncState.status === 'error' ? (
+            <>
+              <strong>Market benchmark check is unavailable right now</strong>
+              <p>{benchmarkSyncState.error || 'We could not load the latest market benchmark library.'}</p>
+            </>
+          ) : benchmarkRefreshAnalytics.actionableItems > 0 ? (
+            <>
+              <strong>{benchmarkRefreshAnalytics.actionableItems} benchmark item{benchmarkRefreshAnalytics.actionableItems === 1 ? '' : 's'} need review</strong>
+              <p>
+                {benchmarkRefreshAnalytics.benchmarkRateUpdates} live benchmark item{benchmarkRefreshAnalytics.benchmarkRateUpdates === 1 ? '' : 's'} can update amount now
+                {' · '}
+                {benchmarkRefreshAnalytics.referenceOnlyUpdates} custom/manual item{benchmarkRefreshAnalytics.referenceOnlyUpdates === 1 ? '' : 's'} will keep their current rate
+                {benchmarkRefreshAnalytics.reviewItems > 0 ? ` · ${benchmarkRefreshAnalytics.reviewItems} still need manual benchmark review` : ''}
+                {benchmarkSyncLabel ? ` · checked ${benchmarkSyncLabel}` : ''}
+              </p>
+            </>
+          ) : (
+            <>
+              <strong>Benchmark references are current</strong>
+              <p>
+                This project is aligned with the latest market benchmark library.
+                {benchmarkSyncLabel ? ` Last checked ${benchmarkSyncLabel}.` : ''}
+              </p>
+            </>
+          )}
+        </div>
+        <div className="ws-refresh-banner-actions">
+          {benchmarkSyncState.status === 'error' ? (
+            <button className="ws-btn ws-btn-ghost" onClick={() => loadMarketBenchmarks()}>
+              <RefreshCcw size={14} /> Retry market check
+            </button>
+          ) : (
+            <button className="ws-btn ws-btn-ghost" onClick={refreshBenchmarks}>
+              <RefreshCcw size={14} /> Refresh project benchmarks
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Table */}
       <div className="ws-table-wrap">
         <table className="ws-table">
@@ -1023,6 +1286,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             {filteredSections.map((section, sIdx) => {
               const sectionSubtotal = (section.items || []).reduce((a, i) => a + getItemTotal(i, project?.region || 'Lagos'), 0);
               const sectionQty = (section.items || []).reduce((a, i) => a + (Number(i.qty) || 0), 0);
+              const sectionRefreshMeta = benchmarkRefreshAnalytics.sectionMap[section.id] || null;
 
               return (
                 <React.Fragment key={section.id}>
@@ -1039,6 +1303,24 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                           onChange={(e) => updateSectionTitle(section.id, e.target.value)}
                           onClick={(e) => e.stopPropagation()}
                         />
+                        {sectionRefreshMeta?.refreshableItems > 0 && (
+                          <button
+                            className="ws-section-refresh-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              refreshSectionBenchmarks(section.id);
+                            }}
+                            title="Refresh benchmark references in this section"
+                          >
+                            <RefreshCcw size={11} />
+                            {`Refresh ${sectionRefreshMeta.refreshableItems}`}
+                          </button>
+                        )}
+                        {sectionRefreshMeta?.refreshableItems <= 0 && sectionRefreshMeta?.reviewItems > 0 && (
+                          <span className="ws-section-review-chip">
+                            Review {sectionRefreshMeta.reviewItems}
+                          </span>
+                        )}
                         <span className="ws-section-meta">QTY {sectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                         <span className="ws-section-badge">{section.items?.length || 0}</span>
                         {!section.expanded && (
@@ -1065,6 +1347,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                     const itemTotal = getItemTotal(item, project?.region || 'Lagos');
                     const rateSourceMeta = getRateSourceMeta(item);
                     const benchmarkDeltaMeta = getBenchmarkDeltaMeta(item);
+                    const benchmarkRefreshMeta = benchmarkRefreshAnalytics.itemMap[`${section.id}:${item.id}`] || null;
                     const benchmarkEvidenceMeta = getBenchmarkEvidenceMeta(item);
                     const quantityFeedbackMeta = getQuantityFeedbackMeta(item, benchmarkRate, rate);
                     const automationMeta = getAutomationMeta(item, benchmarkRate, rate);
@@ -1236,10 +1519,24 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                             {benchmarkDeltaMeta && (
                               <span className={`ws-rate-chip ws-rate-chip-${benchmarkDeltaMeta.tone}`}>{benchmarkDeltaMeta.text}</span>
                             )}
+                            {benchmarkRefreshMeta?.actionable && (
+                              <span className={`ws-rate-chip ws-rate-chip-${benchmarkRefreshMeta.tone}`}>
+                                {benchmarkRefreshMeta.chip}
+                              </span>
+                            )}
                             {hasBenchmarkRate && !item.useBenchmark && (
                               <span className="ws-rate-chip ws-rate-chip-bm-ref" title="Current market benchmark for this item">
                                 Benchmark: ₦{Math.round(benchmarkRate).toLocaleString()}
                               </span>
+                            )}
+                            {benchmarkRefreshMeta?.canApplyRefresh && (
+                              <button
+                                className="ws-rate-link ws-rate-link-strong"
+                                onClick={() => refreshItemBenchmark(section.id, item.id)}
+                                title={benchmarkRefreshMeta.actionDetail}
+                              >
+                                {benchmarkRefreshMeta.actionLabel}
+                              </button>
                             )}
                             {!item.useBenchmark && !item.customPricing && (
                               <button
@@ -1256,6 +1553,13 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                               <strong>{item.useBenchmark ? benchmarkEvidenceMeta.title : benchmarkEvidenceMeta.referenceTitle}</strong>
                               <span>{item.useBenchmark ? benchmarkEvidenceMeta.rateLabel : benchmarkEvidenceMeta.referenceRateLabel}</span>
                               {benchmarkEvidenceMeta.detail && <small>{benchmarkEvidenceMeta.detail}</small>}
+                            </div>
+                          )}
+                          {benchmarkRefreshMeta?.actionable && (
+                            <div className={`ws-benchmark-refresh ws-benchmark-refresh-${benchmarkRefreshMeta.tone}`}>
+                              <strong>{benchmarkRefreshMeta.title}</strong>
+                              <span>{benchmarkRefreshMeta.detail}</span>
+                              <small>{benchmarkRefreshMeta.actionDetail}</small>
                             </div>
                           )}
                           {/* Manual benchmark override when benchmark pricing is active */}
@@ -1502,6 +1806,20 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                                 {benchmarkDeltaMeta && (
                                   <span className={`ws-rate-chip ws-rate-chip-${benchmarkDeltaMeta.tone}`}>{benchmarkDeltaMeta.text}</span>
                                 )}
+                                {benchmarkRefreshMeta?.actionable && (
+                                  <span className={`ws-rate-chip ws-rate-chip-${benchmarkRefreshMeta.tone}`}>
+                                    {benchmarkRefreshMeta.chip}
+                                  </span>
+                                )}
+                                {benchmarkRefreshMeta?.canApplyRefresh && (
+                                  <button
+                                    className="ws-rate-link ws-rate-link-strong"
+                                    onClick={() => refreshItemBenchmark(section.id, item.id)}
+                                    title={benchmarkRefreshMeta.actionDetail}
+                                  >
+                                    {benchmarkRefreshMeta.actionLabel}
+                                  </button>
+                                )}
                                 {!item.useBenchmark && !item.customPricing && (
                                   <button
                                     className="ws-rate-link"
@@ -1517,6 +1835,13 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                                   <strong>{item.useBenchmark ? benchmarkEvidenceMeta.title : benchmarkEvidenceMeta.referenceTitle}</strong>
                                   <span>{item.useBenchmark ? benchmarkEvidenceMeta.rateLabel : benchmarkEvidenceMeta.referenceRateLabel}</span>
                                   {benchmarkEvidenceMeta.detail && <small>{benchmarkEvidenceMeta.detail}</small>}
+                                </div>
+                              )}
+                              {benchmarkRefreshMeta?.actionable && (
+                                <div className={`ws-benchmark-refresh ws-benchmark-refresh-${benchmarkRefreshMeta.tone}`}>
+                                  <strong>{benchmarkRefreshMeta.title}</strong>
+                                  <span>{benchmarkRefreshMeta.detail}</span>
+                                  <small>{benchmarkRefreshMeta.actionDetail}</small>
                                 </div>
                               )}
                               <div className={`ws-rate-note ws-rate-note-${automationMeta.tone}`}>
@@ -1773,6 +2098,55 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           color: #475569;
         }
 
+        .ws-refresh-banner {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 1rem;
+          padding: 0.9rem 1rem;
+          border-bottom: 1px solid #dbe4ee;
+          background: #f8fafc;
+        }
+        .ws-refresh-banner-active {
+          background: linear-gradient(135deg, #eff6ff, #eef2ff);
+        }
+        .ws-refresh-banner-calm {
+          background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+        }
+        .ws-refresh-banner-warning {
+          background: linear-gradient(135deg, #fff7ed, #fff1f2);
+        }
+        .ws-refresh-banner-copy {
+          display: flex;
+          flex-direction: column;
+          gap: 0.22rem;
+          min-width: 0;
+        }
+        .ws-refresh-banner-copy strong {
+          font-size: 0.88rem;
+          font-weight: 900;
+          color: #0f172a;
+        }
+        .ws-refresh-banner-copy p {
+          margin: 0;
+          font-size: 0.72rem;
+          line-height: 1.5;
+          color: #475569;
+        }
+        .ws-refresh-banner-eyebrow {
+          font-size: 0.58rem;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+        .ws-refresh-banner-actions {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          flex-shrink: 0;
+        }
+
         .ws-mobile-cell {
           padding: 0.6rem 0.75rem !important;
           background: #f8fafc;
@@ -1882,6 +2256,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           align-items: flex-start;
         }
         .ws-mobile-field-block .ws-benchmark-evidence {
+          align-items: flex-start;
+          text-align: left;
+        }
+        .ws-mobile-field-block .ws-benchmark-refresh {
           align-items: flex-start;
           text-align: left;
         }
@@ -2115,6 +2493,37 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           flex: 1; padding: 2px 4px; border-radius: 3px;
         }
         .ws-section-title-input:focus { background: white; box-shadow: 0 0 0 2px rgba(37,99,235,0.15); }
+        .ws-section-refresh-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.28rem;
+          border: 1px solid #bfdbfe;
+          background: #eff6ff;
+          color: #1d4ed8;
+          border-radius: 999px;
+          padding: 0.22rem 0.5rem;
+          font-size: 0.56rem;
+          font-weight: 900;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        .ws-section-refresh-btn:hover {
+          background: #1d4ed8;
+          color: white;
+          border-color: #1d4ed8;
+        }
+        .ws-section-review-chip {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid #fdba74;
+          background: #fff7ed;
+          color: #c2410c;
+          border-radius: 999px;
+          padding: 0.22rem 0.5rem;
+          font-size: 0.56rem;
+          font-weight: 900;
+        }
         .ws-section-badge {
           font-size: 0.5625rem; font-weight: 800;
           background: #1e293b; color: white;
@@ -2403,6 +2812,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-rate-chip-aligned { background: #f0fdf4; color: #15803d; }
         .ws-rate-chip-high { background: #fff7ed; color: #c2410c; }
         .ws-rate-chip-low { background: #eff6ff; color: #2563eb; }
+        .ws-rate-chip-down { background: #ecfdf5; color: #15803d; }
         .ws-rate-chip-muted { background: #f1f5f9; color: #64748b; }
         .ws-rate-chip-warning { background: #fff7ed; color: #c2410c; }
         .ws-benchmark-evidence {
@@ -2451,6 +2861,54 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           background: linear-gradient(180deg, #fffaf5 0%, #fff7ed 100%);
           color: #c2410c;
         }
+        .ws-benchmark-refresh {
+          margin-top: 0.26rem;
+          padding: 0.42rem 0.56rem;
+          border-radius: 10px;
+          border: 1px solid #dbe4ee;
+          background: #f8fafc;
+          display: flex;
+          flex-direction: column;
+          gap: 0.14rem;
+          align-items: flex-end;
+        }
+        .ws-benchmark-refresh strong {
+          font-size: 0.6rem;
+          font-weight: 900;
+          letter-spacing: 0.03em;
+          text-transform: uppercase;
+        }
+        .ws-benchmark-refresh span,
+        .ws-benchmark-refresh small {
+          font-size: 0.6rem;
+          line-height: 1.35;
+          color: inherit;
+        }
+        .ws-benchmark-refresh small {
+          opacity: 0.85;
+        }
+        .ws-benchmark-refresh-benchmark {
+          border-color: #bfdbfe;
+          background: linear-gradient(180deg, #f8fbff 0%, #eff6ff 100%);
+          color: #1d4ed8;
+        }
+        .ws-benchmark-refresh-aligned,
+        .ws-benchmark-refresh-down {
+          border-color: #bbf7d0;
+          background: linear-gradient(180deg, #f7fff9 0%, #ecfdf5 100%);
+          color: #15803d;
+        }
+        .ws-benchmark-refresh-high,
+        .ws-benchmark-refresh-warning {
+          border-color: #fdba74;
+          background: linear-gradient(180deg, #fffaf5 0%, #fff7ed 100%);
+          color: #c2410c;
+        }
+        .ws-benchmark-refresh-muted {
+          border-color: #dbe4ee;
+          background: #f8fafc;
+          color: #475569;
+        }
         .ws-rate-note {
           margin-top: 0.22rem;
           font-size: 0.62rem;
@@ -2487,6 +2945,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
         .ws-rate-link:hover {
           background: #0f766e;
+          color: white;
+        }
+        .ws-rate-link-strong {
+          background: #eff6ff;
+          color: #1d4ed8;
+        }
+        .ws-rate-link-strong:hover {
+          background: #1d4ed8;
           color: white;
         }
 
@@ -2565,6 +3031,18 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           .ws-container {
             height: auto;
             min-height: calc(100vh - 56px);
+          }
+          .ws-refresh-banner {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 0.85rem 0.75rem;
+          }
+          .ws-refresh-banner-actions {
+            width: 100%;
+          }
+          .ws-refresh-banner-actions .ws-btn {
+            width: 100%;
+            justify-content: center;
           }
           .ws-toolbar {
             flex-wrap: wrap;
@@ -2653,6 +3131,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           }
           .ws-section-inner {
             flex-wrap: wrap;
+          }
+          .ws-section-refresh-btn {
+            order: 3;
           }
           .ws-section-total {
             width: 100%;
