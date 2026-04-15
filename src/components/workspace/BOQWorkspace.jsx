@@ -1141,8 +1141,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         { key: 'actions', letter: 'H', label: 'Actions' },
       ];
   const spreadsheetColumnTemplate = viewMode === 'valuation'
-    ? '88px minmax(360px, 2.2fr) 92px 150px 110px 104px 220px 170px 74px'
-    : '88px minmax(360px, 2.2fr) 92px 150px 150px 220px 170px 74px';
+    ? '78px minmax(620px, 5.4fr) 88px 156px 104px 104px 190px 168px 74px'
+    : '78px minmax(680px, 6fr) 88px 156px 156px 190px 168px 74px';
 
   const selectWorkspaceCell = ({ sectionId, itemId, columnKey, itemCode, rowNumber }) => {
     setSelectedCell({
@@ -1164,9 +1164,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     if (!selectedCell) {
       return {
         address: '-',
-        columnLabel: 'Spreadsheet Workspace',
-        value: 'Select any cell in the BOQ grid to inspect its value, pricing basis, and amount logic.',
-        detail: 'Excel-style context bar',
+        columnLabel: 'BOQ Workspace',
+        value: 'Select any BOQ row to inspect its quantity, pricing basis, and amount logic.',
+        detail: 'Live row context',
       };
     }
 
@@ -1177,9 +1177,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     if (!activeItem || !activeColumn) {
       return {
         address: '-',
-        columnLabel: 'Spreadsheet Workspace',
+        columnLabel: 'BOQ Workspace',
         value: 'The selected cell is no longer available in this filtered view.',
-        detail: 'Selection cleared after data change',
+        detail: 'Selection refreshed after a data change',
       };
     }
 
@@ -1271,7 +1271,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       address,
       columnLabel: `${activeColumn.label}${lineReference}`,
       value: selectedCell.itemCode || 'Selected row',
-      detail: 'Spreadsheet row control cell',
+      detail: 'Row control cell',
     };
   })();
   const selectedItemContext = (() => {
@@ -1557,7 +1557,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         </div>
       </div>
 
-      <div className="ws-sheet-tools">
+      <div className={`ws-sheet-tools ${selectedItemContext ? 'has-selection' : 'is-idle'}`}>
         <div className="ws-formula-bar">
           <div className="ws-formula-address">{formulaBarMeta.address}</div>
           <div className="ws-formula-fx">fx</div>
@@ -1567,7 +1567,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             <small>{formulaBarMeta.detail}</small>
           </div>
         </div>
-        <div className="ws-helper-strip">
+        <div className={`ws-helper-strip ${selectedItemContext ? 'is-selected' : 'is-idle'}`}>
           {selectedItemContext ? (
             <>
               <div className="ws-helper-copy">
@@ -1626,8 +1626,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             <>
               <div className="ws-helper-copy">
                 <span className="ws-helper-label">Workspace Flow</span>
-                <strong>Click any row to unlock quick actions and spreadsheet context.</strong>
-                <small>Use search, quantity entry, custom pricing, and benchmark refresh without leaving the sheet.</small>
+                <strong>Select any row to unlock quick actions and pricing context.</strong>
+                <small>Use search, quantity entry, custom pricing, and benchmark refresh directly inside the sheet.</small>
               </div>
               <div className="ws-helper-actions">
                 <span className="ws-helper-chip ws-helper-chip-muted">{sections.length} sections ready</span>
@@ -1788,8 +1788,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                         >
                           <div className="ws-desc-inner">
                             {item.isVO && <span className="ws-vo">VO</span>}
-                            <input
-                              type="text"
+                            <textarea
+                              rows={3}
                               className="ws-input ws-desc-input"
                               value={item.description}
                               onChange={(e) => updateItem(section.id, item.id, 'description', e.target.value)}
@@ -2113,8 +2113,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                             <div className="ws-mobile-field-block ws-mobile-field-block-full">
                               <label>Description</label>
                               <div className="ws-desc-inner">
-                                <input
-                                  type="text"
+                                <textarea
+                                  rows={3}
                                   className="ws-input ws-desc-input"
                                   value={item.description}
                                   onChange={(e) => updateItem(section.id, item.id, 'description', e.target.value)}
@@ -2455,7 +2455,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
       <style jsx="true">{`
         /* ═══════════════════════════════════════════ */
-        /*  BOQ WORKSPACE — FULL-PAGE SPREADSHEET     */
+        /*  BOQ WORKSPACE — FULL-PAGE SHEET           */
         /* ═══════════════════════════════════════════ */
 
         .ws-container {
@@ -2515,8 +2515,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-insight-strip {
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 0.85rem;
-          padding: 0.85rem;
+          gap: 0.55rem;
+          padding: 0.45rem 0.75rem 0.5rem;
           background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
           border-bottom: 1px solid #dbe4ee;
         }
@@ -2524,12 +2524,12 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-insight-card {
           display: flex;
           flex-direction: column;
-          gap: 0.28rem;
-          padding: 0.95rem 1rem;
-          border-radius: 18px;
+          gap: 0.16rem;
+          padding: 0.62rem 0.72rem;
+          border-radius: 16px;
           background: rgba(255, 255, 255, 0.92);
           border: 1px solid #dbe4ee;
-          box-shadow: 0 18px 28px rgba(15, 23, 42, 0.06);
+          box-shadow: 0 10px 20px rgba(15, 23, 42, 0.05);
         }
 
         .ws-insight-card-strong {
@@ -2538,7 +2538,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
 
         .ws-insight-label {
-          font-size: 0.62rem;
+          font-size: 0.54rem;
           font-weight: 900;
           letter-spacing: 0.08em;
           text-transform: uppercase;
@@ -2546,24 +2546,28 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
 
         .ws-insight-value {
-          font-size: 1rem;
+          font-size: 0.82rem;
           font-weight: 900;
           color: #0f172a;
         }
 
         .ws-insight-copy {
           margin: 0;
-          font-size: 0.72rem;
-          line-height: 1.45;
+          font-size: 0.63rem;
+          line-height: 1.38;
           color: #475569;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
 
         .ws-refresh-banner {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 1rem;
-          padding: 0.9rem 1rem;
+          gap: 0.75rem;
+          padding: 0.55rem 0.75rem;
           border-bottom: 1px solid #dbe4ee;
           background: #f8fafc;
         }
@@ -2579,22 +2583,26 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-refresh-banner-copy {
           display: flex;
           flex-direction: column;
-          gap: 0.22rem;
+          gap: 0.14rem;
           min-width: 0;
         }
         .ws-refresh-banner-copy strong {
-          font-size: 0.88rem;
+          font-size: 0.76rem;
           font-weight: 900;
           color: #0f172a;
         }
         .ws-refresh-banner-copy p {
           margin: 0;
-          font-size: 0.72rem;
-          line-height: 1.5;
+          font-size: 0.64rem;
+          line-height: 1.35;
           color: #475569;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
         .ws-refresh-banner-eyebrow {
-          font-size: 0.58rem;
+          font-size: 0.52rem;
           font-weight: 900;
           letter-spacing: 0.08em;
           text-transform: uppercase;
@@ -2610,8 +2618,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-workbook-top {
           display: flex;
           flex-direction: column;
-          gap: 0.7rem;
-          padding: 1rem 1rem 0.85rem;
+          gap: 0.45rem;
+          padding: 0.75rem 0.75rem 0.55rem;
           background: linear-gradient(180deg, #f8fbff 0%, #eef2ff 100%);
           border-bottom: 1px solid #dbe4ee;
         }
@@ -2624,11 +2632,11 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-workbook-copy {
           display: flex;
           flex-direction: column;
-          gap: 0.3rem;
+          gap: 0.22rem;
           min-width: 0;
         }
         .ws-workbook-eyebrow {
-          font-size: 0.62rem;
+          font-size: 0.56rem;
           font-weight: 900;
           letter-spacing: 0.08em;
           text-transform: uppercase;
@@ -2642,24 +2650,24 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
         .ws-workbook-title-row h1 {
           margin: 0;
-          font-size: 1.45rem;
+          font-size: 1.25rem;
           line-height: 1.1;
           font-weight: 900;
           color: #0f172a;
         }
         .ws-workbook-copy p {
           margin: 0;
-          font-size: 0.78rem;
-          line-height: 1.5;
+          font-size: 0.7rem;
+          line-height: 1.35;
           color: #475569;
         }
         .ws-workbook-health {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 0.26rem 0.7rem;
+          padding: 0.18rem 0.6rem;
           border-radius: 999px;
-          font-size: 0.62rem;
+          font-size: 0.56rem;
           font-weight: 900;
           letter-spacing: 0.03em;
           white-space: nowrap;
@@ -2698,28 +2706,28 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-workbook-metrics {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 0.65rem;
-          min-width: 380px;
+          gap: 0.45rem;
+          min-width: 340px;
         }
         .ws-workbook-metric {
           display: flex;
           flex-direction: column;
           gap: 0.16rem;
-          padding: 0.8rem 0.9rem;
-          border-radius: 16px;
+          padding: 0.58rem 0.68rem;
+          border-radius: 14px;
           background: rgba(255,255,255,0.92);
           border: 1px solid #dbe4ee;
-          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
+          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
         }
         .ws-workbook-metric span {
-          font-size: 0.58rem;
+          font-size: 0.52rem;
           font-weight: 900;
           letter-spacing: 0.08em;
           text-transform: uppercase;
           color: #64748b;
         }
         .ws-workbook-metric strong {
-          font-size: 0.98rem;
+          font-size: 0.84rem;
           font-weight: 900;
           color: #0f172a;
         }
@@ -2727,8 +2735,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 0.75rem;
-          padding: 0.3rem 0.35rem 0;
+          gap: 0.55rem;
+          padding: 0.22rem 0.2rem 0;
           border-top: 1px solid rgba(148, 163, 184, 0.24);
         }
         .ws-sheet-tabbar-meta {
@@ -2742,12 +2750,12 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 0.55rem 0.95rem;
+          padding: 0.46rem 0.86rem;
           border: 1px solid #dbe4ee;
           border-radius: 14px 14px 0 0;
           background: rgba(255,255,255,0.72);
           color: #475569;
-          font-size: 0.74rem;
+          font-size: 0.68rem;
           font-weight: 900;
           cursor: pointer;
           transition: all 0.15s ease;
@@ -2766,11 +2774,11 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 0.24rem 0.55rem;
+          padding: 0.18rem 0.48rem;
           border-radius: 999px;
           background: rgba(255,255,255,0.82);
           border: 1px solid #dbe4ee;
-          font-size: 0.58rem;
+          font-size: 0.52rem;
           font-weight: 900;
           letter-spacing: 0.04em;
           color: #475569;
@@ -2778,13 +2786,16 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
 
         .ws-sheet-tools {
-          padding: 0.45rem 0.75rem 0;
+          padding: 0.35rem 0.75rem 0;
           background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
           border-bottom: 1px solid #e2e8f0;
         }
+        .ws-sheet-tools.is-idle {
+          padding-bottom: 0.1rem;
+        }
         .ws-formula-bar {
           display: grid;
-          grid-template-columns: 88px 34px minmax(0, 1fr);
+          grid-template-columns: 76px 30px minmax(0, 1fr);
           align-items: stretch;
           border: 1px solid #dbe4ee;
           border-radius: 12px 12px 0 0;
@@ -2797,7 +2808,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 0.7rem;
+          font-size: 0.64rem;
           font-weight: 900;
           letter-spacing: 0.05em;
           color: #334155;
@@ -2812,18 +2823,18 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           display: flex;
           flex-direction: column;
           gap: 0.12rem;
-          padding: 0.5rem 0.7rem;
+          padding: 0.42rem 0.6rem;
           min-width: 0;
         }
         .ws-formula-body strong {
-          font-size: 0.62rem;
+          font-size: 0.56rem;
           font-weight: 900;
           text-transform: uppercase;
           letter-spacing: 0.08em;
           color: #64748b;
         }
         .ws-formula-body span {
-          font-size: 0.82rem;
+          font-size: 0.74rem;
           font-weight: 700;
           color: #0f172a;
           white-space: nowrap;
@@ -2831,32 +2842,35 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           text-overflow: ellipsis;
         }
         .ws-formula-body small {
-          font-size: 0.62rem;
+          font-size: 0.56rem;
           line-height: 1.35;
           color: #64748b;
         }
         .ws-helper-strip {
           display: flex;
-          align-items: flex-start;
+          align-items: center;
           justify-content: space-between;
-          gap: 0.85rem;
-          padding: 0.65rem 0.1rem 0.75rem;
+          gap: 0.6rem;
+          padding: 0.42rem 0.05rem 0.5rem;
+        }
+        .ws-helper-strip.is-idle {
+          align-items: center;
         }
         .ws-helper-copy {
           display: flex;
           flex-direction: column;
-          gap: 0.16rem;
+          gap: 0.12rem;
           min-width: 0;
         }
         .ws-helper-label {
-          font-size: 0.58rem;
+          font-size: 0.52rem;
           font-weight: 900;
           letter-spacing: 0.08em;
           text-transform: uppercase;
           color: #64748b;
         }
         .ws-helper-copy strong {
-          font-size: 0.85rem;
+          font-size: 0.74rem;
           font-weight: 900;
           color: #0f172a;
           white-space: nowrap;
@@ -2864,24 +2878,27 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           text-overflow: ellipsis;
         }
         .ws-helper-copy small {
-          font-size: 0.68rem;
+          font-size: 0.61rem;
           line-height: 1.45;
           color: #475569;
+        }
+        .ws-helper-strip.is-idle .ws-helper-copy small {
+          display: none;
         }
         .ws-helper-actions {
           display: flex;
           align-items: center;
           justify-content: flex-end;
-          gap: 0.45rem;
+          gap: 0.36rem;
           flex-wrap: wrap;
         }
         .ws-helper-chip {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 0.2rem 0.5rem;
+          padding: 0.18rem 0.46rem;
           border-radius: 999px;
-          font-size: 0.56rem;
+          font-size: 0.5rem;
           font-weight: 900;
           letter-spacing: 0.04em;
           white-space: nowrap;
@@ -2897,12 +2914,12 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           align-items: center;
           justify-content: center;
           gap: 0.35rem;
-          padding: 0.5rem 0.72rem;
+          padding: 0.42rem 0.62rem;
           border-radius: 10px;
           border: 1px solid #dbe4ee;
           background: white;
           color: #334155;
-          font-size: 0.66rem;
+          font-size: 0.61rem;
           font-weight: 900;
           cursor: pointer;
           transition: all 0.15s ease;
@@ -3279,7 +3296,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           font-size: 0.8125rem;
           background: white;
           table-layout: fixed;
-          min-width: 1320px;
+          min-width: 1480px;
         }
 
         .ws-table thead { position: sticky; top: 40px; z-index: 10; }
@@ -3300,13 +3317,13 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-table td:last-child { border-right: none; }
 
         .ws-th-num { width: 56px; text-align: center; }
-        .ws-th-desc { /* auto width — takes remaining space */ }
+        .ws-th-desc { width: 44%; }
         .ws-th-unit { width: 60px; text-align: center; }
-        .ws-th-qty { width: 146px; text-align: center; }
+        .ws-th-qty { width: 152px; text-align: center; }
         .ws-th-sm { width: 80px; text-align: center; }
-        .ws-th-strategy { width: 150px; text-align: center; }
-        .ws-th-rate { width: 180px; text-align: right; }
-        .ws-th-total { width: 140px; text-align: right; }
+        .ws-th-strategy { width: 154px; text-align: center; }
+        .ws-th-rate { width: 170px; text-align: right; }
+        .ws-th-total { width: 148px; text-align: right; }
         .ws-th-act { width: 64px; }
 
         /* ── SECTION ROW ── */
@@ -3468,10 +3485,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           color: #334155;
         }
 
-        .ws-desc-inner { display: flex; align-items: center; gap: 0.375rem; }
+        .ws-desc-inner { display: flex; align-items: flex-start; gap: 0.375rem; }
         .ws-item-meta-row {
           display: grid;
-          grid-template-columns: 160px 1fr;
+          grid-template-columns: 180px minmax(0, 1fr);
           gap: 0.375rem;
           margin-top: 0.2rem;
         }
@@ -3521,7 +3538,13 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-input:hover { border-color: #cbd5e1; }
         .ws-input:focus { background: white; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,0.08); }
 
-        .ws-desc-input { font-weight: 600; }
+        .ws-desc-input {
+          min-height: 4.6rem;
+          font-weight: 600;
+          line-height: 1.45;
+          resize: vertical;
+          white-space: pre-wrap;
+        }
         .ws-meta-input {
           border-color: #e2e8f0;
           background: #f8fafc;
@@ -3952,7 +3975,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             min-height: calc(100vh - 56px);
           }
           .ws-workbook-top {
-            padding: 0.85rem 0.75rem 0.75rem;
+            padding: 0.75rem 0.7rem 0.65rem;
           }
           .ws-workbook-head {
             flex-direction: column;
@@ -3971,7 +3994,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           .ws-helper-strip {
             flex-direction: column;
             align-items: stretch;
-            padding: 0.6rem 0 0.7rem;
+            padding: 0.5rem 0 0.6rem;
           }
           .ws-helper-actions {
             justify-content: flex-start;
@@ -3992,7 +4015,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             border-radius: 12px;
           }
           .ws-sheet-tools {
-            padding: 0.4rem 0.6rem 0;
+            padding: 0.35rem 0.6rem 0;
           }
           .ws-formula-bar {
             grid-template-columns: 68px 30px minmax(0, 1fr);
@@ -4001,7 +4024,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           .ws-refresh-banner {
             flex-direction: column;
             align-items: stretch;
-            padding: 0.85rem 0.75rem;
+            padding: 0.7rem 0.75rem;
           }
           .ws-refresh-banner-actions {
             width: 100%;
@@ -4053,9 +4076,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           .ws-insight-strip {
             display: grid;
             grid-auto-flow: column;
-            grid-auto-columns: minmax(220px, 1fr);
+            grid-auto-columns: minmax(190px, 1fr);
             overflow-x: auto;
-            padding-bottom: 0.95rem;
+            padding-bottom: 0.65rem;
             scrollbar-width: none;
           }
           .ws-insight-strip::-webkit-scrollbar { display: none; }
