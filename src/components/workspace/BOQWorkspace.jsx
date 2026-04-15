@@ -51,7 +51,8 @@ import {
   Save,
   SlidersHorizontal,
   RefreshCcw,
-  Pencil
+  Pencil,
+  X
 } from 'lucide-react';
 
 const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, onAddSection, onExport, onDelete }) => {
@@ -728,6 +729,40 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     onUpdate(project.id, updated);
   };
 
+  const addItemBelow = (sectionId, itemId) => {
+    const updated = sections.map((section) => {
+      if (section.id !== sectionId) return section;
+
+      const index = (section.items || []).findIndex((itm) => itm.id === itemId);
+      if (index < 0) return section;
+
+      const sourceItem = section.items[index];
+      const nextItem = {
+        id: Date.now() + Math.random(),
+        description: '',
+        unit: sourceItem?.unit || 'm²',
+        qty: 0,
+        rate: 0,
+        total: 0,
+        subcategory: sourceItem?.subcategory || 'Custom Item',
+        materials: [],
+        benchmark: 0,
+        useBenchmark: false,
+        rateSource: 'manual',
+        qtySource: 'manual',
+        customPricing: null,
+        breakdown: null,
+      };
+
+      const nextItems = [...(section.items || [])];
+      nextItems.splice(index + 1, 0, nextItem);
+      return { ...section, items: nextItems };
+    });
+
+    setSections(updated);
+    onUpdate(project.id, updated);
+  };
+
   const isOutlier = (rate, benchmark) => {
     return isBenchmarkOutlier(rate, benchmark);
   };
@@ -1067,6 +1102,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const sectionHeaderSpan = viewMode === 'valuation' ? 8 : 7;
   const subtotalLeadingSpan = viewMode === 'valuation' ? 6 : 5;
   const benchmarkSyncLabel = formatBenchmarkSyncLabel(benchmarkSyncState.checkedAt);
+  const filteredItemCount = filteredSections.reduce((sum, section) => sum + ((section.items || []).length), 0);
   const activeSheetLabel = viewMode === 'valuation' ? 'Valuation Sheet' : 'Estimate Sheet';
   const workbookSubtitle = [project?.type, project?.subtype].filter(Boolean).filter(Boolean).join(' / ') || 'Construction pricing workbook';
   const benchmarkWorkspaceHealth = benchmarkSyncState.status === 'error'
@@ -1238,6 +1274,29 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       detail: 'Spreadsheet row control cell',
     };
   })();
+  const selectedItemContext = (() => {
+    if (!selectedCell) return null;
+
+    const section = (sections || []).find((entry) => entry.id === selectedCell.sectionId);
+    const item = (section?.items || []).find((entry) => entry.id === selectedCell.itemId);
+    if (!section || !item) return null;
+
+    const benchmarkRate = getEffectiveBenchmarkRate(item, project?.region || 'Lagos');
+    const unitRate = getItemUnitRate(item, project?.region || 'Lagos');
+    const total = getItemTotal(item, project?.region || 'Lagos');
+
+    return {
+      section,
+      item,
+      itemCode: selectedCell.itemCode,
+      benchmarkRate,
+      unitRate,
+      total,
+      quantity: sanitizeNonNegativeNumber(item.qty),
+      statusMeta: getItemStatusMeta(item, benchmarkRate, unitRate),
+      rateSourceMeta: getRateSourceMeta(item),
+    };
+  })();
   let spreadsheetRowCounter = 1;
 
   return (
@@ -1300,7 +1359,21 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+            {searchQuery?.trim() && (
+              <button
+                className="ws-search-clear"
+                onClick={() => setSearchQuery('')}
+                title="Clear search"
+              >
+                <X size={12} />
+              </button>
+            )}
           </div>
+          <span className="ws-search-results">
+            {searchQuery?.trim()
+              ? `${filteredItemCount} result${filteredItemCount === 1 ? '' : 's'}`
+              : `${totalItems} live item${totalItems === 1 ? '' : 's'}`}
+          </span>
         </div>
         <div className="ws-toolbar-center">
           <div className="ws-stat"><span className="ws-stat-label">Region</span>
@@ -1494,6 +1567,83 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             <small>{formulaBarMeta.detail}</small>
           </div>
         </div>
+        <div className="ws-helper-strip">
+          {selectedItemContext ? (
+            <>
+              <div className="ws-helper-copy">
+                <span className="ws-helper-label">Selected Row</span>
+                <strong>{selectedItemContext.itemCode} · {selectedItemContext.item.description || 'Untitled BOQ item'}</strong>
+                <small>
+                  {selectedItemContext.section.title} | Qty {selectedItemContext.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} | Rate N{selectedItemContext.unitRate.toLocaleString()} | Amount N{selectedItemContext.total.toLocaleString()}
+                </small>
+              </div>
+              <div className="ws-helper-actions">
+                <span className={`ws-helper-chip ws-helper-chip-${selectedItemContext.statusMeta.tone}`}>{selectedItemContext.statusMeta.label}</span>
+                <span className={`ws-helper-chip ws-helper-chip-${selectedItemContext.rateSourceMeta.tone}`}>{selectedItemContext.rateSourceMeta.label}</span>
+                <button
+                  className="ws-helper-btn"
+                  onClick={() => setCalculatingQtyForItem({ sectionId: selectedItemContext.section.id, item: selectedItemContext.item })}
+                >
+                  <Calculator size={12} /> Takeoff
+                </button>
+                {!selectedItemContext.item.useBenchmark && (
+                  <button
+                    className="ws-helper-btn"
+                    onClick={() => openCustomPricingStudio(selectedItemContext.section.id, selectedItemContext.item)}
+                  >
+                    <SlidersHorizontal size={12} /> Pricing Studio
+                  </button>
+                )}
+                <button
+                  className="ws-helper-btn"
+                  onClick={() => openDetailedAnalysis(selectedItemContext.section.id, selectedItemContext.item)}
+                >
+                  <Pencil size={12} /> Detailed Analysis
+                </button>
+                <button
+                  className="ws-helper-btn"
+                  onClick={() => addItemBelow(selectedItemContext.section.id, selectedItemContext.item.id)}
+                >
+                  <Plus size={12} /> Add Line Below
+                </button>
+                <button
+                  className="ws-helper-btn"
+                  onClick={() => duplicateItem(selectedItemContext.section.id, selectedItemContext.item.id)}
+                >
+                  <Copy size={12} /> Duplicate
+                </button>
+                {benchmarkRefreshAnalytics.itemMap[`${selectedItemContext.section.id}:${selectedItemContext.item.id}`]?.canApplyRefresh && (
+                  <button
+                    className="ws-helper-btn ws-helper-btn-strong"
+                    onClick={() => refreshItemBenchmark(selectedItemContext.section.id, selectedItemContext.item.id)}
+                  >
+                    <RefreshCcw size={12} /> Refresh Benchmark
+                  </button>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="ws-helper-copy">
+                <span className="ws-helper-label">Workspace Flow</span>
+                <strong>Click any row to unlock quick actions and spreadsheet context.</strong>
+                <small>Use search, quantity entry, custom pricing, and benchmark refresh without leaving the sheet.</small>
+              </div>
+              <div className="ws-helper-actions">
+                <span className="ws-helper-chip ws-helper-chip-muted">{sections.length} sections ready</span>
+                <button className="ws-helper-btn" onClick={onAddSection}>
+                  <Plus size={12} /> Add Section
+                </button>
+                <button className="ws-helper-btn" onClick={autoRateProject}>
+                  <Zap size={12} /> Auto-Rate Project
+                </button>
+                <button className="ws-helper-btn ws-helper-btn-strong" onClick={refreshBenchmarks}>
+                  <RefreshCcw size={12} /> Refresh Benchmarks
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Table */}
@@ -1624,7 +1774,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                             </td>
                           </tr>
                         )}
-                        <tr className={`ws-item-row ${outlier ? 'ws-outlier' : ''} ${item.useBenchmark ? 'ws-item-row-benchmark' : 'ws-item-row-custom'} ${isIncomplete ? 'ws-item-incomplete' : ''}`}>
+                        <tr className={`ws-item-row ${outlier ? 'ws-outlier' : ''} ${item.useBenchmark ? 'ws-item-row-benchmark' : 'ws-item-row-custom'} ${isIncomplete ? 'ws-item-incomplete' : ''} ${selectedCell?.sectionId === section.id && selectedCell?.itemId === item.id ? 'ws-item-row-selected' : ''}`}>
                         <td
                           className={`ws-num ${isWorkspaceCellSelected(section.id, item.id, 'line') ? 'ws-cell-selected' : ''}`}
                           onClick={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'line', itemCode, rowNumber: spreadsheetRowNumber })}
@@ -2530,6 +2680,21 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           background: #e2e8f0;
           color: #475569;
         }
+        .ws-search-results {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.24rem 0.55rem;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.12);
+          color: rgba(255,255,255,0.76);
+          font-size: 0.58rem;
+          font-weight: 900;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          white-space: nowrap;
+        }
         .ws-workbook-metrics {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2669,6 +2834,91 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           font-size: 0.62rem;
           line-height: 1.35;
           color: #64748b;
+        }
+        .ws-helper-strip {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 0.85rem;
+          padding: 0.65rem 0.1rem 0.75rem;
+        }
+        .ws-helper-copy {
+          display: flex;
+          flex-direction: column;
+          gap: 0.16rem;
+          min-width: 0;
+        }
+        .ws-helper-label {
+          font-size: 0.58rem;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+        .ws-helper-copy strong {
+          font-size: 0.85rem;
+          font-weight: 900;
+          color: #0f172a;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .ws-helper-copy small {
+          font-size: 0.68rem;
+          line-height: 1.45;
+          color: #475569;
+        }
+        .ws-helper-actions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 0.45rem;
+          flex-wrap: wrap;
+        }
+        .ws-helper-chip {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.2rem 0.5rem;
+          border-radius: 999px;
+          font-size: 0.56rem;
+          font-weight: 900;
+          letter-spacing: 0.04em;
+          white-space: nowrap;
+        }
+        .ws-helper-chip-benchmark { background: #dbeafe; color: #1d4ed8; }
+        .ws-helper-chip-custom { background: #ccfbf1; color: #0f766e; }
+        .ws-helper-chip-calculated { background: #ede9fe; color: #6d28d9; }
+        .ws-helper-chip-manual { background: #e2e8f0; color: #475569; }
+        .ws-helper-chip-warning { background: #ffedd5; color: #c2410c; }
+        .ws-helper-chip-muted { background: #f1f5f9; color: #64748b; }
+        .ws-helper-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.35rem;
+          padding: 0.5rem 0.72rem;
+          border-radius: 10px;
+          border: 1px solid #dbe4ee;
+          background: white;
+          color: #334155;
+          font-size: 0.66rem;
+          font-weight: 900;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          white-space: nowrap;
+        }
+        .ws-helper-btn:hover {
+          border-color: #cbd5e1;
+          background: #f8fafc;
+        }
+        .ws-helper-btn-strong {
+          background: #eff6ff;
+          border-color: #bfdbfe;
+          color: #1d4ed8;
+        }
+        .ws-helper-btn-strong:hover {
+          background: #dbeafe;
         }
 
         .ws-mobile-cell {
@@ -2901,6 +3151,23 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           width: 100%;
         }
         .ws-search input::placeholder { color: rgba(255,255,255,0.4); }
+        .ws-search-clear {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 18px;
+          height: 18px;
+          border: none;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.12);
+          color: rgba(255,255,255,0.8);
+          cursor: pointer;
+          flex-shrink: 0;
+        }
+        .ws-search-clear:hover {
+          background: rgba(255,255,255,0.18);
+          color: white;
+        }
 
         .ws-mode-switch { display: flex; background: rgba(255,255,255,0.06); border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
         .ws-mode-btn {
@@ -3158,6 +3425,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           transition: background 0.15s, box-shadow 0.15s;
         }
         .ws-item-row:hover { background: #f8fafc; }
+        .ws-item-row-selected {
+          background: #f8fbff !important;
+        }
         .ws-item-row td {
           padding: 0.375rem 0.625rem;
           vertical-align: middle;
@@ -3319,7 +3589,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           transition: all 0.15s; opacity: 0;
         }
         .ws-item-row:hover .ws-geo-btn,
-        .ws-item-row:hover .ws-analysis-btn { opacity: 1; }
+        .ws-item-row:hover .ws-analysis-btn,
+        .ws-item-row-selected .ws-geo-btn,
+        .ws-item-row-selected .ws-analysis-btn { opacity: 1; }
         .ws-geo-btn:hover, .ws-analysis-btn:hover { background: #2563eb; color: white; }
         .ws-custom-studio-btn { background: #ecfeff; color: #0f766e; }
         .ws-custom-studio-btn:hover { background: #0f766e !important; color: white !important; }
@@ -3627,7 +3899,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           transition: all 0.15s; opacity: 0;
         }
         .ws-item-row:hover .ws-btn-icon,
-        .ws-section-row:hover .ws-btn-icon { opacity: 1; }
+        .ws-section-row:hover .ws-btn-icon,
+        .ws-item-row-selected .ws-btn-icon { opacity: 1; }
         .ws-btn-danger:hover { background: #fef2f2; color: #ef4444; }
         .ws-bid-active { opacity: 1 !important; color: #2563eb; }
         .ws-vo-active { opacity: 1 !important; color: #f59e0b; }
@@ -3694,6 +3967,18 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           }
           .ws-workbook-metric:last-child {
             grid-column: 1 / -1;
+          }
+          .ws-helper-strip {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 0.6rem 0 0.7rem;
+          }
+          .ws-helper-actions {
+            justify-content: flex-start;
+          }
+          .ws-search-results {
+            width: 100%;
+            justify-content: center;
           }
           .ws-sheet-tabbar {
             flex-direction: column;
