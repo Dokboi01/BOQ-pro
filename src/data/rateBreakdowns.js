@@ -1077,7 +1077,7 @@ export const getBreakdownForItem = (description, structureType) => {
 
     const desc = (description || '').toLowerCase();
     const normalizedDescription = normalizeLookupText(desc);
-    const descriptionTokens = tokenizeLookupText(normalizedDescription);
+    const descriptionTokens = new Set(tokenizeLookupText(normalizedDescription));
 
     // 1. Keyword match (most specific) → confidence: 'keyword'
     for (const breakdown of BREAKDOWNS) {
