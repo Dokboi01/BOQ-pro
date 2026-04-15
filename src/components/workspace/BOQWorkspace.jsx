@@ -41,7 +41,6 @@ import {
   ChevronDown,
   ChevronRight,
   Calculator,
-  ShieldCheck,
   AlertCircle,
   Zap,
   Gavel,
@@ -1068,6 +1067,21 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const sectionHeaderSpan = viewMode === 'valuation' ? 8 : 7;
   const subtotalLeadingSpan = viewMode === 'valuation' ? 6 : 5;
   const benchmarkSyncLabel = formatBenchmarkSyncLabel(benchmarkSyncState.checkedAt);
+  const activeSheetLabel = viewMode === 'valuation' ? 'Valuation Sheet' : 'Estimate Sheet';
+  const workbookSubtitle = [project?.type, project?.subtype].filter(Boolean).filter(Boolean).join(' / ') || 'Construction pricing workbook';
+  const benchmarkWorkspaceHealth = benchmarkSyncState.status === 'error'
+    ? { label: 'Benchmark library offline', tone: 'warning' }
+    : benchmarkSyncState.status === 'loading'
+      ? { label: 'Checking benchmark market data', tone: 'muted' }
+      : benchmarkRefreshAnalytics.actionableItems > 0
+        ? {
+            label: `${benchmarkRefreshAnalytics.actionableItems} item${benchmarkRefreshAnalytics.actionableItems === 1 ? '' : 's'} need market refresh`,
+            tone: 'active'
+          }
+        : {
+            label: benchmarkSyncLabel ? `Benchmark synced ${benchmarkSyncLabel}` : 'Benchmark library current',
+            tone: 'success'
+          };
   const spreadsheetColumns = viewMode === 'valuation'
     ? [
         { key: 'line', letter: 'A', label: 'Item No' },
@@ -1228,6 +1242,53 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
   return (
     <div className="ws-container">
+      <div className="ws-workbook-top">
+        <div className="ws-workbook-head">
+          <div className="ws-workbook-copy">
+            <span className="ws-workbook-eyebrow">BOQ-Pro Workbook</span>
+            <div className="ws-workbook-title-row">
+              <h1>{project?.name || 'Untitled Project'}</h1>
+              <span className={`ws-workbook-health ws-workbook-health-${benchmarkWorkspaceHealth.tone}`}>
+                {benchmarkWorkspaceHealth.label}
+              </span>
+            </div>
+            <p>{workbookSubtitle} | {marketRegionDisplay} market benchmark | {activeSheetLabel}</p>
+          </div>
+          <div className="ws-workbook-metrics">
+            <div className="ws-workbook-metric">
+              <span>Estimated Cost</span>
+              <strong>N{calculateGrandTotal.toLocaleString()}</strong>
+            </div>
+            <div className="ws-workbook-metric">
+              <span>Pricing Coverage</span>
+              <strong>{workspaceAnalytics.pricingCoveragePercent.toFixed(0)}%</strong>
+            </div>
+            <div className="ws-workbook-metric">
+              <span>Sections / Items</span>
+              <strong>{sections.length} / {totalItems}</strong>
+            </div>
+          </div>
+        </div>
+        <div className="ws-sheet-tabbar">
+          <button
+            className={`ws-sheet-tab ${viewMode === 'estimation' ? 'active' : ''}`}
+            onClick={() => setViewMode('estimation')}
+          >
+            Estimate Sheet
+          </button>
+          <button
+            className={`ws-sheet-tab ${viewMode === 'valuation' ? 'active' : ''}`}
+            onClick={() => setViewMode('valuation')}
+          >
+            Valuation Sheet
+          </button>
+          <div className="ws-sheet-tabbar-meta">
+            <span className="ws-sheet-meta-chip">{project?.region || 'Lagos'} Region</span>
+            <span className="ws-sheet-meta-chip">{workspaceAnalytics.benchmarkItems} Benchmark Items</span>
+            <span className="ws-sheet-meta-chip">{workspaceAnalytics.customItems} Custom Items</span>
+          </div>
+        </div>
+      </div>
       {/* Toolbar */}
       <div className="ws-toolbar">
         <div className="ws-toolbar-left">
@@ -1239,14 +1300,6 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-          </div>
-          <div className="ws-mode-switch">
-            <button className={`ws-mode-btn ${viewMode === 'estimation' ? 'active' : ''}`} onClick={() => setViewMode('estimation')}>
-              <Calculator size={12} /> Estimation
-            </button>
-            <button className={`ws-mode-btn ${viewMode === 'valuation' ? 'active' : ''}`} onClick={() => setViewMode('valuation')}>
-              <ShieldCheck size={12} /> Valuation
-            </button>
           </div>
         </div>
         <div className="ws-toolbar-center">
@@ -2404,6 +2457,161 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           flex-shrink: 0;
         }
 
+        .ws-workbook-top {
+          display: flex;
+          flex-direction: column;
+          gap: 0.7rem;
+          padding: 1rem 1rem 0.85rem;
+          background: linear-gradient(180deg, #f8fbff 0%, #eef2ff 100%);
+          border-bottom: 1px solid #dbe4ee;
+        }
+        .ws-workbook-head {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 1rem;
+        }
+        .ws-workbook-copy {
+          display: flex;
+          flex-direction: column;
+          gap: 0.3rem;
+          min-width: 0;
+        }
+        .ws-workbook-eyebrow {
+          font-size: 0.62rem;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+        .ws-workbook-title-row {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+        }
+        .ws-workbook-title-row h1 {
+          margin: 0;
+          font-size: 1.45rem;
+          line-height: 1.1;
+          font-weight: 900;
+          color: #0f172a;
+        }
+        .ws-workbook-copy p {
+          margin: 0;
+          font-size: 0.78rem;
+          line-height: 1.5;
+          color: #475569;
+        }
+        .ws-workbook-health {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.26rem 0.7rem;
+          border-radius: 999px;
+          font-size: 0.62rem;
+          font-weight: 900;
+          letter-spacing: 0.03em;
+          white-space: nowrap;
+        }
+        .ws-workbook-health-success {
+          background: #dcfce7;
+          color: #166534;
+        }
+        .ws-workbook-health-active {
+          background: #dbeafe;
+          color: #1d4ed8;
+        }
+        .ws-workbook-health-warning {
+          background: #ffedd5;
+          color: #c2410c;
+        }
+        .ws-workbook-health-muted {
+          background: #e2e8f0;
+          color: #475569;
+        }
+        .ws-workbook-metrics {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 0.65rem;
+          min-width: 380px;
+        }
+        .ws-workbook-metric {
+          display: flex;
+          flex-direction: column;
+          gap: 0.16rem;
+          padding: 0.8rem 0.9rem;
+          border-radius: 16px;
+          background: rgba(255,255,255,0.92);
+          border: 1px solid #dbe4ee;
+          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
+        }
+        .ws-workbook-metric span {
+          font-size: 0.58rem;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+        .ws-workbook-metric strong {
+          font-size: 0.98rem;
+          font-weight: 900;
+          color: #0f172a;
+        }
+        .ws-sheet-tabbar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.75rem;
+          padding: 0.3rem 0.35rem 0;
+          border-top: 1px solid rgba(148, 163, 184, 0.24);
+        }
+        .ws-sheet-tabbar-meta {
+          display: flex;
+          align-items: center;
+          gap: 0.45rem;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+        }
+        .ws-sheet-tab {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.55rem 0.95rem;
+          border: 1px solid #dbe4ee;
+          border-radius: 14px 14px 0 0;
+          background: rgba(255,255,255,0.72);
+          color: #475569;
+          font-size: 0.74rem;
+          font-weight: 900;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        .ws-sheet-tab:hover {
+          background: rgba(255,255,255,0.92);
+          color: #0f172a;
+        }
+        .ws-sheet-tab.active {
+          background: white;
+          color: #1d4ed8;
+          border-color: #bfdbfe;
+          box-shadow: 0 -1px 0 0 white, inset 0 3px 0 #2563eb;
+        }
+        .ws-sheet-meta-chip {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.24rem 0.55rem;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.82);
+          border: 1px solid #dbe4ee;
+          font-size: 0.58rem;
+          font-weight: 900;
+          letter-spacing: 0.04em;
+          color: #475569;
+          white-space: nowrap;
+        }
+
         .ws-sheet-tools {
           padding: 0.45rem 0.75rem 0;
           background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
@@ -3470,6 +3678,34 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             height: auto;
             min-height: calc(100vh - 56px);
           }
+          .ws-workbook-top {
+            padding: 0.85rem 0.75rem 0.75rem;
+          }
+          .ws-workbook-head {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .ws-workbook-title-row h1 {
+            font-size: 1.15rem;
+          }
+          .ws-workbook-metrics {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            min-width: 0;
+          }
+          .ws-workbook-metric:last-child {
+            grid-column: 1 / -1;
+          }
+          .ws-sheet-tabbar {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .ws-sheet-tabbar-meta {
+            justify-content: flex-start;
+          }
+          .ws-sheet-tab {
+            width: 100%;
+            border-radius: 12px;
+          }
           .ws-sheet-tools {
             padding: 0.4rem 0.6rem 0;
           }
@@ -3508,15 +3744,6 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           .ws-search {
             width: 100%;
             min-width: 0;
-          }
-          .ws-mode-switch {
-            flex: 1;
-            min-width: 0;
-          }
-          .ws-mode-btn {
-            flex: 1;
-            justify-content: center;
-            min-height: 34px;
           }
           .ws-region-sel {
             min-height: 34px;
