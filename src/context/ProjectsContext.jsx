@@ -1,5 +1,8 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { STRUCTURE_DATA } from '../data/structures';
+import {
+    createProjectSectionsFromStructure,
+    getStructureDefinition,
+} from '../data/boqCatalog';
 import { PLAN_LIMITS, PLAN_NAMES } from '../data/plans';
 import { useAuth } from './useAuth';
 import { useToast } from '../components/ui/useToast';
@@ -22,7 +25,8 @@ import { logActivity } from '../db/collaborationService';
 import { getWorkspaceState as getCloudWorkspaceState, saveWorkspaceState as saveCloudWorkspaceState } from '../db/database';
 import ProjectsContext from './projects-context';
 import { buildCompanyKey, canAccessCompanyProject, deriveCompanyName } from '../utils/companyAccess';
-import { buildAutoRateResult } from '../utils/pricing';
+import { buildAutoRateResult, getItemTotal } from '../utils/pricing';
+import { evaluateBoqFormulaRate, normalizeEditableInputs } from '../utils/boqFormulas';
 
 const PROJECT_SCOPED_TABS = new Set(['workspace', 'reports', 'library']);
 const RESTORABLE_APP_TABS = new Set(['dashboard', 'workspace', 'reports', 'library', 'settings', 'methodology']);
@@ -672,7 +676,9 @@ export function ProjectsProvider({ children }) {
             if (!project || !project.sections) return 0;
             return project.sections.reduce((acc, section) => {
                 if (!section || !section.items) return acc;
-                return acc + section.items.reduce((itemAcc, item) => itemAcc + (item.total || 0), 0);
+                return acc + section.items.reduce((itemAcc, item) => (
+                    itemAcc + getItemTotal(item, project.region || 'Lagos')
+                ), 0);
             }, 0);
         };
 
@@ -728,46 +734,92 @@ export function ProjectsProvider({ children }) {
     }, []);
 
     const buildProjectSections = useCallback((sections = [], { unpriced = true, structureType = null, region = 'Lagos' } = {}) => {
-        return sections.map(section => ({
-            id: Math.random().toString(36).substr(2, 9),
+        return (sections || []).map((section) => ({
+            id: section.id || Math.random().toString(36).substr(2, 9),
+            billSectionId: section.billSectionId || section.id || '',
+            code: section.code || '',
             title: section.title,
-            expanded: true,
-            items: (section.items || []).map(item => {
-                const qty = Number(item.qty) || 0;
-                const templateRate = Number(item.rate) || 0;
-                const templateBenchmark = Number(item.benchmark) || templateRate || 0;
-                const fallbackAutoRate = templateBenchmark > 0
-                    ? null
-                    : buildAutoRateResult({
-                        description: item.description,
+            description: section.description || '',
+            structureType: section.structureType || structureType || '',
+            expanded: section.expanded !== false,
+            items: (section.items || []).map((item) => {
+                const editableInputs = normalizeEditableInputs(item.editableInputs).map((input) => ({
+                    ...input,
+                    value: input.value ?? input.defaultValue
+                }));
+                const exampleInputs = normalizeEditableInputs(item.exampleInputs);
+                const formulaRate = evaluateBoqFormulaRate({
+                    ...item,
+                    editableInputs
+                });
+                const qty = Number(item.qty ?? item.quantity) || 0;
+                const templateRate = Number(item.rate ?? item.unitRate) || 0;
+                const templateBenchmark = Number(item.benchmark ?? item.benchmarkRate) || templateRate || 0;
+                const shouldAutoRate = !templateBenchmark && (item.defaultFormulaType || 'manual') === 'manual';
+                const fallbackAutoRate = shouldAutoRate
+                    ? buildAutoRateResult({
+                        description: item.description || item.name,
                         unit: item.unit,
                         materials: Array.isArray(item.materials) ? item.materials : [],
                         breakdown: item.breakdown || null
                     }, {
                         structureType,
                         region
-                    });
+                    })
+                    : null;
                 const seededBenchmark = templateBenchmark || Number(fallbackAutoRate?.benchmark) || 0;
                 const seededRate = templateRate || Number(fallbackAutoRate?.rate) || 0;
-                const initialRate = unpriced ? 0 : seededRate;
-                const initialBenchmark = seededBenchmark;
+                const isFormulaDriven = (item.defaultFormulaType || 'manual') !== 'manual' && editableInputs.length > 0;
+                const initialRate = isFormulaDriven
+                    ? Number(formulaRate) || 0
+                    : (unpriced ? 0 : seededRate);
+                const amount = qty * initialRate;
+                const progressPercent = qty > 0
+                    ? ((Number(item.qtyCompleted) || 0) / qty) * 100
+                    : 0;
 
                 return {
-                    id: Math.random().toString(36).substr(2, 9),
-                    description: item.description,
-                    subcategory: item.subcategory || '',
-                    materials: Array.isArray(item.materials) ? item.materials : [],
-                    unit: item.unit,
+                    id: item.id || Math.random().toString(36).substr(2, 9),
+                    catalogItemId: item.catalogItemId || null,
+                    code: item.code || item.ref || '',
+                    name: item.name || item.description || 'Untitled BOQ Item',
+                    description: item.description || item.name || '',
+                    unit: item.unit || 'Nr',
+                    structureType: item.structureType || structureType || '',
+                    billSection: item.billSection || section.billSectionId || section.id || '',
+                    billSectionTitle: item.billSectionTitle || section.title || '',
+                    defaultFormulaType: item.defaultFormulaType || 'manual',
+                    formulaText: item.formulaText || '',
+                    formulaExpression: item.formulaExpression || '',
+                    exampleInputs,
+                    editableInputs,
+                    workedExample: item.workedExample || '',
+                    quantity: qty,
+                    unitRate: initialRate,
+                    amount,
+                    notes: item.notes || '',
+                    benchmarkRate: seededBenchmark,
                     qty,
                     rate: initialRate,
-                    benchmark: initialBenchmark,
+                    total: amount,
+                    benchmark: seededBenchmark,
                     benchmarkRegionalRates: item.benchmarkRegionalRates || fallbackAutoRate?.benchmarkRegionalRates || null,
                     benchmarkEvidence: item.benchmarkEvidence || fallbackAutoRate?.benchmarkEvidence || null,
-                    useBenchmark: false,
-                    total: qty * initialRate,
-                    isVO: false,
+                    benchmarkMatchSource: item.benchmarkMatchSource || fallbackAutoRate?.matchSource || null,
+                    useBenchmark: item.useBenchmark === true,
+                    rateSource: item.useBenchmark
+                        ? 'benchmark'
+                        : (item.rateSource || (isFormulaDriven ? 'formula' : 'manual')),
+                    qtySource: item.qtySource || 'manual',
+                    subcategory: item.subcategory || section.title || '',
+                    materials: Array.isArray(item.materials) ? item.materials : [],
+                    isVO: item.isVO === true,
                     breakdown: item.breakdown || fallbackAutoRate?.breakdown || null,
-                    customPricing: item.customPricing || null
+                    customPricing: item.customPricing || null,
+                    qtyCompleted: Number(item.qtyCompleted) || 0,
+                    progressPercent,
+                    bids: Array.isArray(item.bids) ? item.bids : [],
+                    isAnalyzed: item.isAnalyzed === true
                 };
             })
         }));
@@ -783,14 +835,10 @@ export function ProjectsProvider({ children }) {
         let sectionsToProcess = manualSections;
 
         if (!sectionsToProcess) {
-            // Fallback for old calls or cases where sections aren't passed
-            // Search through categories for the structure name if simple ID is used
-            for (const cat of Object.values(STRUCTURE_DATA)) {
-                if (cat.subtypes && cat.subtypes[structureId]) {
-                    sectionsToProcess = cat.subtypes[structureId].sections;
-                    break;
-                }
-            }
+            const definition = getStructureDefinition(structureId);
+            sectionsToProcess = definition
+                ? createProjectSectionsFromStructure(structureId)
+                : null;
         }
 
         if (!sectionsToProcess) {
@@ -808,6 +856,7 @@ export function ProjectsProvider({ children }) {
             id: projectId,
             name: `${structureName || structureId} Project`,
             type: structureId,
+            structureType: structureId,
             status: 'Active',
             sections: processedSections,
             date: new Date().toISOString().split('T')[0],
@@ -841,6 +890,10 @@ export function ProjectsProvider({ children }) {
     };
 
     const handleCompleteWizard = async (projectConfig) => {
+        const structureTypeLabel = projectConfig.structureType || projectConfig.type;
+        const baseSections = projectConfig.projectMode === 'structure-based'
+            ? createProjectSectionsFromStructure(structureTypeLabel, projectConfig.selectedSectionIds)
+            : (projectConfig.sections || []);
         const isUnpricedTemplate = projectConfig.isUnpricedTemplate !== false;
         const isCustomMode = projectConfig.projectMode === 'custom';
         const company_name = deriveCompanyName({
@@ -852,18 +905,19 @@ export function ProjectsProvider({ children }) {
             companyName: company_name,
             email: user?.email
         });
-        const processedSections = buildProjectSections(projectConfig.sections || [], {
+        const processedSections = buildProjectSections(baseSections, {
             unpriced: isUnpricedTemplate,
-            structureType: projectConfig.subtype || projectConfig.type,
+            structureType: structureTypeLabel,
             region: projectConfig.region || 'Lagos'
         });
 
         const projectId = `local_${Date.now()}`;
         const newProj = {
             id: projectId,
-            name: projectConfig.name || `${projectConfig.subtype || projectConfig.type} Project`,
+            name: projectConfig.name || `${structureTypeLabel} Project`,
             clientName: projectConfig.clientName || '',
-            type: projectConfig.type,
+            type: structureTypeLabel,
+            structureType: structureTypeLabel,
             subtype: projectConfig.subtype,
             projectMode: projectConfig.projectMode || 'default',
             access_mode: isCustomMode ? 'company' : 'private',
@@ -881,6 +935,7 @@ export function ProjectsProvider({ children }) {
             customSectionCount: Number(projectConfig.customSectionCount) || 0,
             customItemCount: Number(projectConfig.customItemCount) || 0,
             pricingMode: isUnpricedTemplate ? 'user-entered' : 'template-rates',
+            boqCatalogVersion: 'structure-based-boq-v1',
             preparedBy: user?.displayName || user?.email || 'Engineer',
             checkedBy: ''
         };

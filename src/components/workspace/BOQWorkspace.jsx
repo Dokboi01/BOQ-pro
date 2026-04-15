@@ -8,9 +8,21 @@ import BidManagerModal from './BidManagerModal';
 import TeamHubPanel from './TeamHubPanel';
 import StructuralAnalyzer from './StructuralAnalyzer';
 import ProjectNotesAccordion from './ProjectNotesAccordion';
+import BOQItemPickerModal from './BOQItemPickerModal';
+import BOQFormulaModal from './BOQFormulaModal';
 import { getMaterials } from '../../db/database';
+import {
+  cloneCatalogItemToProjectItem,
+  createCustomBoqItem,
+  getStructureSectionCatalog,
+} from '../../data/boqCatalog';
 import { buildCompanyKey, deriveCompanyName } from '../../utils/companyAccess';
 import { buildCustomPricingFromRateAnalysis, WORK_TYPE_LABELS } from '../../utils/customPricing';
+import {
+  evaluateBoqFormulaRate,
+  isFormulaDrivenItem,
+  normalizeEditableInputs,
+} from '../../utils/boqFormulas';
 import {
   applyBenchmarkRefreshToItem,
   buildAutoRateResult,
@@ -65,6 +77,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const [viewMode, setViewMode] = useState('estimation');
   const [showStructuralAnalyzer, setShowStructuralAnalyzer] = useState(false);
   const [selectedCell, setSelectedCell] = useState(null);
+  const [itemPickerSectionId, setItemPickerSectionId] = useState(null);
+  const [formulaItemContext, setFormulaItemContext] = useState(null);
+  const [activeBillSectionId, setActiveBillSectionId] = useState(project?.sections?.[0]?.id || null);
+  const sectionRowRefs = React.useRef({});
 
   // Collaboration state
   const [showTeamHub, setShowTeamHub] = useState(false);
@@ -122,6 +138,18 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       setSections(project.sections);
     }
   }, [project]);
+
+  React.useEffect(() => {
+    if (!sections.length) {
+      setActiveBillSectionId(null);
+      return;
+    }
+
+    const activeSectionExists = sections.some((section) => section.id === activeBillSectionId);
+    if (!activeSectionExists) {
+      setActiveBillSectionId(sections[0].id);
+    }
+  }, [activeBillSectionId, sections]);
 
   useEffect(() => {
     if (!selectedCell) return;
@@ -282,8 +310,49 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     onUpdate(project.id, updated);
   };
 
+  const syncBoqItemSnapshot = (item, section = null) => {
+    const normalizedEditableInputs = normalizeEditableInputs(item.editableInputs).map((input) => ({
+      ...input,
+      value: input.value ?? input.defaultValue
+    }));
+    const formulaRate = evaluateBoqFormulaRate({
+      ...item,
+      editableInputs: normalizedEditableInputs
+    });
+    const quantity = sanitizeNonNegativeNumber(item.quantity ?? item.qty);
+    const benchmarkRate = sanitizeNonNegativeNumber(item.benchmarkRate ?? item.benchmark);
+    const shouldUseFormulaRate = isFormulaDrivenItem({
+      ...item,
+      editableInputs: normalizedEditableInputs
+    }) && !item.useBenchmark;
+    const nextRate = shouldUseFormulaRate
+      ? sanitizeNonNegativeNumber(formulaRate)
+      : sanitizeNonNegativeNumber(item.unitRate ?? item.rate);
+    const nextItem = {
+      ...item,
+      editableInputs: normalizedEditableInputs,
+      quantity,
+      qty: quantity,
+      unitRate: nextRate,
+      rate: nextRate,
+      benchmarkRate,
+      benchmark: benchmarkRate,
+      billSectionTitle: item.billSectionTitle || section?.title || '',
+      billSection: item.billSection || section?.billSectionId || section?.id || '',
+      structureType: item.structureType || section?.structureType || project?.structureType || project?.type || '',
+      name: item.name || item.description || 'Untitled BOQ Item',
+      amount: quantity * getItemUnitRate({ ...item, editableInputs: normalizedEditableInputs, unitRate: nextRate, rate: nextRate }, project?.region || 'Lagos'),
+    };
+    nextItem.total = getItemTotal(nextItem, project?.region || 'Lagos');
+    nextItem.amount = nextItem.total;
+    if (nextItem.qtyCompleted !== undefined) {
+      nextItem.progressPercent = nextItem.qty > 0 ? (nextItem.qtyCompleted / nextItem.qty) * 100 : 0;
+    }
+    return nextItem;
+  };
+
   const updateItem = (sectionId, itemId, fieldOrUpdates, valueOrBreakdown = null, breakdown = null) => {
-    const updated = sections.map(section => {
+    const updated = sections.map((section) => {
       if (section.id !== sectionId) return section;
       return {
         ...section,
@@ -296,11 +365,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             updatedItem = { ...item, [fieldOrUpdates]: valueOrBreakdown };
             if (breakdown) updatedItem.breakdown = breakdown;
           }
-          updatedItem.total = getItemTotal(updatedItem, project?.region || 'Lagos');
-          if (updatedItem.qtyCompleted !== undefined) {
-            updatedItem.progressPercent = updatedItem.qty > 0 ? (updatedItem.qtyCompleted / updatedItem.qty) * 100 : 0;
-          }
-          return updatedItem;
+          return syncBoqItemSnapshot(updatedItem, section);
         })
       };
     });
@@ -417,6 +482,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const activateCustomPricing = (sectionId, item) => {
     const nextRateSource = item.customPricing
       ? 'custom'
+      : isFormulaDrivenItem(item)
+        ? 'formula'
       : item.breakdown
         ? 'calculated'
         : item.rateSource === 'benchmark'
@@ -428,7 +495,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       rateSource: nextRateSource
     });
 
-    if (!item.customPricing) {
+    if (!item.customPricing && !isFormulaDrivenItem(item)) {
       openCustomPricingStudio(sectionId, {
         ...item,
         rateSource: nextRateSource
@@ -447,7 +514,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
     if (!derivedBenchmark) {
       const fallbackAutoRate = buildAutoRateResult(item, {
-        structureType: project?.subtype || project?.type,
+        structureType: project?.structureType || project?.subtype || project?.type,
         region: project?.region || 'Lagos',
         materialIndex: benchmarkMaterialIndex || []
       });
@@ -516,7 +583,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       items: (section.items || []).map((item) => {
         const shouldPreserveManualRate = !item.useBenchmark && Number(item.rate) > 0 && item.rateSource === 'manual';
         const autoRated = buildAutoRateResult(item, {
-          structureType: project?.subtype || project?.type,
+          structureType: project?.structureType || project?.subtype || project?.type,
           region: project?.region || 'Lagos',
           materialIndex
         });
@@ -552,7 +619,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
   const buildBenchmarkRefreshResult = (materialIndex, { targetSectionId = null, targetItemId = null } = {}) => {
     const region = project?.region || 'Lagos';
-    const structureType = project?.subtype || project?.type;
+    const structureType = project?.structureType || project?.subtype || project?.type;
     let appliedCount = 0;
     let benchmarkRateUpdates = 0;
     let referenceOnlyUpdates = 0;
@@ -679,25 +746,16 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   };
 
   const addItemToSection = (sectionId) => {
-    const updated = sections.map(section => {
+    const updated = sections.map((section) => {
       if (section.id !== sectionId) return section;
+      const nextItem = syncBoqItemSnapshot(createCustomBoqItem({
+        structureType: project?.structureType || project?.type || '',
+        billSectionId: section.billSectionId || section.id,
+        billSectionTitle: section.title,
+      }), section);
       return {
         ...section,
-        items: [...section.items, {
-          id: Date.now(),
-          description: 'New Work Item',
-          unit: 'm²',
-          qty: 0,
-          rate: 0,
-          total: 0,
-          subcategory: 'Custom Item',
-          materials: [],
-          benchmark: 0,
-          useBenchmark: false,
-          rateSource: 'manual',
-          qtySource: 'manual',
-          customPricing: null
-        }]
+        items: [...section.items, nextItem]
       };
     });
     setSections(updated);
@@ -711,14 +769,16 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       if (index < 0) return section;
 
       const sourceItem = section.items[index];
-      const duplicate = {
+      const duplicate = syncBoqItemSnapshot({
         ...sourceItem,
         id: Date.now() + Math.random(),
         description: `${sourceItem.description} (Copy)`,
         materials: Array.isArray(sourceItem.materials) ? [...sourceItem.materials] : [],
         breakdown: cloneBreakdown(sourceItem.breakdown),
-        customPricing: sourceItem.customPricing ? { ...sourceItem.customPricing } : null
-      };
+        customPricing: sourceItem.customPricing ? { ...sourceItem.customPricing } : null,
+        editableInputs: normalizeEditableInputs(sourceItem.editableInputs),
+        exampleInputs: normalizeEditableInputs(sourceItem.exampleInputs),
+      }, section);
 
       const nextItems = [...section.items];
       nextItems.splice(index + 1, 0, duplicate);
@@ -737,22 +797,16 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       if (index < 0) return section;
 
       const sourceItem = section.items[index];
-      const nextItem = {
+      const nextItem = syncBoqItemSnapshot({
+        ...createCustomBoqItem({
+          structureType: sourceItem?.structureType || project?.structureType || project?.type || '',
+          billSectionId: section.billSectionId || section.id,
+          billSectionTitle: section.title,
+        }),
         id: Date.now() + Math.random(),
-        description: '',
-        unit: sourceItem?.unit || 'm²',
-        qty: 0,
-        rate: 0,
-        total: 0,
-        subcategory: sourceItem?.subcategory || 'Custom Item',
-        materials: [],
-        benchmark: 0,
-        useBenchmark: false,
-        rateSource: 'manual',
-        qtySource: 'manual',
-        customPricing: null,
-        breakdown: null,
-      };
+        unit: sourceItem?.unit || 'Nr',
+        subcategory: sourceItem?.subcategory || section.title,
+      }, section);
 
       const nextItems = [...(section.items || [])];
       nextItems.splice(index + 1, 0, nextItem);
@@ -769,6 +823,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
   const getRateSourceMeta = (item) => {
     if (item.useBenchmark) return { label: `${marketRegionLabel} Market Benchmark`, tone: 'benchmark' };
+    if (item.rateSource === 'formula') return { label: 'Formula-Driven Rate', tone: 'calculated' };
     if (item.rateSource === 'custom') return { label: 'Custom Rate Override', tone: 'custom' };
     if (item.rateSource === 'calculated') return { label: 'Rate Analysis Build-Up', tone: 'calculated' };
     if (item.rateSource === 'benchmark') return { label: 'Benchmark-linked', tone: 'benchmark' };
@@ -1013,6 +1068,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       return { label: 'Custom Override', tone: 'custom' };
     }
 
+    if (item.rateSource === 'formula') {
+      return { label: 'Formula Ready', tone: 'calculated' };
+    }
+
     if (item.rateSource === 'calculated') {
       return { label: 'Rate Analysed', tone: 'calculated' };
     }
@@ -1057,10 +1116,13 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     const query = searchQuery.toLowerCase();
     return (sections || []).map(section => {
       const filteredItems = (section.items || []).filter(item =>
+        (item.code || '').toLowerCase().includes(query) ||
+        (item.name || '').toLowerCase().includes(query) ||
         (item.description || '').toLowerCase().includes(query) ||
         (item.unit || '').toLowerCase().includes(query) ||
         (item.subcategory || '').toLowerCase().includes(query) ||
-        (item.materials || []).join(' ').toLowerCase().includes(query)
+        (item.materials || []).join(' ').toLowerCase().includes(query) ||
+        (item.notes || '').toLowerCase().includes(query)
       );
       if (filteredItems.length > 0 || (section.title || '').toLowerCase().includes(query)) {
         return { ...section, items: filteredItems, expanded: true };
@@ -1088,7 +1150,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     }
 
     return getProjectBenchmarkRefreshAnalytics({ ...project, sections }, {
-      structureType: project?.subtype || project?.type,
+      structureType: project?.structureType || project?.subtype || project?.type,
       region: project?.region || 'Lagos',
       materialIndex: benchmarkMaterialIndex,
     });
@@ -1104,7 +1166,76 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const benchmarkSyncLabel = formatBenchmarkSyncLabel(benchmarkSyncState.checkedAt);
   const filteredItemCount = filteredSections.reduce((sum, section) => sum + ((section.items || []).length), 0);
   const activeSheetLabel = viewMode === 'valuation' ? 'Valuation Sheet' : 'Estimate Sheet';
-  const workbookSubtitle = [project?.type, project?.subtype].filter(Boolean).filter(Boolean).join(' / ') || 'Construction pricing workbook';
+  const projectStructureType = project?.structureType || project?.type || '';
+  const workbookSubtitle = [projectStructureType, project?.subtype].filter(Boolean).join(' / ') || 'Construction pricing workbook';
+  const pickerSection = sections.find((section) => section.id === itemPickerSectionId) || null;
+  const pickerCatalogSection = pickerSection
+    ? getStructureSectionCatalog(projectStructureType, pickerSection.billSectionId)
+    : null;
+
+  const openItemPicker = (sectionId) => {
+    setItemPickerSectionId(sectionId);
+    setActiveBillSectionId(sectionId);
+  };
+
+  const handleAddCatalogItems = (catalogItems) => {
+    if (!pickerSection || !pickerCatalogSection) return;
+
+    const existingCatalogIds = new Set((pickerSection.items || []).map((item) => item.catalogItemId).filter(Boolean));
+    const nextCatalogItems = (catalogItems || []).filter((item) => !existingCatalogIds.has(item.code));
+
+    if (nextCatalogItems.length === 0) {
+      toast.info('Those BOQ items are already in this bill.');
+      return;
+    }
+
+    const updated = sections.map((section) => {
+      if (section.id !== pickerSection.id) return section;
+      const nextItems = nextCatalogItems.map((catalogItem) => syncBoqItemSnapshot(
+        cloneCatalogItemToProjectItem(catalogItem, {
+          structureType: projectStructureType,
+          billSectionId: section.billSectionId || section.id,
+          billSectionTitle: section.title,
+        }),
+        section
+      ));
+      return {
+        ...section,
+        expanded: true,
+        items: [...(section.items || []), ...nextItems]
+      };
+    });
+
+    setSections(updated);
+    onUpdate(project.id, updated);
+    setItemPickerSectionId(null);
+    toast.success(`Added ${nextCatalogItems.length} item${nextCatalogItems.length === 1 ? '' : 's'} to ${pickerSection.title}.`);
+  };
+
+  const scrollToSection = (sectionId) => {
+    setActiveBillSectionId(sectionId);
+    setSections((prev) => prev.map((section) => (
+      section.id === sectionId ? { ...section, expanded: true } : section
+    )));
+    window.requestAnimationFrame(() => {
+      sectionRowRefs.current[sectionId]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
+  const openFormulaEditor = (sectionId, item) => {
+    setFormulaItemContext({ sectionId, item });
+  };
+
+  const handleFormulaInputsSave = (nextInputs) => {
+    if (!formulaItemContext) return;
+    updateItem(formulaItemContext.sectionId, formulaItemContext.item.id, {
+      editableInputs: nextInputs,
+      rateSource: 'formula',
+      useBenchmark: false,
+      customPricing: null,
+    });
+    setFormulaItemContext(null);
+  };
   const benchmarkWorkspaceHealth = benchmarkSyncState.status === 'error'
     ? { label: 'Benchmark library offline', tone: 'warning' }
     : benchmarkSyncState.status === 'loading'
@@ -1444,6 +1575,38 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         </div>
       </div>
 
+      <div className="ws-bill-nav">
+        {(sections || []).map((section) => {
+          const sectionTotal = (section.items || []).reduce((sum, item) => sum + getItemTotal(item, project?.region || 'Lagos'), 0);
+          const catalogSection = getStructureSectionCatalog(projectStructureType, section.billSectionId);
+          const hasCatalog = !!catalogSection;
+          const isActive = activeBillSectionId === section.id;
+          return (
+            <div key={section.id} className={`ws-bill-pill ${isActive ? 'active' : ''}`}>
+              <button
+                type="button"
+                className="ws-bill-pill-main"
+                onClick={() => scrollToSection(section.id)}
+              >
+                <span className="ws-bill-pill-title">{section.title}</span>
+                <span className="ws-bill-pill-meta">
+                  {(section.items || []).length} item{(section.items || []).length === 1 ? '' : 's'} · ₦{sectionTotal.toLocaleString()}
+                </span>
+              </button>
+              {hasCatalog && (
+                <button
+                  type="button"
+                  className="ws-bill-pill-picker"
+                  onClick={() => openItemPicker(section.id)}
+                >
+                  Pick Items
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
       <div className="ws-mobile-summary">
         <div className="ws-mobile-stat-card">
           <span>Region</span>
@@ -1586,7 +1749,15 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                 >
                   <Calculator size={12} /> Takeoff
                 </button>
-                {!selectedItemContext.item.useBenchmark && (
+                {!selectedItemContext.item.useBenchmark && isFormulaDrivenItem(selectedItemContext.item) && (
+                  <button
+                    className="ws-helper-btn"
+                    onClick={() => openFormulaEditor(selectedItemContext.section.id, selectedItemContext.item)}
+                  >
+                    fx Formula Inputs
+                  </button>
+                )}
+                {!selectedItemContext.item.useBenchmark && !isFormulaDrivenItem(selectedItemContext.item) && (
                   <button
                     className="ws-helper-btn"
                     onClick={() => openCustomPricingStudio(selectedItemContext.section.id, selectedItemContext.item)}
@@ -1631,6 +1802,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
               </div>
               <div className="ws-helper-actions">
                 <span className="ws-helper-chip ws-helper-chip-muted">{sections.length} sections ready</span>
+                <button className="ws-helper-btn" onClick={() => sections[0] && openItemPicker(sections[0].id)}>
+                  <Plus size={12} /> Pick BOQ Items
+                </button>
                 <button className="ws-helper-btn" onClick={onAddSection}>
                   <Plus size={12} /> Add Section
                 </button>
@@ -1692,7 +1866,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
               return (
                 <React.Fragment key={section.id}>
                   {/* Section Header */}
-                  <tr className="ws-section-row" onClick={() => toggleSection(section.id)}>
+                  <tr
+                    ref={(node) => { sectionRowRefs.current[section.id] = node; }}
+                    className="ws-section-row"
+                    onClick={() => {
+                      setActiveBillSectionId(section.id);
+                      toggleSection(section.id);
+                    }}
+                  >
                     <td colSpan={sectionHeaderSpan} className="ws-section-cell">
                       <div className="ws-section-inner">
                         {section.expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -1730,6 +1911,18 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                       </div>
                     </td>
                     <td className="ws-act-cell">
+                      {getStructureSectionCatalog(projectStructureType, section.billSectionId) && (
+                        <button
+                          className="ws-btn-icon ws-btn-library"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openItemPicker(section.id);
+                          }}
+                          title="Pick BOQ items for this bill"
+                        >
+                          <Plus size={13} />
+                        </button>
+                      )}
                       <button className="ws-btn-icon ws-btn-danger" onClick={(e) => { e.stopPropagation(); onDelete(project.id, section.id); }}>
                         <Trash2 size={13} />
                       </button>
@@ -1931,10 +2124,22 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                               className="ws-input ws-rate-input"
                               value={rate || ''}
                               onChange={(e) => handleManualRateChange(section.id, item, e.target.value)}
-                              disabled={item.useBenchmark}
+                              disabled={item.useBenchmark || isFormulaDrivenItem(item)}
                               onFocus={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'rate', itemCode, rowNumber: spreadsheetRowNumber })}
                             />
-                            {!item.useBenchmark && (
+                            {!item.useBenchmark && isFormulaDrivenItem(item) && (
+                              <button
+                                className="ws-analysis-btn ws-custom-studio-btn"
+                                onClick={() => {
+                                  selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'rate', itemCode, rowNumber: spreadsheetRowNumber });
+                                  openFormulaEditor(section.id, item);
+                                }}
+                                title="Edit formula inputs"
+                              >
+                                fx
+                              </button>
+                            )}
+                            {!item.useBenchmark && !isFormulaDrivenItem(item) && (
                               <button
                                 className="ws-analysis-btn ws-custom-studio-btn"
                                 onClick={() => {
@@ -2232,9 +2437,18 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                                   className="ws-input ws-rate-input"
                                   value={rate || ''}
                                   onChange={(e) => handleManualRateChange(section.id, item, e.target.value)}
-                                  disabled={item.useBenchmark}
+                                  disabled={item.useBenchmark || isFormulaDrivenItem(item)}
                                 />
-                                {!item.useBenchmark && (
+                                {!item.useBenchmark && isFormulaDrivenItem(item) && (
+                                  <button
+                                    className="ws-analysis-btn ws-custom-studio-btn ws-mobile-icon-btn"
+                                    onClick={() => openFormulaEditor(section.id, item)}
+                                    title="Edit formula inputs"
+                                  >
+                                    fx
+                                  </button>
+                                )}
+                                {!item.useBenchmark && !isFormulaDrivenItem(item) && (
                                   <button
                                     className="ws-analysis-btn ws-custom-studio-btn ws-mobile-icon-btn"
                                     onClick={() => openCustomPricingStudio(section.id, item)}
@@ -2355,9 +2569,16 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                       </tr>
                       <tr className="ws-add-row">
                         <td colSpan={totalColumnCount}>
-                          <button className="ws-add-btn" onClick={() => addItemToSection(section.id)}>
-                            <Plus size={13} /> Add Custom Item
-                          </button>
+                          <div className="ws-add-row-actions">
+                            {getStructureSectionCatalog(projectStructureType, section.billSectionId) && (
+                              <button className="ws-add-btn ws-add-btn-primary" onClick={() => openItemPicker(section.id)}>
+                                <Plus size={13} /> Pick from Library
+                              </button>
+                            )}
+                            <button className="ws-add-btn" onClick={() => addItemToSection(section.id)}>
+                              <Plus size={13} /> Add Custom Item
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     </>
@@ -2386,7 +2607,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         <RateAnalysisModal
           key={analyzingItem.item.id}
           item={analyzingItem.item}
-          structureType={project?.type}
+          structureType={projectStructureType}
           region={project?.region}
           onClose={() => setAnalyzingItem(null)}
           onSave={handleRateApply}
@@ -2397,7 +2618,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           key={customPricingItem.item.id}
           item={customPricingItem.item}
           region={project?.region}
-          structureType={project?.type}
+          structureType={projectStructureType}
           onClose={() => setCustomPricingItem(null)}
           onSave={handleCustomPricingSave}
           onOpenDetailedAnalysis={(draftCustomPricing) => openDetailedAnalysis(customPricingItem.sectionId, customPricingItem.item, draftCustomPricing)}
@@ -2431,6 +2652,24 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             });
             setBiddingItem(null);
           }}
+        />
+      )}
+      {pickerSection && pickerCatalogSection && (
+        <BOQItemPickerModal
+          structureType={projectStructureType}
+          section={pickerCatalogSection}
+          catalogItems={pickerCatalogSection.availableItems || []}
+          existingItems={pickerSection.items || []}
+          onClose={() => setItemPickerSectionId(null)}
+          onAddItems={handleAddCatalogItems}
+        />
+      )}
+      {formulaItemContext && (
+        <BOQFormulaModal
+          item={formulaItemContext.item}
+          sectionTitle={sections.find((section) => section.id === formulaItemContext.sectionId)?.title}
+          onClose={() => setFormulaItemContext(null)}
+          onSave={handleFormulaInputsSave}
         />
       )}
 
@@ -3147,6 +3386,66 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-toolbar-left { display: flex; align-items: center; gap: 0.5rem; }
         .ws-toolbar-center { display: flex; align-items: center; gap: 1rem; }
         .ws-toolbar-right { display: flex; align-items: center; gap: 0.375rem; }
+
+        .ws-bill-nav {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+          gap: 0.75rem;
+          padding: 0.75rem;
+          background: #f8fafc;
+          border-bottom: 1px solid #e2e8f0;
+        }
+
+        .ws-bill-pill {
+          display: flex;
+          align-items: stretch;
+          gap: 0.45rem;
+          padding: 0.45rem;
+          border: 1px solid #dbe3ef;
+          border-radius: 16px;
+          background: white;
+        }
+
+        .ws-bill-pill.active {
+          border-color: #60a5fa;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+        }
+
+        .ws-bill-pill-main {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+          padding: 0.2rem 0.35rem;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          text-align: left;
+        }
+
+        .ws-bill-pill-title {
+          font-size: 0.84rem;
+          font-weight: 800;
+          color: #0f172a;
+        }
+
+        .ws-bill-pill-meta {
+          font-size: 0.72rem;
+          color: #64748b;
+        }
+
+        .ws-bill-pill-picker {
+          align-self: center;
+          border: 1px solid #bfdbfe;
+          background: #eff6ff;
+          color: #1d4ed8;
+          border-radius: 12px;
+          padding: 0.55rem 0.7rem;
+          font-size: 0.72rem;
+          font-weight: 800;
+          cursor: pointer;
+          white-space: nowrap;
+        }
 
         .ws-search {
           display: flex;
@@ -3926,6 +4225,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-section-row:hover .ws-btn-icon,
         .ws-item-row-selected .ws-btn-icon { opacity: 1; }
         .ws-btn-danger:hover { background: #fef2f2; color: #ef4444; }
+        .ws-btn-library:hover { background: #eff6ff; color: #1d4ed8; }
         .ws-bid-active { opacity: 1 !important; color: #2563eb; }
         .ws-vo-active { opacity: 1 !important; color: #f59e0b; }
 
@@ -3940,6 +4240,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
 
         .ws-add-row td { padding: 0.25rem 0.625rem !important; background: #fafbfc; border-bottom: 2px solid #e2e8f0; }
+        .ws-add-row-actions {
+          display: flex;
+          gap: 0.5rem;
+        }
         .ws-add-btn {
           display: flex; align-items: center; gap: 0.25rem;
           background: none; border: 1px dashed #cbd5e1; color: #64748b;
@@ -3950,6 +4254,12 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           justify-content: center;
         }
         .ws-add-btn:hover { border-color: #2563eb; color: #2563eb; background: rgba(37,99,235,0.03); }
+        .ws-add-btn-primary {
+          border-style: solid;
+          background: #eff6ff;
+          color: #1d4ed8;
+          border-color: #bfdbfe;
+        }
 
         /* ── GRAND TOTAL ── */
         .ws-grand-total {
@@ -4050,6 +4360,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           .ws-toolbar-center {
             display: none;
           }
+          .ws-bill-nav {
+            grid-auto-flow: column;
+            grid-auto-columns: minmax(220px, 1fr);
+            overflow-x: auto;
+            padding-bottom: 0.85rem;
+            scrollbar-width: none;
+          }
+          .ws-bill-nav::-webkit-scrollbar { display: none; }
           .ws-search {
             width: 100%;
             min-width: 0;
@@ -4143,6 +4461,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           .ws-subtotal-val {
             display: block;
             text-align: left !important;
+          }
+          .ws-add-row-actions {
+            flex-direction: column;
           }
           .ws-grand-total td:first-child {
             width: auto;
@@ -4580,3 +4901,4 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 };
 
 export default BOQWorkspace;
+
