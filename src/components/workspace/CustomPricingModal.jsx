@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   SlidersHorizontal,
@@ -349,10 +350,33 @@ const buildSeedState = (item, region, structureType) => {
 const CustomPricingModal = ({ item, region, structureType, onClose, onSave, onOpenDetailedAnalysis }) => {
   const seeded = useMemo(() => buildSeedState(item, region, structureType), [item, region, structureType]);
   const [pricing, setPricing] = useState(seeded.pricing);
+  const modalRef = React.useRef(null);
 
   React.useEffect(() => {
     setPricing(seeded.pricing);
   }, [seeded]);
+
+  React.useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    const frameId = window.requestAnimationFrame(() => {
+      if (modalRef.current) {
+        modalRef.current.scrollTop = 0;
+      }
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, []);
 
   const quantity = Math.max(clamp(item?.qty), 0);
   const activeWorkType = pricing.workType || seeded.workType;
@@ -440,9 +464,13 @@ const CustomPricingModal = ({ item, region, structureType, onClose, onSave, onOp
     setPricing(seedFromPreset(preset, referenceRate));
   };
 
-  return (
+  const modalContent = (
     <div className="custom-pricing-overlay" onClick={onClose}>
-      <div className="custom-pricing-modal" onClick={(event) => event.stopPropagation()}>
+      <div
+        ref={modalRef}
+        className="custom-pricing-modal"
+        onClick={(event) => event.stopPropagation()}
+      >
         <header className="custom-pricing-header">
           <div>
             <div className="custom-pricing-badge">Custom Pricing Studio</div>
@@ -767,13 +795,16 @@ const CustomPricingModal = ({ item, region, structureType, onClose, onSave, onOp
           background: rgba(15, 23, 42, 0.68);
           backdrop-filter: blur(10px);
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           justify-content: center;
-          padding: 1rem;
+          overflow-y: auto;
+          overscroll-behavior: contain;
+          padding: clamp(0.75rem, 4vh, 2rem) 1rem;
           z-index: 1200;
         }
         .custom-pricing-modal {
           width: min(1180px, 100%);
+          margin: 0 auto;
           max-height: calc(100vh - 2rem);
           overflow: auto;
           background: #f8fafc;
@@ -1233,6 +1264,12 @@ const CustomPricingModal = ({ item, region, structureType, onClose, onSave, onOp
       `}</style>
     </div>
   );
+
+  if (typeof document === 'undefined') {
+    return modalContent;
+  }
+
+  return createPortal(modalContent, document.body);
 };
 
 export default CustomPricingModal;
