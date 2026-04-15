@@ -2461,9 +2461,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-container {
           display: flex;
           flex-direction: column;
-          height: calc(100vh - 56px);
+          min-height: calc(100vh - 56px);
           background: #f1f5f9;
-          overflow: hidden;
+          overflow: visible;
         }
 
         .ws-mobile-summary,
@@ -3232,11 +3232,12 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
         /* ── TABLE ── */
         .ws-table-wrap {
-          flex: 1;
-          overflow-y: auto;
+          flex: 0 0 auto;
+          overflow-y: visible;
           overflow-x: auto;
-          min-height: 0;
+          min-height: 60vh;
           background: #f8fafc;
+          padding-bottom: 2rem;
         }
         .ws-table-wrap::-webkit-scrollbar { width: 6px; height: 6px; }
         .ws-table-wrap::-webkit-scrollbar-track { background: #f1f5f9; }
