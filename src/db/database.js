@@ -61,10 +61,33 @@ const stripItemForCloud = (item) => {
     return {
         // Core identity & measurement
         id: item.id,
+        catalogItemId: item.catalogItemId || null,
+        code: item.code || item.ref || null,
+        name: item.name || null,
         ref: item.ref || null,
         description: item.description || '',
         unit: item.unit || '',
+        structureType: item.structureType || null,
+        billSection: item.billSection || null,
+        billSectionTitle: item.billSectionTitle || null,
+        defaultFormulaType: item.defaultFormulaType || 'manual',
+        formulaText: item.formulaText || null,
+        formulaExpression: item.formulaExpression || null,
+        exampleInputs: Array.isArray(item.exampleInputs) ? item.exampleInputs : [],
+        editableInputs: Array.isArray(item.editableInputs) ? item.editableInputs : [],
+        workedExample: item.workedExample || null,
+        category: item.category || null,
+        keywords: Array.isArray(item.keywords) ? item.keywords : [],
+        pickerHint: item.pickerHint || null,
+        isRecommended: item.isRecommended === true,
+        quantity: item.quantity ?? item.qty ?? 0,
+        unitRate: item.unitRate ?? item.rate ?? 0,
+        amount: item.amount ?? item.total ?? 0,
         qty: item.qty ?? 0,
+        qtyCompleted: item.qtyCompleted ?? 0,
+        progressPercent: item.progressPercent ?? 0,
+        subcategory: item.subcategory || null,
+        materials: Array.isArray(item.materials) ? item.materials : [],
 
         // Pricing outputs (always needed)
         rate: item.rate ?? 0,
@@ -74,6 +97,7 @@ const stripItemForCloud = (item) => {
         // Benchmark data (computed, compact)
         useBenchmark: item.useBenchmark ?? false,
         benchmark: item.benchmark ?? 0,
+        benchmarkRate: item.benchmarkRate ?? item.benchmark ?? 0,
         benchmarkRegionalRates: item.benchmarkRegionalRates || null,
         benchmarkEvidence: item.benchmarkEvidence || null,
         benchmarkMatchSource: item.benchmarkMatchSource || null,
@@ -84,6 +108,7 @@ const stripItemForCloud = (item) => {
         // VO / notes flags
         isVO: item.isVO ?? false,
         notes: item.notes || null,
+        bids: Array.isArray(item.bids) ? item.bids : [],
 
         // breakdown is intentionally NOT included — reconstructed locally
         // customPricingHistory is NOT included — stored locally only
@@ -112,7 +137,17 @@ const sanitizeProjectForCloud = (project, user) => {
     // Strip each item in each section down to cloud-safe fields
     const cloudSections = (clone.sections || []).map(section => ({
         id: section.id,
+        billSectionId: section.billSectionId || null,
+        code: section.code || null,
         title: section.title || '',
+        description: section.description || null,
+        isPreliminaries: section.isPreliminaries === true,
+        trade: section.trade || null,
+        pickerPrompt: section.pickerPrompt || null,
+        emptyStateTitle: section.emptyStateTitle || null,
+        emptyStateMessage: section.emptyStateMessage || null,
+        keywords: Array.isArray(section.keywords) ? section.keywords : [],
+        structureType: section.structureType || null,
         collapsed: section.collapsed ?? false,
         items: (section.items || []).map(stripItemForCloud),
     }));
@@ -128,9 +163,12 @@ const sanitizeProjectForCloud = (project, user) => {
     return {
         name: clone.name,
         type: clone.type,
+        structureType: clone.structureType || clone.type,
+        subtype: clone.subtype || null,
         status: clone.status || 'Draft',
         date: clone.date,
         region: clone.region || 'Lagos',
+        clientName: clone.clientName || null,
         user_id: clone.user_id || user.uid,
         company_name,
         company_key,
@@ -139,7 +177,15 @@ const sanitizeProjectForCloud = (project, user) => {
         access_mode: clone.access_mode || (clone.projectMode === 'custom' ? 'company' : 'private'),
         notes: clone.notes || null,
         assumptions: clone.assumptions || null,
+        exclusions: clone.exclusions || null,
         pricingMode: clone.pricingMode || null,
+        boqCatalogVersion: clone.boqCatalogVersion || null,
+        customSectionCount: clone.customSectionCount ?? 0,
+        customItemCount: clone.customItemCount ?? 0,
+        share_enabled: clone.share_enabled ?? false,
+        collaboration_enabled: clone.collaboration_enabled ?? false,
+        preparedBy: clone.preparedBy || null,
+        checkedBy: clone.checkedBy || null,
         sections: cloudSections,
         collaborators,
         collaborator_ids,

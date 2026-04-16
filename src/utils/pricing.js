@@ -5,6 +5,7 @@ import {
   getMaterialRegionalBenchmark,
   normalizeMaterialBenchmarkRecord
 } from './materialBenchmarks';
+import { evaluateBoqFormulaRate, isFormulaDrivenItem } from './boqFormulas';
 
 export const WORK_TYPE_PROFILES = {
   concrete: { shares: { materials: 0.58, labour: 0.18, plant: 0.14, transport: 0.10 }, waste: 2.5, siteAdjustment: 3, overheads: 12, profit: 10, roundingStep: 100 },
@@ -693,12 +694,44 @@ export const getEffectiveBenchmarkRate = (item, region = 'Lagos') => {
   return benchmark * getBenchmarkRegionalFactor(item, region);
 };
 
+/**
+ * Resolve the active rate source for an item, supporting both the new
+ * `selectedRateSource` field and legacy `useBenchmark` / `rateSource` flags.
+ * @returns {'benchmark' | 'formula' | 'manual'}
+ */
+export const resolveItemRateSource = (item) => {
+  if (item?.selectedRateSource) return item.selectedRateSource;
+  // Backward-compat shim for items stored before the tri-modal upgrade
+  if (item?.useBenchmark) return 'benchmark';
+  if (item?.rateSource === 'formula' || isFormulaDrivenItem(item)) return 'formula';
+  return 'manual';
+};
+
 export const getItemUnitRate = (item, region = 'Lagos') => {
-  return item?.useBenchmark ? getEffectiveBenchmarkRate(item, region) : clampNumber(item?.rate);
+  const src = resolveItemRateSource(item);
+
+  if (src === 'benchmark') {
+    return getEffectiveBenchmarkRate(item, region);
+  }
+
+  if (src === 'formula') {
+    // Use pre-computed formulaCalculatedRate when available (avoids re-evaluation)
+    const precomputed = clampNumber(item?.formulaCalculatedRate);
+    if (precomputed > 0) return precomputed;
+    // Fall back to live evaluation
+    const formulaRate = evaluateBoqFormulaRate(item);
+    if (formulaRate != null && formulaRate > 0) return clampNumber(formulaRate);
+    // Final fallback: benchmark rate so the row isn't empty
+    return clampNumber(item?.benchmarkRate ?? item?.benchmark ?? item?.unitRate ?? item?.rate);
+  }
+
+  // manual — prefer explicit manualRate field, fall back to legacy rate fields
+  return clampNumber(item?.manualRate ?? item?.unitRate ?? item?.rate);
 };
 
 export const getItemTotal = (item, region = 'Lagos') => {
-  return Math.max(clampNumber(item?.qty), 0) * getItemUnitRate(item, region);
+  const quantity = Math.max(clampNumber(item?.quantity ?? item?.qty), 0);
+  return quantity * getItemUnitRate(item, region);
 };
 
 export const isBenchmarkOutlier = (rate, benchmark, tolerance = DEFAULT_OUTLIER_TOLERANCE) => {
@@ -1003,10 +1036,12 @@ export const repriceSectionsForRegion = (sections = [], region = 'Lagos') => {
 };
 
 export const getItemPricingMode = (item) => {
-  const manualRate = clampNumber(item?.rate);
+  const manualRate = clampNumber(item?.unitRate ?? item?.rate);
+  const formulaRate = isFormulaDrivenItem(item) ? evaluateBoqFormulaRate(item) : 0;
 
   if (item?.useBenchmark) return 'benchmark';
   if (item?.customPricing) return 'custom';
+  if (formulaRate > 0 || item?.rateSource === 'formula') return 'calculated';
   if (item?.breakdown || item?.rateSource === 'calculated') return 'calculated';
   if (manualRate > 0) return 'manual';
   return 'unpriced';
@@ -1084,7 +1119,7 @@ export const getProjectPricingAnalytics = (project = {}) => {
     return {
       section,
       total: itemEntries.reduce((sum, entry) => sum + entry.total, 0),
-      quantity: (section.items || []).reduce((sum, item) => sum + Math.max(clampNumber(item.qty), 0), 0),
+      quantity: (section.items || []).reduce((sum, item) => sum + Math.max(clampNumber(item.quantity ?? item.qty), 0), 0),
       items: itemEntries
     };
   });
@@ -1101,12 +1136,12 @@ export const getProjectPricingAnalytics = (project = {}) => {
   const benchmarkReferencedItems = items.filter((entry) => entry.benchmarkRate > 0).length;
   const outlierCount = items.filter((entry) => entry.outlier).length;
   const totalValue = items.reduce((sum, entry) => sum + entry.total, 0);
-  const totalQuantity = items.reduce((sum, entry) => sum + Math.max(clampNumber(entry.item.qty), 0), 0);
+  const totalQuantity = items.reduce((sum, entry) => sum + Math.max(clampNumber(entry.item.quantity ?? entry.item.qty), 0), 0);
   const pricingCoveragePercent = totalItems > 0 ? (pricedItems / totalItems) * 100 : 0;
   const benchmarkCoveragePercent = totalItems > 0 ? (benchmarkReferencedItems / totalItems) * 100 : 0;
 
   const composition = items.reduce((acc, entry) => {
-    const quantity = Math.max(clampNumber(entry.item.qty), 0);
+    const quantity = Math.max(clampNumber(entry.item.quantity ?? entry.item.qty), 0);
     acc.materials += entry.composition.materials * quantity;
     acc.labour += entry.composition.labour * quantity;
     acc.plant += entry.composition.plant * quantity;
