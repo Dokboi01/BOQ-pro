@@ -93,11 +93,16 @@ const stripItemForCloud = (item) => {
         rate: item.rate ?? 0,
         total: item.total ?? 0,
         rateSource: item.rateSource || null,
+        selectedRateSource: item.selectedRateSource || null,
+        formulaCalculatedRate: item.formulaCalculatedRate ?? null,
+        resolvedUnitRate: item.resolvedUnitRate ?? null,
+        manualRate: item.manualRate ?? null,
 
         // Benchmark data (computed, compact)
         useBenchmark: item.useBenchmark ?? false,
         benchmark: item.benchmark ?? 0,
         benchmarkRate: item.benchmarkRate ?? item.benchmark ?? 0,
+        benchmarkMetadata: item.benchmarkMetadata || null,
         benchmarkRegionalRates: item.benchmarkRegionalRates || null,
         benchmarkEvidence: item.benchmarkEvidence || null,
         benchmarkMatchSource: item.benchmarkMatchSource || null,
