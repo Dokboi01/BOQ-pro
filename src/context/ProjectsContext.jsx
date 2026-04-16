@@ -25,7 +25,12 @@ import { logActivity } from '../db/collaborationService';
 import { getWorkspaceState as getCloudWorkspaceState, saveWorkspaceState as saveCloudWorkspaceState } from '../db/database';
 import ProjectsContext from './projects-context';
 import { buildCompanyKey, canAccessCompanyProject, deriveCompanyName } from '../utils/companyAccess';
-import { buildAutoRateResult, getItemTotal } from '../utils/pricing';
+import {
+    buildAutoRateResult,
+    getEffectiveBenchmarkRate,
+    getItemTotal,
+    resolveItemRateSource,
+} from '../utils/pricing';
 import { evaluateBoqFormulaRate, normalizeEditableInputs } from '../utils/boqFormulas';
 
 const PROJECT_SCOPED_TABS = new Set(['workspace', 'reports', 'library']);
@@ -776,13 +781,45 @@ export function ProjectsProvider({ children }) {
                 const seededBenchmark = templateBenchmark || Number(fallbackAutoRate?.benchmark) || 0;
                 const seededRate = templateRate || Number(fallbackAutoRate?.rate) || 0;
                 const isFormulaDriven = (item.defaultFormulaType || 'manual') !== 'manual' && editableInputs.length > 0;
-                const initialRate = isFormulaDriven
-                    ? Number(formulaRate) || 0
-                    : (unpriced ? 0 : seededRate);
-                const amount = qty * initialRate;
+                const selectedRateSource = resolveItemRateSource(item);
+                const formulaCalculatedRate = Number(item.formulaCalculatedRate ?? formulaRate) || 0;
+                const manualRate = Number(
+                    item.manualRate
+                    ?? (
+                        selectedRateSource === 'manual'
+                            ? (unpriced ? 0 : seededRate)
+                            : 0
+                    )
+                ) || 0;
+                const effectiveBenchmarkRate = getEffectiveBenchmarkRate({
+                    ...item,
+                    benchmark: seededBenchmark,
+                    benchmarkRate: seededBenchmark,
+                    benchmarkRegionalRates: item.benchmarkRegionalRates || fallbackAutoRate?.benchmarkRegionalRates || null,
+                }, region);
+                const resolvedUnitRate = selectedRateSource === 'benchmark'
+                    ? (Number(effectiveBenchmarkRate) || seededBenchmark)
+                    : selectedRateSource === 'formula'
+                        ? (formulaCalculatedRate || seededBenchmark)
+                        : manualRate;
+                const amount = qty * resolvedUnitRate;
                 const progressPercent = qty > 0
                     ? ((Number(item.qtyCompleted) || 0) / qty) * 100
                     : 0;
+                const benchmarkMetadata = {
+                    rate: Number(item.benchmarkMetadata?.rate ?? seededBenchmark) || 0,
+                    currency: item.benchmarkMetadata?.currency || 'NGN',
+                    region: item.benchmarkMetadata?.region || region || 'Lagos',
+                    sourceType: item.benchmarkMetadata?.sourceType || (seededBenchmark > 0 ? 'catalog' : 'manual'),
+                    sourceNote: item.benchmarkMetadata?.sourceNote || '',
+                    dateCaptured: item.benchmarkMetadata?.dateCaptured || null,
+                    confidenceLevel: item.benchmarkMetadata?.confidenceLevel || (seededBenchmark > 0 ? 'medium' : 'low'),
+                };
+                const legacyRateSource = selectedRateSource === 'manual'
+                    && item.rateSource
+                    && !['manual', 'benchmark', 'formula'].includes(item.rateSource)
+                    ? item.rateSource
+                    : selectedRateSource;
 
                 return {
                     id: item.id || Math.random().toString(36).substr(2, 9),
@@ -805,21 +842,24 @@ export function ProjectsProvider({ children }) {
                     pickerHint: item.pickerHint || '',
                     isRecommended: item.isRecommended === true,
                     quantity: qty,
-                    unitRate: initialRate,
+                    unitRate: resolvedUnitRate,
                     amount,
                     notes: item.notes || '',
                     benchmarkRate: seededBenchmark,
                     qty,
-                    rate: initialRate,
+                    rate: resolvedUnitRate,
                     total: amount,
                     benchmark: seededBenchmark,
+                    selectedRateSource,
+                    formulaCalculatedRate,
+                    resolvedUnitRate,
+                    manualRate,
+                    benchmarkMetadata,
                     benchmarkRegionalRates: item.benchmarkRegionalRates || fallbackAutoRate?.benchmarkRegionalRates || null,
                     benchmarkEvidence: item.benchmarkEvidence || fallbackAutoRate?.benchmarkEvidence || null,
                     benchmarkMatchSource: item.benchmarkMatchSource || fallbackAutoRate?.matchSource || null,
-                    useBenchmark: item.useBenchmark === true,
-                    rateSource: item.useBenchmark
-                        ? 'benchmark'
-                        : (item.rateSource || (isFormulaDriven ? 'formula' : 'manual')),
+                    useBenchmark: selectedRateSource === 'benchmark',
+                    rateSource: legacyRateSource || (isFormulaDriven ? 'formula' : 'manual'),
                     qtySource: item.qtySource || 'manual',
                     subcategory: item.subcategory || section.title || '',
                     materials: Array.isArray(item.materials) ? item.materials : [],

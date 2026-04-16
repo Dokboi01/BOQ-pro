@@ -338,6 +338,11 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       : selectedRateSource === 'formula'
         ? (formulaCalculatedRate || benchmarkRate)
         : manualRate;
+    const legacyRateSource = selectedRateSource === 'manual'
+      && item.rateSource
+      && !['manual', 'benchmark', 'formula'].includes(item.rateSource)
+      ? item.rateSource
+      : selectedRateSource;
 
     const nextItem = {
       ...item,
@@ -354,8 +359,17 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       rate: resolvedUnitRate,
       benchmarkRate,
       benchmark: benchmarkRate,
+      benchmarkMetadata: {
+        rate: sanitizeNonNegativeNumber(item.benchmarkMetadata?.rate ?? benchmarkRate),
+        currency: item.benchmarkMetadata?.currency || 'NGN',
+        region: item.benchmarkMetadata?.region || project?.region || 'Lagos',
+        sourceType: item.benchmarkMetadata?.sourceType || (benchmarkRate > 0 ? 'catalog' : 'manual'),
+        sourceNote: item.benchmarkMetadata?.sourceNote || '',
+        dateCaptured: item.benchmarkMetadata?.dateCaptured || null,
+        confidenceLevel: item.benchmarkMetadata?.confidenceLevel || (benchmarkRate > 0 ? 'medium' : 'low'),
+      },
       useBenchmark: selectedRateSource === 'benchmark',
-      rateSource: selectedRateSource,
+      rateSource: legacyRateSource,
       billSectionTitle: item.billSectionTitle || section?.title || '',
       billSection: item.billSection || section?.billSectionId || section?.id || '',
       structureType: item.structureType || section?.structureType || project?.structureType || project?.type || '',
@@ -404,6 +418,45 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     return parsed;
   };
 
+  const getSelectedRateSource = (item) => resolveItemRateSource(item);
+
+  const getManualRateValue = (item) => sanitizeNonNegativeNumber(
+    item?.manualRate ?? (
+      getSelectedRateSource(item) === 'manual'
+        ? (item?.unitRate ?? item?.rate)
+        : 0
+    )
+  );
+
+  const getFormulaRateValue = (item) => sanitizeNonNegativeNumber(
+    item?.formulaCalculatedRate ?? evaluateBoqFormulaRate({
+      ...item,
+      editableInputs: normalizeEditableInputs(item?.editableInputs),
+    })
+  );
+
+  const getBenchmarkRateValue = (item) => sanitizeNonNegativeNumber(
+    getEffectiveBenchmarkRate(item, project?.region || 'Lagos')
+  );
+
+  const getRateOptionAvailability = (item) => {
+    const benchmarkRate = getBenchmarkRateValue(item);
+    const hasFormulaRate = isFormulaDrivenItem(item);
+    const manualRate = getManualRateValue(item);
+    const formulaRate = getFormulaRateValue(item);
+    const benchmarkReference = sanitizeNonNegativeNumber(
+      item?.benchmarkMetadata?.rate ?? item?.benchmarkRate ?? item?.benchmark
+    );
+
+    return {
+      benchmarkRate,
+      formulaRate,
+      manualRate,
+      hasBenchmarkRate: benchmarkRate > 0 || benchmarkReference > 0,
+      hasFormulaRate,
+    };
+  };
+
   const handleQuantityChange = (sectionId, item, rawValue) => {
     updateItem(sectionId, item.id, {
       qty: sanitizeNonNegativeNumber(rawValue),
@@ -442,6 +495,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       : breakdown;
 
     updateItem(analyzingItem.sectionId, analyzingItem.item.id, {
+      selectedRateSource: 'manual',
+      manualRate: sanitizeNonNegativeNumber(rate),
       rate: rate,
       rateSource: shouldPreserveCustomPricing ? 'custom' : 'calculated',
       useBenchmark: false,
@@ -455,6 +510,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     if (!customPricingItem) return;
 
     updateItem(customPricingItem.sectionId, customPricingItem.item.id, {
+      selectedRateSource: 'manual',
+      manualRate: sanitizeNonNegativeNumber(rate),
       rate,
       rateSource: 'custom',
       useBenchmark: false,
@@ -480,12 +537,30 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   };
 
   const handleRateSourceChange = (sectionId, item, nextSource) => {
+    const availability = getRateOptionAvailability(item);
+    if (nextSource === 'benchmark' && !availability.hasBenchmarkRate) {
+      toast.info('No benchmark rate is available for this item yet.');
+      return;
+    }
+    if (nextSource === 'formula' && !availability.hasFormulaRate) {
+      toast.info('This item does not have a saved formula yet.');
+      return;
+    }
+
+    const nextRateSource = nextSource === 'manual'
+      ? (
+          item.customPricing
+            ? 'custom'
+            : item.rateSource === 'calculated'
+              ? 'calculated'
+              : 'manual'
+        )
+      : nextSource;
+
     updateItem(sectionId, item.id, {
       selectedRateSource: nextSource,
       useBenchmark: nextSource === 'benchmark',
-      rateSource: nextSource,
-      // Clear custom pricing when switching away
-      ...(nextSource !== 'manual' ? {} : {}),
+      rateSource: nextRateSource,
     });
   };
 
@@ -518,15 +593,12 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const activateCustomPricing = (sectionId, item) => {
     const nextRateSource = item.customPricing
       ? 'custom'
-      : isFormulaDrivenItem(item)
-        ? 'formula'
-      : item.breakdown
+      : item.breakdown && !isFormulaDrivenItem(item)
         ? 'calculated'
-        : item.rateSource === 'benchmark'
-          ? 'manual'
-          : (item.rateSource || 'manual');
+        : 'manual';
 
     updateItem(sectionId, item.id, {
+      selectedRateSource: 'manual',
       useBenchmark: false,
       rateSource: nextRateSource
     });
@@ -566,6 +638,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     }
 
     updateItem(sectionId, item.id, {
+      selectedRateSource: 'benchmark',
       useBenchmark: true,
       rateSource: 'benchmark',
       benchmark: derivedBenchmark || 0,
@@ -617,7 +690,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     const updated = sections.map((section) => ({
       ...section,
       items: (section.items || []).map((item) => {
-        const shouldPreserveManualRate = !item.useBenchmark && Number(item.rate) > 0 && item.rateSource === 'manual';
+        const selectedRateSource = resolveItemRateSource(item);
+        const shouldPreserveManualRate = selectedRateSource === 'manual' && getManualRateValue(item) > 0 && item.rateSource === 'manual';
         const autoRated = buildAutoRateResult(item, {
           structureType: project?.structureType || project?.subtype || project?.type,
           region: project?.region || 'Lagos',
@@ -633,8 +707,11 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           benchmarkMatchSource: item.benchmarkMatchSource || autoRated.matchSource,
         };
 
-        if (!shouldPreserveManualRate && Number(item.rate) <= 0) {
+        if (!shouldPreserveManualRate && selectedRateSource === 'manual' && getManualRateValue(item) <= 0) {
+          nextItem.manualRate = sanitizeNonNegativeNumber(autoRated.rate);
           nextItem.rate = autoRated.rate;
+          nextItem.unitRate = autoRated.rate;
+          nextItem.selectedRateSource = 'manual';
           nextItem.rateSource = item.customPricing ? 'custom' : 'calculated';
           updatedCount += 1;
         }
@@ -861,17 +938,16 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     const src = resolveItemRateSource(item);
     if (src === 'benchmark') return { label: `${marketRegionLabel} Market Benchmark`, tone: 'benchmark' };
     if (src === 'formula') return { label: 'Formula-Driven Rate', tone: 'calculated' };
-    // Legacy custom/calculated sources still respected
-    if (item.rateSource === 'custom') return { label: 'Custom Rate Override', tone: 'custom' };
-    if (item.rateSource === 'calculated') return { label: 'Rate Analysis Build-Up', tone: 'calculated' };
+    if (item.customPricing) return { label: 'Manual Override from Pricing Studio', tone: 'custom' };
+    if (item.rateSource === 'calculated') return { label: 'Manual Build-Up Rate', tone: 'calculated' };
     return { label: 'Manual Rate Entry', tone: 'manual' };
   };
 
   const getBenchmarkDeltaMeta = (item) => {
-    if (item.useBenchmark) return null;
+    if (resolveItemRateSource(item) === 'benchmark') return null;
 
     const benchmarkRate = getEffectiveBenchmarkRate(item, project?.region || 'Lagos');
-    const customRate = Number(item.rate) || 0;
+    const customRate = getItemUnitRate(item, project?.region || 'Lagos');
     if (!benchmarkRate || !customRate) return null;
 
     const delta = ((customRate - benchmarkRate) / benchmarkRate) * 100;
@@ -991,6 +1067,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
   const getQuantityFeedbackMeta = (item, benchmarkRate, unitRate) => {
     const quantity = sanitizeNonNegativeNumber(item?.qty);
+    const selectedRateSource = resolveItemRateSource(item);
 
     if (quantity <= 0) {
       return {
@@ -999,17 +1076,24 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       };
     }
 
-    if (item.useBenchmark && benchmarkRate > 0) {
+    if (selectedRateSource === 'benchmark' && benchmarkRate > 0) {
       return {
         text: 'Price generated automatically.',
         tone: 'success'
       };
     }
 
-    if (item.useBenchmark && benchmarkRate <= 0) {
+    if (selectedRateSource === 'benchmark' && benchmarkRate <= 0) {
       return {
         text: 'No benchmark rate available — switch to custom pricing.',
         tone: 'warning'
+      };
+    }
+
+    if (selectedRateSource === 'formula' && unitRate > 0) {
+      return {
+        text: 'Formula inputs are active and the amount is updating from the calculated rate.',
+        tone: 'success'
       };
     }
 
@@ -1030,6 +1114,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
   const getAutomationMeta = (item, benchmarkRate, unitRate) => {
     const quantity = sanitizeNonNegativeNumber(item?.qty);
+    const selectedRateSource = resolveItemRateSource(item);
 
     if (quantity <= 0) {
       return {
@@ -1039,7 +1124,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       };
     }
 
-    if (item.useBenchmark) {
+    if (selectedRateSource === 'benchmark') {
       if (benchmarkRate <= 0) {
         return {
           title: 'No benchmark rate available — switch to custom pricing',
@@ -1055,10 +1140,26 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       };
     }
 
+    if (selectedRateSource === 'formula') {
+      if (unitRate <= 0) {
+        return {
+          title: 'Formula inputs still need review',
+          detail: 'Update the formula inputs or switch rate source to complete this item.',
+          tone: 'warning'
+        };
+      }
+
+      return {
+        title: 'Formula rate active',
+        detail: 'Amount is being generated from the saved engineering formula inputs.',
+        tone: 'calculated'
+      };
+    }
+
     if (unitRate <= 0) {
       return {
-        title: 'Custom rate still needed',
-        detail: 'Open the pricing studio or enter a defendable custom rate to complete this item.',
+        title: 'Manual rate still needed',
+        detail: 'Enter a unit rate, open the pricing studio, or switch to a benchmark or formula source.',
         tone: 'warning'
       };
     }
@@ -1088,25 +1189,26 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
   const getItemStatusMeta = (item, benchmarkRate, unitRate) => {
     const quantity = sanitizeNonNegativeNumber(item?.qty);
+    const selectedRateSource = resolveItemRateSource(item);
 
     if (quantity <= 0) {
       return { label: 'Quantity Needed', tone: 'warning' };
     }
 
-    if (item.useBenchmark && benchmarkRate <= 0) {
+    if (selectedRateSource === 'benchmark' && benchmarkRate <= 0) {
       return { label: 'Benchmark Missing', tone: 'warning' };
     }
 
-    if (item.useBenchmark) {
+    if (selectedRateSource === 'benchmark') {
       return { label: 'Benchmark Priced', tone: 'benchmark' };
     }
 
-    if (item.customPricing) {
-      return { label: 'Custom Override', tone: 'custom' };
+    if (selectedRateSource === 'formula') {
+      return { label: 'Formula Ready', tone: 'calculated' };
     }
 
-    if (item.rateSource === 'formula') {
-      return { label: 'Formula Ready', tone: 'calculated' };
+    if (item.customPricing) {
+      return { label: 'Manual Override', tone: 'custom' };
     }
 
     if (item.rateSource === 'calculated') {
@@ -1207,7 +1309,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         const quantity = sanitizeNonNegativeNumber(item?.qty);
         const benchmarkRate = getEffectiveBenchmarkRate(item, project?.region || 'Lagos');
         const unitRate = getItemUnitRate(item, project?.region || 'Lagos');
-        return quantity <= 0 || (item.useBenchmark ? benchmarkRate <= 0 : unitRate <= 0);
+        return quantity <= 0 || (resolveItemRateSource(item) === 'benchmark' ? benchmarkRate <= 0 : unitRate <= 0);
       }
       case 'formula':
         return isFormulaDrivenItem(item);
@@ -1309,7 +1411,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       const quantity = sanitizeNonNegativeNumber(item.qty);
       const benchmarkRate = getEffectiveBenchmarkRate(item, project?.region || 'Lagos');
       const unitRate = getItemUnitRate(item, project?.region || 'Lagos');
-      return quantity <= 0 || (item.useBenchmark ? benchmarkRate <= 0 : unitRate <= 0);
+        return quantity <= 0 || (resolveItemRateSource(item) === 'benchmark' ? benchmarkRate <= 0 : unitRate <= 0);
     }).length
     : 0;
   const workspaceFilterOptions = [
@@ -1384,9 +1486,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     if (!formulaItemContext) return;
     updateItem(formulaItemContext.sectionId, formulaItemContext.item.id, {
       editableInputs: nextInputs,
+      selectedRateSource: 'formula',
       rateSource: 'formula',
       useBenchmark: false,
-      customPricing: null,
     });
     setFormulaItemContext(null);
   };
@@ -1522,11 +1624,12 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     }
 
     if (selectedCell.columnKey === 'strategy') {
+      const selectedRateSource = resolveItemRateSource(activeItem);
       return {
         address,
         columnLabel: `${activeColumn.label}${lineReference}`,
-        value: activeItem.useBenchmark ? 'Benchmark pricing' : 'Custom pricing',
-        detail: activeItem.useBenchmark
+        value: `${selectedRateSource.charAt(0).toUpperCase()}${selectedRateSource.slice(1)} pricing`,
+        detail: selectedRateSource === 'benchmark'
           ? `Auto-priced using the ${marketRegionLabel} market benchmark`
           : `${rateSourceMeta.label} is active for this item`,
       };
@@ -1538,7 +1641,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         address,
         columnLabel: `${activeColumn.label}${lineReference}`,
         value: unitRate > 0 ? `N${unitRate.toLocaleString()}` : 'N0',
-        detail: activeItem.useBenchmark
+        detail: resolveItemRateSource(activeItem) === 'benchmark'
           ? `Benchmark rate from ${marketRegionLabel} market data`
           : (isFormulaDrivenItem(activeItem) && formulaText
             ? `${rateSourceMeta.label} | ${formulaText}`
@@ -1939,7 +2042,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                 >
                   <Calculator size={12} /> Takeoff
                 </button>
-                {!selectedItemContext.item.useBenchmark && isFormulaDrivenItem(selectedItemContext.item) && (
+                {isFormulaDrivenItem(selectedItemContext.item) && (
                   <button
                     className="ws-helper-btn"
                     onClick={() => openFormulaEditor(selectedItemContext.section.id, selectedItemContext.item)}
@@ -1947,7 +2050,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                     fx Formula Inputs
                   </button>
                 )}
-                {!selectedItemContext.item.useBenchmark && !isFormulaDrivenItem(selectedItemContext.item) && (
+                {resolveItemRateSource(selectedItemContext.item) === 'manual' && (
                   <button
                     className="ws-helper-btn"
                     onClick={() => openCustomPricingStudio(selectedItemContext.section.id, selectedItemContext.item)}
@@ -2007,6 +2110,41 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
               </div>
             </>
           )}
+        </div>
+      </div>
+
+      <div className="ws-cost-rail">
+        <div className="ws-cost-card">
+          <span className="ws-cost-label">Active Bill</span>
+          <strong className="ws-cost-value">{activeProjectSection?.title || 'No active bill'}</strong>
+          <small className="ws-cost-meta">
+            {activeProjectSection
+              ? `${(activeProjectSection.items || []).length} line${(activeProjectSection.items || []).length === 1 ? '' : 's'} · Qty ${activeSectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+              : 'Choose a bill section to start measuring'}
+          </small>
+        </div>
+        <div className="ws-cost-card">
+          <span className="ws-cost-label">Active Bill Subtotal</span>
+          <strong className="ws-cost-value">N{activeSectionSubtotal.toLocaleString()}</strong>
+          <small className="ws-cost-meta">
+            {activeSectionPendingItems > 0
+              ? `${activeSectionPendingItems} line${activeSectionPendingItems === 1 ? '' : 's'} still need pricing review`
+              : 'Current active bill is fully priced'}
+          </small>
+        </div>
+        <div className="ws-cost-card">
+          <span className="ws-cost-label">{isFilteredView ? `${activeWorkspaceFilterLabel} View` : 'Visible Sheet Total'}</span>
+          <strong className="ws-cost-value">N{visibleGrandTotal.toLocaleString()}</strong>
+          <small className="ws-cost-meta">
+            {filteredSectionCount} visible bill{filteredSectionCount === 1 ? '' : 's'} · {filteredItemCount} visible item{filteredItemCount === 1 ? '' : 's'}
+          </small>
+        </div>
+        <div className="ws-cost-card ws-cost-card-total">
+          <span className="ws-cost-label">Project Grand Total</span>
+          <strong className="ws-cost-value">N{calculateGrandTotal.toLocaleString()}</strong>
+          <small className="ws-cost-meta">
+            {project?.region || 'Lagos'} market basis · {workspaceAnalytics.totalItems} measured item{workspaceAnalytics.totalItems === 1 ? '' : 's'}
+          </small>
         </div>
       </div>
 
@@ -2148,7 +2286,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                       : null;
                     const showSubcategoryHeader = idx === 0 || currentSubcategory !== previousSubcategory;
                     const benchmarkRate = getEffectiveBenchmarkRate(item, project?.region || 'Lagos');
-                    const outlier = !item.useBenchmark && isOutlier(item.rate, benchmarkRate);
+                    const selectedRateSource = resolveItemRateSource(item);
+                    const optionAvailability = getRateOptionAvailability(item);
+                    const formulaRate = optionAvailability.formulaRate;
+                    const manualRate = optionAvailability.manualRate;
+                    const hasBenchmarkOption = optionAvailability.hasBenchmarkRate;
+                    const hasFormulaOption = optionAvailability.hasFormulaRate;
+                    const canEditManualRate = viewMode !== 'valuation' && selectedRateSource === 'manual';
+                    const outlier = selectedRateSource !== 'benchmark' && isOutlier(getItemUnitRate(item, project?.region || 'Lagos'), benchmarkRate);
                     const rate = getItemUnitRate(item, project?.region || 'Lagos');
                     const itemTotal = getItemTotal(item, project?.region || 'Lagos');
                     const rateSourceMeta = getRateSourceMeta(item);
@@ -2164,7 +2309,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                     const hasValidQuantity = sanitizeNonNegativeNumber(item.qty) > 0;
                     const hasBenchmarkRate = sanitizeNonNegativeNumber(benchmarkRate) > 0;
                     const hasUnitRate = sanitizeNonNegativeNumber(rate) > 0;
-                    const isIncomplete = !hasValidQuantity || (item.useBenchmark ? !hasBenchmarkRate : !hasUnitRate);
+                    const isIncomplete = !hasValidQuantity || (selectedRateSource === 'benchmark' ? !hasBenchmarkRate : !hasUnitRate);
                     const itemCode = `${String.fromCharCode(65 + sIdx)}.${idx + 1}`;
                     return (
                       <React.Fragment key={item.id}>
@@ -2178,7 +2323,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                             </td>
                           </tr>
                         )}
-                        <tr className={`ws-item-row ${outlier ? 'ws-outlier' : ''} ${item.useBenchmark ? 'ws-item-row-benchmark' : 'ws-item-row-custom'} ${isIncomplete ? 'ws-item-incomplete' : ''} ${selectedCell?.sectionId === section.id && selectedCell?.itemId === item.id ? 'ws-item-row-selected' : ''}`}>
+                        <tr className={`ws-item-row ${outlier ? 'ws-outlier' : ''} ${selectedRateSource === 'benchmark' ? 'ws-item-row-benchmark' : 'ws-item-row-custom'} ${isIncomplete ? 'ws-item-incomplete' : ''} ${selectedCell?.sectionId === section.id && selectedCell?.itemId === item.id ? 'ws-item-row-selected' : ''}`}>
                         <td
                           className={`ws-num ${isWorkspaceCellSelected(section.id, item.id, 'line') ? 'ws-cell-selected' : ''}`}
                           onClick={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'line', itemCode, rowNumber: spreadsheetRowNumber })}
@@ -2225,7 +2370,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                           </div>
                           <div className="ws-status-row">
                             <span className={`ws-state-pill ws-state-pill-${itemStatusMeta.tone}`}>{itemStatusMeta.label}</span>
-                            {item.useBenchmark && hasBenchmarkRate && (
+                            {selectedRateSource === 'benchmark' && hasBenchmarkRate && (
                               <span className="ws-state-pill ws-state-pill-info">Auto amount on quantity entry</span>
                             )}
                           </div>
@@ -2305,23 +2450,48 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                             className={isWorkspaceCellSelected(section.id, item.id, 'strategy') ? 'ws-cell-selected' : ''}
                             onClick={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'strategy', itemCode, rowNumber: spreadsheetRowNumber })}
                           >
-                            <div className="ws-strategy-toggle">
-                              <button className={`ws-strat-btn ${!item.useBenchmark ? 'active' : ''}`}
-                                onClick={() => {
-                                  selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'strategy', itemCode, rowNumber: spreadsheetRowNumber });
-                                  activateCustomPricing(section.id, item);
-                                }}
-                                title="Use custom pricing">
-                                Custom
-                              </button>
-                              <button className={`ws-strat-btn ${item.useBenchmark ? 'active' : ''}`}
-                                onClick={() => {
-                                  selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'strategy', itemCode, rowNumber: spreadsheetRowNumber });
-                                  activateBenchmarkPricing(section.id, item);
-                                }}
-                                title="Use benchmark pricing">
-                                Benchmark
-                              </button>
+                            <div className="ws-rate-source-selector">
+                              <div className="ws-rate-source-buttons">
+                                <button
+                                  className={`ws-src-btn ws-src-btn-bm ${selectedRateSource === 'benchmark' ? 'active' : ''} ${!hasBenchmarkOption ? 'ws-src-btn-disabled' : ''}`}
+                                  onClick={() => {
+                                    selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'strategy', itemCode, rowNumber: spreadsheetRowNumber });
+                                    handleRateSourceChange(section.id, item, 'benchmark');
+                                  }}
+                                  disabled={!hasBenchmarkOption}
+                                  title={hasBenchmarkOption ? 'Use benchmark pricing' : 'No benchmark rate available yet'}
+                                >
+                                  Benchmark
+                                </button>
+                                <button
+                                  className={`ws-src-btn ws-src-btn-formula ${selectedRateSource === 'formula' ? 'active' : ''} ${!hasFormulaOption ? 'ws-src-btn-disabled' : ''}`}
+                                  onClick={() => {
+                                    selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'strategy', itemCode, rowNumber: spreadsheetRowNumber });
+                                    handleRateSourceChange(section.id, item, 'formula');
+                                  }}
+                                  disabled={!hasFormulaOption}
+                                  title={hasFormulaOption ? 'Use formula pricing' : 'No saved formula for this item'}
+                                >
+                                  Formula
+                                </button>
+                                <button
+                                  className={`ws-src-btn ws-src-btn-manual ${selectedRateSource === 'manual' ? 'active' : ''}`}
+                                  onClick={() => {
+                                    selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'strategy', itemCode, rowNumber: spreadsheetRowNumber });
+                                    activateCustomPricing(section.id, item);
+                                  }}
+                                  title="Use manual pricing"
+                                >
+                                  Manual
+                                </button>
+                              </div>
+                              <small className="ws-rate-source-help">
+                                {selectedRateSource === 'benchmark'
+                                  ? 'Benchmark source active'
+                                  : selectedRateSource === 'formula'
+                                    ? 'Formula source active'
+                                    : (item.customPricing ? 'Manual source with saved build-up' : 'Manual source ready for override')}
+                              </small>
                             </div>
                           </td>
                         )}
@@ -2333,12 +2503,12 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                             <input
                               type="number"
                               className="ws-input ws-rate-input"
-                              value={rate || ''}
+                              value={selectedRateSource === 'manual' ? (item.manualRate ?? '') : (rate || '')}
                               onChange={(e) => handleManualRateChange(section.id, item, e.target.value)}
-                              disabled={item.useBenchmark || isFormulaDrivenItem(item)}
+                              disabled={!canEditManualRate}
                               onFocus={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'rate', itemCode, rowNumber: spreadsheetRowNumber })}
                             />
-                            {!item.useBenchmark && isFormulaDrivenItem(item) && (
+                            {hasFormulaOption && (
                               <button
                                 className="ws-analysis-btn ws-custom-studio-btn"
                                 onClick={() => {
@@ -2350,7 +2520,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                                 fx
                               </button>
                             )}
-                            {!item.useBenchmark && !isFormulaDrivenItem(item) && (
+                            {selectedRateSource === 'manual' && (
                               <button
                                 className="ws-analysis-btn ws-custom-studio-btn"
                                 onClick={() => {
@@ -2372,10 +2542,33 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                             >
                               <Calculator size={11} />
                             </button>
+                            <button
+                              className="ws-analysis-btn"
+                              onClick={() => {
+                                selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'rate', itemCode, rowNumber: spreadsheetRowNumber });
+                                openItemDetailPanel(section.id, item);
+                              }}
+                              title="Item details"
+                            >
+                              <Info size={11} />
+                            </button>
+                          </div>
+                          <div className="ws-rate-reference-row">
+                            <span className={`ws-rate-ref-pill ${selectedRateSource === 'benchmark' ? 'ws-rate-ref-active' : ''}`}>
+                              BM N{benchmarkRate.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                            </span>
+                            <span className={`ws-rate-ref-pill ws-rate-ref-formula ${selectedRateSource === 'formula' ? 'ws-rate-ref-active' : ''}`}>
+                              {hasFormulaOption
+                                ? `FX N${formulaRate.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+                                : 'FX Unavailable'}
+                            </span>
+                            <span className={`ws-rate-ref-pill ws-rate-ref-manual ${selectedRateSource === 'manual' ? 'ws-rate-ref-active' : ''}`}>
+                              MAN N{manualRate.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                            </span>
                           </div>
                           <div className="ws-rate-meta">
                             <span className={`ws-rate-chip ws-rate-chip-${rateSourceMeta.tone}`}>{rateSourceMeta.label}</span>
-                            {item.useBenchmark && hasBenchmarkRate && (
+                            {selectedRateSource === 'benchmark' && hasBenchmarkRate && (
                               <span className={`ws-rate-chip ws-rate-chip-bm-confidence ws-rate-chip-bm-${getBenchmarkConfidenceLabel(item.benchmarkMatchSource).toLowerCase()}`}
                                 title="Benchmark confidence based on breakdown match quality">
                                 {getBenchmarkConfidenceLabel(item.benchmarkMatchSource)} confidence
@@ -2383,8 +2576,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                             )}
                             {benchmarkEvidenceMeta && hasBenchmarkRate && (
                               <span
-                                className={`ws-rate-chip ws-rate-chip-${item.useBenchmark ? benchmarkEvidenceMeta.tone : 'muted'}`}
-                                title={item.useBenchmark ? benchmarkEvidenceMeta.title : benchmarkEvidenceMeta.referenceTitle}
+                                className={`ws-rate-chip ws-rate-chip-${selectedRateSource === 'benchmark' ? benchmarkEvidenceMeta.tone : 'muted'}`}
+                                title={selectedRateSource === 'benchmark' ? benchmarkEvidenceMeta.title : benchmarkEvidenceMeta.referenceTitle}
                               >
                                 {benchmarkEvidenceMeta.chip}
                               </span>
@@ -2397,7 +2590,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                                 {benchmarkRefreshMeta.chip}
                               </span>
                             )}
-                            {hasBenchmarkRate && !item.useBenchmark && (
+                            {hasBenchmarkRate && selectedRateSource !== 'benchmark' && (
                               <span className="ws-rate-chip ws-rate-chip-bm-ref" title="Current market benchmark for this item">
                                 Benchmark: ₦{Math.round(benchmarkRate).toLocaleString()}
                               </span>
@@ -2411,7 +2604,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                                 {benchmarkRefreshMeta.actionLabel}
                               </button>
                             )}
-                            {!item.useBenchmark && !item.customPricing && (
+                            {selectedRateSource === 'manual' && !item.customPricing && (
                               <button
                                 className="ws-rate-link"
                                 onClick={() => openCustomPricingStudio(section.id, item)}
@@ -2422,9 +2615,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                             )}
                           </div>
                           {benchmarkEvidenceMeta && hasBenchmarkRate && (
-                            <div className={`ws-benchmark-evidence ws-benchmark-evidence-${item.useBenchmark ? benchmarkEvidenceMeta.tone : 'muted'}`}>
-                              <strong>{item.useBenchmark ? benchmarkEvidenceMeta.title : benchmarkEvidenceMeta.referenceTitle}</strong>
-                              <span>{item.useBenchmark ? benchmarkEvidenceMeta.rateLabel : benchmarkEvidenceMeta.referenceRateLabel}</span>
+                            <div className={`ws-benchmark-evidence ws-benchmark-evidence-${selectedRateSource === 'benchmark' ? benchmarkEvidenceMeta.tone : 'muted'}`}>
+                              <strong>{selectedRateSource === 'benchmark' ? benchmarkEvidenceMeta.title : benchmarkEvidenceMeta.referenceTitle}</strong>
+                              <span>{selectedRateSource === 'benchmark' ? benchmarkEvidenceMeta.rateLabel : benchmarkEvidenceMeta.referenceRateLabel}</span>
                               {benchmarkEvidenceMeta.detail && <small>{benchmarkEvidenceMeta.detail}</small>}
                             </div>
                           )}
@@ -2436,7 +2629,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                             </div>
                           )}
                           {/* Manual benchmark override when benchmark pricing is active */}
-                          {item.useBenchmark && (
+                          {selectedRateSource === 'benchmark' && (
                             <div className="ws-benchmark-override">
                               <Pencil size={10} className="ws-benchmark-override-icon" />
                               <span className="ws-benchmark-override-label">Benchmark (₦):</span>
@@ -2511,7 +2704,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                       </tr>
                       <tr className={`ws-mobile-row ${outlier ? 'ws-outlier' : ''} ${isIncomplete ? 'ws-item-incomplete' : ''}`}>
                         <td colSpan={totalColumnCount} className="ws-mobile-cell">
-                          <div className={`ws-mobile-card ${item.useBenchmark ? 'ws-mobile-card-benchmark' : 'ws-mobile-card-custom'} ${isIncomplete ? 'ws-mobile-card-incomplete' : ''}`}>
+                          <div className={`ws-mobile-card ${selectedRateSource === 'benchmark' ? 'ws-mobile-card-benchmark' : 'ws-mobile-card-custom'} ${isIncomplete ? 'ws-mobile-card-incomplete' : ''}`}>
                             <div className="ws-mobile-card-head">
                               <div className="ws-mobile-card-badges">
                                 <span className="ws-mobile-item-code">{itemCode}</span>
@@ -2624,17 +2817,39 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                               ) : (
                                 <div className="ws-mobile-field-block ws-mobile-field-block-wide">
                                   <label>Pricing Strategy</label>
-                                  <div className="ws-strategy-toggle ws-strategy-toggle-mobile">
-                                    <button className={`ws-strat-btn ${!item.useBenchmark ? 'active' : ''}`}
-                                      onClick={() => activateCustomPricing(section.id, item)}
-                                      title="Use custom pricing">
-                                      Custom
-                                    </button>
-                                    <button className={`ws-strat-btn ${item.useBenchmark ? 'active' : ''}`}
-                                      onClick={() => activateBenchmarkPricing(section.id, item)}
-                                      title="Use benchmark pricing">
-                                      Benchmark
-                                    </button>
+                                  <div className="ws-rate-source-selector ws-rate-source-selector-mobile">
+                                    <div className="ws-rate-source-buttons ws-rate-source-buttons-mobile">
+                                      <button
+                                        className={`ws-src-btn ws-src-btn-bm ${selectedRateSource === 'benchmark' ? 'active' : ''} ${!hasBenchmarkOption ? 'ws-src-btn-disabled' : ''}`}
+                                        onClick={() => handleRateSourceChange(section.id, item, 'benchmark')}
+                                        disabled={!hasBenchmarkOption}
+                                        title={hasBenchmarkOption ? 'Use benchmark pricing' : 'No benchmark rate available yet'}
+                                      >
+                                        Benchmark
+                                      </button>
+                                      <button
+                                        className={`ws-src-btn ws-src-btn-formula ${selectedRateSource === 'formula' ? 'active' : ''} ${!hasFormulaOption ? 'ws-src-btn-disabled' : ''}`}
+                                        onClick={() => handleRateSourceChange(section.id, item, 'formula')}
+                                        disabled={!hasFormulaOption}
+                                        title={hasFormulaOption ? 'Use formula pricing' : 'No saved formula for this item'}
+                                      >
+                                        Formula
+                                      </button>
+                                      <button
+                                        className={`ws-src-btn ws-src-btn-manual ${selectedRateSource === 'manual' ? 'active' : ''}`}
+                                        onClick={() => activateCustomPricing(section.id, item)}
+                                        title="Use manual pricing"
+                                      >
+                                        Manual
+                                      </button>
+                                    </div>
+                                    <small className="ws-rate-source-help">
+                                      {selectedRateSource === 'benchmark'
+                                        ? 'Benchmark source active'
+                                        : selectedRateSource === 'formula'
+                                          ? 'Formula source active'
+                                          : (item.customPricing ? 'Manual source with saved build-up' : 'Manual source ready for override')}
+                                    </small>
                                   </div>
                                 </div>
                               )}
@@ -2646,11 +2861,11 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                                 <input
                                   type="number"
                                   className="ws-input ws-rate-input"
-                                  value={rate || ''}
+                                  value={selectedRateSource === 'manual' ? (item.manualRate ?? '') : (rate || '')}
                                   onChange={(e) => handleManualRateChange(section.id, item, e.target.value)}
-                                  disabled={item.useBenchmark || isFormulaDrivenItem(item)}
+                                  disabled={!canEditManualRate}
                                 />
-                                {!item.useBenchmark && isFormulaDrivenItem(item) && (
+                                {hasFormulaOption && (
                                   <button
                                     className="ws-analysis-btn ws-custom-studio-btn ws-mobile-icon-btn"
                                     onClick={() => openFormulaEditor(section.id, item)}
@@ -2659,7 +2874,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                                     fx
                                   </button>
                                 )}
-                                {!item.useBenchmark && !isFormulaDrivenItem(item) && (
+                                {selectedRateSource === 'manual' && (
                                   <button
                                     className="ws-analysis-btn ws-custom-studio-btn ws-mobile-icon-btn"
                                     onClick={() => openCustomPricingStudio(section.id, item)}
@@ -2671,10 +2886,26 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                                 <button className="ws-analysis-btn ws-mobile-icon-btn" onClick={() => openDetailedAnalysis(section.id, item)} title="Detailed rate analysis">
                                   <Calculator size={12} />
                                 </button>
+                                <button className="ws-analysis-btn ws-mobile-icon-btn" onClick={() => openItemDetailPanel(section.id, item)} title="Item details">
+                                  <Info size={12} />
+                                </button>
+                              </div>
+                              <div className="ws-rate-reference-row ws-rate-reference-row-mobile">
+                                <span className={`ws-rate-ref-pill ${selectedRateSource === 'benchmark' ? 'ws-rate-ref-active' : ''}`}>
+                                  BM N{benchmarkRate.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                </span>
+                                <span className={`ws-rate-ref-pill ws-rate-ref-formula ${selectedRateSource === 'formula' ? 'ws-rate-ref-active' : ''}`}>
+                                  {hasFormulaOption
+                                    ? `FX N${formulaRate.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+                                    : 'FX Unavailable'}
+                                </span>
+                                <span className={`ws-rate-ref-pill ws-rate-ref-manual ${selectedRateSource === 'manual' ? 'ws-rate-ref-active' : ''}`}>
+                                  MAN N{manualRate.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                </span>
                               </div>
                               <div className="ws-rate-meta ws-rate-meta-mobile">
                                 <span className={`ws-rate-chip ws-rate-chip-${rateSourceMeta.tone}`}>{rateSourceMeta.label}</span>
-                                {item.useBenchmark && hasBenchmarkRate && (
+                                {selectedRateSource === 'benchmark' && hasBenchmarkRate && (
                                   <span className={`ws-rate-chip ws-rate-chip-bm-confidence ws-rate-chip-bm-${getBenchmarkConfidenceLabel(item.benchmarkMatchSource).toLowerCase()}`}
                                     title="Benchmark confidence based on breakdown match quality">
                                     {getBenchmarkConfidenceLabel(item.benchmarkMatchSource)} confidence
@@ -2682,8 +2913,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                                 )}
                                 {benchmarkEvidenceMeta && hasBenchmarkRate && (
                                   <span
-                                    className={`ws-rate-chip ws-rate-chip-${item.useBenchmark ? benchmarkEvidenceMeta.tone : 'muted'}`}
-                                    title={item.useBenchmark ? benchmarkEvidenceMeta.title : benchmarkEvidenceMeta.referenceTitle}
+                                    className={`ws-rate-chip ws-rate-chip-${selectedRateSource === 'benchmark' ? benchmarkEvidenceMeta.tone : 'muted'}`}
+                                    title={selectedRateSource === 'benchmark' ? benchmarkEvidenceMeta.title : benchmarkEvidenceMeta.referenceTitle}
                                   >
                                     {benchmarkEvidenceMeta.chip}
                                   </span>
@@ -2705,7 +2936,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                                     {benchmarkRefreshMeta.actionLabel}
                                   </button>
                                 )}
-                                {!item.useBenchmark && !item.customPricing && (
+                                {selectedRateSource === 'manual' && !item.customPricing && (
                                   <button
                                     className="ws-rate-link"
                                     onClick={() => openCustomPricingStudio(section.id, item)}
@@ -2716,9 +2947,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                                 )}
                               </div>
                               {benchmarkEvidenceMeta && hasBenchmarkRate && (
-                                <div className={`ws-benchmark-evidence ws-benchmark-evidence-${item.useBenchmark ? benchmarkEvidenceMeta.tone : 'muted'}`}>
-                                  <strong>{item.useBenchmark ? benchmarkEvidenceMeta.title : benchmarkEvidenceMeta.referenceTitle}</strong>
-                                  <span>{item.useBenchmark ? benchmarkEvidenceMeta.rateLabel : benchmarkEvidenceMeta.referenceRateLabel}</span>
+                                <div className={`ws-benchmark-evidence ws-benchmark-evidence-${selectedRateSource === 'benchmark' ? benchmarkEvidenceMeta.tone : 'muted'}`}>
+                                  <strong>{selectedRateSource === 'benchmark' ? benchmarkEvidenceMeta.title : benchmarkEvidenceMeta.referenceTitle}</strong>
+                                  <span>{selectedRateSource === 'benchmark' ? benchmarkEvidenceMeta.rateLabel : benchmarkEvidenceMeta.referenceRateLabel}</span>
                                   {benchmarkEvidenceMeta.detail && <small>{benchmarkEvidenceMeta.detail}</small>}
                                 </div>
                               )}
@@ -2858,6 +3089,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             updateItem(biddingItem.sectionId, biddingItem.item.id, {
               bids: updatedBids,
               rate: selectedBid ? selectedBid.rate : biddingItem.item.rate,
+              manualRate: selectedBid ? sanitizeNonNegativeNumber(selectedBid.rate) : getManualRateValue(biddingItem.item),
+              selectedRateSource: selectedBid ? 'manual' : resolveItemRateSource(biddingItem.item),
               useBenchmark: selectedBid ? false : biddingItem.item.useBenchmark,
               rateSource: selectedBid ? 'calculated' : biddingItem.item.rateSource
             });
@@ -3031,6 +3264,58 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
+        }
+
+        .ws-cost-rail {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 0.65rem;
+          padding: 0.65rem 0.75rem 0.8rem;
+          background: linear-gradient(180deg, #eef2ff 0%, #f8fafc 100%);
+          border-bottom: 1px solid #dbe4ee;
+        }
+
+        .ws-cost-card {
+          display: flex;
+          flex-direction: column;
+          gap: 0.24rem;
+          padding: 0.78rem 0.9rem;
+          border-radius: 16px;
+          background: rgba(255, 255, 255, 0.92);
+          border: 1px solid #dbe4ee;
+          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+        }
+
+        .ws-cost-card-total {
+          background: linear-gradient(135deg, #0f172a, #1e3a8a);
+          border-color: #1e3a8a;
+        }
+
+        .ws-cost-label {
+          font-size: 0.56rem;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+
+        .ws-cost-value {
+          font-size: 1rem;
+          font-weight: 900;
+          color: #0f172a;
+          line-height: 1.2;
+        }
+
+        .ws-cost-meta {
+          font-size: 0.68rem;
+          line-height: 1.45;
+          color: #475569;
+        }
+
+        .ws-cost-card-total .ws-cost-label,
+        .ws-cost-card-total .ws-cost-value,
+        .ws-cost-card-total .ws-cost-meta {
+          color: #ffffff;
         }
 
         .ws-refresh-banner {
@@ -4490,6 +4775,18 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-src-btn-formula.active { background: #f5f3ff; border-color: #c4b5fd; color: #6d28d9; }
         .ws-src-btn-manual.active  { background: #f0fdf4; border-color: #86efac; color: #15803d; }
         .ws-src-btn-disabled { opacity: 0.38; cursor: not-allowed; }
+        .ws-rate-source-buttons {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 0.32rem;
+        }
+        .ws-rate-source-help {
+          display: block;
+          margin-top: 0.08rem;
+          font-size: 0.63rem;
+          line-height: 1.35;
+          color: #64748b;
+        }
 
         /* ── RATE REFERENCE ROW ── */
         .ws-rate-reference-row {
@@ -4520,6 +4817,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
         .ws-rate-ref-formula { border-color: #ddd6fe; color: #6d28d9; }
         .ws-rate-ref-manual  { border-color: #bbf7d0; color: #15803d; }
+        .ws-rate-reference-row-mobile {
+          margin-top: 0.45rem;
+        }
 
         /* ── EMPTY SECTION CTA ── */
         .ws-empty-section-row td { padding: 0 !important; }
@@ -4722,6 +5022,13 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             scrollbar-width: none;
           }
           .ws-insight-strip::-webkit-scrollbar { display: none; }
+          .ws-cost-rail {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            padding: 0.6rem 0.65rem 0.75rem;
+          }
+          .ws-cost-card-total {
+            grid-column: span 2;
+          }
           .ws-table-wrap {
             background: #f8fafc;
           }
@@ -4740,6 +5047,12 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           }
           .ws-mobile-row {
             display: table-row;
+          }
+          .ws-rate-source-buttons-mobile {
+            grid-template-columns: 1fr;
+          }
+          .ws-rate-source-selector-mobile .ws-src-btn {
+            text-align: center;
           }
           .ws-section-row td,
           .ws-subcategory-cell,

@@ -102,6 +102,10 @@ const BOQItemPickerModal = ({
     [catalogItems, selectedCodes]
   );
 
+  const selectedItemsPreview = React.useMemo(() => (
+    selectedItems.slice(0, 3).map((item) => item.name).join(', ')
+  ), [selectedItems]);
+
   const availableToSelectCount = React.useMemo(
     () => filteredItems.filter((item) => !existingCatalogIds.has(item.code)).length,
     [existingCatalogIds, filteredItems]
@@ -224,6 +228,8 @@ const BOQItemPickerModal = ({
                     const workedExampleText = item.defaultFormulaType !== 'manual'
                       ? getWorkedExamplePreview(item)
                       : '';
+                    const hasFormula = item.defaultFormulaType !== 'manual';
+                    const hasBenchmark = Number(item.benchmarkRate || 0) > 0;
 
                     return (
                       <button
@@ -263,7 +269,16 @@ const BOQItemPickerModal = ({
 
                         <div className="boq-picker-card-meta">
                           <span>Unit: {item.unit}</span>
-                          <span>Benchmark: {formatMoney(item.benchmarkRate)}</span>
+                          <span>Benchmark: {hasBenchmark ? formatMoney(item.benchmarkRate) : 'Pending'}</span>
+                        </div>
+
+                        <div className="boq-picker-card-flags">
+                          <span className={`boq-picker-availability ${hasBenchmark ? 'ready' : 'missing'}`}>
+                            {hasBenchmark ? 'Benchmark Ready' : 'Benchmark Pending'}
+                          </span>
+                          <span className={`boq-picker-availability ${hasFormula ? 'formula' : 'missing'}`}>
+                            {hasFormula ? 'Formula Ready' : 'Manual Only'}
+                          </span>
                         </div>
 
                         {item.pickerHint && (
@@ -289,7 +304,10 @@ const BOQItemPickerModal = ({
         <footer className="boq-picker-footer">
           <div className="boq-picker-footer-copy">
             <strong>{selectedItems.length} item{selectedItems.length === 1 ? '' : 's'} ready to add</strong>
-            <span>Selected items will drop straight into this bill and can be priced immediately in the BOQ table.</span>
+            <span>
+              Selected items will drop straight into this bill and can be priced immediately in the BOQ table.
+              {selectedItemsPreview ? ` Preview: ${selectedItemsPreview}${selectedItems.length > 3 ? '…' : ''}` : ''}
+            </span>
           </div>
           <div className="boq-picker-footer-actions">
             <button type="button" className="boq-picker-btn subtle" onClick={clearFilters}>
@@ -661,11 +679,46 @@ const BOQItemPickerModal = ({
           flex-wrap: wrap;
         }
 
+        .boq-picker-card-flags {
+          display: flex;
+          gap: 0.45rem;
+          flex-wrap: wrap;
+        }
+
         .boq-picker-card-meta span,
         .boq-picker-hint {
           font-size: 0.74rem;
           color: #475569;
           line-height: 1.5;
+        }
+
+        .boq-picker-availability {
+          display: inline-flex;
+          align-items: center;
+          padding: 0.2rem 0.55rem;
+          border-radius: 999px;
+          border: 1px solid #e2e8f0;
+          font-size: 0.66rem;
+          font-weight: 700;
+          letter-spacing: 0.01em;
+          color: #475569;
+          background: #f8fafc;
+        }
+
+        .boq-picker-availability.ready {
+          border-color: #bfdbfe;
+          background: #eff6ff;
+          color: #1d4ed8;
+        }
+
+        .boq-picker-availability.formula {
+          border-color: #ddd6fe;
+          background: #f5f3ff;
+          color: #6d28d9;
+        }
+
+        .boq-picker-availability.missing {
+          border-style: dashed;
         }
 
         .boq-picker-hint {
