@@ -694,17 +694,39 @@ export const getEffectiveBenchmarkRate = (item, region = 'Lagos') => {
   return benchmark * getBenchmarkRegionalFactor(item, region);
 };
 
-export const getItemUnitRate = (item, region = 'Lagos') => {
-  if (item?.useBenchmark) return getEffectiveBenchmarkRate(item, region);
+/**
+ * Resolve the active rate source for an item, supporting both the new
+ * `selectedRateSource` field and legacy `useBenchmark` / `rateSource` flags.
+ * @returns {'benchmark' | 'formula' | 'manual'}
+ */
+export const resolveItemRateSource = (item) => {
+  if (item?.selectedRateSource) return item.selectedRateSource;
+  // Backward-compat shim for items stored before the tri-modal upgrade
+  if (item?.useBenchmark) return 'benchmark';
+  if (item?.rateSource === 'formula' || isFormulaDrivenItem(item)) return 'formula';
+  return 'manual';
+};
 
-  if (isFormulaDrivenItem(item)) {
-    const formulaRate = evaluateBoqFormulaRate(item);
-    if (formulaRate > 0) {
-      return clampNumber(formulaRate);
-    }
+export const getItemUnitRate = (item, region = 'Lagos') => {
+  const src = resolveItemRateSource(item);
+
+  if (src === 'benchmark') {
+    return getEffectiveBenchmarkRate(item, region);
   }
 
-  return clampNumber(item?.unitRate ?? item?.rate);
+  if (src === 'formula') {
+    // Use pre-computed formulaCalculatedRate when available (avoids re-evaluation)
+    const precomputed = clampNumber(item?.formulaCalculatedRate);
+    if (precomputed > 0) return precomputed;
+    // Fall back to live evaluation
+    const formulaRate = evaluateBoqFormulaRate(item);
+    if (formulaRate != null && formulaRate > 0) return clampNumber(formulaRate);
+    // Final fallback: benchmark rate so the row isn't empty
+    return clampNumber(item?.benchmarkRate ?? item?.benchmark ?? item?.unitRate ?? item?.rate);
+  }
+
+  // manual — prefer explicit manualRate field, fall back to legacy rate fields
+  return clampNumber(item?.manualRate ?? item?.unitRate ?? item?.rate);
 };
 
 export const getItemTotal = (item, region = 'Lagos') => {

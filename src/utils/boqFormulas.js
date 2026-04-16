@@ -3,6 +3,12 @@ const clampNumber = (value) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const formatFormulaValue = (value) => (
+  clampNumber(value).toLocaleString(undefined, {
+    maximumFractionDigits: 2,
+  })
+);
+
 const cloneInput = (input = {}) => ({
   id: String(input.id || '').trim(),
   label: String(input.label || input.id || '').trim(),
@@ -72,26 +78,67 @@ export const evaluateBoqFormulaRate = (item) => {
   }
 };
 
-export const buildWorkedExampleText = (item) => {
-  const inputs = Array.isArray(item?.exampleInputs) && item.exampleInputs.length > 0
-    ? normalizeEditableInputs(item.exampleInputs)
-    : normalizeEditableInputs(item?.editableInputs);
+export const getFormulaDisplayText = (item) => (
+  String(item?.formulaText || item?.formulaExpression || '').trim()
+);
 
-  if (inputs.length === 0) return '';
+const buildWorkedExampleFromInputs = (item, inputs = []) => {
+  const normalizedInputs = normalizeEditableInputs(inputs);
+  if (normalizedInputs.length === 0) return '';
 
-  const inputMap = inputs.reduce((acc, input) => {
+  const inputMap = normalizedInputs.reduce((acc, input) => {
     acc[input.id] = clampNumber(input.value);
     return acc;
   }, {});
 
   const result = item?.defaultFormulaType === 'expression'
     ? evaluateFormulaExpression(item.formulaExpression || item.formulaText, inputMap)
-    : Object.values(inputMap).reduce((sum, value) => sum + clampNumber(value), 0);
+    : normalizedInputs.reduce((sum, input) => sum + clampNumber(input.value), 0);
 
-  const detail = inputs
-    .map((input) => `${input.label}: ${clampNumber(input.value).toLocaleString()}${input.unit ? ` ${input.unit}` : ''}`)
-    .join(' | ');
+  const detail = normalizedInputs
+    .map((input) => `${input.label} ${formatFormulaValue(input.value)}${input.unit ? ` ${input.unit}` : ''}`)
+    .join(' + ');
 
-  return detail ? `${detail} => ₦${result.toLocaleString()}` : '';
+  return detail ? `Example: ${detail} = N${formatFormulaValue(result)}` : '';
 };
 
+export const buildWorkedExampleText = (item) => {
+  const inputs = Array.isArray(item?.exampleInputs) && item.exampleInputs.length > 0
+    ? normalizeEditableInputs(item.exampleInputs)
+    : normalizeEditableInputs(item?.editableInputs);
+
+  return buildWorkedExampleFromInputs(item, inputs);
+};
+
+export const getWorkedExamplePreview = (item, { preferEditableInputs = false } = {}) => {
+  if (!item) return '';
+
+  const explicitWorkedExample = String(item.workedExample || '').trim();
+  if (explicitWorkedExample) {
+    return explicitWorkedExample;
+  }
+
+  const preferredInputs = preferEditableInputs
+    ? normalizeEditableInputs(item.editableInputs)
+    : normalizeEditableInputs(item.exampleInputs);
+  const fallbackInputs = normalizeEditableInputs(item.editableInputs);
+  const generatedExample = buildWorkedExampleFromInputs(
+    item,
+    preferredInputs.length > 0 ? preferredInputs : fallbackInputs
+  );
+
+  if (generatedExample) {
+    return generatedExample;
+  }
+
+  if (!isFormulaDrivenItem(item)) {
+    return '';
+  }
+
+  const formulaText = getFormulaDisplayText(item);
+  if (!formulaText) {
+    return 'Worked example placeholder: add example inputs to show how this rate is built.';
+  }
+
+  return `Worked example placeholder: add example inputs to demonstrate "${formulaText}".`;
+};

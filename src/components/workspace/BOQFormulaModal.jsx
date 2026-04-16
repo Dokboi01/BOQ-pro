@@ -2,11 +2,13 @@ import React from 'react';
 import { Calculator, X } from 'lucide-react';
 import {
   evaluateBoqFormulaRate,
+  getFormulaDisplayText,
+  getWorkedExamplePreview,
   normalizeEditableInputs,
 } from '../../utils/boqFormulas';
 
 const formatMoney = (value) => (
-  `₦${Number(value || 0).toLocaleString(undefined, {
+  `N${Number(value || 0).toLocaleString(undefined, {
     maximumFractionDigits: 2,
   })}`
 );
@@ -16,6 +18,16 @@ const BOQFormulaModal = ({ item, sectionTitle, onClose, onSave }) => {
 
   const computedRate = React.useMemo(
     () => evaluateBoqFormulaRate({ ...item, editableInputs: inputs }) || 0,
+    [inputs, item]
+  );
+
+  const formulaText = React.useMemo(
+    () => getFormulaDisplayText(item) || 'Rate formula placeholder: define how the unit rate should be assembled from project inputs.',
+    [item]
+  );
+
+  const workedExampleText = React.useMemo(
+    () => getWorkedExamplePreview({ ...item, editableInputs: inputs }, { preferEditableInputs: true }),
     [inputs, item]
   );
 
@@ -34,7 +46,7 @@ const BOQFormulaModal = ({ item, sectionTitle, onClose, onSave }) => {
           <div>
             <span className="boq-formula-eyebrow">{sectionTitle || item?.billSectionTitle || 'Formula Inputs'}</span>
             <h3>{item?.name || item?.description || 'Formula Item'}</h3>
-            <p>{item?.formulaText || 'Update the inputs that build the unit rate for this BOQ item.'}</p>
+            <p>Update the editable inputs for this BOQ item and the unit rate will recalculate immediately.</p>
           </div>
           <button type="button" className="boq-formula-close" onClick={onClose}>
             <X size={18} />
@@ -45,15 +57,18 @@ const BOQFormulaModal = ({ item, sectionTitle, onClose, onSave }) => {
           <div className="boq-formula-panel strong">
             <span className="boq-formula-label">Calculated Unit Rate</span>
             <strong>{formatMoney(computedRate)}</strong>
-            <small>Amount will update automatically as `Quantity × Formula Unit Rate`.</small>
+            <small>Amount updates automatically as Quantity x Calculated Unit Rate.</small>
           </div>
 
-          {item?.workedExample && (
-            <div className="boq-formula-panel">
-              <span className="boq-formula-label">Worked Example</span>
-              <p>{item.workedExample}</p>
-            </div>
-          )}
+          <div className="boq-formula-panel">
+            <span className="boq-formula-label">Formula Logic</span>
+            <p>{formulaText}</p>
+          </div>
+
+          <div className={`boq-formula-panel ${item?.workedExample ? '' : 'placeholder'}`}>
+            <span className="boq-formula-label">Worked Example</span>
+            <p>{workedExampleText || 'Worked example placeholder: add editable inputs to preview how the unit rate is assembled.'}</p>
+          </div>
 
           <div className="boq-formula-grid">
             {inputs.map((input) => (
@@ -93,8 +108,8 @@ const BOQFormulaModal = ({ item, sectionTitle, onClose, onSave }) => {
         .boq-formula-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(15, 23, 42, 0.7);
-          backdrop-filter: blur(5px);
+          background: rgba(15, 23, 42, 0.72);
+          backdrop-filter: blur(6px);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -105,7 +120,7 @@ const BOQFormulaModal = ({ item, sectionTitle, onClose, onSave }) => {
         .boq-formula-modal {
           width: min(760px, 100%);
           background: white;
-          border-radius: 20px;
+          border-radius: 22px;
           box-shadow: 0 30px 80px rgba(15, 23, 42, 0.28);
           overflow: hidden;
         }
@@ -166,13 +181,19 @@ const BOQFormulaModal = ({ item, sectionTitle, onClose, onSave }) => {
           padding: 1rem;
           display: flex;
           flex-direction: column;
-          gap: 0.3rem;
+          gap: 0.35rem;
         }
 
         .boq-formula-panel.strong {
           background: #0f172a;
           color: white;
           border-color: #0f172a;
+        }
+
+        .boq-formula-panel.placeholder {
+          border-style: dashed;
+          background: #fffdf7;
+          border-color: #fde68a;
         }
 
         .boq-formula-panel.strong small {
@@ -260,25 +281,28 @@ const BOQFormulaModal = ({ item, sectionTitle, onClose, onSave }) => {
           display: flex;
           justify-content: flex-end;
           gap: 0.75rem;
-          padding: 1rem 1.5rem 1.2rem;
+          padding: 1rem 1.5rem 1.25rem;
           border-top: 1px solid #e2e8f0;
           background: white;
         }
 
         .boq-formula-btn {
-          border-radius: 12px;
-          padding: 0.75rem 1rem;
-          font-weight: 700;
           display: inline-flex;
           align-items: center;
+          justify-content: center;
           gap: 0.45rem;
-          cursor: pointer;
+          min-width: 140px;
+          padding: 0.8rem 1rem;
+          border-radius: 12px;
           border: 1px solid transparent;
+          font-size: 0.84rem;
+          font-weight: 700;
+          cursor: pointer;
         }
 
         .boq-formula-btn.subtle {
-          background: white;
-          color: #334155;
+          background: #f8fafc;
+          color: #475569;
           border-color: #cbd5e1;
         }
 
@@ -287,24 +311,17 @@ const BOQFormulaModal = ({ item, sectionTitle, onClose, onSave }) => {
           color: white;
         }
 
-        @media (max-width: 640px) {
-          .boq-formula-modal {
-            width: 100%;
-            max-height: 100vh;
-            height: 100vh;
-            border-radius: 0;
-          }
-
+        @media (max-width: 720px) {
           .boq-formula-grid {
             grid-template-columns: 1fr;
           }
 
           .boq-formula-footer {
-            flex-direction: column;
+            flex-direction: column-reverse;
           }
 
           .boq-formula-btn {
-            justify-content: center;
+            width: 100%;
           }
         }
       `}</style>

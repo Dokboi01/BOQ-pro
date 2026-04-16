@@ -106,6 +106,39 @@ const buildRateInputs = ({
 const expressionText = 'Unit rate = Materials + Labour + Plant + Transport + Overheads';
 const expressionFormula = 'materials + labour + plant + transport + overhead';
 
+const normalizeKeywords = (keywords = []) => (
+  (Array.isArray(keywords) ? keywords : [])
+    .map((keyword) => String(keyword || '').trim())
+    .filter(Boolean)
+);
+
+const buildSectionMeta = (id, title, description, metadata = {}) => {
+  const isPreliminaries = metadata.isPreliminaries ?? id === 'preliminaries';
+  const defaultPickerPrompt = isPreliminaries
+    ? 'Pick only the preliminaries that genuinely apply to this project, then enter the project-specific quantity or duration for each one.'
+    : `Select the bill items that apply to ${title.toLowerCase()} and add only the lines you intend to measure.`;
+  const defaultEmptyTitle = isPreliminaries
+    ? 'No preliminaries selected yet.'
+    : `No items selected for ${title}.`;
+  const defaultEmptyMessage = isPreliminaries
+    ? 'Start with mobilization, temporary facilities, HSE, supervision, permits, and only the preliminaries required by the contract.'
+    : 'Use the item library to bring in standard BOQ lines for this bill, or add a custom line where the project needs something outside the library.';
+
+  return {
+    isPreliminaries,
+    trade: metadata.trade || title,
+    pickerPrompt: metadata.pickerPrompt || defaultPickerPrompt,
+    emptyStateTitle: metadata.emptyStateTitle || defaultEmptyTitle,
+    emptyStateMessage: metadata.emptyStateMessage || defaultEmptyMessage,
+    keywords: normalizeKeywords([
+      id,
+      title,
+      description,
+      ...(metadata.keywords || []),
+    ]),
+  };
+};
+
 const baseCatalogItem = ({
   code,
   name,
@@ -119,6 +152,10 @@ const baseCatalogItem = ({
   exampleInputs = [],
   workedExample = '',
   notes = '',
+  category = 'General',
+  keywords = [],
+  pickerHint = '',
+  isRecommended = false,
 }) => {
   const normalizedEditableInputs = normalizeEditableInputs(editableInputs);
   const normalizedExampleInputs = normalizeEditableInputs(
@@ -140,6 +177,15 @@ const baseCatalogItem = ({
     exampleInputs: normalizedExampleInputs,
     workedExample,
     notes,
+    category,
+    keywords: normalizeKeywords([
+      category,
+      name,
+      description,
+      ...(keywords || []),
+    ]),
+    pickerHint,
+    isRecommended,
   };
 
   if (defaultFormulaType !== 'manual' && !item.workedExample) {
@@ -156,6 +202,10 @@ const manualItem = ({
   unit,
   benchmarkRate,
   notes = '',
+  category = 'General',
+  keywords = [],
+  pickerHint = '',
+  isRecommended = false,
 }) => baseCatalogItem({
   code,
   name,
@@ -163,6 +213,10 @@ const manualItem = ({
   unit,
   benchmarkRate,
   notes,
+  category,
+  keywords,
+  pickerHint,
+  isRecommended,
 });
 
 const formulaRateItem = ({
@@ -174,6 +228,10 @@ const formulaRateItem = ({
   formulaText = expressionText,
   formulaExpression = expressionFormula,
   notes = '',
+  category = 'General',
+  keywords = [],
+  pickerHint = '',
+  isRecommended = false,
 }) => {
   const benchmarkRate = evaluateBoqFormulaRate({
     defaultFormulaType: 'expression',
@@ -193,6 +251,10 @@ const formulaRateItem = ({
     editableInputs: inputs,
     exampleInputs: inputs,
     notes,
+    category,
+    keywords,
+    pickerHint,
+    isRecommended,
   });
 };
 
@@ -224,15 +286,16 @@ const monthInputs = ({
   ].filter((input) => input.value > 0)
 );
 
-const section = (id, title, description, availableItems) => ({
+const section = (id, title, description, availableItems, metadata = {}) => ({
   id,
   code: makeSectionCode(id),
   title,
   description,
+  ...buildSectionMeta(id, title, description, metadata),
   availableItems,
 });
 
-const catalogSection = (structureCode, id, title, description, items) => (
+const catalogSection = (structureCode, id, title, description, items, metadata = {}) => (
   section(
     id,
     title,
@@ -240,7 +303,8 @@ const catalogSection = (structureCode, id, title, description, items) => (
     items.map((item, index) => ({
       ...item,
       code: item.code || makeItemCode(structureCode, makeSectionCode(id), index),
-    }))
+    })),
+    metadata
   )
 );
 
@@ -255,6 +319,10 @@ const createPreliminariesItems = (structureCode, {
       name: 'Mobilization and demobilization',
       description: 'Mobilization and demobilization of labour, light plant, and site logistics.',
       unit: 'Sum',
+      category: 'Mobilization',
+      keywords: ['startup', 'logistics', 'site access'],
+      pickerHint: 'Useful where plant, labour, logistics, and startup deployment need to be priced as a lump sum.',
+      isRecommended: true,
       inputs: lumpSumInputs({
         mobilization: 850000,
         demobilization: 450000,
@@ -269,12 +337,19 @@ const createPreliminariesItems = (structureCode, {
       description: 'Site establishment, project signage, and startup administration.',
       unit: 'Sum',
       benchmarkRate: 650000,
+      category: 'Site setup',
+      keywords: ['startup', 'project signage', 'administration'],
+      pickerHint: 'Use when the contract requires site setup, signage, and general startup administration.',
+      isRecommended: true,
     }),
     formulaRateItem({
       code: makeItemCode(structureCode, 'PREL', 2),
       name: 'Temporary site office',
       description: 'Temporary site office, furniture, welfare, and communications setup.',
       unit: 'Month',
+      category: 'Temporary facilities',
+      keywords: ['office', 'welfare', 'communications'],
+      pickerHint: 'Best for projects that need a temporary office or welfare facilities priced by month.',
       inputs: monthInputs({
         rent: 240000,
         utilities: 95000,
@@ -290,12 +365,19 @@ const createPreliminariesItems = (structureCode, {
       description: 'Temporary site fencing, hoarding, controlled access, and security gates.',
       unit: 'm',
       benchmarkRate: 12500,
+      category: 'Site security',
+      keywords: ['hoarding', 'security', 'gates'],
+      pickerHint: 'Include when the site boundary, security gates, or hoarding need dedicated pricing.',
     }),
     formulaRateItem({
       code: makeItemCode(structureCode, 'PREL', 4),
       name: 'HSE setup',
       description: 'Safety induction, PPE provision, first aid, and HSE administration.',
       unit: 'Month',
+      category: 'HSE',
+      keywords: ['safety', 'ppe', 'first aid'],
+      pickerHint: 'Suitable for recurring health, safety, and environmental administration costs.',
+      isRecommended: true,
       inputs: buildRateInputs({
         materials: 35000,
         labour: 45000,
@@ -309,6 +391,9 @@ const createPreliminariesItems = (structureCode, {
       name: 'Temporary utilities',
       description: 'Temporary water, power, sanitation, and internet support for the site team.',
       unit: 'Month',
+      category: 'Temporary facilities',
+      keywords: ['water', 'power', 'sanitation', 'internet'],
+      pickerHint: 'Use for ongoing temporary utilities that support site operations month by month.',
       inputs: monthInputs({
         utilities: 160000,
         staffing: 20000,
@@ -322,6 +407,10 @@ const createPreliminariesItems = (structureCode, {
       name: 'Supervision',
       description: 'Site engineer, supervisor, and HSE supervision allowance.',
       unit: 'Month',
+      category: 'Site management',
+      keywords: ['engineer', 'supervisor', 'hse officer'],
+      pickerHint: 'Useful where site management staff are costed as monthly preliminaries.',
+      isRecommended: true,
       inputs: [
         numericInput('siteEngineer', 'Site Engineer', 250000, '₦/month'),
         numericInput('siteSupervisor', 'Site Supervisor', 150000, '₦/month'),
@@ -336,6 +425,9 @@ const createPreliminariesItems = (structureCode, {
       description: 'QA/QC setup, test forms, and materials testing administration.',
       unit: 'Sum',
       benchmarkRate: 420000,
+      category: 'Quality assurance',
+      keywords: ['qa', 'qc', 'testing', 'laboratory'],
+      pickerHint: 'Add when test setup, QA documentation, or laboratory administration is required.',
     }),
     manualItem({
       code: makeItemCode(structureCode, 'PREL', 8),
@@ -343,6 +435,9 @@ const createPreliminariesItems = (structureCode, {
       description: 'Dust suppression, waste handling, and environmental protection measures.',
       unit: 'Month',
       benchmarkRate: 110000,
+      category: 'Environmental',
+      keywords: ['dust control', 'waste', 'mitigation'],
+      pickerHint: 'Use where environmental mitigation measures must be carried as ongoing preliminaries.',
     }),
     manualItem({
       code: makeItemCode(structureCode, 'PREL', 9),
@@ -350,6 +445,9 @@ const createPreliminariesItems = (structureCode, {
       description: 'Temporary supports, access arrangements, and enabling works for construction.',
       unit: 'Sum',
       benchmarkRate: 550000,
+      category: 'Temporary works',
+      keywords: ['supports', 'access', 'enabling works'],
+      pickerHint: 'Appropriate when temporary supports, access decks, or enabling works need separate coverage.',
     }),
     manualItem({
       code: makeItemCode(structureCode, 'PREL', 10),
@@ -357,6 +455,10 @@ const createPreliminariesItems = (structureCode, {
       description: 'Contractors all-risk insurance, permits, approvals, and statutory fees.',
       unit: 'Sum',
       benchmarkRate: 780000,
+      category: 'Commercial and permits',
+      keywords: ['insurance', 'statutory fees', 'approvals'],
+      pickerHint: 'Add when insurance cover, permits, or approval fees are not absorbed elsewhere.',
+      isRecommended: true,
     }),
   ];
 
@@ -367,6 +469,9 @@ const createPreliminariesItems = (structureCode, {
         name: 'Traffic management',
         description: 'Temporary traffic control, diversions, flagmen, and road safety signage.',
         unit: 'Month',
+        category: 'Traffic management',
+        keywords: ['diversion', 'flagmen', 'road safety'],
+        pickerHint: 'Especially relevant for road, bridge, culvert, marine access, and utility corridor works.',
         inputs: [
           numericInput('crew', 'Traffic Crew', 160000, '₦/month'),
           numericInput('devices', 'Traffic Devices', 90000, '₦/month'),
@@ -386,6 +491,9 @@ const createPreliminariesItems = (structureCode, {
         description: 'Navigation lights, marine exclusion zone markers, and safety boats.',
         unit: 'Month',
         benchmarkRate: 420000,
+        category: 'Marine safety',
+        keywords: ['navigation', 'safety boats', 'marine zone'],
+        pickerHint: 'Use for coastal and marine works where navigation safety measures are contract requirements.',
       })
     );
   }
@@ -398,6 +506,9 @@ const createPreliminariesItems = (structureCode, {
         description: 'Road opening permits, utility clearances, and service connection approvals.',
         unit: 'Sum',
         benchmarkRate: 620000,
+        category: 'Commercial and permits',
+        keywords: ['road opening', 'clearance', 'utility approval'],
+        pickerHint: 'Important for water and utility projects that need authority permits and network approvals.',
       })
     );
   }
@@ -415,7 +526,18 @@ const FOUNDATION_CODE = 'FDN';
 const WATER_CODE = 'WTR';
 
 const BUILDING_SECTIONS = [
-  catalogSection(BUILDING_CODE, 'preliminaries', 'Preliminaries', 'Project preliminaries and startup requirements.', createPreliminariesItems(BUILDING_CODE)),
+  catalogSection(
+    BUILDING_CODE,
+    'preliminaries',
+    'Preliminaries',
+    'Project preliminaries and startup requirements.',
+    createPreliminariesItems(BUILDING_CODE),
+    {
+      trade: 'Preliminaries',
+      pickerPrompt: 'Pick the building preliminaries that the contract genuinely requires, then price each one with the correct duration or lump-sum quantity.',
+      emptyStateMessage: 'Select the building preliminaries that apply to the job, such as mobilization, temporary office, HSE, supervision, and permit-related costs.',
+    }
+  ),
   catalogSection(BUILDING_CODE, 'site_clearance', 'Site clearance', 'Site clearance, setting out, and demolition items.', [
     manualItem({ name: 'Clear vegetation and debris', description: 'Clear vegetation, shrubs, rubbish, and dispose offsite.', unit: 'm²', benchmarkRate: 650 }),
     manualItem({ name: 'Strip topsoil', description: 'Strip and stockpile topsoil to approved depth.', unit: 'm³', benchmarkRate: 2800 }),
@@ -447,7 +569,18 @@ const BUILDING_SECTIONS = [
 ];
 
 const ROAD_SECTIONS = [
-  catalogSection(ROAD_CODE, 'preliminaries', 'Preliminaries', 'Road preliminaries, traffic control, and QA startup.', createPreliminariesItems(ROAD_CODE, { includeTraffic: true })),
+  catalogSection(
+    ROAD_CODE,
+    'preliminaries',
+    'Preliminaries',
+    'Road preliminaries, traffic control, and QA startup.',
+    createPreliminariesItems(ROAD_CODE, { includeTraffic: true }),
+    {
+      trade: 'Preliminaries',
+      pickerPrompt: 'Start with road-specific preliminaries such as mobilization, traffic management, HSE, supervision, and temporary facilities.',
+      emptyStateMessage: 'Pick the enabling items needed to open and run the road site safely before pricing the production bills.',
+    }
+  ),
   catalogSection(ROAD_CODE, 'site_clearance_demolition', 'Site clearance / demolition', 'Clearing, grubbing, and demolition works.', [
     manualItem({ name: 'Clearing and grubbing', description: 'Clear right-of-way and grub roots within the carriageway corridor.', unit: 'm²', benchmarkRate: 520 }),
     manualItem({ name: 'Strip topsoil', description: 'Strip topsoil to approved depth and stockpile or dispose.', unit: 'm³', benchmarkRate: 1850 }),
@@ -505,7 +638,18 @@ const ROAD_SECTIONS = [
 ];
 
 const BRIDGE_SECTIONS = [
-  catalogSection(BRIDGE_CODE, 'preliminaries', 'Preliminaries', 'Bridge preliminaries, safety, and temporary setup.', createPreliminariesItems(BRIDGE_CODE, { includeTraffic: true })),
+  catalogSection(
+    BRIDGE_CODE,
+    'preliminaries',
+    'Preliminaries',
+    'Bridge preliminaries, safety, and temporary setup.',
+    createPreliminariesItems(BRIDGE_CODE, { includeTraffic: true }),
+    {
+      trade: 'Preliminaries',
+      pickerPrompt: 'Pick the bridge preliminaries that cover safety, site access, traffic measures, and temporary support arrangements before production items.',
+      emptyStateMessage: 'Bridge works usually need a deliberate preliminaries setup. Add only the temporary, safety, supervision, and traffic items that apply here.',
+    }
+  ),
   catalogSection(BRIDGE_CODE, 'earthworks', 'Earthworks', 'Approach earthworks and working platform preparation.', [
     manualItem({ name: 'Approach excavation', description: 'Excavate approach roads and abutment areas.', unit: 'm³', benchmarkRate: 3600 }),
     manualItem({ name: 'Working platform fill', description: 'Imported fill and stabilization to working platforms.', unit: 'm³', benchmarkRate: 12800 }),
@@ -560,7 +704,17 @@ const BRIDGE_SECTIONS = [
 ];
 
 const DRAINAGE_SECTIONS = [
-  catalogSection(DRAINAGE_CODE, 'preliminaries', 'Preliminaries', 'Drainage preliminaries and enabling works.', createPreliminariesItems(DRAINAGE_CODE)),
+  catalogSection(
+    DRAINAGE_CODE,
+    'preliminaries',
+    'Preliminaries',
+    'Drainage preliminaries and enabling works.',
+    createPreliminariesItems(DRAINAGE_CODE),
+    {
+      trade: 'Preliminaries',
+      pickerPrompt: 'Choose the drainage preliminaries you need for access, supervision, HSE, temporary facilities, and site startup.',
+    }
+  ),
   catalogSection(DRAINAGE_CODE, 'excavation', 'Excavation', 'Excavation, trimming, and spoil disposal.', [
     manualItem({ name: 'Trench excavation', description: 'Excavate drain or trench to line and level.', unit: 'm³', benchmarkRate: 4200 }),
     manualItem({ name: 'Excavation support', description: 'Temporary support to trench sides where required.', unit: 'm²', benchmarkRate: 14500 }),
@@ -603,7 +757,17 @@ const DRAINAGE_SECTIONS = [
 ];
 
 const CULVERT_SECTIONS = [
-  catalogSection(CULVERT_CODE, 'preliminaries', 'Preliminaries', 'Culvert preliminaries and enabling works.', createPreliminariesItems(CULVERT_CODE, { includeTraffic: true })),
+  catalogSection(
+    CULVERT_CODE,
+    'preliminaries',
+    'Preliminaries',
+    'Culvert preliminaries and enabling works.',
+    createPreliminariesItems(CULVERT_CODE, { includeTraffic: true }),
+    {
+      trade: 'Preliminaries',
+      pickerPrompt: 'Choose the culvert preliminaries required for setup, supervision, HSE, traffic control, and temporary support works.',
+    }
+  ),
   catalogSection(CULVERT_CODE, 'excavation', 'Excavation', 'Excavation and formation for culvert placement.', [
     manualItem({ name: 'Excavate culvert trench', description: 'Excavate trench or box culvert foundation.', unit: 'm³', benchmarkRate: 4600 }),
     manualItem({ name: 'Excavate for headwalls', description: 'Excavate for headwalls, wing walls, and aprons.', unit: 'm³', benchmarkRate: 4800 }),
@@ -650,7 +814,17 @@ const CULVERT_SECTIONS = [
 ];
 
 const COASTAL_SECTIONS = [
-  catalogSection(COASTAL_CODE, 'preliminaries', 'Preliminaries', 'Marine mobilization, safety, and enabling works.', createPreliminariesItems(COASTAL_CODE, { includeMarine: true, includeTraffic: true })),
+  catalogSection(
+    COASTAL_CODE,
+    'preliminaries',
+    'Preliminaries',
+    'Marine mobilization, safety, and enabling works.',
+    createPreliminariesItems(COASTAL_CODE, { includeMarine: true, includeTraffic: true }),
+    {
+      trade: 'Preliminaries',
+      pickerPrompt: 'Build the marine preliminaries carefully: mobilization, marine safety, traffic or access control, supervision, and temporary site support.',
+    }
+  ),
   catalogSection(COASTAL_CODE, 'dredging_reclamation', 'Dredging / reclamation', 'Dredging, filling, and reclamation works.', [
     manualItem({ name: 'Maintenance dredging', description: 'Maintenance dredging to design depth and alignment.', unit: 'm³', benchmarkRate: 4200 }),
     manualItem({ name: 'Hydraulic fill placement', description: 'Hydraulic sand fill placement and trimming.', unit: 'm³', benchmarkRate: 6800 }),
@@ -693,7 +867,17 @@ const COASTAL_SECTIONS = [
 ];
 
 const FOUNDATION_SECTIONS = [
-  catalogSection(FOUNDATION_CODE, 'preliminaries', 'Preliminaries', 'Foundation preliminaries and enabling works.', createPreliminariesItems(FOUNDATION_CODE)),
+  catalogSection(
+    FOUNDATION_CODE,
+    'preliminaries',
+    'Preliminaries',
+    'Foundation preliminaries and enabling works.',
+    createPreliminariesItems(FOUNDATION_CODE),
+    {
+      trade: 'Preliminaries',
+      pickerPrompt: 'Pick the foundation preliminaries you need for site setup, welfare, HSE, supervision, and temporary works support.',
+    }
+  ),
   catalogSection(FOUNDATION_CODE, 'site_clearance_setting_out', 'Site clearance / setting out', 'Site clearance and foundation setting out.', [
     manualItem({ name: 'Clear foundation footprint', description: 'Clear site area and establish foundation footprint.', unit: 'm²', benchmarkRate: 620 }),
     manualItem({ name: 'Detailed setting out', description: 'Set out foundation grids, benchmarks, and batter boards.', unit: 'Sum', benchmarkRate: 420000 }),
@@ -737,7 +921,18 @@ const FOUNDATION_SECTIONS = [
 ];
 
 const WATER_SECTIONS = [
-  catalogSection(WATER_CODE, 'preliminaries', 'Preliminaries', 'Water and utility preliminaries and permits.', createPreliminariesItems(WATER_CODE, { includeTraffic: true, includeUtilityPermits: true })),
+  catalogSection(
+    WATER_CODE,
+    'preliminaries',
+    'Preliminaries',
+    'Water and utility preliminaries and permits.',
+    createPreliminariesItems(WATER_CODE, { includeTraffic: true, includeUtilityPermits: true }),
+    {
+      trade: 'Preliminaries',
+      pickerPrompt: 'Choose the utility preliminaries that cover permits, traffic control, supervision, HSE, and temporary facilities for corridor works.',
+      emptyStateMessage: 'Water and utility projects often need permit and traffic preliminaries. Add only the items relevant to this route and client.',
+    }
+  ),
   catalogSection(WATER_CODE, 'trenching_excavation', 'Trenching / excavation', 'Trenching, breaking, and excavation to utility corridors.', [
     manualItem({ name: 'Trench excavation', description: 'Excavate trenches to line and level for pipelines or ducts.', unit: 'm³', benchmarkRate: 4300 }),
     manualItem({ name: 'Excavate road crossings', description: 'Excavate or break road crossings and hard areas.', unit: 'm³', benchmarkRate: 9200 }),
@@ -842,6 +1037,12 @@ export const createProjectSectionsFromStructure = (structureType, selectedSectio
       code: entry.code,
       title: entry.title,
       description: entry.description,
+      isPreliminaries: entry.isPreliminaries === true,
+      trade: entry.trade || entry.title,
+      pickerPrompt: entry.pickerPrompt || '',
+      emptyStateTitle: entry.emptyStateTitle || '',
+      emptyStateMessage: entry.emptyStateMessage || '',
+      keywords: normalizeKeywords(entry.keywords),
       structureType,
       expanded: true,
       items: [],
@@ -859,7 +1060,13 @@ export const cloneCatalogItemToProjectItem = (catalogItem, { structureType, bill
     ...catalogItem,
     editableInputs,
   });
-  const initialRate = formulaRate ?? (Number(catalogItem.benchmarkRate) || 0);
+  const catalogBenchmarkRate = Number(catalogItem.benchmarkRate) || 0;
+  const hasFormula = catalogItem.defaultFormulaType && catalogItem.defaultFormulaType !== 'manual';
+  const initialSelectedSource = hasFormula ? 'formula' : 'manual';
+  const formulaCalculatedRate = hasFormula ? (formulaRate ?? 0) : 0;
+  const resolvedUnitRate = hasFormula
+    ? (formulaCalculatedRate || catalogBenchmarkRate)
+    : catalogBenchmarkRate;
   const quantity = 0;
   const notes = catalogItem.notes || '';
 
@@ -879,21 +1086,38 @@ export const cloneCatalogItemToProjectItem = (catalogItem, { structureType, bill
     exampleInputs: normalizeEditableInputs(catalogItem.exampleInputs),
     editableInputs,
     workedExample: catalogItem.workedExample || '',
+    category: catalogItem.category || billSectionTitle || 'General',
+    keywords: normalizeKeywords(catalogItem.keywords),
+    pickerHint: catalogItem.pickerHint || '',
+    isRecommended: catalogItem.isRecommended === true,
     quantity,
-    unitRate: initialRate,
-    amount: 0,
-    notes,
-    benchmarkRate: Number(catalogItem.benchmarkRate) || 0,
     qty: quantity,
-    rate: initialRate,
+    // --- new tri-modal rate model ---
+    selectedRateSource: initialSelectedSource,
+    formulaCalculatedRate,
+    resolvedUnitRate,
+    manualRate: 0,
+    benchmarkMetadata: {
+      rate: catalogBenchmarkRate,
+      currency: 'NGN',
+      region: 'Lagos',
+      sourceType: 'catalog',
+      sourceNote: 'BOQ-Pro item library benchmark',
+      dateCaptured: null,
+      confidenceLevel: catalogBenchmarkRate > 0 ? 'medium' : 'low',
+    },
+    // --- legacy / compat aliases (kept for backward compatibility) ---
+    unitRate: resolvedUnitRate,
+    rate: resolvedUnitRate,
+    benchmarkRate: catalogBenchmarkRate,
+    benchmark: catalogBenchmarkRate,
+    amount: 0,
     total: 0,
-    benchmark: Number(catalogItem.benchmarkRate) || 0,
+    notes,
     subcategory: billSectionTitle || '',
     materials: [],
     useBenchmark: false,
-    rateSource: catalogItem.defaultFormulaType && catalogItem.defaultFormulaType !== 'manual'
-      ? 'formula'
-      : 'manual',
+    rateSource: initialSelectedSource,
     qtySource: 'manual',
     customPricing: null,
     isVO: false,
@@ -916,6 +1140,10 @@ export const createCustomBoqItem = ({ structureType = '', billSectionId = '', bi
   exampleInputs: [],
   editableInputs: [],
   workedExample: '',
+  category: 'Custom',
+  keywords: [],
+  pickerHint: '',
+  isRecommended: false,
   quantity: 0,
   unitRate: 0,
   amount: 0,
@@ -927,6 +1155,21 @@ export const createCustomBoqItem = ({ structureType = '', billSectionId = '', bi
   benchmark: 0,
   subcategory: billSectionTitle,
   materials: [],
+  // --- new tri-modal rate model ---
+  selectedRateSource: 'manual',
+  formulaCalculatedRate: 0,
+  resolvedUnitRate: 0,
+  manualRate: 0,
+  benchmarkMetadata: {
+    rate: 0,
+    currency: 'NGN',
+    region: 'Lagos',
+    sourceType: 'manual',
+    sourceNote: '',
+    dateCaptured: null,
+    confidenceLevel: 'low',
+  },
+  // --- legacy / compat aliases ---
   useBenchmark: false,
   rateSource: 'manual',
   qtySource: 'manual',
