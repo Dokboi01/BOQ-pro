@@ -8,7 +8,6 @@ import BidManagerModal from './BidManagerModal';
 import TeamHubPanel from './TeamHubPanel';
 import StructuralAnalyzer from './StructuralAnalyzer';
 import ProjectNotesAccordion from './ProjectNotesAccordion';
-import BOQBillSidebar from './BOQBillSidebar';
 import BOQFormulaModal from './BOQFormulaModal';
 import BOQItemDetailPanel from './BOQItemDetailPanel';
 import BOQSelectionStage from './BOQSelectionStage';
@@ -1899,84 +1898,75 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   })();
   let spreadsheetRowCounter = 1;
 
+  const renderBillTabs = (mode = 'workspace') => (
+    <div className={`ws-bill-tabs-shell ${mode === 'selection' ? 'selection' : 'workspace'}`}>
+      <div className="ws-bill-tabs">
+        {(sections || []).map((section, index) => {
+          const isActive = activeBillSectionId === section.id;
+          const sectionTotal = sectionTotalsBySection?.[section.id] || 0;
+          const selectionCount = selectionCountsBySection?.[section.id] || 0;
+          const itemCount = (section.items || []).length;
+          const meta = mode === 'selection'
+            ? `${selectionCount} selected`
+            : `${itemCount} line${itemCount === 1 ? '' : 's'}${sectionTotal > 0 ? ` · N${sectionTotal.toLocaleString()}` : ''}`;
+
+          return (
+            <button
+              key={section.id}
+              type="button"
+              className={`ws-bill-tab ${isActive ? 'active' : ''}`}
+              onClick={() => scrollToSection(section.id)}
+            >
+              <span className="ws-bill-tab-index">{String(index + 1).padStart(2, '0')}</span>
+              <span className="ws-bill-tab-copy">
+                <strong>{section.title}</strong>
+                <small>{meta}</small>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   if (isSelectionStage) {
     return (
-      <div className="ws-container">
-        <div className="ws-workbook-top">
-          <div className="ws-workbook-head">
-            <div className="ws-workbook-copy">
-              <span className="ws-workbook-eyebrow">BOQ-Pro Workbook</span>
-              <div className="ws-workbook-title-row">
-                <h1>{project?.name || 'Untitled Project'}</h1>
-                <span className="ws-workbook-health ws-workbook-health-active">
-                  BOQ item selection in progress
-                </span>
-              </div>
-              <p>{workbookSubtitle} | {marketRegionDisplay} market benchmark | Select items before generating the BOQ sheet</p>
-            </div>
-            <div className="ws-workbook-metrics-compact">
-              <span className="ws-selection-stage-chip">
-                {totalSelectedCatalogItems} selected item{totalSelectedCatalogItems === 1 ? '' : 's'}
-              </span>
-            </div>
-          </div>
-          <div className="ws-sheet-tabbar ws-sheet-tabbar-selection">
-            <div className="ws-selection-tabbar-copy">
-              <strong>Dedicated BOQ Item Selection</strong>
-              <span>Choose items bill by bill from the left sidebar, then generate the BOQ table only when you are ready.</span>
-            </div>
-            <div className="ws-sheet-tabbar-meta">
-              <span className="ws-sheet-meta-chip">{project?.region || 'Lagos'} Region</span>
-              <span className="ws-sheet-meta-chip">{sections.length} Bills</span>
-              <span className="ws-sheet-meta-chip">{totalSelectedCatalogItems} Items Selected</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="ws-stage-shell ws-stage-shell-selection">
-          <BOQBillSidebar
-            projectName={project?.name}
-            structureType={projectStructureType}
-            mode="selection"
-            sections={sections}
-            activeSectionId={activeBillSectionId}
-            countsBySection={selectionCountsBySection}
-            onSectionSelect={scrollToSection}
-          />
-
-          <div className="ws-stage-main ws-stage-main-selection">
-            <BOQSelectionStage
-              structureType={projectStructureType}
-              section={activeProjectSection}
-              sectionMeta={activeSectionMeta}
-              catalogItems={activeCatalogSection?.availableItems || []}
-              selectedCodes={selectedCatalogItemIdsBySection?.[activeBillSectionId] || []}
-              totalSelectedCount={totalSelectedCatalogItems}
-              currentSectionSelectedCount={selectionCountsBySection?.[activeBillSectionId] || 0}
-              onToggleItem={(code) => handleToggleCatalogSelection(activeBillSectionId, code)}
-              onSelectVisible={(codes) => handleSelectVisibleCatalogItems(activeBillSectionId, codes)}
-              onClearBill={() => handleClearCatalogSelection(activeBillSectionId)}
-              onGenerate={handleGenerateBoq}
-              generateLabel={hasGeneratedBoq ? 'Regenerate BOQ' : 'Generate BOQ'}
-              hasGeneratedBoq={hasGeneratedBoq}
-              onReturnToWorkspace={hasGeneratedBoq ? returnToWorkspace : null}
-              onNextSection={() => {
-                const currentIndex = sections.findIndex((section) => section.id === activeBillSectionId);
-                const nextSection = currentIndex >= 0 ? sections[currentIndex + 1] : null;
-                if (nextSection) {
-                  scrollToSection(nextSection.id);
-                }
-              }}
-              hasNextSection={sections.findIndex((section) => section.id === activeBillSectionId) < sections.length - 1}
-            />
-          </div>
-        </div>
+      <div className="ws-container ws-container-selection">
+        {renderBillTabs('selection')}
+        <BOQSelectionStage
+          projectName={project?.name}
+          marketRegion={marketRegionDisplay}
+          structureType={projectStructureType}
+          section={activeProjectSection}
+          sectionMeta={activeSectionMeta}
+          catalogItems={activeCatalogSection?.availableItems || []}
+          selectedCodes={selectedCatalogItemIdsBySection?.[activeBillSectionId] || []}
+          totalSelectedCount={totalSelectedCatalogItems}
+          currentSectionSelectedCount={selectionCountsBySection?.[activeBillSectionId] || 0}
+          onToggleItem={(code) => handleToggleCatalogSelection(activeBillSectionId, code)}
+          onSelectVisible={(codes) => handleSelectVisibleCatalogItems(activeBillSectionId, codes)}
+          onClearBill={() => handleClearCatalogSelection(activeBillSectionId)}
+          onGenerate={handleGenerateBoq}
+          generateLabel={hasGeneratedBoq ? 'Regenerate BOQ' : 'Generate BOQ'}
+          hasGeneratedBoq={hasGeneratedBoq}
+          onReturnToWorkspace={hasGeneratedBoq ? returnToWorkspace : null}
+          onNextSection={() => {
+            const currentIndex = sections.findIndex((section) => section.id === activeBillSectionId);
+            const nextSection = currentIndex >= 0 ? sections[currentIndex + 1] : null;
+            if (nextSection) {
+              scrollToSection(nextSection.id);
+            }
+          }}
+          hasNextSection={sections.findIndex((section) => section.id === activeBillSectionId) < sections.length - 1}
+        />
       </div>
     );
   }
 
   return (
     <div className="ws-container">
+      {renderBillTabs('workspace')}
+      <div className="ws-workspace-body">
       <div className="ws-workbook-top">
         <div className="ws-workbook-head">
           <div className="ws-workbook-copy">
@@ -2121,51 +2111,6 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
 
 
-      <div className="ws-bill-nav ws-bill-nav-hidden">
-        {(sections || []).map((section) => {
-          const sectionTotal = (section.items || []).reduce((sum, item) => sum + getItemTotal(item, project?.region || 'Lagos'), 0);
-          const sectionMeta = getSectionUiMeta(section);
-          const hasCatalog = !!sectionMeta.catalogSection;
-          const isActive = activeBillSectionId === section.id;
-          return (
-            <div key={section.id} className={`ws-bill-pill ${isActive ? 'active' : ''}`}>
-              <button
-                type="button"
-                className="ws-bill-pill-main"
-                onClick={() => scrollToSection(section.id)}
-              >
-                <span className="ws-bill-pill-title">{section.title}</span>
-                <span className="ws-bill-pill-meta">
-                  {(section.items || []).length} item{(section.items || []).length === 1 ? '' : 's'} · ₦{sectionTotal.toLocaleString()}
-                </span>
-              </button>
-              {hasCatalog && (
-                <button
-                  type="button"
-                  className="ws-bill-pill-picker"
-                  onClick={() => enterSelectionStage(section.id)}
-                >
-                  Pick Items
-                </button>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="ws-stage-shell">
-        <BOQBillSidebar
-          projectName={project?.name}
-          structureType={projectStructureType}
-          mode="workspace"
-          sections={sections}
-          activeSectionId={activeBillSectionId}
-          countsBySection={Object.fromEntries((sections || []).map((section) => [section.id, (section.items || []).length]))}
-          totalsBySection={sectionTotalsBySection}
-          onSectionSelect={scrollToSection}
-        />
-
-        <div className="ws-stage-main">
       <div className="ws-mobile-summary">
         <div className="ws-mobile-stat-card">
           <span>Region</span>
@@ -3322,7 +3267,6 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           onChange={(updates) => onUpdate(project.id, sections, project.region, updates)}
         />
       </div>
-        </div>
       </div>
 
       {/* Modals */}
@@ -3535,22 +3479,102 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-bill-nav-hidden {
           display: none !important;
         }
-        .ws-stage-shell {
+        .ws-workspace-body {
           display: flex;
+          flex-direction: column;
           min-height: 0;
-          border-top: 1px solid #dbe4ee;
-          background: #cbd5e1;
+        }
+        .ws-bill-tabs-shell {
+          position: sticky;
+          top: 0;
+          z-index: 18;
+          background: rgba(248, 250, 252, 0.94);
+          backdrop-filter: blur(14px);
+          border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+          padding: 0.85rem 1rem;
+        }
+        .ws-bill-tabs {
+          display: grid;
+          grid-auto-flow: column;
+          grid-auto-columns: minmax(220px, 1fr);
+          gap: 0.65rem;
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+        .ws-bill-tabs::-webkit-scrollbar { display: none; }
+        .ws-bill-tab {
+          border: 1px solid #dbe3ef;
+          background: #ffffff;
+          border-radius: 18px;
+          padding: 0.8rem 0.9rem;
+          display: grid;
+          grid-template-columns: 40px minmax(0, 1fr);
+          gap: 0.75rem;
+          align-items: center;
+          text-align: left;
+          cursor: pointer;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+        }
+        .ws-bill-tab:hover {
+          transform: translateY(-1px);
+          border-color: #93c5fd;
+          box-shadow: 0 14px 28px rgba(37, 99, 235, 0.08);
+        }
+        .ws-bill-tab.active {
+          border-color: #2563eb;
+          background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+        .ws-bill-tab-index {
+          width: 40px;
+          height: 40px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 12px;
+          background: #f1f5f9;
+          color: #475569;
+          font-size: 0.72rem;
+          font-weight: 800;
+        }
+        .ws-bill-tab.active .ws-bill-tab-index {
+          background: #dbeafe;
+          color: #1d4ed8;
+        }
+        .ws-bill-tab-copy {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 0.2rem;
+        }
+        .ws-bill-tab-copy strong {
+          font-size: 0.84rem;
+          color: #0f172a;
+          line-height: 1.35;
+        }
+        .ws-bill-tab-copy small {
+          font-size: 0.72rem;
+          color: #64748b;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .ws-stage-shell {
+          display: block;
+          min-height: 0;
+          border-top: none;
+          background: transparent;
         }
         .ws-stage-shell-selection {
-          min-height: calc(100vh - 220px);
+          min-height: 0;
         }
         .ws-stage-main {
-          flex: 1;
-          min-width: 0;
+          width: 100%;
           min-height: 0;
           display: flex;
           flex-direction: column;
-          background: #ffffff;
+          background: transparent;
         }
         .ws-stage-main-selection {
           overflow: hidden;
@@ -5446,6 +5470,20 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           .ws-container {
             height: auto;
             min-height: calc(100vh - 56px);
+          }
+          .ws-bill-tabs-shell {
+            padding: 0.65rem 0.7rem;
+          }
+          .ws-bill-tabs {
+            grid-auto-columns: minmax(210px, 1fr);
+          }
+          .ws-bill-tab {
+            padding: 0.72rem 0.78rem;
+            grid-template-columns: 36px minmax(0, 1fr);
+          }
+          .ws-bill-tab-index {
+            width: 36px;
+            height: 36px;
           }
           .ws-workbook-top {
             padding: 0.75rem 0.7rem 0.65rem;
