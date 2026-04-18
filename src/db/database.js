@@ -166,6 +166,17 @@ const sanitizeProjectForCloud = (project, user) => {
             .map(c => c.email?.toLowerCase())
             .filter(Boolean)
     ));
+    const boqBuilder = clone.boqBuilder ? {
+        stage: clone.boqBuilder.stage === 'selection' ? 'selection' : 'workspace',
+        activeBillSectionId: clone.boqBuilder.activeBillSectionId || null,
+        selectedCatalogItemIdsBySection: Object.fromEntries(
+            Object.entries(clone.boqBuilder.selectedCatalogItemIdsBySection || {}).map(([sectionId, codes]) => ([
+                sectionId,
+                Array.from(new Set((Array.isArray(codes) ? codes : []).filter(Boolean)))
+            ]))
+        ),
+        generatedAt: clone.boqBuilder.generatedAt || null,
+    } : null;
 
     return {
         name: clone.name,
@@ -187,6 +198,7 @@ const sanitizeProjectForCloud = (project, user) => {
         exclusions: clone.exclusions || null,
         pricingMode: clone.pricingMode || null,
         boqCatalogVersion: clone.boqCatalogVersion || null,
+        boqBuilder,
         customSectionCount: clone.customSectionCount ?? 0,
         customItemCount: clone.customItemCount ?? 0,
         share_enabled: clone.share_enabled ?? false,
