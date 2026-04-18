@@ -833,6 +833,7 @@ export function ProjectsProvider({ children }) {
                     billSectionTitle: item.billSectionTitle || section.title || '',
                     defaultFormulaType: item.defaultFormulaType || 'manual',
                     formulaText: item.formulaText || '',
+                    formulaBasis: Array.isArray(item.formulaBasis) ? item.formulaBasis : [],
                     formulaExpression: item.formulaExpression || '',
                     exampleInputs,
                     editableInputs,
@@ -841,6 +842,9 @@ export function ProjectsProvider({ children }) {
                     keywords: Array.isArray(item.keywords) ? item.keywords : [],
                     pickerHint: item.pickerHint || '',
                     isRecommended: item.isRecommended === true,
+                    rateSourceOptions: Array.isArray(item.rateSourceOptions) && item.rateSourceOptions.length > 0
+                        ? item.rateSourceOptions
+                        : ['benchmark', 'formula', 'manual'],
                     quantity: qty,
                     unitRate: resolvedUnitRate,
                     amount,
