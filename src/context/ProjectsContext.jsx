@@ -966,6 +966,12 @@ export function ProjectsProvider({ children }) {
         });
 
         const projectId = `local_${Date.now()}`;
+        const selectedCatalogItemIdsBySection = Object.fromEntries(
+            processedSections.map((section) => ([
+                section.id,
+                Array.from(new Set((section.items || []).map((item) => item.catalogItemId).filter(Boolean)))
+            ]))
+        );
         const newProj = {
             id: projectId,
             name: projectConfig.name || `${structureTypeLabel} Project`,
@@ -990,6 +996,12 @@ export function ProjectsProvider({ children }) {
             customItemCount: Number(projectConfig.customItemCount) || 0,
             pricingMode: isUnpricedTemplate ? 'user-entered' : 'template-rates',
             boqCatalogVersion: 'structure-based-boq-v1',
+            boqBuilder: {
+                stage: projectConfig.projectMode === 'structure-based' ? 'selection' : 'workspace',
+                activeBillSectionId: processedSections[0]?.id || null,
+                selectedCatalogItemIdsBySection,
+                generatedAt: null,
+            },
             preparedBy: user?.displayName || user?.email || 'Engineer',
             checkedBy: ''
         };

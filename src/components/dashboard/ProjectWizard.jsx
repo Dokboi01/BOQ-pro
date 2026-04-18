@@ -247,7 +247,7 @@ const ProjectWizard = ({ onSelect, onClose }) => {
                 <button className="btn-back" onClick={() => setStep(3)}><ChevronLeft size={16} /> Back</button>
                 <span className="step-number">Step 4 of {TOTAL_STEPS}</span>
                 <h3>Finalize BOQ Project</h3>
-                <p>Review the setup, add optional pricing notes, and create the structure-based BOQ workspace.</p>
+                <p>Review the setup, add optional pricing notes, and create the project. We’ll open the dedicated BOQ item-selection page before the estimate sheet.</p>
               </div>
 
               <div className="summary-card">
@@ -262,7 +262,7 @@ const ProjectWizard = ({ onSelect, onClose }) => {
                     <h5>BOQ Setup</h5>
                     <div className="summary-row"><span>Structure</span><strong>{structureType}</strong></div>
                     <div className="summary-row"><span>Bill Sections</span><strong>{selectedSectionIds.length}</strong></div>
-                    <div className="summary-row"><span>Item Builder</span><strong>Section-based picker enabled</strong></div>
+                    <div className="summary-row"><span>Item Builder</span><strong>Dedicated selection stage enabled</strong></div>
                     <div className="summary-row"><span>Preliminaries</span><strong>Real selectable bill</strong></div>
                   </div>
                 </div>
@@ -300,7 +300,7 @@ const ProjectWizard = ({ onSelect, onClose }) => {
 
               <div className="wizard-actions end">
                 <button className="btn-generate" disabled={!canGenerate} onClick={handleGenerate}>
-                  <Save size={16} /> Create BOQ Project
+                  <Save size={16} /> Create & Pick Items
                 </button>
               </div>
             </div>

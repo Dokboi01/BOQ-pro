@@ -8,9 +8,10 @@ import BidManagerModal from './BidManagerModal';
 import TeamHubPanel from './TeamHubPanel';
 import StructuralAnalyzer from './StructuralAnalyzer';
 import ProjectNotesAccordion from './ProjectNotesAccordion';
-import BOQItemPickerModal from './BOQItemPickerModal';
+import BOQBillSidebar from './BOQBillSidebar';
 import BOQFormulaModal from './BOQFormulaModal';
 import BOQItemDetailPanel from './BOQItemDetailPanel';
+import BOQSelectionStage from './BOQSelectionStage';
 import { getMaterials } from '../../db/database';
 import {
   cloneCatalogItemToProjectItem,
@@ -72,8 +73,59 @@ import {
   X
 } from 'lucide-react';
 
+const buildSelectedCatalogItemMap = (sections = []) => (
+  Object.fromEntries(
+    (sections || []).map((section) => ([
+      section.id,
+      Array.from(new Set(
+        (section.items || [])
+          .map((item) => item.catalogItemId)
+          .filter(Boolean)
+      )),
+    ]))
+  )
+);
+
+const buildBoqBuilderState = (project, sections = []) => {
+  const inferredSelections = buildSelectedCatalogItemMap(sections);
+  const persistedSelections = project?.boqBuilder?.selectedCatalogItemIdsBySection || {};
+  const selectedCatalogItemIdsBySection = Object.fromEntries(
+    (sections || []).map((section) => {
+      const hasPersistedValue = Object.prototype.hasOwnProperty.call(persistedSelections, section.id);
+      const nextCodes = hasPersistedValue
+        ? persistedSelections[section.id]
+        : inferredSelections[section.id];
+
+      return [
+        section.id,
+        Array.from(new Set(
+          (Array.isArray(nextCodes) ? nextCodes : [])
+            .filter(Boolean)
+        )),
+      ];
+    })
+  );
+
+  const hasGeneratedRows = (sections || []).some((section) => (section.items || []).length > 0);
+  const persistedStage = project?.boqBuilder?.stage;
+  const stage = persistedStage === 'selection' || persistedStage === 'workspace'
+    ? persistedStage
+    : (project?.projectMode === 'structure-based' && !hasGeneratedRows ? 'selection' : 'workspace');
+  const activeBillSectionId = (sections || []).some((section) => section.id === project?.boqBuilder?.activeBillSectionId)
+    ? project.boqBuilder.activeBillSectionId
+    : sections[0]?.id || null;
+
+  return {
+    stage,
+    activeBillSectionId,
+    selectedCatalogItemIdsBySection,
+    generatedAt: project?.boqBuilder?.generatedAt || (hasGeneratedRows ? 'legacy-generated' : null),
+  };
+};
+
 const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, onAddSection, onExport, onDelete }) => {
   const [sections, setSections] = useState(project?.sections || []);
+  const [boqBuilder, setBoqBuilder] = useState(() => buildBoqBuilderState(project, project?.sections || []));
   const [analyzingItem, setAnalyzingItem] = useState(null);
   const [customPricingItem, setCustomPricingItem] = useState(null);
   const [calculatingQtyForItem, setCalculatingQtyForItem] = useState(null);
@@ -83,10 +135,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const [viewMode, setViewMode] = useState('estimation');
   const [showStructuralAnalyzer, setShowStructuralAnalyzer] = useState(false);
   const [selectedCell, setSelectedCell] = useState(null);
-  const [itemPickerSectionId, setItemPickerSectionId] = useState(null);
   const [formulaItemContext, setFormulaItemContext] = useState(null);
   const [itemDetailPanelContext, setItemDetailPanelContext] = useState(null);
-  const [activeBillSectionId, setActiveBillSectionId] = useState(project?.sections?.[0]?.id || null);
+  const [activeBillSectionId, setActiveBillSectionId] = useState(() => buildBoqBuilderState(project, project?.sections || []).activeBillSectionId);
   const sectionRowRefs = React.useRef({});
   const [showAnalytics, setShowAnalytics] = useState(false);
 
@@ -104,6 +155,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const toast = useToast();
   const { user } = useAuth();
   const isCustomWorkspace = project?.projectMode === 'custom';
+  const projectStructureType = project?.structureType || project?.type || '';
   const marketRegionLabel = project?.region || 'Lagos';
   const marketRegionDisplay = marketRegionLabel.replace(/_/g, ' ');
 
@@ -146,6 +198,19 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       setSections(project.sections);
     }
   }, [project]);
+
+  React.useEffect(() => {
+    const nextBuilderState = buildBoqBuilderState(project, project?.sections || []);
+    setBoqBuilder(nextBuilderState);
+  }, [project]);
+
+  React.useEffect(() => {
+    if (boqBuilder?.activeBillSectionId) {
+      setActiveBillSectionId((current) => (
+        current === boqBuilder.activeBillSectionId ? current : boqBuilder.activeBillSectionId
+      ));
+    }
+  }, [boqBuilder?.activeBillSectionId]);
 
   React.useEffect(() => {
     if (!sections.length) {
@@ -383,6 +448,61 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     }
     return nextItem;
   };
+
+  const persistBoqBuilderState = React.useCallback((nextBuilder, nextSections = sections, region = project?.region, extraUpdates = {}) => {
+    setBoqBuilder(nextBuilder);
+    if (nextBuilder?.activeBillSectionId) {
+      setActiveBillSectionId(nextBuilder.activeBillSectionId);
+    }
+    onUpdate(project.id, nextSections, region, {
+      ...extraUpdates,
+      boqBuilder: nextBuilder,
+    });
+  }, [onUpdate, project?.id, project?.region, sections]);
+
+  const buildSectionsFromSelection = React.useCallback((sourceSections, builderState) => (
+    (sourceSections || []).map((section) => {
+      const catalogSection = getStructureSectionCatalog(projectStructureType, section.billSectionId);
+      const catalogItems = catalogSection?.availableItems || [];
+      const catalogItemsByCode = new Map(catalogItems.map((item) => [item.code, item]));
+      const existingCatalogRows = new Map(
+        (section.items || [])
+          .filter((item) => item.catalogItemId)
+          .map((item) => [item.catalogItemId, item])
+      );
+      const preservedCustomRows = (section.items || []).filter((item) => !item.catalogItemId);
+      const selectedCodes = Array.isArray(builderState?.selectedCatalogItemIdsBySection?.[section.id])
+        ? builderState.selectedCatalogItemIdsBySection[section.id]
+        : [];
+
+      const generatedRows = selectedCodes
+        .map((code) => {
+          const existingRow = existingCatalogRows.get(code);
+          if (existingRow) {
+            return syncBoqItemSnapshot(existingRow, section);
+          }
+
+          const catalogItem = catalogItemsByCode.get(code);
+          if (!catalogItem) return null;
+
+          return syncBoqItemSnapshot(
+            cloneCatalogItemToProjectItem(catalogItem, {
+              structureType: projectStructureType,
+              billSectionId: section.billSectionId || section.id,
+              billSectionTitle: section.title,
+            }),
+            section
+          );
+        })
+        .filter(Boolean);
+
+      return {
+        ...section,
+        expanded: true,
+        items: [...generatedRows, ...preservedCustomRows],
+      };
+    })
+  ), [projectStructureType]);
 
   const updateItem = (sectionId, itemId, fieldOrUpdates, valueOrBreakdown = null, breakdown = null) => {
     const updated = sections.map((section) => {
@@ -1251,8 +1371,6 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     return 'Project quantity';
   };
 
-  const projectStructureType = project?.structureType || project?.type || '';
-
   const getSectionUiMeta = (section) => {
     const catalogSection = getStructureSectionCatalog(projectStructureType, section?.billSectionId || section?.id);
     const keywords = [
@@ -1275,6 +1393,41 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       libraryCount: catalogSection?.availableItems?.length || 0,
     };
   };
+
+  const selectedCatalogItemIdsBySection = boqBuilder?.selectedCatalogItemIdsBySection || buildSelectedCatalogItemMap(sections);
+  const selectionCountsBySection = React.useMemo(() => (
+    Object.fromEntries(
+      (sections || []).map((section) => ([
+        section.id,
+        Array.isArray(selectedCatalogItemIdsBySection?.[section.id])
+          ? selectedCatalogItemIdsBySection[section.id].length
+          : 0,
+      ]))
+    )
+  ), [sections, selectedCatalogItemIdsBySection]);
+  const sectionTotalsBySection = React.useMemo(() => (
+    Object.fromEntries(
+      (sections || []).map((section) => ([
+        section.id,
+        (section.items || []).reduce((sum, item) => sum + getItemTotal(item, project?.region || 'Lagos'), 0),
+      ]))
+    )
+  ), [project?.region, sections]);
+  const totalSelectedCatalogItems = React.useMemo(() => (
+    Object.values(selectionCountsBySection).reduce((sum, count) => sum + count, 0)
+  ), [selectionCountsBySection]);
+  const hasGeneratedBoq = React.useMemo(() => (
+    (sections || []).some((section) => (section.items || []).length > 0)
+  ), [sections]);
+  const isSelectionStage = !isCustomWorkspace && boqBuilder?.stage === 'selection';
+  const activeProjectSection = (sections || []).find((section) => section.id === activeBillSectionId) || sections[0] || null;
+  const activeSectionMeta = activeProjectSection ? getSectionUiMeta(activeProjectSection) : null;
+  const activeCatalogSection = activeProjectSection
+    ? getStructureSectionCatalog(projectStructureType, activeProjectSection.billSectionId)
+    : null;
+  const workspaceSections = activeBillSectionId
+    ? (sections || []).filter((section) => section.id === activeBillSectionId)
+    : (sections || []);
 
   const matchesWorkspaceSearch = (section, item, sectionMeta, normalizedQuery) => {
     const haystack = [
@@ -1324,7 +1477,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const filteredSections = React.useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
-    return (sections || []).map((section) => {
+    return (workspaceSections || []).map((section) => {
       const sectionMeta = getSectionUiMeta(section);
       const baseItems = (section.items || []).filter((item) => matchesWorkspaceFilter(section, item, sectionMeta));
       const sectionSearchText = [
@@ -1358,7 +1511,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         expanded: normalizedQuery || workspaceFilter === 'active-bill' ? true : section.expanded,
       };
     }).filter(Boolean);
-  }, [activeBillSectionId, project?.region, projectStructureType, searchQuery, sections, workspaceFilter]);
+  }, [activeBillSectionId, project?.region, projectStructureType, searchQuery, workspaceFilter, workspaceSections]);
 
   const workspaceAnalytics = React.useMemo(() => (
     getProjectPricingAnalytics({ ...project, sections })
@@ -1399,8 +1552,6 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     sum + (section.items || []).reduce((itemSum, item) => itemSum + getItemTotal(item, project?.region || 'Lagos'), 0)
   ), 0);
   const isFilteredView = Boolean(searchQuery?.trim()) || workspaceFilter !== 'all';
-  const activeProjectSection = (sections || []).find((section) => section.id === activeBillSectionId) || sections[0] || null;
-  const activeSectionMeta = activeProjectSection ? getSectionUiMeta(activeProjectSection) : null;
   const activeSectionSubtotal = activeProjectSection
     ? (activeProjectSection.items || []).reduce((sum, item) => sum + getItemTotal(item, project?.region || 'Lagos'), 0)
     : 0;
@@ -1425,55 +1576,110 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const activeWorkspaceFilterLabel = workspaceFilterOptions.find((entry) => entry.id === workspaceFilter)?.label || 'All Items';
   const activeSheetLabel = viewMode === 'valuation' ? 'Valuation Sheet' : 'Estimate Sheet';
   const workbookSubtitle = [projectStructureType, project?.subtype].filter(Boolean).join(' / ') || 'Construction pricing workbook';
-  const pickerSection = sections.find((section) => section.id === itemPickerSectionId) || null;
-  const pickerCatalogSection = pickerSection
-    ? getStructureSectionCatalog(projectStructureType, pickerSection.billSectionId)
-    : null;
 
-  const openItemPicker = (sectionId) => {
-    setItemPickerSectionId(sectionId);
+  const focusSection = (sectionId) => {
+    if (!sectionId) return;
+
     setActiveBillSectionId(sectionId);
-  };
-
-  const handleAddCatalogItems = (catalogItems) => {
-    if (!pickerSection || !pickerCatalogSection) return;
-
-    const existingCatalogIds = new Set((pickerSection.items || []).map((item) => item.catalogItemId).filter(Boolean));
-    const nextCatalogItems = (catalogItems || []).filter((item) => !existingCatalogIds.has(item.code));
-
-    if (nextCatalogItems.length === 0) {
-      toast.info('Those BOQ items are already in this bill.');
-      return;
-    }
-
-    const updated = sections.map((section) => {
-      if (section.id !== pickerSection.id) return section;
-      const nextItems = nextCatalogItems.map((catalogItem) => syncBoqItemSnapshot(
-        cloneCatalogItemToProjectItem(catalogItem, {
-          structureType: projectStructureType,
-          billSectionId: section.billSectionId || section.id,
-          billSectionTitle: section.title,
-        }),
-        section
-      ));
-      return {
-        ...section,
-        expanded: true,
-        items: [...(section.items || []), ...nextItems]
-      };
-    });
-
-    setSections(updated);
-    onUpdate(project.id, updated);
-    setItemPickerSectionId(null);
-    toast.success(`Added ${nextCatalogItems.length} item${nextCatalogItems.length === 1 ? '' : 's'} to ${pickerSection.title}.`);
-  };
-
-  const scrollToSection = (sectionId) => {
-    setActiveBillSectionId(sectionId);
+    setBoqBuilder((prev) => (
+      prev
+        ? { ...prev, activeBillSectionId: sectionId }
+        : prev
+    ));
     setSections((prev) => prev.map((section) => (
       section.id === sectionId ? { ...section, expanded: true } : section
     )));
+  };
+
+  const updateSelectionForSection = (sectionId, nextCodes) => {
+    const normalizedCodes = Array.from(new Set((nextCodes || []).filter(Boolean)));
+    const nextBuilder = {
+      ...(boqBuilder || buildBoqBuilderState(project, sections)),
+      stage: 'selection',
+      activeBillSectionId: sectionId,
+      selectedCatalogItemIdsBySection: {
+        ...selectedCatalogItemIdsBySection,
+        [sectionId]: normalizedCodes,
+      },
+    };
+
+    setActiveBillSectionId(sectionId);
+    persistBoqBuilderState(nextBuilder, sections);
+  };
+
+  const handleToggleCatalogSelection = (sectionId, code) => {
+    const existingCodes = Array.isArray(selectedCatalogItemIdsBySection?.[sectionId])
+      ? selectedCatalogItemIdsBySection[sectionId]
+      : [];
+    const nextCodes = existingCodes.includes(code)
+      ? existingCodes.filter((entry) => entry !== code)
+      : [...existingCodes, code];
+
+    updateSelectionForSection(sectionId, nextCodes);
+  };
+
+  const handleSelectVisibleCatalogItems = (sectionId, codes) => {
+    const existingCodes = Array.isArray(selectedCatalogItemIdsBySection?.[sectionId])
+      ? selectedCatalogItemIdsBySection[sectionId]
+      : [];
+    updateSelectionForSection(sectionId, [...existingCodes, ...(codes || [])]);
+  };
+
+  const handleClearCatalogSelection = (sectionId) => {
+    updateSelectionForSection(sectionId, []);
+  };
+
+  const enterSelectionStage = (sectionId = activeBillSectionId || sections[0]?.id || null) => {
+    if (!sectionId) return;
+
+    const nextBuilder = {
+      ...(boqBuilder || buildBoqBuilderState(project, sections)),
+      stage: 'selection',
+      activeBillSectionId: sectionId,
+      selectedCatalogItemIdsBySection,
+    };
+
+    focusSection(sectionId);
+    persistBoqBuilderState(nextBuilder, sections);
+  };
+
+  const handleGenerateBoq = () => {
+    if (totalSelectedCatalogItems <= 0) {
+      toast.info('Pick at least one BOQ item before generating the sheet.');
+      return;
+    }
+
+    const generatedBuilder = {
+      ...(boqBuilder || buildBoqBuilderState(project, sections)),
+      stage: 'workspace',
+      activeBillSectionId: activeBillSectionId || sections[0]?.id || null,
+      selectedCatalogItemIdsBySection,
+      generatedAt: new Date().toISOString(),
+    };
+    const nextSections = buildSectionsFromSelection(sections, generatedBuilder);
+
+    setSections(nextSections);
+    persistBoqBuilderState(generatedBuilder, nextSections);
+    toast.success(hasGeneratedBoq ? 'BOQ sheet updated from your selected items.' : 'BOQ sheet generated from the selected items.');
+  };
+
+  const returnToWorkspace = () => {
+    if (!hasGeneratedBoq) return;
+
+    const nextBuilder = {
+      ...(boqBuilder || buildBoqBuilderState(project, sections)),
+      stage: 'workspace',
+      activeBillSectionId: activeBillSectionId || sections[0]?.id || null,
+      selectedCatalogItemIdsBySection,
+      generatedAt: boqBuilder?.generatedAt || new Date().toISOString(),
+    };
+
+    persistBoqBuilderState(nextBuilder, sections);
+  };
+
+  const scrollToSection = (sectionId) => {
+    focusSection(sectionId);
+    if (isSelectionStage) return;
     window.requestAnimationFrame(() => {
       sectionRowRefs.current[sectionId]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
@@ -1693,6 +1899,82 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   })();
   let spreadsheetRowCounter = 1;
 
+  if (isSelectionStage) {
+    return (
+      <div className="ws-container">
+        <div className="ws-workbook-top">
+          <div className="ws-workbook-head">
+            <div className="ws-workbook-copy">
+              <span className="ws-workbook-eyebrow">BOQ-Pro Workbook</span>
+              <div className="ws-workbook-title-row">
+                <h1>{project?.name || 'Untitled Project'}</h1>
+                <span className="ws-workbook-health ws-workbook-health-active">
+                  BOQ item selection in progress
+                </span>
+              </div>
+              <p>{workbookSubtitle} | {marketRegionDisplay} market benchmark | Select items before generating the BOQ sheet</p>
+            </div>
+            <div className="ws-workbook-metrics-compact">
+              <span className="ws-selection-stage-chip">
+                {totalSelectedCatalogItems} selected item{totalSelectedCatalogItems === 1 ? '' : 's'}
+              </span>
+            </div>
+          </div>
+          <div className="ws-sheet-tabbar ws-sheet-tabbar-selection">
+            <div className="ws-selection-tabbar-copy">
+              <strong>Dedicated BOQ Item Selection</strong>
+              <span>Choose items bill by bill from the left sidebar, then generate the BOQ table only when you are ready.</span>
+            </div>
+            <div className="ws-sheet-tabbar-meta">
+              <span className="ws-sheet-meta-chip">{project?.region || 'Lagos'} Region</span>
+              <span className="ws-sheet-meta-chip">{sections.length} Bills</span>
+              <span className="ws-sheet-meta-chip">{totalSelectedCatalogItems} Items Selected</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="ws-stage-shell ws-stage-shell-selection">
+          <BOQBillSidebar
+            projectName={project?.name}
+            structureType={projectStructureType}
+            mode="selection"
+            sections={sections}
+            activeSectionId={activeBillSectionId}
+            countsBySection={selectionCountsBySection}
+            onSectionSelect={scrollToSection}
+          />
+
+          <div className="ws-stage-main ws-stage-main-selection">
+            <BOQSelectionStage
+              structureType={projectStructureType}
+              section={activeProjectSection}
+              sectionMeta={activeSectionMeta}
+              catalogItems={activeCatalogSection?.availableItems || []}
+              selectedCodes={selectedCatalogItemIdsBySection?.[activeBillSectionId] || []}
+              totalSelectedCount={totalSelectedCatalogItems}
+              currentSectionSelectedCount={selectionCountsBySection?.[activeBillSectionId] || 0}
+              onToggleItem={(code) => handleToggleCatalogSelection(activeBillSectionId, code)}
+              onSelectVisible={(codes) => handleSelectVisibleCatalogItems(activeBillSectionId, codes)}
+              onClearBill={() => handleClearCatalogSelection(activeBillSectionId)}
+              onGenerate={handleGenerateBoq}
+              generateLabel={hasGeneratedBoq ? 'Regenerate BOQ' : 'Generate BOQ'}
+              hasGeneratedBoq={hasGeneratedBoq}
+              onReturnToWorkspace={hasGeneratedBoq ? returnToWorkspace : null}
+              onNextSection={() => {
+                const currentIndex = sections.findIndex((section) => section.id === activeBillSectionId);
+                const nextSection = currentIndex >= 0 ? sections[currentIndex + 1] : null;
+                if (nextSection) {
+                  scrollToSection(nextSection.id);
+                }
+              }}
+              hasNextSection={sections.findIndex((section) => section.id === activeBillSectionId) < sections.length - 1}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="ws-container">
       <div className="ws-workbook-top">
@@ -1839,7 +2121,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
 
 
-      <div className="ws-bill-nav">
+      <div className="ws-bill-nav ws-bill-nav-hidden">
         {(sections || []).map((section) => {
           const sectionTotal = (section.items || []).reduce((sum, item) => sum + getItemTotal(item, project?.region || 'Lagos'), 0);
           const sectionMeta = getSectionUiMeta(section);
@@ -1861,7 +2143,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                 <button
                   type="button"
                   className="ws-bill-pill-picker"
-                  onClick={() => openItemPicker(section.id)}
+                  onClick={() => enterSelectionStage(section.id)}
                 >
                   Pick Items
                 </button>
@@ -1871,6 +2153,19 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         })}
       </div>
 
+      <div className="ws-stage-shell">
+        <BOQBillSidebar
+          projectName={project?.name}
+          structureType={projectStructureType}
+          mode="workspace"
+          sections={sections}
+          activeSectionId={activeBillSectionId}
+          countsBySection={Object.fromEntries((sections || []).map((section) => [section.id, (section.items || []).length]))}
+          totalsBySection={sectionTotalsBySection}
+          onSectionSelect={scrollToSection}
+        />
+
+        <div className="ws-stage-main">
       <div className="ws-mobile-summary">
         <div className="ws-mobile-stat-card">
           <span>Region</span>
@@ -1891,8 +2186,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       </div>
 
       {showAnalytics && (
-        <div className="ws-analytics-board">
-      {showAnalytics && (
+        <>
         <div className="ws-analytics-board">
       <div className="ws-insight-strip">
         <div className="ws-insight-card ws-insight-card-strong">
@@ -1987,6 +2281,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           )}
         </div>
       </div>
+      </div>
+        </>
+      )}
 
       <div className={`ws-sheet-tools ${selectedItemContext ? 'has-selection' : 'is-idle'}`}>
         <div className="ws-formula-bar">
@@ -2076,8 +2373,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
               </div>
               <div className="ws-helper-actions">
                 <span className="ws-helper-chip ws-helper-chip-muted">{sections.length} sections ready</span>
-                <button className="ws-helper-btn" onClick={() => sections[0] && openItemPicker(sections[0].id)}>
-                  <Plus size={12} /> Pick BOQ Items
+                <button className="ws-helper-btn" onClick={() => enterSelectionStage(activeBillSectionId || sections[0]?.id)}>
+                  <Plus size={12} /> Edit BOQ Selection
                 </button>
                 <button className="ws-helper-btn" onClick={onAddSection}>
                   <Plus size={12} /> Add Section
@@ -2128,11 +2425,6 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           </small>
         </div>
       </div>
-      </div>
-      )}
-
-      </div>
-      )}
 
       {/* Table */}
       <div className="ws-table-wrap">
@@ -2176,6 +2468,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
               const sectionSubtotal = (section.items || []).reduce((a, i) => a + getItemTotal(i, project?.region || 'Lagos'), 0);
               const sectionQty = (section.items || []).reduce((a, i) => a + (Number(i.qty) || 0), 0);
               const sectionRefreshMeta = benchmarkRefreshAnalytics.sectionMap[section.id] || null;
+              const sectionMeta = getSectionUiMeta(section);
 
               return (
                 <React.Fragment key={section.id}>
@@ -2230,7 +2523,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                           className="ws-btn-icon ws-btn-library"
                           onClick={(e) => {
                             e.stopPropagation();
-                            openItemPicker(section.id);
+                            enterSelectionStage(section.id);
                           }}
                           title="Pick BOQ items for this bill"
                         >
@@ -2251,8 +2544,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                           <p className="ws-empty-section-msg">{sectionMeta.emptyStateMessage || "Add items from the library or create a custom line."}</p>
                           <div className="ws-empty-section-actions">
                             {sectionMeta.catalogSection && (
-                              <button className="ws-btn ws-btn-primary" onClick={() => openItemPicker(section.id)}>
-                                <Plus size={14} /> Pick Items from Library
+                              <button className="ws-btn ws-btn-primary" onClick={() => enterSelectionStage(section.id)}>
+                                <Plus size={14} /> Choose Items for Bill
                               </button>
                             )}
                             <button className="ws-btn ws-btn-ghost" onClick={() => addItemToSection(section.id)}>
@@ -2999,8 +3292,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                         <td colSpan={totalColumnCount}>
                           <div className="ws-add-row-actions">
                             {getStructureSectionCatalog(projectStructureType, section.billSectionId) && (
-                              <button className="ws-add-btn ws-add-btn-primary" onClick={() => openItemPicker(section.id)}>
-                                <Plus size={13} /> Pick from Library
+                              <button className="ws-add-btn ws-add-btn-primary" onClick={() => enterSelectionStage(section.id)}>
+                                <Plus size={13} /> Edit Bill Selection
                               </button>
                             )}
                             <button className="ws-add-btn" onClick={() => addItemToSection(section.id)}>
@@ -3028,6 +3321,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           project={project}
           onChange={(updates) => onUpdate(project.id, sections, project.region, updates)}
         />
+      </div>
+        </div>
       </div>
 
       {/* Modals */}
@@ -3105,16 +3400,6 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           />
         );
       })()}
-      {pickerSection && pickerCatalogSection && (
-        <BOQItemPickerModal
-          structureType={projectStructureType}
-          section={pickerCatalogSection}
-          catalogItems={pickerCatalogSection.availableItems || []}
-          existingItems={pickerSection.items || []}
-          onClose={() => setItemPickerSectionId(null)}
-          onAddItems={handleAddCatalogItems}
-        />
-      )}
       {formulaItemContext && (
         <BOQFormulaModal
           item={formulaItemContext.item}
@@ -3246,6 +3531,59 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
            padding: 0.15rem 0.45rem;
            font-size: 0.62rem;
            border-radius: 999px;
+        }
+        .ws-bill-nav-hidden {
+          display: none !important;
+        }
+        .ws-stage-shell {
+          display: flex;
+          min-height: 0;
+          border-top: 1px solid #dbe4ee;
+          background: #cbd5e1;
+        }
+        .ws-stage-shell-selection {
+          min-height: calc(100vh - 220px);
+        }
+        .ws-stage-main {
+          flex: 1;
+          min-width: 0;
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
+          background: #ffffff;
+        }
+        .ws-stage-main-selection {
+          overflow: hidden;
+        }
+        .ws-selection-stage-chip {
+          display: inline-flex;
+          align-items: center;
+          padding: 0.45rem 1rem;
+          border-radius: 999px;
+          background: #eff6ff;
+          color: #1d4ed8;
+          border: 1px solid #bfdbfe;
+          font-size: 0.72rem;
+          font-weight: 800;
+        }
+        .ws-sheet-tabbar-selection {
+          justify-content: space-between;
+          gap: 1rem;
+          align-items: center;
+        }
+        .ws-selection-tabbar-copy {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+          color: #0f172a;
+        }
+        .ws-selection-tabbar-copy strong {
+          font-size: 0.92rem;
+        }
+        .ws-selection-tabbar-copy span {
+          font-size: 0.78rem;
+          line-height: 1.5;
+          color: #475569;
         }
 
         /* --- NEW COMPACT LAYOUT STYLES --- */
@@ -5094,6 +5432,16 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
 
         /* ── MOBILE ── */
+        @media (max-width: 1100px) {
+          .ws-stage-shell {
+            flex-direction: column;
+          }
+
+          .ws-stage-main {
+            min-height: auto;
+          }
+        }
+
         @media (max-width: 768px) {
           .ws-container {
             height: auto;
@@ -5134,6 +5482,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           }
           .ws-sheet-tabbar-meta {
             justify-content: flex-start;
+          }
+          .ws-selection-tabbar-copy {
+            width: 100%;
           }
           .ws-sheet-tab {
             width: 100%;
