@@ -1565,6 +1565,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         return quantity <= 0 || (resolveItemRateSource(item) === 'benchmark' ? benchmarkRate <= 0 : unitRate <= 0);
     }).length
     : 0;
+  const activeSectionLineCount = activeProjectSection ? (activeProjectSection.items || []).length : 0;
+  const activeSectionPricedItems = Math.max(activeSectionLineCount - activeSectionPendingItems, 0);
+  const activeCatalogSelectionCount = selectionCountsBySection?.[activeBillSectionId] || 0;
   const workspaceFilterOptions = [
     { id: 'all', label: 'All Items' },
     { id: 'active-bill', label: 'Active Bill' },
@@ -1978,10 +1981,38 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             </div>
             <p>{workbookSubtitle} | {marketRegionDisplay} market benchmark | {activeSheetLabel}</p>
           </div>
-          <div className="ws-workbook-metrics-compact">
-            <button className={`ws-analytics-toggle ${showAnalytics ? 'active' : ''}`} onClick={() => setShowAnalytics(!showAnalytics)}>
-              {showAnalytics ? 'Hide Analytics Dashboard' : 'Workspace Metrics & Analytics'}
-            </button>
+          <div className="ws-workbook-console">
+            <div className="ws-workbook-metrics-compact">
+              <article className="ws-head-stat-card">
+                <span>Active Bill</span>
+                <strong>{activeProjectSection?.title || 'No active bill'}</strong>
+                <small>{activeSectionLineCount} line{activeSectionLineCount === 1 ? '' : 's'} · {activeCatalogSelectionCount} selected for this bill</small>
+              </article>
+              <article className="ws-head-stat-card">
+                <span>Pricing Coverage</span>
+                <strong>{workspaceAnalytics.pricingCoveragePercent.toFixed(0)}%</strong>
+                <small>{workspaceAnalytics.pricedItems}/{workspaceAnalytics.totalItems} items priced · {activeSectionPendingItems} pending in active bill</small>
+              </article>
+              <article className="ws-head-stat-card ws-head-stat-card-strong">
+                <span>Project Total</span>
+                <strong>N{calculateGrandTotal.toLocaleString()}</strong>
+                <small>{marketRegionDisplay} market basis · {workspaceAnalytics.benchmarkItems} benchmark-backed items</small>
+              </article>
+            </div>
+            <div className="ws-workbook-actions">
+              <button className={`ws-analytics-toggle ${showAnalytics ? 'active' : ''}`} onClick={() => setShowAnalytics(!showAnalytics)}>
+                {showAnalytics ? 'Hide Analytics Dashboard' : 'Workspace Metrics & Analytics'}
+              </button>
+              <button
+                className="ws-head-action"
+                onClick={() => enterSelectionStage(activeBillSectionId || sections[0]?.id)}
+              >
+                <Plus size={13} /> Edit BOQ Selection
+              </button>
+              <button className="ws-head-action ws-head-action-strong" onClick={refreshBenchmarks}>
+                <RefreshCcw size={13} /> Refresh Benchmarks
+              </button>
+            </div>
           </div>
         </div>
         <div className="ws-sheet-tabbar">
@@ -2005,6 +2036,245 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         </div>
       </div>
       {renderBillTabs('workspace')}
+      <div className="ws-workspace-command-center">
+      <div className="ws-cost-rail">
+        <div className="ws-cost-card">
+          <span className="ws-cost-label">Active Bill</span>
+          <strong className="ws-cost-value">{activeProjectSection?.title || 'No active bill'}</strong>
+          <small className="ws-cost-meta">
+            {activeProjectSection
+              ? `${activeSectionLineCount} line${activeSectionLineCount === 1 ? '' : 's'} · Qty ${activeSectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+              : 'Choose a bill section to start measuring'}
+          </small>
+        </div>
+        <div className="ws-cost-card">
+          <span className="ws-cost-label">Bill Progress</span>
+          <strong className="ws-cost-value">{activeSectionPricedItems}/{activeSectionLineCount || 0}</strong>
+          <small className="ws-cost-meta">
+            {activeSectionPendingItems > 0
+              ? `${activeSectionPendingItems} line${activeSectionPendingItems === 1 ? '' : 's'} still need pricing review`
+              : 'Current active bill is fully priced'}
+          </small>
+        </div>
+        <div className="ws-cost-card">
+          <span className="ws-cost-label">{isFilteredView ? `${activeWorkspaceFilterLabel} View` : 'Visible Sheet Total'}</span>
+          <strong className="ws-cost-value">N{visibleGrandTotal.toLocaleString()}</strong>
+          <small className="ws-cost-meta">
+            {filteredSectionCount} visible bill{filteredSectionCount === 1 ? '' : 's'} · {filteredItemCount} visible item{filteredItemCount === 1 ? '' : 's'}
+          </small>
+        </div>
+        <div className="ws-cost-card ws-cost-card-total">
+          <span className="ws-cost-label">Project Grand Total</span>
+          <strong className="ws-cost-value">N{calculateGrandTotal.toLocaleString()}</strong>
+          <small className="ws-cost-meta">
+            {project?.region || 'Lagos'} market basis · {workspaceAnalytics.totalItems} measured item{workspaceAnalytics.totalItems === 1 ? '' : 's'}
+          </small>
+        </div>
+      </div>
+
+      <div className={`ws-sheet-tools ${selectedItemContext ? 'has-selection' : 'is-idle'}`}>
+        <div className="ws-formula-bar">
+          <div className="ws-formula-address">{formulaBarMeta.address}</div>
+          <div className="ws-formula-fx">fx</div>
+          <div className="ws-formula-body">
+            <strong>{formulaBarMeta.columnLabel}</strong>
+            <span>{formulaBarMeta.value}</span>
+            <small>{formulaBarMeta.detail}</small>
+          </div>
+        </div>
+        <div className={`ws-helper-strip ${selectedItemContext ? 'is-selected' : 'is-idle'}`}>
+          {selectedItemContext ? (
+            <>
+              <div className="ws-helper-copy">
+                <span className="ws-helper-label">Selected Row</span>
+                <strong>{selectedItemContext.itemCode} · {selectedItemContext.item.name || selectedItemContext.item.description || 'Untitled BOQ item'}</strong>
+                <small>
+                  {selectedItemContext.section.title} | Qty {selectedItemContext.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} | Rate N{selectedItemContext.unitRate.toLocaleString()} | Amount N{selectedItemContext.total.toLocaleString()}
+                </small>
+                {selectedItemContext.formulaText && (
+                  <small className="ws-helper-secondary">
+                    Formula: {selectedItemContext.formulaText}
+                    {selectedItemContext.workedExampleText ? ` | ${selectedItemContext.workedExampleText}` : ''}
+                  </small>
+                )}
+              </div>
+              <div className="ws-helper-actions">
+                <span className={`ws-helper-chip ws-helper-chip-${selectedItemContext.statusMeta.tone}`}>{selectedItemContext.statusMeta.label}</span>
+                <span className={`ws-helper-chip ws-helper-chip-${selectedItemContext.rateSourceMeta.tone}`}>{selectedItemContext.rateSourceMeta.label}</span>
+                <button
+                  className="ws-helper-btn"
+                  onClick={() => setCalculatingQtyForItem({ sectionId: selectedItemContext.section.id, item: selectedItemContext.item })}
+                >
+                  <Calculator size={12} /> Takeoff
+                </button>
+                {isFormulaDrivenItem(selectedItemContext.item) && (
+                  <button
+                    className="ws-helper-btn"
+                    onClick={() => openFormulaEditor(selectedItemContext.section.id, selectedItemContext.item)}
+                  >
+                    fx Formula Inputs
+                  </button>
+                )}
+                {resolveItemRateSource(selectedItemContext.item) === 'manual' && (
+                  <button
+                    className="ws-helper-btn"
+                    onClick={() => openCustomPricingStudio(selectedItemContext.section.id, selectedItemContext.item)}
+                  >
+                    <SlidersHorizontal size={12} /> Pricing Studio
+                  </button>
+                )}
+                <button
+                  className="ws-helper-btn"
+                  onClick={() => openDetailedAnalysis(selectedItemContext.section.id, selectedItemContext.item)}
+                >
+                  <Pencil size={12} /> Detailed Analysis
+                </button>
+                <button
+                  className="ws-helper-btn"
+                  onClick={() => addItemBelow(selectedItemContext.section.id, selectedItemContext.item.id)}
+                >
+                  <Plus size={12} /> Add Line Below
+                </button>
+                <button
+                  className="ws-helper-btn"
+                  onClick={() => duplicateItem(selectedItemContext.section.id, selectedItemContext.item.id)}
+                >
+                  <Copy size={12} /> Duplicate
+                </button>
+                {benchmarkRefreshAnalytics.itemMap[`${selectedItemContext.section.id}:${selectedItemContext.item.id}`]?.canApplyRefresh && (
+                  <button
+                    className="ws-helper-btn ws-helper-btn-strong"
+                    onClick={() => refreshItemBenchmark(selectedItemContext.section.id, selectedItemContext.item.id)}
+                  >
+                    <RefreshCcw size={12} /> Refresh Benchmark
+                  </button>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="ws-helper-copy">
+                <span className="ws-helper-label">Workspace Flow</span>
+                <strong>Select any row to unlock quick actions and pricing context.</strong>
+                <small>Use search, quantity entry, custom pricing, and benchmark refresh directly inside the sheet.</small>
+              </div>
+              <div className="ws-helper-actions">
+                <span className="ws-helper-chip ws-helper-chip-muted">{sections.length} sections ready</span>
+                <button className="ws-helper-btn" onClick={() => enterSelectionStage(activeBillSectionId || sections[0]?.id)}>
+                  <Plus size={12} /> Edit BOQ Selection
+                </button>
+                <button className="ws-helper-btn" onClick={onAddSection}>
+                  <Plus size={12} /> Add Section
+                </button>
+                <button className="ws-helper-btn" onClick={autoRateProject}>
+                  <Zap size={12} /> Auto-Rate Project
+                </button>
+                <button className="ws-helper-btn ws-helper-btn-strong" onClick={refreshBenchmarks}>
+                  <RefreshCcw size={12} /> Refresh Benchmarks
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {showAnalytics && (
+        <>
+        <div className="ws-analytics-board">
+      <div className="ws-insight-strip">
+        <div className="ws-insight-card ws-insight-card-strong">
+          <span className="ws-insight-label">Pricing Coverage</span>
+          <strong className="ws-insight-value">{workspaceAnalytics.pricingCoveragePercent.toFixed(0)}%</strong>
+          <p className="ws-insight-copy">
+            {workspaceAnalytics.pricedItems} of {workspaceAnalytics.totalItems} items priced
+            {workspaceAnalytics.benchmarkItems > 0 ? ` · ${workspaceAnalytics.benchmarkItems} auto-priced from benchmark` : ''}
+            {workspaceAnalytics.unpricedItems > 0 ? ` · ${workspaceAnalytics.unpricedItems} still need review` : ' · full coverage reached'}
+          </p>
+        </div>
+        <div className="ws-insight-card">
+          <span className="ws-insight-label">Benchmark Automation</span>
+          <strong className="ws-insight-value">
+            {workspaceAnalytics.benchmarkItems} live · {workspaceAnalytics.customItems} override
+          </strong>
+          <p className="ws-insight-copy">
+            {workspaceAnalytics.benchmarkReferencedItems} items linked to current market benchmark
+          </p>
+        </div>
+        <div className="ws-insight-card">
+          <span className="ws-insight-label">Market Tracking</span>
+          <strong className="ws-insight-value">{workspaceAnalytics.benchmarkCoveragePercent.toFixed(0)}%</strong>
+          <p className="ws-insight-copy">
+            {workspaceAnalytics.outlierCount > 0
+              ? `${workspaceAnalytics.outlierCount} item${workspaceAnalytics.outlierCount === 1 ? '' : 's'} outside tolerance`
+              : 'No benchmark drift flags right now'}
+          </p>
+        </div>
+        <div className="ws-insight-card">
+          <span className="ws-insight-label">Commercial Driver</span>
+          <strong className="ws-insight-value">
+            {workspaceAnalytics.dominantSection ? workspaceAnalytics.dominantSection.title : 'Waiting for pricing'}
+          </strong>
+          <p className="ws-insight-copy">
+            {workspaceAnalytics.dominantSection
+              ? `${workspaceAnalytics.dominantSection.percentOfTotal.toFixed(1)}% of current contract sum`
+              : 'Add rates to reveal the heaviest cost section'}
+          </p>
+        </div>
+      </div>
+
+      <div className={`ws-refresh-banner ${
+        benchmarkSyncState.status === 'error'
+          ? 'ws-refresh-banner-warning'
+          : benchmarkRefreshAnalytics.actionableItems > 0
+            ? 'ws-refresh-banner-active'
+            : 'ws-refresh-banner-calm'
+      }`}>
+        <div className="ws-refresh-banner-copy">
+          <span className="ws-refresh-banner-eyebrow">Benchmark Refresh Workflow</span>
+          {benchmarkSyncState.status === 'loading' && !benchmarkSyncLabel ? (
+            <>
+              <strong>Loading the latest market benchmark library</strong>
+              <p>We are pulling fresh benchmark references so drift alerts and refresh actions stay reliable.</p>
+            </>
+          ) : benchmarkSyncState.status === 'error' ? (
+            <>
+              <strong>Market benchmark check is unavailable right now</strong>
+              <p>{benchmarkSyncState.error || 'We could not load the latest market benchmark library.'}</p>
+            </>
+          ) : benchmarkRefreshAnalytics.actionableItems > 0 ? (
+            <>
+              <strong>{benchmarkRefreshAnalytics.actionableItems} benchmark item{benchmarkRefreshAnalytics.actionableItems === 1 ? '' : 's'} need review</strong>
+              <p>
+                {benchmarkRefreshAnalytics.benchmarkRateUpdates} live benchmark item{benchmarkRefreshAnalytics.benchmarkRateUpdates === 1 ? '' : 's'} can update amount now
+                {' · '}
+                {benchmarkRefreshAnalytics.referenceOnlyUpdates} custom/manual item{benchmarkRefreshAnalytics.referenceOnlyUpdates === 1 ? '' : 's'} will keep their current rate
+                {benchmarkRefreshAnalytics.reviewItems > 0 ? ` · ${benchmarkRefreshAnalytics.reviewItems} still need manual benchmark review` : ''}
+                {benchmarkSyncLabel ? ` · checked ${benchmarkSyncLabel}` : ''}
+              </p>
+            </>
+          ) : (
+            <>
+              <strong>Benchmark references are current</strong>
+              <p>
+                This project is aligned with the latest market benchmark library.
+                {benchmarkSyncLabel ? ` Last checked ${benchmarkSyncLabel}.` : ''}
+              </p>
+            </>
+          )}
+        </div>
+        <div className="ws-refresh-banner-actions">
+          {benchmarkSyncState.status === 'error' ? (
+            <button className="ws-btn ws-btn-ghost" onClick={() => loadMarketBenchmarks()}>
+              <RefreshCcw size={14} /> Retry market check
+            </button>
+          ) : (
+            <button className="ws-btn ws-btn-ghost" onClick={refreshBenchmarks}>
+              <RefreshCcw size={14} /> Refresh project benchmarks
+            </button>
+          )}
+        </div>
+      </div>
+      </div>
       {/* Toolbar */}
       <div className="ws-toolbar">
         <div className="ws-toolbar-left">
@@ -2108,8 +2378,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           <button className="ws-btn ws-btn-primary" onClick={onAddSection}><Plus size={14} /> Section</button>
         </div>
       </div>
-
-
+      </>
+      )}
+      </div>
 
       <div className="ws-mobile-summary">
         <div className="ws-mobile-stat-card">
@@ -2130,7 +2401,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         </div>
       </div>
 
-      {showAnalytics && (
+      {false && (
         <>
         <div className="ws-analytics-board">
       <div className="ws-insight-strip">
@@ -2227,8 +2498,6 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         </div>
       </div>
       </div>
-        </>
-      )}
 
       <div className={`ws-sheet-tools ${selectedItemContext ? 'has-selection' : 'is-idle'}`}>
         <div className="ws-formula-bar">
@@ -2370,6 +2639,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           </small>
         </div>
       </div>
+        </>
+      )}
 
       {/* Table */}
       <div className="ws-table-wrap">
@@ -4601,6 +4872,241 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-btn-primary { background: #2563eb; color: white; }
         .ws-btn-primary:hover { background: #1d4ed8; }
 
+        .ws-workspace-command-center {
+          display: flex;
+          flex-direction: column;
+          gap: 0.85rem;
+          padding: 0.95rem 0.95rem 0;
+          background: linear-gradient(180deg, #f8fbff 0%, #f8fafc 100%);
+        }
+        .ws-workbook-head {
+          align-items: stretch;
+          gap: 1.25rem;
+        }
+        .ws-workbook-console {
+          min-width: min(560px, 100%);
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+        .ws-workbook-metrics-compact {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 0.7rem;
+        }
+        .ws-head-stat-card {
+          display: flex;
+          flex-direction: column;
+          gap: 0.22rem;
+          padding: 0.95rem 1rem;
+          border-radius: 18px;
+          border: 1px solid rgba(148, 163, 184, 0.18);
+          background: rgba(255, 255, 255, 0.94);
+          box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
+        }
+        .ws-head-stat-card span {
+          font-size: 0.62rem;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+        .ws-head-stat-card strong {
+          font-size: 1rem;
+          font-weight: 900;
+          color: #0f172a;
+          line-height: 1.2;
+        }
+        .ws-head-stat-card small {
+          font-size: 0.7rem;
+          line-height: 1.45;
+          color: #475569;
+        }
+        .ws-head-stat-card-strong {
+          background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 100%);
+          border-color: #1d4ed8;
+        }
+        .ws-head-stat-card-strong span,
+        .ws-head-stat-card-strong strong,
+        .ws-head-stat-card-strong small {
+          color: #ffffff;
+        }
+        .ws-workbook-actions {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+          gap: 0.6rem;
+        }
+        .ws-head-action {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.4rem;
+          padding: 0.72rem 0.95rem;
+          border-radius: 14px;
+          border: 1px solid #dbe4ee;
+          background: rgba(255, 255, 255, 0.94);
+          color: #334155;
+          font-size: 0.78rem;
+          font-weight: 800;
+          cursor: pointer;
+          transition: all 0.18s ease;
+        }
+        .ws-head-action:hover {
+          border-color: #bfdbfe;
+          background: #eff6ff;
+          color: #1d4ed8;
+        }
+        .ws-head-action-strong {
+          border-color: #bfdbfe;
+          background: #eff6ff;
+          color: #1d4ed8;
+        }
+        .ws-analytics-toggle {
+          padding: 0.72rem 1rem;
+          border-radius: 14px;
+          font-size: 0.78rem;
+        }
+        .ws-sheet-tabbar {
+          padding-top: 0.7rem;
+          margin-top: 0.1rem;
+        }
+        .ws-bill-tabs-shell {
+          padding: 0.9rem 0.95rem;
+          background: rgba(248, 250, 252, 0.98);
+          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+        }
+        .ws-cost-rail {
+          padding: 0;
+          background: transparent;
+          border-bottom: none;
+        }
+        .ws-cost-card {
+          border-radius: 18px;
+          padding: 0.95rem 1rem;
+        }
+        .ws-sheet-tools {
+          padding: 0;
+          background: transparent;
+          border-bottom: none;
+        }
+        .ws-formula-bar {
+          border-radius: 18px 18px 0 0;
+          box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
+        }
+        .ws-helper-strip {
+          padding: 0.9rem 1rem 1rem;
+          background: rgba(255, 255, 255, 0.94);
+          border: 1px solid #dbe4ee;
+          border-top: none;
+          border-radius: 0 0 18px 18px;
+          box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
+        }
+        .ws-analytics-board {
+          border-radius: 22px;
+          border: 1px solid #dbe4ee;
+          background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+          overflow: hidden;
+        }
+        .ws-toolbar {
+          margin: 0.1rem 0 0;
+          padding: 0.85rem 1rem;
+          border-radius: 20px;
+          border: 1px solid #dbe4ee;
+          background: rgba(255, 255, 255, 0.96);
+          color: #0f172a;
+          box-shadow: 0 16px 36px rgba(15, 23, 42, 0.06);
+          flex-wrap: wrap;
+        }
+        .ws-toolbar-left,
+        .ws-toolbar-center,
+        .ws-toolbar-right {
+          min-height: 44px;
+        }
+        .ws-toolbar-left {
+          flex: 1 1 320px;
+        }
+        .ws-toolbar-center {
+          flex: 1 1 320px;
+          justify-content: center;
+        }
+        .ws-toolbar-right {
+          flex: 1 1 420px;
+          justify-content: flex-end;
+          flex-wrap: wrap;
+        }
+        .ws-search {
+          width: min(360px, 100%);
+          background: #f8fafc;
+          border: 1px solid #dbe4ee;
+          border-radius: 14px;
+          padding: 0.72rem 0.85rem;
+          color: #0f172a;
+        }
+        .ws-search input {
+          color: #0f172a;
+          font-size: 0.8rem;
+        }
+        .ws-search input::placeholder { color: #94a3b8; }
+        .ws-search-results {
+          background: #eff6ff;
+          border: 1px solid #bfdbfe;
+          color: #1d4ed8;
+          font-size: 0.62rem;
+        }
+        .ws-stat-label {
+          color: #64748b;
+        }
+        .ws-region-sel-compact {
+          background: #ffffff;
+          border: 1px solid #dbe4ee;
+          color: #0f172a;
+          border-radius: 10px;
+          padding: 0.35rem 0.55rem;
+          font-size: 0.72rem;
+        }
+        .ws-region-sel-compact option {
+          background: #ffffff;
+          color: #0f172a;
+        }
+        .ws-filter-group-compact {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 0.25rem;
+          flex-wrap: wrap;
+        }
+        .ws-filter-chip-compact {
+          color: #64748b;
+          font-size: 0.7rem;
+          border-radius: 10px;
+          padding: 0.45rem 0.7rem;
+        }
+        .ws-filter-chip-compact:hover {
+          color: #0f172a;
+          background: #e2e8f0;
+        }
+        .ws-filter-chip-compact.active {
+          background: #0f172a;
+          color: #ffffff;
+        }
+        .ws-btn {
+          padding: 0.55rem 0.8rem;
+          border-radius: 12px;
+          font-size: 0.72rem;
+        }
+        .ws-btn-ghost {
+          background: #f8fafc;
+          color: #334155;
+          border: 1px solid #dbe4ee;
+        }
+        .ws-btn-ghost:hover {
+          background: #eff6ff;
+          color: #1d4ed8;
+          border-color: #bfdbfe;
+        }
+
         /* ── TABLE ── */
         .ws-table-wrap {
           flex: 0 0 auto;
@@ -5464,12 +5970,33 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           .ws-stage-main {
             min-height: auto;
           }
+
+          .ws-workbook-console {
+            min-width: 0;
+            width: 100%;
+          }
+
+          .ws-workbook-metrics-compact {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .ws-head-stat-card-strong {
+            grid-column: 1 / -1;
+          }
+
+          .ws-workbook-actions {
+            justify-content: flex-start;
+          }
         }
 
         @media (max-width: 768px) {
           .ws-container {
             height: auto;
             min-height: calc(100vh - 56px);
+          }
+          .ws-workspace-command-center {
+            padding: 0.75rem 0.7rem 0;
+            gap: 0.7rem;
           }
           .ws-bill-tabs-shell {
             padding: 0.65rem 0.7rem;
@@ -5492,6 +6019,30 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             flex-direction: column;
             align-items: stretch;
           }
+          .ws-workbook-console {
+            min-width: 0;
+            width: 100%;
+          }
+          .ws-workbook-metrics-compact {
+            grid-template-columns: 1fr;
+            gap: 0.55rem;
+          }
+          .ws-head-stat-card,
+          .ws-head-stat-card-strong {
+            padding: 0.85rem 0.9rem;
+            border-radius: 16px;
+          }
+          .ws-workbook-actions {
+            width: 100%;
+            justify-content: stretch;
+            gap: 0.5rem;
+          }
+          .ws-head-action,
+          .ws-head-action-strong,
+          .ws-analytics-toggle {
+            width: 100%;
+            justify-content: center;
+          }
           .ws-workbook-title-row h1 {
             font-size: 1.15rem;
           }
@@ -5505,7 +6056,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           .ws-helper-strip {
             flex-direction: column;
             align-items: stretch;
-            padding: 0.5rem 0 0.6rem;
+            padding: 0.85rem 0.9rem 0.95rem;
+            border-radius: 0 0 16px 16px;
           }
           .ws-helper-actions {
             justify-content: flex-start;
@@ -5550,6 +6102,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           .ws-toolbar {
             flex-wrap: wrap;
             align-items: stretch;
+            margin: 0;
             padding: 0.65rem;
             gap: 0.55rem;
           }
@@ -5561,7 +6114,17 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             flex-wrap: wrap;
           }
           .ws-toolbar-center {
-            display: none;
+            display: flex;
+            width: 100%;
+            flex: 1 1 100%;
+            justify-content: flex-start;
+            overflow-x: auto;
+            padding-bottom: 0.15rem;
+            scrollbar-width: none;
+          }
+          .ws-toolbar-center::-webkit-scrollbar { display: none; }
+          .ws-filter-group-compact {
+            flex-wrap: nowrap;
           }
           .ws-bill-nav {
             grid-auto-flow: column;
@@ -5592,8 +6155,19 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           }
           .ws-mobile-summary {
             display: grid;
-            grid-auto-flow: column;
-            grid-auto-columns: minmax(130px, 1fr);
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            margin: 0.05rem 0.7rem 0.75rem;
+            padding: 0;
+            background: transparent;
+            border: none;
+            gap: 0.55rem;
+            overflow: visible;
+          }
+          .ws-mobile-stat-card {
+            min-width: 0;
+          }
+          .ws-mobile-stat-card-total {
+            grid-column: 1 / -1;
           }
           .ws-insight-strip {
             display: grid;
@@ -5606,7 +6180,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           .ws-insight-strip::-webkit-scrollbar { display: none; }
           .ws-cost-rail {
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            padding: 0.6rem 0.65rem 0.75rem;
+            padding: 0;
+            gap: 0.65rem;
           }
           .ws-cost-card-total {
             grid-column: span 2;
