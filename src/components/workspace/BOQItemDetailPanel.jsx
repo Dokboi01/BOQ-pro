@@ -84,6 +84,9 @@ const BOQItemDetailPanel = ({
   const workedExample = getWorkedExamplePreview(item, { preferEditableInputs: true });
   const hasFormula = isFormulaDrivenItem(item);
   const editableInputs = normalizeEditableInputs(item.editableInputs);
+  const formulaBasis = Array.isArray(item.formulaBasis)
+    ? item.formulaBasis.filter(Boolean)
+    : [];
   const benchmarkMeta = item.benchmarkMetadata || {};
 
   const sourceLabels = {
@@ -158,6 +161,17 @@ const BOQItemDetailPanel = ({
                 <div className="idp-formula-display">
                   <span className="idp-formula-label">Formula</span>
                   <code className="idp-formula-text">{formulaText}</code>
+                </div>
+              )}
+
+              {formulaBasis.length > 0 && (
+                <div className="idp-formula-basis">
+                  <span className="idp-formula-label">Pricing Basis</span>
+                  <ul className="idp-formula-basis-list">
+                    {formulaBasis.map((entry) => (
+                      <li key={entry}>{entry}</li>
+                    ))}
+                  </ul>
                 </div>
               )}
 
@@ -496,6 +510,26 @@ const BOQItemDetailPanel = ({
             line-height: 1.5;
             white-space: pre-wrap;
             word-break: break-word;
+          }
+
+          .idp-formula-basis {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 0.75rem;
+          }
+
+          .idp-formula-basis-list {
+            margin: 0;
+            padding-left: 1rem;
+            display: grid;
+            gap: 0.35rem;
+            color: #334155;
+            font-size: 0.8rem;
+            line-height: 1.5;
           }
 
           .idp-inputs-grid {

@@ -88,6 +88,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const [itemDetailPanelContext, setItemDetailPanelContext] = useState(null);
   const [activeBillSectionId, setActiveBillSectionId] = useState(project?.sections?.[0]?.id || null);
   const sectionRowRefs = React.useRef({});
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   // Collaboration state
   const [showTeamHub, setShowTeamHub] = useState(false);
@@ -1706,19 +1707,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             </div>
             <p>{workbookSubtitle} | {marketRegionDisplay} market benchmark | {activeSheetLabel}</p>
           </div>
-          <div className="ws-workbook-metrics">
-            <div className="ws-workbook-metric">
-              <span>Estimated Cost</span>
-              <strong>N{calculateGrandTotal.toLocaleString()}</strong>
-            </div>
-            <div className="ws-workbook-metric">
-              <span>Pricing Coverage</span>
-              <strong>{workspaceAnalytics.pricingCoveragePercent.toFixed(0)}%</strong>
-            </div>
-            <div className="ws-workbook-metric">
-              <span>Sections / Items</span>
-              <strong>{sections.length} / {totalItems}</strong>
-            </div>
+          <div className="ws-workbook-metrics-compact">
+            <button className={`ws-analytics-toggle ${showAnalytics ? 'active' : ''}`} onClick={() => setShowAnalytics(!showAnalytics)}>
+              {showAnalytics ? 'Hide Analytics Dashboard' : 'Workspace Metrics & Analytics'}
+            </button>
           </div>
         </div>
         <div className="ws-sheet-tabbar">
@@ -1769,19 +1761,27 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           </span>
         </div>
         <div className="ws-toolbar-center">
-          <div className="ws-stat"><span className="ws-stat-label">Region</span>
-            <select className="ws-region-sel" value={project?.region || 'Lagos'} onChange={(e) => handleRegionChange(e.target.value)}>
+          <div className="ws-stat-compact"><span className="ws-stat-label">Region</span>
+            <select className="ws-region-sel-compact" value={project?.region || 'Lagos'} onChange={(e) => handleRegionChange(e.target.value)}>
               <option value="Lagos">Lagos</option>
               <option value="Abuja">Abuja</option>
-              <option value="Port_Harcourt">PH</option>
+              <option value="Port_Harcourt">Port Harcourt</option>
               <option value="Ibadan">Ibadan</option>
               <option value="Kano">Kano</option>
             </select>
           </div>
-          <div className="ws-stat"><span className="ws-stat-label">Sections</span><span className="ws-stat-val">{sections.length}</span></div>
-          <div className="ws-stat"><span className="ws-stat-label">Items</span><span className="ws-stat-val">{totalItems}</span></div>
-          <div className="ws-stat"><span className="ws-stat-label">Total Qty</span><span className="ws-stat-val">{totalQuantity.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
-          <div className="ws-stat ws-stat-total"><span className="ws-stat-label">Total</span><span className="ws-stat-val">₦{calculateGrandTotal.toLocaleString()}</span></div>
+          <div className="ws-filter-group-compact">
+            {workspaceFilterOptions.map((filterOption) => (
+              <button
+                key={filterOption.id}
+                type="button"
+                className={`ws-filter-chip-compact ${workspaceFilter === filterOption.id ? 'active' : ''}`}
+                onClick={() => setWorkspaceFilter(filterOption.id)}
+              >
+                {filterOption.label}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="ws-toolbar-right">
           {/* Presence Avatars */}
@@ -1837,30 +1837,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         </div>
       </div>
 
-      <div className="ws-filter-bar">
-        {workspaceFilterOptions.map((filterOption) => (
-          <button
-            key={filterOption.id}
-            type="button"
-            className={`ws-filter-chip ${workspaceFilter === filterOption.id ? 'active' : ''}`}
-            onClick={() => setWorkspaceFilter(filterOption.id)}
-          >
-            {filterOption.label}
-          </button>
-        ))}
-        {isFilteredView && (
-          <button
-            type="button"
-            className="ws-filter-chip ws-filter-chip-clear"
-            onClick={() => {
-              setWorkspaceFilter('all');
-              setSearchQuery('');
-            }}
-          >
-            Clear Search and Filters
-          </button>
-        )}
-      </div>
+
 
       <div className="ws-bill-nav">
         {(sections || []).map((section) => {
@@ -1913,6 +1890,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         </div>
       </div>
 
+      {showAnalytics && (
+        <div className="ws-analytics-board">
+      {showAnalytics && (
+        <div className="ws-analytics-board">
       <div className="ws-insight-strip">
         <div className="ws-insight-card ws-insight-card-strong">
           <span className="ws-insight-label">Pricing Coverage</span>
@@ -2147,6 +2128,11 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           </small>
         </div>
       </div>
+      </div>
+      )}
+
+      </div>
+      )}
 
       {/* Table */}
       <div className="ws-table-wrap">
@@ -3158,6 +3144,213 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
 
       <style jsx="true">{`
+
+        /* --- NEW COMPACT LAYOUT STYLES --- */
+        .ws-workbook-metrics-compact {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+        .ws-analytics-toggle {
+          display: inline-flex;
+          align-items: center;
+          padding: 0.45rem 1.4rem;
+          background: #eff6ff;
+          color: #1d4ed8;
+          border: 1px solid #bfdbfe;
+          border-radius: 999px;
+          font-size: 0.72rem;
+          font-weight: 800;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .ws-analytics-toggle:hover {
+          background: #dbeafe;
+        }
+        .ws-analytics-toggle.active {
+          background: #1e3a8a;
+          color: white;
+          border-color: #1e3a8a;
+        }
+        .ws-analytics-board {
+          display: flex;
+          flex-direction: column;
+          background: #f8fafc;
+          border-bottom: 1px solid #dbe4ee;
+          padding-bottom: 0.5rem;
+          box-shadow: inset 0 6px 14px rgba(15,23,42,0.03);
+        }
+        .ws-stat-compact {
+          display: flex; align-items: center; gap: 0.5rem;
+        }
+        .ws-region-sel-compact {
+           background: rgba(255,255,255,0.1);
+           border: 1px solid rgba(255,255,255,0.2);
+           color: white;
+           padding: 2px 6px;
+           border-radius: 4px;
+           outline: none;
+           font-size: 0.65rem;
+           cursor: pointer;
+        }
+        .ws-region-sel-compact:hover {
+           background: rgba(255,255,255,0.15);
+        }
+        .ws-region-sel-compact option {
+           background: #1e293b;
+           color: white;
+        }
+        .ws-filter-group-compact {
+           display: flex;
+           gap: 0.25rem;
+           background: rgba(0,0,0,0.15);
+           padding: 0.22rem;
+           border-radius: 6px;
+        }
+        .ws-filter-chip-compact {
+           background: transparent;
+           border: none;
+           color: rgba(255,255,255,0.6);
+           font-size: 0.64rem;
+           font-weight: 800;
+           padding: 0.25rem 0.6rem;
+           border-radius: 4px;
+           cursor: pointer;
+           transition: all 0.2s;
+        }
+        .ws-filter-chip-compact:hover {
+           color: white;
+           background: rgba(255,255,255,0.1);
+        }
+        .ws-filter-chip-compact.active {
+           background: rgba(255,255,255,0.2);
+           color: white;
+        }
+        .ws-bill-nav {
+           padding: 0.5rem 0.75rem !important;
+        }
+        .ws-bill-pill {
+           padding: 0.25rem 0.5rem;
+           border-radius: 999px;
+           flex-direction: row;
+           align-items: center;
+           min-width: unset;
+        }
+        .ws-bill-pill-title {
+           font-size: 0.72rem;
+        }
+        .ws-bill-pill-meta {
+           display: none;
+        }
+        .ws-bill-pill-picker {
+           padding: 0.15rem 0.45rem;
+           font-size: 0.62rem;
+           border-radius: 999px;
+        }
+
+        /* --- NEW COMPACT LAYOUT STYLES --- */
+        .ws-workbook-metrics-compact {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+        .ws-analytics-toggle {
+          display: inline-flex;
+          align-items: center;
+          padding: 0.45rem 1.4rem;
+          background: #eff6ff;
+          color: #1d4ed8;
+          border: 1px solid #bfdbfe;
+          border-radius: 999px;
+          font-size: 0.72rem;
+          font-weight: 800;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .ws-analytics-toggle:hover {
+          background: #dbeafe;
+        }
+        .ws-analytics-toggle.active {
+          background: #1e3a8a;
+          color: white;
+          border-color: #1e3a8a;
+        }
+        .ws-analytics-board {
+          display: flex;
+          flex-direction: column;
+          background: #f8fafc;
+          border-bottom: 1px solid #dbe4ee;
+          padding-bottom: 0.5rem;
+          box-shadow: inset 0 6px 14px rgba(15,23,42,0.03);
+        }
+        .ws-stat-compact {
+          display: flex; align-items: center; gap: 0.5rem;
+        }
+        .ws-region-sel-compact {
+           background: rgba(255,255,255,0.1);
+           border: 1px solid rgba(255,255,255,0.2);
+           color: white;
+           padding: 2px 6px;
+           border-radius: 4px;
+           outline: none;
+           font-size: 0.65rem;
+           cursor: pointer;
+        }
+        .ws-region-sel-compact:hover {
+           background: rgba(255,255,255,0.15);
+        }
+        .ws-region-sel-compact option {
+           background: #1e293b;
+           color: white;
+        }
+        .ws-filter-group-compact {
+           display: flex;
+           gap: 0.25rem;
+           background: rgba(0,0,0,0.15);
+           padding: 0.22rem;
+           border-radius: 6px;
+        }
+        .ws-filter-chip-compact {
+           background: transparent;
+           border: none;
+           color: rgba(255,255,255,0.6);
+           font-size: 0.64rem;
+           font-weight: 800;
+           padding: 0.25rem 0.6rem;
+           border-radius: 4px;
+           cursor: pointer;
+           transition: all 0.2s;
+        }
+        .ws-filter-chip-compact:hover {
+           color: white;
+           background: rgba(255,255,255,0.1);
+        }
+        .ws-filter-chip-compact.active {
+           background: rgba(255,255,255,0.2);
+           color: white;
+        }
+        .ws-bill-nav {
+           padding: 0.5rem 0.75rem !important;
+        }
+        .ws-bill-pill {
+           padding: 0.25rem 0.5rem;
+           border-radius: 999px;
+           flex-direction: row;
+           align-items: center;
+           min-width: unset;
+        }
+        .ws-bill-pill-title {
+           font-size: 0.72rem;
+        }
+        .ws-bill-pill-meta {
+           display: none;
+        }
+        .ws-bill-pill-picker {
+           padding: 0.15rem 0.45rem;
+           font-size: 0.62rem;
+           border-radius: 999px;
+        }
+
         /* ═══════════════════════════════════════════ */
         /*  BOQ WORKSPACE — FULL-PAGE SHEET           */
         /* ═══════════════════════════════════════════ */
