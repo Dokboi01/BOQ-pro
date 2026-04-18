@@ -1965,7 +1965,6 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
   return (
     <div className="ws-container">
-      {renderBillTabs('workspace')}
       <div className="ws-workspace-body">
       <div className="ws-workbook-top">
         <div className="ws-workbook-head">
@@ -2005,6 +2004,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           </div>
         </div>
       </div>
+      {renderBillTabs('workspace')}
       {/* Toolbar */}
       <div className="ws-toolbar">
         <div className="ws-toolbar-left">

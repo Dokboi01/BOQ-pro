@@ -16,10 +16,22 @@ import {
 
 const FILTER_OPTIONS = [
   { id: 'all', label: 'All Items' },
+  { id: 'selected', label: 'Selected' },
   { id: 'recommended', label: 'Recommended' },
   { id: 'formula', label: 'Formula Ready' },
   { id: 'benchmark', label: 'Benchmark Ready' },
 ];
+
+const SORT_OPTIONS = [
+  { id: 'recommended', label: 'Recommended First' },
+  { id: 'selected', label: 'Selected First' },
+  { id: 'name', label: 'Name A-Z' },
+  { id: 'benchmark', label: 'Highest Benchmark' },
+  { id: 'formula', label: 'Formula First' },
+];
+
+const getBenchmarkValue = (item) => Number(item?.benchmarkRate || item?.benchmarkMetadata?.rate || 0);
+const hasFormulaSupport = (item) => Boolean(item?.defaultFormulaType && item.defaultFormulaType !== 'manual');
 
 const buildSearchText = (item) => (
   [
@@ -61,6 +73,9 @@ const BOQSelectionStage = ({
   const [query, setQuery] = React.useState('');
   const [activeFilter, setActiveFilter] = React.useState('all');
   const [activeCategory, setActiveCategory] = React.useState('all');
+  const [activeSort, setActiveSort] = React.useState('recommended');
+
+  const selectedCodeSet = React.useMemo(() => new Set(selectedCodes), [selectedCodes]);
 
   const categories = React.useMemo(() => (
     ['all', ...Array.from(new Set(
@@ -73,15 +88,18 @@ const BOQSelectionStage = ({
   const filteredItems = React.useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return (catalogItems || []).filter((item) => {
+    const filtered = (catalogItems || []).filter((item) => {
       const itemCategory = item.category || 'General';
-      const hasFormula = item.defaultFormulaType && item.defaultFormulaType !== 'manual';
-      const hasBenchmark = Number(item.benchmarkRate || item.benchmarkMetadata?.rate || 0) > 0;
+      const hasFormula = hasFormulaSupport(item);
+      const hasBenchmark = getBenchmarkValue(item) > 0;
+      const isSelected = selectedCodeSet.has(item.code);
 
       const matchesQuery = !normalizedQuery || buildSearchText(item).includes(normalizedQuery);
       const matchesCategory = activeCategory === 'all' || itemCategory === activeCategory;
       const matchesFilter = (() => {
         switch (activeFilter) {
+          case 'selected':
+            return isSelected;
           case 'recommended':
             return item.isRecommended === true;
           case 'formula':
@@ -95,25 +113,85 @@ const BOQSelectionStage = ({
 
       return matchesQuery && matchesCategory && matchesFilter;
     });
-  }, [activeCategory, activeFilter, catalogItems, query]);
+
+    return filtered.sort((leftItem, rightItem) => {
+      const leftSelected = selectedCodeSet.has(leftItem.code);
+      const rightSelected = selectedCodeSet.has(rightItem.code);
+      const leftRecommended = leftItem.isRecommended === true;
+      const rightRecommended = rightItem.isRecommended === true;
+      const leftBenchmark = getBenchmarkValue(leftItem);
+      const rightBenchmark = getBenchmarkValue(rightItem);
+      const leftFormula = hasFormulaSupport(leftItem);
+      const rightFormula = hasFormulaSupport(rightItem);
+      const leftName = `${leftItem.code || ''} ${leftItem.name || ''}`.trim();
+      const rightName = `${rightItem.code || ''} ${rightItem.name || ''}`.trim();
+
+      switch (activeSort) {
+        case 'selected':
+          if (leftSelected !== rightSelected) {
+            return leftSelected ? -1 : 1;
+          }
+          break;
+        case 'name':
+          return leftName.localeCompare(rightName);
+        case 'benchmark':
+          if (leftBenchmark !== rightBenchmark) {
+            return rightBenchmark - leftBenchmark;
+          }
+          break;
+        case 'formula':
+          if (leftFormula !== rightFormula) {
+            return leftFormula ? -1 : 1;
+          }
+          break;
+        default:
+          if (leftRecommended !== rightRecommended) {
+            return leftRecommended ? -1 : 1;
+          }
+          break;
+      }
+
+      if (leftSelected !== rightSelected) {
+        return leftSelected ? -1 : 1;
+      }
+
+      if (leftRecommended !== rightRecommended) {
+        return leftRecommended ? -1 : 1;
+      }
+
+      return leftName.localeCompare(rightName);
+    });
+  }, [activeCategory, activeFilter, activeSort, catalogItems, query, selectedCodeSet]);
 
   const metrics = React.useMemo(() => ({
     recommended: (catalogItems || []).filter((item) => item.isRecommended === true).length,
-    formulaReady: (catalogItems || []).filter((item) => item.defaultFormulaType && item.defaultFormulaType !== 'manual').length,
-    benchmarkReady: (catalogItems || []).filter((item) => Number(item.benchmarkRate || item.benchmarkMetadata?.rate || 0) > 0).length,
+    formulaReady: (catalogItems || []).filter((item) => hasFormulaSupport(item)).length,
+    benchmarkReady: (catalogItems || []).filter((item) => getBenchmarkValue(item) > 0).length,
   }), [catalogItems]);
 
   const visibleCodes = React.useMemo(() => (
     filteredItems.map((item) => item.code)
   ), [filteredItems]);
 
-  const selectedPreview = React.useMemo(() => (
+  const selectedItems = React.useMemo(() => (
     (catalogItems || [])
-      .filter((item) => selectedCodes.includes(item.code))
+      .filter((item) => selectedCodeSet.has(item.code))
+  ), [catalogItems, selectedCodeSet]);
+
+  const selectedPreview = React.useMemo(() => (
+    selectedItems
       .slice(0, 3)
       .map((item) => item.name)
       .join(', ')
-  ), [catalogItems, selectedCodes]);
+  ), [selectedItems]);
+
+  const visibleSelectedCount = React.useMemo(() => (
+    filteredItems.filter((item) => selectedCodeSet.has(item.code)).length
+  ), [filteredItems, selectedCodeSet]);
+
+  const selectionProgress = catalogItems.length > 0
+    ? Math.min(100, Math.round((currentSectionSelectedCount / catalogItems.length) * 100))
+    : 0;
 
   const clearFilters = () => {
     setQuery('');
@@ -132,6 +210,15 @@ const BOQSelectionStage = ({
             <span>{projectName || 'Current Project'}</span>
             <span>{marketRegion || 'Market region'}</span>
             <span>{catalogItems.length} library items</span>
+          </div>
+          <div className="boq-selection-progress-block">
+            <div className="boq-selection-progress-copy">
+              <strong>{selectionProgress}% of this bill curated</strong>
+              <span>{currentSectionSelectedCount} of {catalogItems.length} available items selected for BOQ generation.</span>
+            </div>
+            <div className="boq-selection-progress-track">
+              <span style={{ width: `${selectionProgress}%` }} />
+            </div>
           </div>
           <small>{sectionMeta?.pickerPrompt || 'Selections stay grouped by bill section until you generate the BOQ table.'}</small>
         </div>
@@ -168,6 +255,9 @@ const BOQSelectionStage = ({
                 onChange={(event) => setQuery(event.target.value)}
               />
             </div>
+            <small className="boq-selection-panel-help">
+              Search by code, item name, formula basis, benchmark hints, or keywords.
+            </small>
           </div>
 
           <div className="boq-selection-panel-card">
@@ -185,6 +275,16 @@ const BOQSelectionStage = ({
                   {filter.label}
                 </button>
               ))}
+            </div>
+            <div className="boq-selection-sort-row">
+              <label className="boq-selection-sort-field">
+                <span>Sort results</span>
+                <select value={activeSort} onChange={(event) => setActiveSort(event.target.value)}>
+                  {SORT_OPTIONS.map((option) => (
+                    <option key={option.id} value={option.id}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
             </div>
           </div>
 
@@ -223,6 +323,20 @@ const BOQSelectionStage = ({
                 ? `Current picks include ${selectedPreview}${currentSectionSelectedCount > 3 ? '...' : ''}`
                 : 'Pick only the exact lines you want before generating the BOQ sheet.'}
             </p>
+            <div className="boq-selection-selected-preview">
+              {selectedItems.length > 0 ? (
+                <>
+                  {selectedItems.slice(0, 5).map((item) => (
+                    <span key={item.code}>{item.name}</span>
+                  ))}
+                  {selectedItems.length > 5 && (
+                    <em>+{selectedItems.length - 5} more</em>
+                  )}
+                </>
+              ) : (
+                <span className="boq-selection-selected-placeholder">No items selected in this bill yet.</span>
+              )}
+            </div>
             <div className="boq-selection-panel-actions">
               <button
                 type="button"
@@ -264,6 +378,31 @@ const BOQSelectionStage = ({
               <span>{activeFilter === 'all' ? 'All items' : FILTER_OPTIONS.find((entry) => entry.id === activeFilter)?.label}</span>
             </div>
           </div>
+          <div className="boq-selection-results-toolbar">
+            <div className="boq-selection-results-stats">
+              <div className="boq-selection-results-stat">
+                <strong>{visibleSelectedCount}</strong>
+                <span>selected in view</span>
+              </div>
+              <div className="boq-selection-results-stat">
+                <strong>{metrics.formulaReady}</strong>
+                <span>formula-ready in library</span>
+              </div>
+              <div className="boq-selection-results-stat">
+                <strong>{metrics.benchmarkReady}</strong>
+                <span>benchmark-backed in library</span>
+              </div>
+            </div>
+            {selectedItems.length > 0 && (
+              <button
+                type="button"
+                className="boq-selection-inline-link"
+                onClick={() => setActiveFilter(activeFilter === 'selected' ? 'all' : 'selected')}
+              >
+                {activeFilter === 'selected' ? 'Show full bill library' : 'Show selected items only'}
+              </button>
+            )}
+          </div>
 
           {filteredItems.length === 0 ? (
             <div className="boq-selection-empty">
@@ -276,11 +415,16 @@ const BOQSelectionStage = ({
           ) : (
             <div className="boq-selection-grid">
               {filteredItems.map((item) => {
-                const isSelected = selectedCodes.includes(item.code);
-                const hasFormula = item.defaultFormulaType && item.defaultFormulaType !== 'manual';
-                const hasBenchmark = Number(item.benchmarkRate || item.benchmarkMetadata?.rate || 0) > 0;
+                const isSelected = selectedCodeSet.has(item.code);
+                const hasFormula = hasFormulaSupport(item);
+                const benchmarkValue = getBenchmarkValue(item);
+                const hasBenchmark = benchmarkValue > 0;
                 const formulaText = getFormulaDisplayText(item);
                 const workedExample = hasFormula ? getWorkedExamplePreview(item) : '';
+                const formulaBasisPreview = Array.isArray(item.formulaBasis) && item.formulaBasis.length > 0
+                  ? item.formulaBasis[0]
+                  : '';
+                const benchmarkCurrency = item.benchmarkMetadata?.currency || 'NGN';
 
                 return (
                   <button
@@ -289,9 +433,15 @@ const BOQSelectionStage = ({
                     className={`boq-selection-card ${isSelected ? 'selected' : ''}`}
                     onClick={() => onToggleItem?.(item.code)}
                   >
+                    <div className="boq-selection-card-kicker">
+                      <span className="boq-selection-code">{item.code}</span>
+                      <div className="boq-selection-card-tags">
+                        <span>{item.category || 'General'}</span>
+                        <span>{item.unit || 'Nr'}</span>
+                      </div>
+                    </div>
                     <div className="boq-selection-card-top">
                       <div className="boq-selection-card-heading">
-                        <span className="boq-selection-code">{item.code}</span>
                         <strong>{item.name}</strong>
                       </div>
                       <span className={`boq-selection-state ${isSelected ? 'selected' : ''}`}>
@@ -302,11 +452,6 @@ const BOQSelectionStage = ({
 
                     <p>{item.description || item.name}</p>
 
-                    <div className="boq-selection-card-meta">
-                      <span>Unit: {item.unit || 'Nr'}</span>
-                      <span>{item.category || 'General'}</span>
-                    </div>
-
                     <div className="boq-selection-card-flags">
                       <span className={`boq-selection-flag ${hasFormula ? 'ready' : 'pending'}`}>
                         {hasFormula ? 'Formula ready' : 'Manual only'}
@@ -314,10 +459,28 @@ const BOQSelectionStage = ({
                       <span className={`boq-selection-flag ${hasBenchmark ? 'ready' : 'pending'}`}>
                         {hasBenchmark ? 'Benchmark ready' : 'Benchmark pending'}
                       </span>
+                      {item.isRecommended && (
+                        <span className="boq-selection-flag boq-selection-flag-recommended">Recommended</span>
+                      )}
+                    </div>
+
+                    <div className="boq-selection-card-meta">
+                      <span>Unit: {item.unit || 'Nr'}</span>
+                      {hasBenchmark && (
+                        <span>{benchmarkCurrency} {benchmarkValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                      )}
+                      {!hasBenchmark && <span>Add benchmark later</span>}
                     </div>
 
                     {item.pickerHint && (
                       <div className="boq-selection-hint">{item.pickerHint}</div>
+                    )}
+
+                    {formulaBasisPreview && (
+                      <div className="boq-selection-card-basis">
+                        <strong>Pricing basis</strong>
+                        <span>{formulaBasisPreview}</span>
+                      </div>
                     )}
 
                     {formulaText && (
@@ -327,6 +490,11 @@ const BOQSelectionStage = ({
                         {workedExample && <small>{workedExample}</small>}
                       </div>
                     )}
+
+                    <div className="boq-selection-card-footer">
+                      <span>{isSelected ? 'Included in BOQ generation' : 'Tap to include in BOQ generation'}</span>
+                      <strong>{isSelected ? 'Remove item' : 'Add item'}</strong>
+                    </div>
                   </button>
                 );
               })}
@@ -447,6 +615,46 @@ const BOQSelectionStage = ({
           color: #1e3a8a;
         }
 
+        .boq-selection-progress-block {
+          display: flex;
+          flex-direction: column;
+          gap: 0.6rem;
+          margin-top: 0.15rem;
+        }
+
+        .boq-selection-progress-copy {
+          display: flex;
+          justify-content: space-between;
+          gap: 0.75rem;
+          align-items: baseline;
+          flex-wrap: wrap;
+        }
+
+        .boq-selection-progress-copy strong {
+          color: #0f172a;
+          font-size: 0.92rem;
+        }
+
+        .boq-selection-progress-copy span {
+          color: #64748b;
+          font-size: 0.8rem;
+        }
+
+        .boq-selection-progress-track {
+          height: 10px;
+          border-radius: 999px;
+          background: #dbeafe;
+          overflow: hidden;
+          position: relative;
+        }
+
+        .boq-selection-progress-track span {
+          display: block;
+          height: 100%;
+          border-radius: inherit;
+          background: linear-gradient(90deg, #2563eb 0%, #0f172a 100%);
+        }
+
         .boq-selection-overview-stats {
           padding: 1rem;
           background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
@@ -542,6 +750,13 @@ const BOQSelectionStage = ({
           color: #0f172a;
         }
 
+        .boq-selection-panel-help {
+          margin: 0;
+          font-size: 0.76rem;
+          color: #64748b;
+          line-height: 1.55;
+        }
+
         .boq-selection-chip-grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -578,6 +793,30 @@ const BOQSelectionStage = ({
           padding-right: 0.2rem;
         }
 
+        .boq-selection-sort-row {
+          padding-top: 0.2rem;
+          border-top: 1px solid #e2e8f0;
+        }
+
+        .boq-selection-sort-field {
+          display: flex;
+          flex-direction: column;
+          gap: 0.45rem;
+          color: #475569;
+          font-size: 0.76rem;
+          font-weight: 700;
+        }
+
+        .boq-selection-sort-field select {
+          border: 1px solid #dbe3ef;
+          border-radius: 14px;
+          background: #f8fafc;
+          color: #0f172a;
+          padding: 0.7rem 0.85rem;
+          font-size: 0.84rem;
+          outline: none;
+        }
+
         .boq-selection-summary-grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -611,6 +850,32 @@ const BOQSelectionStage = ({
           font-size: 0.8rem;
           line-height: 1.6;
           color: #475569;
+        }
+
+        .boq-selection-selected-preview {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.45rem;
+        }
+
+        .boq-selection-selected-preview span,
+        .boq-selection-selected-preview em {
+          display: inline-flex;
+          align-items: center;
+          border-radius: 999px;
+          padding: 0.35rem 0.7rem;
+          background: #eff6ff;
+          border: 1px solid #bfdbfe;
+          color: #1d4ed8;
+          font-size: 0.72rem;
+          font-style: normal;
+          font-weight: 700;
+        }
+
+        .boq-selection-selected-preview .boq-selection-selected-placeholder {
+          background: #f8fafc;
+          border-color: #e2e8f0;
+          color: #64748b;
         }
 
         .boq-selection-panel-actions {
@@ -680,6 +945,52 @@ const BOQSelectionStage = ({
           font-weight: 700;
         }
 
+        .boq-selection-results-toolbar {
+          display: flex;
+          justify-content: space-between;
+          gap: 1rem;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+
+        .boq-selection-results-stats {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.75rem;
+        }
+
+        .boq-selection-results-stat {
+          min-width: 150px;
+          border-radius: 18px;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          padding: 0.75rem 0.9rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.18rem;
+        }
+
+        .boq-selection-results-stat strong {
+          color: #0f172a;
+          font-size: 1rem;
+        }
+
+        .boq-selection-results-stat span {
+          color: #64748b;
+          font-size: 0.72rem;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .boq-selection-inline-link {
+          border: none;
+          background: transparent;
+          color: #2563eb;
+          font-size: 0.82rem;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
         .boq-selection-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
@@ -707,7 +1018,16 @@ const BOQSelectionStage = ({
 
         .boq-selection-card.selected {
           border-color: #2563eb;
+          background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
           box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        .boq-selection-card-kicker {
+          display: flex;
+          justify-content: space-between;
+          gap: 0.75rem;
+          align-items: center;
+          flex-wrap: wrap;
         }
 
         .boq-selection-card-top {
@@ -722,12 +1042,33 @@ const BOQSelectionStage = ({
         }
 
         .boq-selection-code {
-          display: block;
-          margin-bottom: 0.25rem;
+          display: inline-flex;
+          align-items: center;
+          border-radius: 999px;
+          padding: 0.26rem 0.56rem;
+          background: #dbeafe;
           font-size: 0.68rem;
           font-weight: 800;
           letter-spacing: 0.08em;
           color: #2563eb;
+        }
+
+        .boq-selection-card-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.35rem;
+        }
+
+        .boq-selection-card-tags span {
+          display: inline-flex;
+          align-items: center;
+          border-radius: 999px;
+          padding: 0.28rem 0.58rem;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          color: #475569;
+          font-size: 0.68rem;
+          font-weight: 700;
         }
 
         .boq-selection-card strong {
@@ -791,6 +1132,12 @@ const BOQSelectionStage = ({
           color: #1d4ed8;
         }
 
+        .boq-selection-flag-recommended {
+          border-color: #fde68a;
+          background: #fffbeb;
+          color: #b45309;
+        }
+
         .boq-selection-hint {
           border-radius: 14px;
           border: 1px solid #e2e8f0;
@@ -799,6 +1146,29 @@ const BOQSelectionStage = ({
           font-size: 0.74rem;
           color: #475569;
           line-height: 1.55;
+        }
+
+        .boq-selection-card-basis {
+          border-radius: 14px;
+          border: 1px solid #e2e8f0;
+          background: #ffffff;
+          padding: 0.72rem 0.8rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.2rem;
+        }
+
+        .boq-selection-card-basis strong {
+          font-size: 0.68rem;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: #64748b;
+        }
+
+        .boq-selection-card-basis span {
+          font-size: 0.77rem;
+          color: #334155;
+          line-height: 1.5;
         }
 
         .boq-selection-formula {
@@ -823,6 +1193,23 @@ const BOQSelectionStage = ({
         .boq-selection-formula small {
           font-size: 0.76rem;
           line-height: 1.5;
+        }
+
+        .boq-selection-card-footer {
+          margin-top: auto;
+          padding-top: 0.15rem;
+          display: flex;
+          justify-content: space-between;
+          gap: 0.75rem;
+          align-items: center;
+          color: #475569;
+          font-size: 0.75rem;
+        }
+
+        .boq-selection-card-footer strong {
+          color: #0f172a;
+          font-size: 0.76rem;
+          white-space: nowrap;
         }
 
         .boq-selection-empty {
@@ -936,6 +1323,7 @@ const BOQSelectionStage = ({
           }
 
           .boq-selection-results-head,
+          .boq-selection-results-toolbar,
           .boq-selection-footer {
             flex-direction: column;
             align-items: stretch;

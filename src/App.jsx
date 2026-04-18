@@ -369,8 +369,10 @@ function App() {
     }
   };
 
+  const hideWorkspaceChrome = activeTab === 'workspace' && !!activeProject;
+
   return (
-    <div className={`app-container ${focusMode ? 'focus-mode' : ''}`}>
+    <div className={`app-container ${focusMode ? 'focus-mode' : ''} ${hideWorkspaceChrome ? 'workspace-shell' : ''}`}>
       {!focusMode && <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={user} onLogout={logout} onViewPlans={() => setView('pricing')} />}
 
       {/* Focus Mode Toggle (appears when sidebar is hidden) */}
@@ -384,7 +386,9 @@ function App() {
         </button>
       )}
 
-      <main className="content-area">
+      <main className={`content-area ${hideWorkspaceChrome ? 'workspace-content-area' : ''}`}>
+        {!hideWorkspaceChrome && (
+          <>
         {/* Sticky Summary Bar (Decision Support) */}
         <div className="sticky-summary-bar">
           <div className="summary-item">
@@ -474,6 +478,8 @@ function App() {
             <button className="btn-primary" onClick={handleCreateProject} disabled={isCreating}>{isCreating ? 'Creating...' : 'Create New Project'}</button>
           </div>
         </header>
+          </>
+        )}
 
         {renderContent()}
 
@@ -499,6 +505,12 @@ function App() {
         .app-container.focus-mode .content-area {
           margin-left: 0;
           padding: 0 1.5rem 1.5rem;
+        }
+
+        .app-container.workspace-shell .content-area.workspace-content-area,
+        .app-container.focus-mode.workspace-shell .content-area.workspace-content-area {
+          padding: 0 0 2rem;
+          margin-left: 0;
         }
 
         .app-container.focus-mode .sticky-summary-bar {
@@ -559,6 +571,11 @@ function App() {
           background: var(--bg-main);
           overflow-y: auto;
           position: relative;
+        }
+
+        .content-area.workspace-content-area {
+          padding: 0 0 2rem;
+          background: #f1f5f9;
         }
 
         .sticky-summary-bar {
