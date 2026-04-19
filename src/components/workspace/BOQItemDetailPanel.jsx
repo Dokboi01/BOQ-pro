@@ -135,6 +135,27 @@ const BOQItemDetailPanel = ({
 
         {/* ── Scrollable body ─────────────────────────────────────── */}
         <div className="idp-body">
+          <Section icon={Info} title="Item Overview">
+            <div className="idp-overview-card">
+              <p className="idp-overview-description">
+                {item.description || 'No detailed description has been added for this BOQ item yet.'}
+              </p>
+              <div className="idp-overview-grid">
+                <div className="idp-overview-chip">{section?.title || 'Unassigned Bill'}</div>
+                <div className="idp-overview-chip">{item.unit || 'Unit pending'}</div>
+                <div className={`idp-overview-chip idp-overview-chip-${selectedRateSource}`}>
+                  {sourceLabels[selectedRateSource] || selectedRateSource} active
+                </div>
+                <div className={`idp-overview-chip ${hasFormula ? 'idp-overview-chip-available' : 'idp-overview-chip-muted'}`}>
+                  {hasFormula ? 'Formula available' : 'No formula yet'}
+                </div>
+                <div className={`idp-overview-chip ${benchmarkRate > 0 ? 'idp-overview-chip-available' : 'idp-overview-chip-muted'}`}>
+                  {benchmarkRate > 0 ? 'Benchmark available' : 'No benchmark yet'}
+                </div>
+              </div>
+            </div>
+          </Section>
+
           {/* Rate summary */}
           <Section icon={BarChart2} title="Rate Summary">
             <RateRow
@@ -168,8 +189,9 @@ const BOQItemDetailPanel = ({
           </Section>
 
           {/* Formula */}
-          {hasFormula && (
-            <Section icon={Cpu} title="Formula" defaultOpen>
+          <Section icon={Cpu} title="Formula" defaultOpen={hasFormula}>
+            {hasFormula ? (
+              <>
               {formulaText && (
                 <div className="idp-formula-display">
                   <span className="idp-formula-label">Formula</span>
@@ -218,11 +240,17 @@ const BOQItemDetailPanel = ({
                   <SlidersHorizontal size={13} /> Edit Formula Inputs
                 </button>
               )}
-            </Section>
-          )}
+              </>
+            ) : (
+              <p className="idp-empty-note">
+                No saved formula logic is attached to this item yet. You can still price it with a
+                benchmark or a manual override.
+              </p>
+            )}
+          </Section>
 
           {/* Benchmark */}
-          <Section icon={BarChart2} title="Benchmark Information" defaultOpen={!hasFormula}>
+          <Section icon={BarChart2} title="Benchmark / Pricing Source" defaultOpen={!hasFormula}>
             {benchmarkRate > 0 ? (
               <>
                 <div className="idp-benchmark-rate-display">
@@ -275,7 +303,7 @@ const BOQItemDetailPanel = ({
           </Section>
 
           {/* Notes */}
-          <Section icon={FileText} title="Notes" defaultOpen={false}>
+          <Section icon={FileText} title="Notes / Analysis" defaultOpen={false}>
             <textarea
               className="idp-notes-input"
               rows={4}
@@ -450,6 +478,71 @@ const BOQItemDetailPanel = ({
             flex: 1;
             overflow-y: auto;
             padding: 0.5rem 0;
+          }
+
+          .idp-overview-card {
+            display: flex;
+            flex-direction: column;
+            gap: 0.7rem;
+            padding: 0.85rem;
+            border-radius: 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+          }
+
+          .idp-overview-description {
+            margin: 0;
+            font-size: 0.82rem;
+            line-height: 1.6;
+            color: #334155;
+          }
+
+          .idp-overview-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+          }
+
+          .idp-overview-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.22rem 0.55rem;
+            border-radius: 999px;
+            background: #ffffff;
+            border: 1px solid #dbe4ee;
+            color: #334155;
+            font-size: 0.68rem;
+            font-weight: 700;
+          }
+
+          .idp-overview-chip-benchmark {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border-color: #bfdbfe;
+          }
+
+          .idp-overview-chip-formula {
+            background: #f5f3ff;
+            color: #6d28d9;
+            border-color: #ddd6fe;
+          }
+
+          .idp-overview-chip-manual {
+            background: #f0fdf4;
+            color: #15803d;
+            border-color: #bbf7d0;
+          }
+
+          .idp-overview-chip-available {
+            background: #ecfdf5;
+            color: #15803d;
+            border-color: #bbf7d0;
+          }
+
+          .idp-overview-chip-muted {
+            background: #f8fafc;
+            color: #64748b;
+            border-color: #e2e8f0;
           }
 
           /* ── Section ── */
