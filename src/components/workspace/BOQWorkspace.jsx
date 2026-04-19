@@ -3815,7 +3815,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         /* --- NEW COMPACT LAYOUT STYLES --- */
         .ws-workspace-shell {
           display: grid;
-          grid-template-columns: 248px minmax(0, 1fr) 380px;
+          grid-template-columns: 280px minmax(0, 1fr) 360px;
           gap: 1rem;
           height: calc(100vh - 56px);
           min-height: 0;
@@ -3824,6 +3824,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
         .ws-main-pane {
           min-width: 0;
+          max-width: 100%;
           min-height: 0;
           display: flex;
           flex-direction: column;
@@ -5630,6 +5631,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-table-wrap {
           flex: 1 1 auto;
           min-width: 0;
+          max-width: 100%;
           overflow-y: visible;
           overflow-x: auto;
           background: #ffffff;
@@ -5963,6 +5965,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         /* ── INPUTS ── */
         .ws-input {
           width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
           border: 1px solid #e2e8f0;
           background: #ffffff;
           padding: 0.25rem 0.375rem;
@@ -5978,6 +5982,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-desc-input {
           width: 100%;
           max-width: 100%;
+          box-sizing: border-box;
           min-height: 3.45rem;
           font-weight: 600;
           line-height: 1.45;
