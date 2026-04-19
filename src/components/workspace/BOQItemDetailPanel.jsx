@@ -384,13 +384,9 @@ const BOQItemDetailPanel = ({
             padding-top: 0.2rem;
           }
 
-          .idp-panel-docked .idp-section-header {
-            padding: 0.8rem 1rem;
-          }
+          .idp-panel-docked .idp-section-header { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 1.45rem; background: none; border: none; cursor: pointer; color: #0f172a; transition: background 0.15s ease; }
 
-          .idp-panel-docked .idp-section-body {
-            padding: 0 1rem 0.95rem;
-          }
+          .idp-panel-docked .idp-section-body { padding: 0.25rem 1.45rem 1.25rem; display: flex; flex-direction: column; gap: 0.85rem; }
 
           .idp-panel-docked .idp-footer {
             padding: 0.8rem 1rem;
@@ -454,9 +450,9 @@ const BOQItemDetailPanel = ({
             font-weight: 700;
           }
 
-          .idp-tag-src-benchmark { background: #dbeafe; color: #1d4ed8; }
-          .idp-tag-src-formula   { background: #ede9fe; color: #6d28d9; }
-          .idp-tag-src-manual    { background: #d1fae5; color: #15803d; }
+          .idp-tag-src-benchmark { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); color: #1d4ed8; border: 1px solid #bfdbfe; box-shadow: 0 2px 6px rgba(59, 130, 246, 0.1); }
+          .idp-tag-src-formula { background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); color: #6d28d9; border: 1px solid #ddd6fe; box-shadow: 0 2px 6px rgba(139, 92, 246, 0.1); }
+          .idp-tag-src-manual { background: linear-gradient(135deg, #f0fdf4 0%, #d1fae5 100%); color: #15803d; border: 1px solid #bbf7d0; box-shadow: 0 2px 6px rgba(34, 197, 94, 0.1); }
           .idp-tag-section       { background: #fef9c3; color: #a16207; }
 
           .idp-close {
@@ -480,15 +476,7 @@ const BOQItemDetailPanel = ({
             padding: 0.5rem 0;
           }
 
-          .idp-overview-card {
-            display: flex;
-            flex-direction: column;
-            gap: 0.7rem;
-            padding: 0.85rem;
-            border-radius: 12px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-          }
+          .idp-overview-card { display: flex; flex-direction: column; gap: 0.85rem; padding: 1.15rem; border-radius: 14px; background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%); border: 1px solid #e2e8f0; box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03); }
 
           .idp-overview-description {
             margin: 0;
@@ -515,17 +503,9 @@ const BOQItemDetailPanel = ({
             font-weight: 700;
           }
 
-          .idp-overview-chip-benchmark {
-            background: #eff6ff;
-            color: #1d4ed8;
-            border-color: #bfdbfe;
-          }
+          .idp-overview-chip-benchmark { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); color: #1d4ed8; border-color: #bfdbfe; box-shadow: 0 1px 4px rgba(59, 130, 246, 0.08); }
 
-          .idp-overview-chip-formula {
-            background: #f5f3ff;
-            color: #6d28d9;
-            border-color: #ddd6fe;
-          }
+          .idp-overview-chip-formula { background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); color: #6d28d9; border-color: #ddd6fe; box-shadow: 0 1px 4px rgba(139, 92, 246, 0.08); }
 
           .idp-overview-chip-manual {
             background: #f0fdf4;
@@ -550,17 +530,7 @@ const BOQItemDetailPanel = ({
             border-bottom: 1px solid #f1f5f9;
           }
 
-          .idp-section-header {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.75rem 1.25rem;
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #0f172a;
-          }
+          .idp-section-header { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 1.45rem; background: none; border: none; cursor: pointer; color: #0f172a; transition: background 0.15s ease; }
           .idp-section-header:hover { background: #f8fafc; }
 
           .idp-section-header-left {
@@ -571,12 +541,7 @@ const BOQItemDetailPanel = ({
 
           .idp-section-header strong { font-size: 0.85rem; }
 
-          .idp-section-body {
-            padding: 0 1.25rem 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-          }
+          .idp-section-body { padding: 0.25rem 1.45rem 1.25rem; display: flex; flex-direction: column; gap: 0.85rem; }
 
           /* ── Rate rows ── */
           .idp-rate-row {

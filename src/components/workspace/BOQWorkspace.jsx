@@ -3863,27 +3863,43 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           display: grid;
           grid-template-columns: 248px minmax(0, 1fr) 380px;
           gap: 1rem;
+          height: calc(100vh - 56px);
           min-height: 0;
-          align-items: start;
+          align-items: stretch;
+          overflow: hidden;
         }
         .ws-main-pane {
           min-width: 0;
+          min-height: 0;
           display: flex;
           flex-direction: column;
           gap: 1rem;
+          overflow-y: auto;
+          overflow-x: hidden;
+          scrollbar-width: thin;
+          scrollbar-color: #cbd5e1 transparent;
         }
+        .ws-main-pane::-webkit-scrollbar { width: 6px; }
+        .ws-main-pane::-webkit-scrollbar-track { background: transparent; }
+        .ws-main-pane::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .ws-main-pane::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         .ws-detail-dock {
           min-width: 0;
-          position: sticky;
-          top: 0.75rem;
-          align-self: start;
-          min-height: calc(100vh - 2rem);
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
           background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
           border: 1px solid #dbe3ef;
           border-radius: 26px;
           box-shadow: 0 20px 44px rgba(15, 23, 42, 0.08);
-          overflow: hidden;
+          overflow-y: auto;
+          overflow-x: hidden;
+          scrollbar-width: thin;
+          scrollbar-color: #cbd5e1 transparent;
         }
+        .ws-detail-dock::-webkit-scrollbar { width: 5px; }
+        .ws-detail-dock::-webkit-scrollbar-track { background: transparent; }
+        .ws-detail-dock::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         .ws-detail-dock.is-empty {
           display: flex;
           align-items: stretch;
@@ -3930,7 +3946,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           justify-content: center;
           gap: 0.75rem;
           padding: 1.4rem;
-          min-height: 100%;
+          flex: 1;
           background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
         }
         .ws-detail-empty strong {
@@ -4155,12 +4171,24 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           }
         }
         @media (max-width: 1180px) {
+          .ws-container {
+            height: auto;
+            max-height: none;
+            overflow: visible;
+          }
           .ws-workspace-shell {
             grid-template-columns: 1fr;
+            height: auto;
+            overflow: visible;
+          }
+          .ws-main-pane {
+            overflow-y: visible;
+            overflow-x: visible;
           }
           .ws-detail-dock {
             position: static;
             min-height: auto;
+            overflow-y: visible;
           }
           .ws-summary-actions-row,
           .ws-analytics-inline-card {
@@ -4283,7 +4311,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-workspace-body {
           display: flex;
           flex-direction: column;
+          flex: 1;
           min-height: 0;
+          overflow: hidden;
         }
         .ws-bill-tabs-shell {
           position: sticky;
@@ -4521,9 +4551,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-container {
           display: flex;
           flex-direction: column;
-          min-height: calc(100vh - 56px);
+          height: calc(100vh - 56px);
+          max-height: calc(100vh - 56px);
           background: #f1f5f9;
-          overflow: visible;
+          overflow: hidden;
         }
 
         .ws-mobile-summary,
@@ -5642,7 +5673,6 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           flex: 0 0 auto;
           overflow-y: visible;
           overflow-x: auto;
-          min-height: 60vh;
           background: #ffffff;
           border: 1px solid #dbe4ee;
           border-radius: 24px;
@@ -7309,7 +7339,40 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
 
 
-      `}</style>
+      `}
+          /* --- Polish Refinements --- */
+          .ws-table-row {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          .ws-table-row:hover {
+            background-color: #f8fafc !important;
+            border: 1px solid rgba(147, 197, 253, 0.6) !important;
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04) !important;
+            transform: translateY(-1px) !important;
+            z-index: 10 !important;
+          }
+          .ws-table-row.selected {
+            background: linear-gradient(90deg, #eff6ff 0%, #ffffff 100%) !important;
+            border-left: 4px solid #2563eb !important;
+            border-top: 1px solid rgba(59, 130, 246, 0.3) !important;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.3) !important;
+            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.08) !important;
+          }
+          .ws-table-cell {
+            font-family: 'Inter', system-ui, sans-serif !important;
+            letter-spacing: -0.01em;
+          }
+          .ws-rate-badge.benchmark { border: 1px solid #bfdbfe; background: linear-gradient(135deg, #eff6ff, #dbeafe) !important; }
+          .ws-rate-badge.formula { border: 1px solid #ddd6fe; background: linear-gradient(135deg, #f5f3ff, #ede9fe) !important; }
+          .ws-rate-badge.manual { border: 1px solid #bbf7d0; background: linear-gradient(135deg, #f0fdf4, #d1fae5) !important; }
+          
+          .ws-summary-strip {
+            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.04) !important;
+            border-bottom: 2px solid #e2e8f0 !important;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+          }
+
+        </style>
     </div>
   );
 };
