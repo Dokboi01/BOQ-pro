@@ -384,7 +384,18 @@ const BOQItemDetailPanel = ({
             padding-top: 0.2rem;
           }
 
-          .idp-panel-docked .idp-section-header { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 1.45rem; background: none; border: none; cursor: pointer; color: #0f172a; transition: background 0.15s ease; }
+          .idp-panel-docked .idp-section-header { 
+            width: 100%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 1.15rem 1.45rem; 
+            background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%); 
+            border: none; 
+            cursor: pointer; 
+            color: #0f172a; 
+            transition: background 0.15s ease; 
+          }
 
           .idp-panel-docked .idp-section-body { padding: 0.25rem 1.45rem 1.25rem; display: flex; flex-direction: column; gap: 0.85rem; }
 
@@ -530,8 +541,20 @@ const BOQItemDetailPanel = ({
             border-bottom: 1px solid #f1f5f9;
           }
 
-          .idp-section-header { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 1.45rem; background: none; border: none; cursor: pointer; color: #0f172a; transition: background 0.15s ease; }
-          .idp-section-header:hover { background: #f8fafc; }
+          .idp-section-header { 
+            width: 100%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 1.15rem 1.45rem; 
+            background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%); 
+            border: none; 
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer; 
+            color: #0f172a; 
+            transition: background 0.15s ease; 
+          }
+          .idp-section-header:hover { background: #f1f5f9; }
 
           .idp-section-header-left {
             display: flex;
@@ -773,6 +796,11 @@ const BOQItemDetailPanel = ({
             color: #64748b;
             line-height: 1.6;
             margin: 0;
+            padding: 1.25rem 1rem;
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: 10px;
+            text-align: center;
           }
 
           /* ── Notes ── */

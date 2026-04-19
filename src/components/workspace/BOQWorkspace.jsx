@@ -502,6 +502,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         items: [...generatedRows, ...preservedCustomRows],
       };
     })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   ), [projectStructureType]);
 
   const updateItem = (sectionId, itemId, fieldOrUpdates, valueOrBreakdown = null, breakdown = null) => {
@@ -732,6 +733,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const activateBenchmarkPricing = (sectionId, item) => {
     const regionalFactor = getBenchmarkRegionalFactor(item, project?.region || 'Lagos');
 
@@ -1550,6 +1552,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         expanded: normalizedQuery || workspaceFilter === 'active-bill' ? true : section.expanded,
       };
     }).filter(Boolean);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeBillSectionId, project?.region, projectStructureType, searchQuery, workspaceFilter, workspaceSections]);
 
   const workspaceAnalytics = React.useMemo(() => (
@@ -1581,9 +1584,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const totalQuantity = workspaceAnalytics.totalQuantity;
 
   const totalItems = workspaceAnalytics.totalItems;
-  const totalColumnCount = viewMode === 'valuation' ? 9 : 8;
-  const sectionHeaderSpan = viewMode === 'valuation' ? 8 : 7;
-  const subtotalLeadingSpan = viewMode === 'valuation' ? 6 : 5;
+  const totalColumnCount = viewMode === 'valuation' ? 9 : 7;
+  const sectionHeaderSpan = viewMode === 'valuation' ? 8 : 6;
+  const subtotalLeadingSpan = viewMode === 'valuation' ? 6 : 4;
   const benchmarkSyncLabel = formatBenchmarkSyncLabel(benchmarkSyncState.checkedAt);
   const filteredSectionCount = filteredSections.length;
   const filteredItemCount = filteredSections.reduce((sum, section) => sum + ((section.items || []).length), 0);
@@ -1778,14 +1781,13 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         { key: 'description', letter: 'B', label: 'Description' },
         { key: 'unit', letter: 'C', label: 'Unit' },
         { key: 'quantity', letter: 'D', label: 'Quantity' },
-        { key: 'strategy', letter: 'E', label: 'Rate Source' },
-        { key: 'rate', letter: 'F', label: 'Unit Rate' },
-        { key: 'amount', letter: 'G', label: 'Amount' },
-        { key: 'actions', letter: 'H', label: 'Actions' },
+        { key: 'rate', letter: 'E', label: 'Unit Rate' },
+        { key: 'amount', letter: 'F', label: 'Amount' },
+        { key: 'actions', letter: 'G', label: 'Actions' },
       ];
   const spreadsheetColumnTemplate = viewMode === 'valuation'
     ? '76px minmax(480px, 4.9fr) 92px 138px 96px 104px 150px 160px 72px'
-    : '76px minmax(520px, 5.2fr) 92px 138px 156px 160px 166px 72px';
+    : '76px minmax(560px, 5.8fr) 92px 138px 210px 170px 72px';
 
   const selectWorkspaceCell = ({ sectionId, itemId, columnKey, itemCode, rowNumber }) => {
     setSelectedCell({
@@ -2165,7 +2167,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       </div>
       {renderBillTabs('workspace')}
       <div className="ws-workspace-command-center">
-      {false && (
+      {workspaceFilter === '__hide__' ? (
       <div className="ws-cost-rail">
         <div className="ws-cost-card">
           <span className="ws-cost-label">Active Bill</span>
@@ -2200,7 +2202,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           </small>
         </div>
       </div>
-      )}
+      ) : null}
 
       <div className={`ws-sheet-tools ${selectedItemContext ? 'has-selection' : 'is-idle'}`}>
         <div className="ws-formula-bar">
@@ -2531,7 +2533,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         </div>
       </div>
 
-      {false && (
+      {workspaceFilter === '__hide__' ? (
         <>
         <div className="ws-analytics-board">
       <div className="ws-insight-strip">
@@ -2770,7 +2772,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         </div>
       </div>
         </>
-      )}
+      ) : null}
 
       {/* Table */}
       <div className="ws-table-wrap">
@@ -2801,9 +2803,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                   <th className="ws-th-sm">DONE</th>
                   <th className="ws-th-sm">%</th>
                 </>
-              ) : (
-                <th className="ws-th-strategy">RATE SOURCE</th>
-              )}
+              ) : null}
               <th className="ws-th-rate">Rate (₦)</th>
               <th className="ws-th-total">Amount (₦)</th>
               <th className="ws-th-act"></th>
@@ -3057,66 +3057,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                               </div>
                             </td>
                           </>
-                        ) : (
-                          <td
-                            className={isWorkspaceCellSelected(section.id, item.id, 'strategy') ? 'ws-cell-selected' : ''}
-                            onClick={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'strategy', itemCode, rowNumber: spreadsheetRowNumber })}
-                          >
-                            <div className="ws-rate-source-selector">
-                              <div className="ws-rate-source-current">
-                                <span className="ws-rate-source-current-label">Active</span>
-                                <span className={`ws-rate-source-current-pill ws-rate-source-current-pill-${selectedRateSource}`}>
-                                  {selectedRateSource === 'benchmark'
-                                    ? 'Benchmark'
-                                    : selectedRateSource === 'formula'
-                                      ? 'Formula'
-                                      : 'Manual'}
-                                </span>
-                              </div>
-                              <div className="ws-rate-source-buttons">
-                                <button
-                                  className={`ws-src-btn ws-src-btn-bm ${selectedRateSource === 'benchmark' ? 'active' : ''} ${!hasBenchmarkOption ? 'ws-src-btn-disabled' : ''}`}
-                                  onClick={() => {
-                                    selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'strategy', itemCode, rowNumber: spreadsheetRowNumber });
-                                    handleRateSourceChange(section.id, item, 'benchmark');
-                                  }}
-                                  disabled={!hasBenchmarkOption}
-                                  title={hasBenchmarkOption ? 'Use benchmark pricing' : 'No benchmark rate available yet'}
-                                >
-                                  Benchmark
-                                </button>
-                                <button
-                                  className={`ws-src-btn ws-src-btn-formula ${selectedRateSource === 'formula' ? 'active' : ''} ${!hasFormulaOption ? 'ws-src-btn-disabled' : ''}`}
-                                  onClick={() => {
-                                    selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'strategy', itemCode, rowNumber: spreadsheetRowNumber });
-                                    handleRateSourceChange(section.id, item, 'formula');
-                                  }}
-                                  disabled={!hasFormulaOption}
-                                  title={hasFormulaOption ? 'Use formula pricing' : 'No saved formula for this item'}
-                                >
-                                  Formula
-                                </button>
-                                <button
-                                  className={`ws-src-btn ws-src-btn-manual ${selectedRateSource === 'manual' ? 'active' : ''}`}
-                                  onClick={() => {
-                                    selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'strategy', itemCode, rowNumber: spreadsheetRowNumber });
-                                    activateCustomPricing(section.id, item);
-                                  }}
-                                  title="Use manual pricing"
-                                >
-                                  Manual
-                                </button>
-                              </div>
-                              <small className="ws-rate-source-help">
-                                {selectedRateSource === 'benchmark'
-                                  ? 'Benchmark source active'
-                                  : selectedRateSource === 'formula'
-                                    ? 'Formula source active'
-                                    : (item.customPricing ? 'Manual source with saved build-up' : 'Manual source ready for override')}
-                              </small>
-                            </div>
-                          </td>
-                        )}
+                        ) : null}
                         <td
                           className={`ws-rate-cell ${isWorkspaceCellSelected(section.id, item.id, 'rate') ? 'ws-cell-selected' : ''}`}
                           onClick={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'rate', itemCode, rowNumber: spreadsheetRowNumber })}
@@ -3130,6 +3071,19 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                               disabled={!canEditManualRate}
                               onFocus={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'rate', itemCode, rowNumber: spreadsheetRowNumber })}
                             />
+                            {viewMode !== 'valuation' && (
+                              <select 
+                                className={`ws-compact-source-badge ws-compact-source-${selectedRateSource}`}
+                                value={selectedRateSource}
+                                onChange={(e) => handleRateSourceChange(section.id, item, e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                title="Change Pricing Strategy"
+                              >
+                                <option value="benchmark" disabled={!hasBenchmarkOption}>BM</option>
+                                <option value="formula" disabled={!hasFormulaOption}>FX</option>
+                                <option value="manual">MAN</option>
+                              </select>
+                            )}
                             {hasFormulaOption && (
                               <button
                                 className="ws-analysis-btn ws-custom-studio-btn"
@@ -7369,6 +7323,78 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.04) !important;
             border-bottom: 2px solid #e2e8f0 !important;
             background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+          }
+          /* --- BOQ UI REFINEMENT CSS STYLES --- */
+          .ws-table th {
+            background: #f8fafc !important;
+            color: #334155 !important;
+            border-bottom: 2px solid #cbd5e1 !important;
+            font-weight: 800 !important;
+            letter-spacing: 0.05em !important;
+            padding: 0.95rem 1rem !important;
+          }
+          .ws-item-row {
+            transition: background 0.2s ease, box-shadow 0.2s ease !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+          }
+          /* Subtle row striping */
+          .ws-table tbody > tr.ws-item-row:nth-child(even) {
+            background-color: #fbfbfb !important;
+          }
+          .ws-item-row:hover {
+            background-color: #f4f7fa !important;
+          }
+          /* Active row highlight */
+          .ws-item-row.ws-item-row-selected {
+            background-color: #eff6ff !important;
+            box-shadow: inset 3px 0 0 #2563eb !important;
+          }
+          .ws-item-row.ws-item-row-selected td {
+            border-bottom: 1px solid #bfdbfe !important;
+          }
+          /* Compact Rate Source Select Badge */
+          .ws-compact-source-badge {
+            margin-top: 0.35rem;
+            padding: 0.15rem 0.35rem;
+            font-size: 0.65rem;
+            font-weight: 800;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            outline: none;
+            width: fit-content;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+          }
+          .ws-compact-source-benchmark { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+          .ws-compact-source-formula { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+          .ws-compact-source-manual { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+          /* Availability pills */
+          .ws-availability-pill {
+            padding: 0.15rem 0.4rem !important;
+            font-size: 0.62rem !important;
+            border-radius: 999px !important;
+            font-weight: 800 !important;
+          }
+          /* Emphasize grand total summary metric */
+          .ws-summary-metric-strong {
+            background: #0f172a !important;
+            color: #ffffff !important;
+            border-color: #0f172a !important;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15) !important;
+          }
+          .ws-summary-metric-strong strong { color: #ffffff !important; }
+          .ws-summary-metric-strong small { color: #94a3b8 !important; }
+          .ws-summary-metric-strong span:first-child { color: #cbd5e1 !important; }
+          /* Better empty sections */
+          .ws-empty-section {
+            padding: 2.5rem 1rem !important;
+            background: #f8fafc !important;
+            border: 1px dashed #cbd5e1 !important;
+            border-radius: 12px !important;
           }
       `}</style>
     </div>
