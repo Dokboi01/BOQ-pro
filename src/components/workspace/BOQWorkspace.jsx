@@ -1404,6 +1404,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       ]))
     )
   ), [sections, selectedCatalogItemIdsBySection]);
+  const sectionLibraryCounts = React.useMemo(() => (
+    Object.fromEntries(
+      (sections || []).map((section) => ([
+        section.id,
+        getStructureSectionCatalog(projectStructureType, section.billSectionId)?.availableItems?.length || 0,
+      ]))
+    )
+  ), [projectStructureType, sections]);
   const sectionTotalsBySection = React.useMemo(() => (
     Object.fromEntries(
       (sections || []).map((section) => ([
@@ -1419,14 +1427,45 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     (sections || []).some((section) => (section.items || []).length > 0)
   ), [sections]);
   const isSelectionStage = !isCustomWorkspace && boqBuilder?.stage === 'selection';
-  const activeProjectSection = (sections || []).find((section) => section.id === activeBillSectionId) || sections[0] || null;
+  const workspaceVisibleSections = React.useMemo(() => {
+    if (isSelectionStage) {
+      return sections || [];
+    }
+
+    const visibleSections = (sections || []).filter((section) => {
+      const hasItems = (section.items || []).length > 0;
+      const hasCatalogDefinition = Boolean(getStructureSectionCatalog(projectStructureType, section.billSectionId));
+
+      return hasItems || !hasCatalogDefinition;
+    });
+
+    return visibleSections.length > 0 ? visibleSections : (sections || []);
+  }, [isSelectionStage, projectStructureType, sections]);
+  const activeProjectSection = workspaceVisibleSections.find((section) => section.id === activeBillSectionId) || workspaceVisibleSections[0] || null;
   const activeSectionMeta = activeProjectSection ? getSectionUiMeta(activeProjectSection) : null;
   const activeCatalogSection = activeProjectSection
     ? getStructureSectionCatalog(projectStructureType, activeProjectSection.billSectionId)
     : null;
   const workspaceSections = activeBillSectionId
-    ? (sections || []).filter((section) => section.id === activeBillSectionId)
-    : (sections || []);
+    ? workspaceVisibleSections.filter((section) => section.id === activeBillSectionId)
+    : workspaceVisibleSections;
+
+  React.useEffect(() => {
+    if (isSelectionStage || !workspaceVisibleSections.length) {
+      return;
+    }
+
+    const activeSectionStillVisible = workspaceVisibleSections.some((section) => section.id === activeBillSectionId);
+    if (!activeSectionStillVisible) {
+      const fallbackSectionId = workspaceVisibleSections[0].id;
+      setActiveBillSectionId(fallbackSectionId);
+      setBoqBuilder((prev) => (
+        prev
+          ? { ...prev, activeBillSectionId: fallbackSectionId }
+          : prev
+      ));
+    }
+  }, [activeBillSectionId, isSelectionStage, workspaceVisibleSections]);
 
   const matchesWorkspaceSearch = (section, item, sectionMeta, normalizedQuery) => {
     const haystack = [
@@ -1579,18 +1618,25 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const activeSheetLabel = viewMode === 'valuation' ? 'Valuation Sheet' : 'Estimate Sheet';
   const workbookSubtitle = [projectStructureType, project?.subtype].filter(Boolean).join(' / ') || 'Construction pricing workbook';
 
-  const focusSection = (sectionId) => {
+  const focusSection = (sectionId, { persist = true } = {}) => {
     if (!sectionId) return;
 
-    setActiveBillSectionId(sectionId);
-    setBoqBuilder((prev) => (
-      prev
-        ? { ...prev, activeBillSectionId: sectionId }
-        : prev
-    ));
-    setSections((prev) => prev.map((section) => (
+    const nextSections = (sections || []).map((section) => (
       section.id === sectionId ? { ...section, expanded: true } : section
-    )));
+    ));
+    const nextBuilder = {
+      ...(boqBuilder || buildBoqBuilderState(project, sections)),
+      activeBillSectionId: sectionId,
+    };
+
+    setSections(nextSections);
+    if (persist) {
+      persistBoqBuilderState(nextBuilder, nextSections);
+      return;
+    }
+
+    setActiveBillSectionId(sectionId);
+    setBoqBuilder(nextBuilder);
   };
 
   const updateSelectionForSection = (sectionId, nextCodes) => {
@@ -1641,7 +1687,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       selectedCatalogItemIdsBySection,
     };
 
-    focusSection(sectionId);
+    focusSection(sectionId, { persist: false });
     persistBoqBuilderState(nextBuilder, sections);
   };
 
@@ -1904,7 +1950,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const renderBillTabs = (mode = 'workspace') => (
     <div className={`ws-bill-tabs-shell ${mode === 'selection' ? 'selection' : 'workspace'}`}>
       <div className="ws-bill-tabs">
-        {(sections || []).map((section, index) => {
+        {(mode === 'selection' ? (sections || []) : workspaceVisibleSections).map((section, index) => {
           const isActive = activeBillSectionId === section.id;
           const sectionTotal = sectionTotalsBySection?.[section.id] || 0;
           const selectionCount = selectionCountsBySection?.[section.id] || 0;
@@ -1935,17 +1981,21 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   if (isSelectionStage) {
     return (
       <div className="ws-container ws-container-selection">
-        {renderBillTabs('selection')}
         <BOQSelectionStage
           projectName={project?.name}
           marketRegion={marketRegionDisplay}
           structureType={projectStructureType}
+          sections={sections}
+          activeBillSectionId={activeBillSectionId}
+          selectionCountsBySection={selectionCountsBySection}
+          sectionLibraryCounts={sectionLibraryCounts}
           section={activeProjectSection}
           sectionMeta={activeSectionMeta}
           catalogItems={activeCatalogSection?.availableItems || []}
           selectedCodes={selectedCatalogItemIdsBySection?.[activeBillSectionId] || []}
           totalSelectedCount={totalSelectedCatalogItems}
           currentSectionSelectedCount={selectionCountsBySection?.[activeBillSectionId] || 0}
+          onSelectBill={scrollToSection}
           onToggleItem={(code) => handleToggleCatalogSelection(activeBillSectionId, code)}
           onSelectVisible={(codes) => handleSelectVisibleCatalogItems(activeBillSectionId, codes)}
           onClearBill={() => handleClearCatalogSelection(activeBillSectionId)}
@@ -2037,6 +2087,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       </div>
       {renderBillTabs('workspace')}
       <div className="ws-workspace-command-center">
+      {false && (
       <div className="ws-cost-rail">
         <div className="ws-cost-card">
           <span className="ws-cost-label">Active Bill</span>
@@ -2071,6 +2122,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           </small>
         </div>
       </div>
+      )}
 
       <div className={`ws-sheet-tools ${selectedItemContext ? 'has-selection' : 'is-idle'}`}>
         <div className="ws-formula-bar">
@@ -2693,7 +2745,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                     ref={(node) => { sectionRowRefs.current[section.id] = node; }}
                     className="ws-section-row"
                     onClick={() => {
-                      setActiveBillSectionId(section.id);
+                      focusSection(section.id);
                       toggleSection(section.id);
                     }}
                   >
@@ -3568,8 +3620,20 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           item={calculatingQtyForItem.item}
           onClose={() => setCalculatingQtyForItem(null)}
           onApply={(newQty) => {
+            const safeQty = sanitizeNonNegativeNumber(newQty);
+            focusSection(calculatingQtyForItem.sectionId);
+            setSelectedCell((prev) => ({
+              sectionId: calculatingQtyForItem.sectionId,
+              itemId: calculatingQtyForItem.item.id,
+              columnKey: 'quantity',
+              itemCode: prev?.itemId === calculatingQtyForItem.item.id
+                ? prev.itemCode
+                : (calculatingQtyForItem.item.code || calculatingQtyForItem.item.ref || ''),
+              rowNumber: prev?.itemId === calculatingQtyForItem.item.id ? prev.rowNumber : null
+            }));
             updateItem(calculatingQtyForItem.sectionId, calculatingQtyForItem.item.id, {
-              qty: sanitizeNonNegativeNumber(newQty),
+              qty: safeQty,
+              quantity: safeQty,
               qtySource: 'calculated'
             });
             setCalculatingQtyForItem(null);

@@ -177,12 +177,13 @@ const GeometricCalculator = ({ item, onApply, onClose }) => {
               <p>{item?.description || 'BOQ Item'} · Unit: {item?.unit || unitLabel}</p>
             </div>
           </div>
-          <button className="btn-close" onClick={onClose}><X size={20} /></button>
+          <button type="button" className="btn-close" onClick={onClose}><X size={20} /></button>
         </header>
 
         <div className="shape-selector">
           {availableShapes.map((entry) => (
             <button
+              type="button"
               key={entry.id}
               className={`shape-btn ${shape === entry.id ? 'active' : ''}`}
               onClick={() => setShape(entry.id)}
@@ -259,8 +260,8 @@ const GeometricCalculator = ({ item, onApply, onClose }) => {
         </div>
 
         <footer className="geo-footer">
-          <button className="btn-cancel" onClick={onClose}>Discard Changes</button>
-          <button className="btn-apply-main" onClick={() => { onApply(adjustedQuantity); onClose(); }}>
+          <button type="button" className="btn-cancel" onClick={onClose}>Discard Changes</button>
+          <button type="button" className="btn-apply-main" onClick={() => onApply(adjustedQuantity)}>
             Apply Quantity <ChevronRight size={18} />
           </button>
         </footer>

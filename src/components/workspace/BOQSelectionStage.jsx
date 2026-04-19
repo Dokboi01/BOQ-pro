@@ -54,6 +54,10 @@ const BOQSelectionStage = ({
   projectName,
   marketRegion,
   structureType,
+  sections = [],
+  activeBillSectionId = null,
+  selectionCountsBySection = {},
+  sectionLibraryCounts = {},
   section,
   sectionMeta,
   catalogItems = [],
@@ -69,6 +73,7 @@ const BOQSelectionStage = ({
   onReturnToWorkspace = null,
   onNextSection = null,
   hasNextSection = false,
+  onSelectBill = null,
 }) => {
   const [query, setQuery] = React.useState('');
   const [activeFilter, setActiveFilter] = React.useState('all');
@@ -239,6 +244,41 @@ const BOQSelectionStage = ({
             <strong>{metrics.recommended}</strong>
             <small>Seeded items marked as likely picks for this bill.</small>
           </div>
+        </div>
+      </section>
+
+      <section className="boq-selection-bill-browser">
+        <div className="boq-selection-bill-browser-head">
+          <div>
+            <span className="boq-selection-bill-browser-label">Bill Navigation</span>
+            <strong>Switch bills the same way you do in the workspace.</strong>
+          </div>
+          <small>
+            {currentSectionSelectedCount} selected in {section?.title || 'this bill'} · {totalSelectedCount} selected overall
+          </small>
+        </div>
+        <div className="boq-selection-bill-tabs">
+          {(sections || []).map((entry, index) => {
+            const isActive = activeBillSectionId === entry.id;
+            const selectedCount = selectionCountsBySection?.[entry.id] || 0;
+            const libraryCount = sectionLibraryCounts?.[entry.id] || 0;
+            const meta = `${selectedCount} selected${libraryCount > 0 ? ` · ${libraryCount} library item${libraryCount === 1 ? '' : 's'}` : ''}`;
+
+            return (
+              <button
+                key={entry.id}
+                type="button"
+                className={`boq-selection-bill-tab ${isActive ? 'active' : ''}`}
+                onClick={() => onSelectBill?.(entry.id)}
+              >
+                <span className="boq-selection-bill-index">{String(index + 1).padStart(2, '0')}</span>
+                <span className="boq-selection-bill-copy">
+                  <strong>{entry.title}</strong>
+                  <small>{meta}</small>
+                </span>
+              </button>
+            );
+          })}
         </div>
       </section>
 
@@ -693,6 +733,123 @@ const BOQSelectionStage = ({
         .boq-selection-metric-card small {
           line-height: 1.55;
           color: #475569;
+        }
+
+        .boq-selection-bill-browser {
+          display: flex;
+          flex-direction: column;
+          gap: 0.85rem;
+          padding: 1rem 1.05rem;
+          border-radius: 24px;
+          border: 1px solid rgba(148, 163, 184, 0.18);
+          background: rgba(248, 250, 252, 0.96);
+          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.05);
+        }
+
+        .boq-selection-bill-browser-head {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 0.8rem;
+          flex-wrap: wrap;
+        }
+
+        .boq-selection-bill-browser-head strong {
+          display: block;
+          font-size: 0.96rem;
+          color: #0f172a;
+        }
+
+        .boq-selection-bill-browser-head small,
+        .boq-selection-bill-browser-label {
+          color: #64748b;
+        }
+
+        .boq-selection-bill-browser-label {
+          display: inline-flex;
+          margin-bottom: 0.18rem;
+          font-size: 0.68rem;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+
+        .boq-selection-bill-tabs {
+          display: grid;
+          grid-auto-flow: column;
+          grid-auto-columns: minmax(220px, 1fr);
+          gap: 0.65rem;
+          overflow-x: auto;
+          scrollbar-width: none;
+          padding-bottom: 0.1rem;
+        }
+
+        .boq-selection-bill-tabs::-webkit-scrollbar { display: none; }
+
+        .boq-selection-bill-tab {
+          border: 1px solid #dbe3ef;
+          background: #ffffff;
+          border-radius: 18px;
+          padding: 0.8rem 0.9rem;
+          display: grid;
+          grid-template-columns: 40px minmax(0, 1fr);
+          gap: 0.75rem;
+          align-items: center;
+          text-align: left;
+          cursor: pointer;
+          transition: all 0.18s ease;
+          box-shadow: 0 12px 24px rgba(15, 23, 42, 0.04);
+        }
+
+        .boq-selection-bill-tab:hover {
+          transform: translateY(-1px);
+          border-color: #93c5fd;
+          box-shadow: 0 14px 28px rgba(37, 99, 235, 0.08);
+        }
+
+        .boq-selection-bill-tab.active {
+          border-color: #2563eb;
+          background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        .boq-selection-bill-index {
+          width: 40px;
+          height: 40px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 12px;
+          background: #f1f5f9;
+          color: #475569;
+          font-size: 0.8rem;
+          font-weight: 900;
+        }
+
+        .boq-selection-bill-tab.active .boq-selection-bill-index {
+          background: #dbeafe;
+          color: #1d4ed8;
+        }
+
+        .boq-selection-bill-copy {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 0.2rem;
+        }
+
+        .boq-selection-bill-copy strong {
+          font-size: 0.84rem;
+          color: #0f172a;
+          line-height: 1.35;
+        }
+
+        .boq-selection-bill-copy small {
+          font-size: 0.72rem;
+          color: #64748b;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .boq-selection-workbench {
@@ -1311,6 +1468,10 @@ const BOQSelectionStage = ({
           .boq-selection-overview-stats {
             grid-template-columns: repeat(3, minmax(0, 1fr));
           }
+
+          .boq-selection-bill-browser-head {
+            align-items: stretch;
+          }
         }
 
         @media (max-width: 860px) {
@@ -1328,9 +1489,27 @@ const BOQSelectionStage = ({
             flex-direction: column;
             align-items: stretch;
           }
+
+          .boq-selection-bill-browser {
+            padding: 0.9rem;
+          }
+
+          .boq-selection-bill-tabs {
+            grid-auto-columns: minmax(210px, 1fr);
+          }
         }
 
         @media (max-width: 720px) {
+          .boq-selection-bill-tab {
+            padding: 0.72rem 0.78rem;
+            grid-template-columns: 36px minmax(0, 1fr);
+          }
+
+          .boq-selection-bill-index {
+            width: 36px;
+            height: 36px;
+          }
+
           .boq-selection-chip-grid {
             grid-template-columns: 1fr;
           }
