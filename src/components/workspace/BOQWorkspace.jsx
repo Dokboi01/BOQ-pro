@@ -3849,14 +3849,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           overflow-y: auto;
           overflow-x: hidden;
           scrollbar-width: thin;
-          scrollbar-color: #cbd5e1 transparent;
+          scrollbar-color: #ccc transparent;
         }
         .right-panel {
           padding: 0; /* Children handle internal padding for alignment */
         }
-        .ws-detail-dock::-webkit-scrollbar { width: 5px; }
+        .ws-detail-dock::-webkit-scrollbar { width: 6px; }
         .ws-detail-dock::-webkit-scrollbar-track { background: transparent; }
-        .ws-detail-dock::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .ws-detail-dock::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
         .ws-detail-dock.is-empty {
           display: flex;
           align-items: stretch;
