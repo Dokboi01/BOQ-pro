@@ -1404,6 +1404,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       ]))
     )
   ), [sections, selectedCatalogItemIdsBySection]);
+  const sectionLibraryCounts = React.useMemo(() => (
+    Object.fromEntries(
+      (sections || []).map((section) => ([
+        section.id,
+        getStructureSectionCatalog(projectStructureType, section.billSectionId)?.availableItems?.length || 0,
+      ]))
+    )
+  ), [projectStructureType, sections]);
   const sectionTotalsBySection = React.useMemo(() => (
     Object.fromEntries(
       (sections || []).map((section) => ([
@@ -1942,17 +1950,21 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   if (isSelectionStage) {
     return (
       <div className="ws-container ws-container-selection">
-        {renderBillTabs('selection')}
         <BOQSelectionStage
           projectName={project?.name}
           marketRegion={marketRegionDisplay}
           structureType={projectStructureType}
+          sections={sections}
+          activeBillSectionId={activeBillSectionId}
+          selectionCountsBySection={selectionCountsBySection}
+          sectionLibraryCounts={sectionLibraryCounts}
           section={activeProjectSection}
           sectionMeta={activeSectionMeta}
           catalogItems={activeCatalogSection?.availableItems || []}
           selectedCodes={selectedCatalogItemIdsBySection?.[activeBillSectionId] || []}
           totalSelectedCount={totalSelectedCatalogItems}
           currentSectionSelectedCount={selectionCountsBySection?.[activeBillSectionId] || 0}
+          onSelectBill={scrollToSection}
           onToggleItem={(code) => handleToggleCatalogSelection(activeBillSectionId, code)}
           onSelectVisible={(codes) => handleSelectVisibleCatalogItems(activeBillSectionId, codes)}
           onClearBill={() => handleClearCatalogSelection(activeBillSectionId)}
