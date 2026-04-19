@@ -77,6 +77,7 @@ const BOQItemDetailPanel = ({
   onClose,
   onNotesChange,
   onOpenFormulaEditor,
+  variant = 'overlay',
 }) => {
   if (!item) return null;
 
@@ -96,8 +97,18 @@ const BOQItemDetailPanel = ({
   };
 
   return (
-    <div className="idp-overlay" onClick={onClose}>
-      <div className="idp-panel" onClick={(e) => e.stopPropagation()}>
+    <div
+      className={`idp-overlay ${variant === 'docked' ? 'idp-overlay-docked' : ''}`}
+      onClick={variant === 'overlay' ? onClose : undefined}
+    >
+      <div
+        className={`idp-panel ${variant === 'docked' ? 'idp-panel-docked' : ''}`}
+        onClick={(e) => {
+          if (variant === 'overlay') {
+            e.stopPropagation();
+          }
+        }}
+      >
         {/* ── Header ─────────────────────────────────────────────── */}
         <div className="idp-header">
           <div className="idp-header-copy">
@@ -115,9 +126,11 @@ const BOQItemDetailPanel = ({
               )}
             </div>
           </div>
-          <button type="button" className="idp-close" onClick={onClose}>
-            <X size={16} />
-          </button>
+          {onClose && (
+            <button type="button" className="idp-close" onClick={onClose}>
+              <X size={16} />
+            </button>
+          )}
         </div>
 
         {/* ── Scrollable body ─────────────────────────────────────── */}
@@ -284,9 +297,11 @@ const BOQItemDetailPanel = ({
             {section?.title && `${section.title} · `}
             {item.unit} · {sourceLabels[selectedRateSource] || selectedRateSource} active
           </span>
-          <button type="button" className="idp-close-btn" onClick={onClose}>
-            Close
-          </button>
+          {onClose && (
+            <button type="button" className="idp-close-btn" onClick={onClose}>
+              Close
+            </button>
+          )}
         </div>
 
         <style>{`
@@ -300,6 +315,15 @@ const BOQItemDetailPanel = ({
             justify-content: flex-end;
           }
 
+          .idp-overlay-docked {
+            position: static;
+            inset: auto;
+            z-index: auto;
+            background: transparent;
+            backdrop-filter: none;
+            display: block;
+          }
+
           .idp-panel {
             width: min(480px, 100vw);
             height: 100dvh;
@@ -308,6 +332,15 @@ const BOQItemDetailPanel = ({
             flex-direction: column;
             box-shadow: -16px 0 48px rgba(15, 23, 42, 0.16);
             overflow: hidden;
+          }
+
+          .idp-panel-docked {
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+            border-left: 1px solid #e2e8f0;
+            border-radius: 24px 0 0 24px;
+            box-shadow: -10px 0 32px rgba(15, 23, 42, 0.08);
           }
 
           .idp-header {
@@ -717,6 +750,12 @@ const BOQItemDetailPanel = ({
           @media (max-width: 640px) {
             .idp-panel {
               width: 100vw;
+            }
+
+            .idp-panel-docked {
+              border-left: none;
+              border-radius: 22px;
+              box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
             }
           }
         `}</style>
