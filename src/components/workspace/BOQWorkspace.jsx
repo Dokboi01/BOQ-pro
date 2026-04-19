@@ -1579,18 +1579,25 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const activeSheetLabel = viewMode === 'valuation' ? 'Valuation Sheet' : 'Estimate Sheet';
   const workbookSubtitle = [projectStructureType, project?.subtype].filter(Boolean).join(' / ') || 'Construction pricing workbook';
 
-  const focusSection = (sectionId) => {
+  const focusSection = (sectionId, { persist = true } = {}) => {
     if (!sectionId) return;
 
-    setActiveBillSectionId(sectionId);
-    setBoqBuilder((prev) => (
-      prev
-        ? { ...prev, activeBillSectionId: sectionId }
-        : prev
-    ));
-    setSections((prev) => prev.map((section) => (
+    const nextSections = (sections || []).map((section) => (
       section.id === sectionId ? { ...section, expanded: true } : section
-    )));
+    ));
+    const nextBuilder = {
+      ...(boqBuilder || buildBoqBuilderState(project, sections)),
+      activeBillSectionId: sectionId,
+    };
+
+    setSections(nextSections);
+    if (persist) {
+      persistBoqBuilderState(nextBuilder, nextSections);
+      return;
+    }
+
+    setActiveBillSectionId(sectionId);
+    setBoqBuilder(nextBuilder);
   };
 
   const updateSelectionForSection = (sectionId, nextCodes) => {
@@ -1641,7 +1648,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       selectedCatalogItemIdsBySection,
     };
 
-    focusSection(sectionId);
+    focusSection(sectionId, { persist: false });
     persistBoqBuilderState(nextBuilder, sections);
   };
 
@@ -2693,7 +2700,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                     ref={(node) => { sectionRowRefs.current[section.id] = node; }}
                     className="ws-section-row"
                     onClick={() => {
-                      setActiveBillSectionId(section.id);
+                      focusSection(section.id);
                       toggleSection(section.id);
                     }}
                   >
@@ -3568,8 +3575,20 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           item={calculatingQtyForItem.item}
           onClose={() => setCalculatingQtyForItem(null)}
           onApply={(newQty) => {
+            const safeQty = sanitizeNonNegativeNumber(newQty);
+            focusSection(calculatingQtyForItem.sectionId);
+            setSelectedCell((prev) => ({
+              sectionId: calculatingQtyForItem.sectionId,
+              itemId: calculatingQtyForItem.item.id,
+              columnKey: 'quantity',
+              itemCode: prev?.itemId === calculatingQtyForItem.item.id
+                ? prev.itemCode
+                : (calculatingQtyForItem.item.code || calculatingQtyForItem.item.ref || ''),
+              rowNumber: prev?.itemId === calculatingQtyForItem.item.id ? prev.rowNumber : null
+            }));
             updateItem(calculatingQtyForItem.sectionId, calculatingQtyForItem.item.id, {
-              qty: sanitizeNonNegativeNumber(newQty),
+              qty: safeQty,
+              quantity: safeQty,
               qtySource: 'calculated'
             });
             setCalculatingQtyForItem(null);
