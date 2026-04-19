@@ -2087,6 +2087,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       </div>
       {renderBillTabs('workspace')}
       <div className="ws-workspace-command-center">
+      {false && (
       <div className="ws-cost-rail">
         <div className="ws-cost-card">
           <span className="ws-cost-label">Active Bill</span>
@@ -2121,6 +2122,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           </small>
         </div>
       </div>
+      )}
 
       <div className={`ws-sheet-tools ${selectedItemContext ? 'has-selection' : 'is-idle'}`}>
         <div className="ws-formula-bar">
