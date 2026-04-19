@@ -3620,7 +3620,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         />
       </div>
           </div>
-          <aside className={`ws-detail-dock ${selectedItemContext ? 'has-selection' : 'is-empty'}`}>
+          <aside className={`ws-detail-dock right-panel ${selectedItemContext ? 'has-selection' : 'is-empty'}`}>
             {selectedItemContext ? (
               <>
                 <div className="ws-detail-dock-header">
@@ -3815,7 +3815,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         /* --- NEW COMPACT LAYOUT STYLES --- */
         .ws-workspace-shell {
           display: grid;
-          grid-template-columns: 248px minmax(0, 1fr) 380px;
+          grid-template-columns: 280px minmax(0, 1fr) 360px;
           gap: 1rem;
           height: calc(100vh - 56px);
           min-height: 0;
@@ -3824,6 +3824,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
         .ws-main-pane {
           min-width: 0;
+          max-width: 100%;
           min-height: 0;
           display: flex;
           flex-direction: column;
@@ -3849,11 +3850,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           overflow-y: auto;
           overflow-x: hidden;
           scrollbar-width: thin;
-          scrollbar-color: #cbd5e1 transparent;
+          scrollbar-color: #ccc transparent;
         }
-        .ws-detail-dock::-webkit-scrollbar { width: 5px; }
+        .right-panel {
+          padding: 0; /* Children handle internal padding for alignment */
+        }
+        .ws-detail-dock::-webkit-scrollbar { width: 6px; }
         .ws-detail-dock::-webkit-scrollbar-track { background: transparent; }
-        .ws-detail-dock::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .ws-detail-dock::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
         .ws-detail-dock.is-empty {
           display: flex;
           align-items: stretch;
@@ -3862,7 +3866,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           display: flex;
           flex-direction: column;
           gap: 0.9rem;
-          padding: 1rem 1rem 0.95rem;
+          padding: 1.25rem 1.5rem;
           border-bottom: 1px solid #e2e8f0;
           background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
         }
@@ -3899,7 +3903,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           flex-direction: column;
           justify-content: center;
           gap: 0.75rem;
-          padding: 1.4rem;
+          padding: 1.5rem;
           flex: 1;
           background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
         }
@@ -3919,6 +3923,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           gap: 0.6rem;
         }
         .ws-summary-strip {
+          min-width: 0;
           display: flex;
           flex-direction: column;
           gap: 1.05rem;
@@ -5624,7 +5629,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
         /* ── TABLE ── */
         .ws-table-wrap {
-          flex: 0 0 auto;
+          flex: 1 1 auto;
+          min-width: 0;
+          max-width: 100%;
           overflow-y: visible;
           overflow-x: auto;
           background: #ffffff;
@@ -5958,6 +5965,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         /* ── INPUTS ── */
         .ws-input {
           width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
           border: 1px solid #e2e8f0;
           background: #ffffff;
           padding: 0.25rem 0.375rem;
@@ -5971,6 +5980,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-input:focus { background: white; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,0.08); }
 
         .ws-desc-input {
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
           min-height: 3.45rem;
           font-weight: 600;
           line-height: 1.45;
