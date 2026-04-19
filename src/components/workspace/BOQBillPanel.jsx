@@ -59,12 +59,17 @@ const BOQBillPanel = ({
           display: flex;
           flex-direction: column;
           gap: 1rem;
-          position: sticky;
-          top: 0.75rem;
-          align-self: start;
+          min-height: 0;
+          overflow-y: auto;
+          overflow-x: hidden;
           border-right: 1px solid rgba(226, 232, 240, 0.9);
           padding-right: 1rem;
+          scrollbar-width: thin;
+          scrollbar-color: #cbd5e1 transparent;
         }
+        .wbp-panel::-webkit-scrollbar { width: 5px; }
+        .wbp-panel::-webkit-scrollbar-track { background: transparent; }
+        .wbp-panel::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
 
         .wbp-header {
           display: flex;
@@ -259,6 +264,7 @@ const BOQBillPanel = ({
             border-right: none;
             padding-right: 0;
             padding-bottom: 0.25rem;
+            overflow-y: visible;
           }
 
           .wbp-list {

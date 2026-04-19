@@ -135,6 +135,27 @@ const BOQItemDetailPanel = ({
 
         {/* ── Scrollable body ─────────────────────────────────────── */}
         <div className="idp-body">
+          <Section icon={Info} title="Item Overview">
+            <div className="idp-overview-card">
+              <p className="idp-overview-description">
+                {item.description || 'No detailed description has been added for this BOQ item yet.'}
+              </p>
+              <div className="idp-overview-grid">
+                <div className="idp-overview-chip">{section?.title || 'Unassigned Bill'}</div>
+                <div className="idp-overview-chip">{item.unit || 'Unit pending'}</div>
+                <div className={`idp-overview-chip idp-overview-chip-${selectedRateSource}`}>
+                  {sourceLabels[selectedRateSource] || selectedRateSource} active
+                </div>
+                <div className={`idp-overview-chip ${hasFormula ? 'idp-overview-chip-available' : 'idp-overview-chip-muted'}`}>
+                  {hasFormula ? 'Formula available' : 'No formula yet'}
+                </div>
+                <div className={`idp-overview-chip ${benchmarkRate > 0 ? 'idp-overview-chip-available' : 'idp-overview-chip-muted'}`}>
+                  {benchmarkRate > 0 ? 'Benchmark available' : 'No benchmark yet'}
+                </div>
+              </div>
+            </div>
+          </Section>
+
           {/* Rate summary */}
           <Section icon={BarChart2} title="Rate Summary">
             <RateRow
@@ -168,8 +189,9 @@ const BOQItemDetailPanel = ({
           </Section>
 
           {/* Formula */}
-          {hasFormula && (
-            <Section icon={Cpu} title="Formula" defaultOpen>
+          <Section icon={Cpu} title="Formula" defaultOpen={hasFormula}>
+            {hasFormula ? (
+              <>
               {formulaText && (
                 <div className="idp-formula-display">
                   <span className="idp-formula-label">Formula</span>
@@ -218,11 +240,17 @@ const BOQItemDetailPanel = ({
                   <SlidersHorizontal size={13} /> Edit Formula Inputs
                 </button>
               )}
-            </Section>
-          )}
+              </>
+            ) : (
+              <p className="idp-empty-note">
+                No saved formula logic is attached to this item yet. You can still price it with a
+                benchmark or a manual override.
+              </p>
+            )}
+          </Section>
 
           {/* Benchmark */}
-          <Section icon={BarChart2} title="Benchmark Information" defaultOpen={!hasFormula}>
+          <Section icon={BarChart2} title="Benchmark / Pricing Source" defaultOpen={!hasFormula}>
             {benchmarkRate > 0 ? (
               <>
                 <div className="idp-benchmark-rate-display">
@@ -275,7 +303,7 @@ const BOQItemDetailPanel = ({
           </Section>
 
           {/* Notes */}
-          <Section icon={FileText} title="Notes" defaultOpen={false}>
+          <Section icon={FileText} title="Notes / Analysis" defaultOpen={false}>
             <textarea
               className="idp-notes-input"
               rows={4}
@@ -356,13 +384,9 @@ const BOQItemDetailPanel = ({
             padding-top: 0.2rem;
           }
 
-          .idp-panel-docked .idp-section-header {
-            padding: 0.8rem 1rem;
-          }
+          .idp-panel-docked .idp-section-header { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 1.45rem; background: none; border: none; cursor: pointer; color: #0f172a; transition: background 0.15s ease; }
 
-          .idp-panel-docked .idp-section-body {
-            padding: 0 1rem 0.95rem;
-          }
+          .idp-panel-docked .idp-section-body { padding: 0.25rem 1.45rem 1.25rem; display: flex; flex-direction: column; gap: 0.85rem; }
 
           .idp-panel-docked .idp-footer {
             padding: 0.8rem 1rem;
@@ -426,9 +450,9 @@ const BOQItemDetailPanel = ({
             font-weight: 700;
           }
 
-          .idp-tag-src-benchmark { background: #dbeafe; color: #1d4ed8; }
-          .idp-tag-src-formula   { background: #ede9fe; color: #6d28d9; }
-          .idp-tag-src-manual    { background: #d1fae5; color: #15803d; }
+          .idp-tag-src-benchmark { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); color: #1d4ed8; border: 1px solid #bfdbfe; box-shadow: 0 2px 6px rgba(59, 130, 246, 0.1); }
+          .idp-tag-src-formula { background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); color: #6d28d9; border: 1px solid #ddd6fe; box-shadow: 0 2px 6px rgba(139, 92, 246, 0.1); }
+          .idp-tag-src-manual { background: linear-gradient(135deg, #f0fdf4 0%, #d1fae5 100%); color: #15803d; border: 1px solid #bbf7d0; box-shadow: 0 2px 6px rgba(34, 197, 94, 0.1); }
           .idp-tag-section       { background: #fef9c3; color: #a16207; }
 
           .idp-close {
@@ -452,22 +476,61 @@ const BOQItemDetailPanel = ({
             padding: 0.5rem 0;
           }
 
+          .idp-overview-card { display: flex; flex-direction: column; gap: 0.85rem; padding: 1.15rem; border-radius: 14px; background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%); border: 1px solid #e2e8f0; box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03); }
+
+          .idp-overview-description {
+            margin: 0;
+            font-size: 0.82rem;
+            line-height: 1.6;
+            color: #334155;
+          }
+
+          .idp-overview-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+          }
+
+          .idp-overview-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.22rem 0.55rem;
+            border-radius: 999px;
+            background: #ffffff;
+            border: 1px solid #dbe4ee;
+            color: #334155;
+            font-size: 0.68rem;
+            font-weight: 700;
+          }
+
+          .idp-overview-chip-benchmark { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); color: #1d4ed8; border-color: #bfdbfe; box-shadow: 0 1px 4px rgba(59, 130, 246, 0.08); }
+
+          .idp-overview-chip-formula { background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); color: #6d28d9; border-color: #ddd6fe; box-shadow: 0 1px 4px rgba(139, 92, 246, 0.08); }
+
+          .idp-overview-chip-manual {
+            background: #f0fdf4;
+            color: #15803d;
+            border-color: #bbf7d0;
+          }
+
+          .idp-overview-chip-available {
+            background: #ecfdf5;
+            color: #15803d;
+            border-color: #bbf7d0;
+          }
+
+          .idp-overview-chip-muted {
+            background: #f8fafc;
+            color: #64748b;
+            border-color: #e2e8f0;
+          }
+
           /* ── Section ── */
           .idp-section {
             border-bottom: 1px solid #f1f5f9;
           }
 
-          .idp-section-header {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.75rem 1.25rem;
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #0f172a;
-          }
+          .idp-section-header { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 1.45rem; background: none; border: none; cursor: pointer; color: #0f172a; transition: background 0.15s ease; }
           .idp-section-header:hover { background: #f8fafc; }
 
           .idp-section-header-left {
@@ -478,12 +541,7 @@ const BOQItemDetailPanel = ({
 
           .idp-section-header strong { font-size: 0.85rem; }
 
-          .idp-section-body {
-            padding: 0 1.25rem 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-          }
+          .idp-section-body { padding: 0.25rem 1.45rem 1.25rem; display: flex; flex-direction: column; gap: 0.85rem; }
 
           /* ── Rate rows ── */
           .idp-rate-row {

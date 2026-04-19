@@ -1778,8 +1778,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         { key: 'description', letter: 'B', label: 'Description' },
         { key: 'unit', letter: 'C', label: 'Unit' },
         { key: 'quantity', letter: 'D', label: 'Quantity' },
-        { key: 'strategy', letter: 'E', label: 'Pricing Strategy' },
-        { key: 'rate', letter: 'F', label: 'Rate' },
+        { key: 'strategy', letter: 'E', label: 'Rate Source' },
+        { key: 'rate', letter: 'F', label: 'Unit Rate' },
         { key: 'amount', letter: 'G', label: 'Amount' },
         { key: 'actions', letter: 'H', label: 'Actions' },
       ];
@@ -2041,18 +2041,18 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                 <p>{workbookSubtitle} | {marketRegionDisplay} market benchmark | {activeSheetLabel}</p>
               </div>
               <div className="ws-summary-metrics-row">
-                <article className="ws-summary-metric">
+                <article className="ws-summary-metric ws-summary-metric-secondary">
                   <span className="ws-summary-badge">Current</span>
                   <span>Active Bill</span>
                   <strong>{activeProjectSection?.title || 'No active bill'}</strong>
                   <small>{activeSectionLineCount} line{activeSectionLineCount === 1 ? '' : 's'} · {activeCatalogSelectionCount} selected</small>
                 </article>
-                <article className="ws-summary-metric">
+                <article className="ws-summary-metric ws-summary-metric-secondary">
                   <span>Bill Subtotal</span>
                   <strong>N{activeSectionSubtotal.toLocaleString()}</strong>
                   <small>{activeSectionPendingItems > 0 ? `${activeSectionPendingItems} pending pricing review` : 'Current bill fully priced'}</small>
                 </article>
-                <article className="ws-summary-metric">
+                <article className="ws-summary-metric ws-summary-metric-tertiary">
                   <span>Pricing Coverage</span>
                   <strong>{workspaceAnalytics.pricingCoveragePercent.toFixed(0)}%</strong>
                   <small>{workspaceAnalytics.pricedItems}/{workspaceAnalytics.totalItems} items priced</small>
@@ -2802,7 +2802,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                   <th className="ws-th-sm">%</th>
                 </>
               ) : (
-                <th className="ws-th-strategy">STRATEGY</th>
+                <th className="ws-th-strategy">RATE SOURCE</th>
               )}
               <th className="ws-th-rate">Rate (₦)</th>
               <th className="ws-th-total">Amount (₦)</th>
@@ -2968,8 +2968,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                             </div>
                             <div className="ws-item-indicators">
                               <span className={`ws-state-pill ws-state-pill-${itemStatusMeta.tone}`}>{itemStatusMeta.label}</span>
-                              {hasFormulaOption && <span className="ws-state-pill ws-state-pill-info">Formula</span>}
-                              {hasBenchmarkRate && <span className="ws-state-pill ws-state-pill-info">Benchmark</span>}
+                              {hasFormulaOption && <span className="ws-availability-pill ws-availability-pill-formula">Formula</span>}
+                              {hasBenchmarkRate && <span className="ws-availability-pill ws-availability-pill-benchmark">Benchmark</span>}
                             </div>
                           </div>
                           <div className="ws-desc-inner">
@@ -3063,6 +3063,16 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                             onClick={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'strategy', itemCode, rowNumber: spreadsheetRowNumber })}
                           >
                             <div className="ws-rate-source-selector">
+                              <div className="ws-rate-source-current">
+                                <span className="ws-rate-source-current-label">Active</span>
+                                <span className={`ws-rate-source-current-pill ws-rate-source-current-pill-${selectedRateSource}`}>
+                                  {selectedRateSource === 'benchmark'
+                                    ? 'Benchmark'
+                                    : selectedRateSource === 'formula'
+                                      ? 'Formula'
+                                      : 'Manual'}
+                                </span>
+                              </div>
                               <div className="ws-rate-source-buttons">
                                 <button
                                   className={`ws-src-btn ws-src-btn-bm ${selectedRateSource === 'benchmark' ? 'active' : ''} ${!hasBenchmarkOption ? 'ws-src-btn-disabled' : ''}`}
@@ -3853,27 +3863,43 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           display: grid;
           grid-template-columns: 248px minmax(0, 1fr) 380px;
           gap: 1rem;
+          height: calc(100vh - 56px);
           min-height: 0;
-          align-items: start;
+          align-items: stretch;
+          overflow: hidden;
         }
         .ws-main-pane {
           min-width: 0;
+          min-height: 0;
           display: flex;
           flex-direction: column;
           gap: 1rem;
+          overflow-y: auto;
+          overflow-x: hidden;
+          scrollbar-width: thin;
+          scrollbar-color: #cbd5e1 transparent;
         }
+        .ws-main-pane::-webkit-scrollbar { width: 6px; }
+        .ws-main-pane::-webkit-scrollbar-track { background: transparent; }
+        .ws-main-pane::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .ws-main-pane::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         .ws-detail-dock {
           min-width: 0;
-          position: sticky;
-          top: 0.75rem;
-          align-self: start;
-          min-height: calc(100vh - 2rem);
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
           background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
           border: 1px solid #dbe3ef;
           border-radius: 26px;
           box-shadow: 0 20px 44px rgba(15, 23, 42, 0.08);
-          overflow: hidden;
+          overflow-y: auto;
+          overflow-x: hidden;
+          scrollbar-width: thin;
+          scrollbar-color: #cbd5e1 transparent;
         }
+        .ws-detail-dock::-webkit-scrollbar { width: 5px; }
+        .ws-detail-dock::-webkit-scrollbar-track { background: transparent; }
+        .ws-detail-dock::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         .ws-detail-dock.is-empty {
           display: flex;
           align-items: stretch;
@@ -3920,7 +3946,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           justify-content: center;
           gap: 0.75rem;
           padding: 1.4rem;
-          min-height: 100%;
+          flex: 1;
           background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
         }
         .ws-detail-empty strong {
@@ -4023,9 +4049,21 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           font-size: 0.76rem;
           line-height: 1.5;
         }
+        .ws-summary-metric-secondary {
+          background: #ffffff;
+        }
+        .ws-summary-metric-tertiary {
+          background: #f8fafc;
+          border-style: dashed;
+        }
+        .ws-summary-metric-tertiary strong {
+          font-size: 1.05rem;
+        }
         .ws-summary-metric-strong {
           background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
           border-color: #1e40af;
+          box-shadow: 0 18px 36px rgba(37, 99, 235, 0.22);
+          transform: translateY(-1px);
         }
         .ws-summary-metric-strong > span:not(.ws-summary-badge),
         .ws-summary-metric-strong strong,
@@ -4088,9 +4126,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           min-width: 0;
         }
         .ws-item-name {
-          font-size: 0.92rem;
+          font-size: 0.95rem;
           color: #0f172a;
-          line-height: 1.35;
+          line-height: 1.32;
+          letter-spacing: -0.01em;
         }
         .ws-item-code-pill {
           display: inline-flex;
@@ -4132,12 +4171,24 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           }
         }
         @media (max-width: 1180px) {
+          .ws-container {
+            height: auto;
+            max-height: none;
+            overflow: visible;
+          }
           .ws-workspace-shell {
             grid-template-columns: 1fr;
+            height: auto;
+            overflow: visible;
+          }
+          .ws-main-pane {
+            overflow-y: visible;
+            overflow-x: visible;
           }
           .ws-detail-dock {
             position: static;
             min-height: auto;
+            overflow-y: visible;
           }
           .ws-summary-actions-row,
           .ws-analytics-inline-card {
@@ -4260,7 +4311,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-workspace-body {
           display: flex;
           flex-direction: column;
+          flex: 1;
           min-height: 0;
+          overflow: hidden;
         }
         .ws-bill-tabs-shell {
           position: sticky;
@@ -4498,9 +4551,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-container {
           display: flex;
           flex-direction: column;
-          min-height: calc(100vh - 56px);
+          height: calc(100vh - 56px);
+          max-height: calc(100vh - 56px);
           background: #f1f5f9;
-          overflow: visible;
+          overflow: hidden;
         }
 
         .ws-mobile-summary,
@@ -5619,7 +5673,6 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           flex: 0 0 auto;
           overflow-y: visible;
           overflow-x: auto;
-          min-height: 60vh;
           background: #ffffff;
           border: 1px solid #dbe4ee;
           border-radius: 24px;
@@ -5828,7 +5881,11 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           border-bottom: 1px solid #f1f5f9;
           transition: background 0.15s, box-shadow 0.15s;
         }
+        .ws-item-row:nth-of-type(2n) td {
+          background: #fcfdff;
+        }
         .ws-item-row:hover { background: #f8fafc; }
+        .ws-item-row:hover td { background: #f8fafc; }
         .ws-item-row-selected {
           background: #f8fbff !important;
         }
@@ -5873,12 +5930,12 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           font-family: 'Inter', system-ui, monospace;
         }
         .ws-row-number {
-          font-size: 0.58rem;
+          font-size: 0.6rem;
           font-weight: 800;
           color: #94a3b8;
         }
         .ws-line-code {
-          font-size: 0.72rem;
+          font-size: 0.76rem;
           font-weight: 900;
           color: #334155;
         }
@@ -5914,6 +5971,29 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-state-pill-manual { background: #e2e8f0; color: #475569; }
         .ws-state-pill-warning { background: #ffedd5; color: #c2410c; }
         .ws-state-pill-info { background: #ecfdf5; color: #15803d; }
+        .ws-availability-pill {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.14rem 0.46rem;
+          border-radius: 999px;
+          font-size: 0.55rem;
+          font-weight: 900;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          white-space: nowrap;
+          border: 1px solid transparent;
+        }
+        .ws-availability-pill-formula {
+          background: #f5f3ff;
+          color: #6d28d9;
+          border-color: #ddd6fe;
+        }
+        .ws-availability-pill-benchmark {
+          background: #eff6ff;
+          color: #1d4ed8;
+          border-color: #bfdbfe;
+        }
         .ws-vo {
           font-size: 0.5rem; font-weight: 900;
           background: #fef3c7; color: #92400e;
@@ -6333,7 +6413,51 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-rate-source-selector {
           display: flex;
           flex-direction: column;
-          gap: 0.3rem;
+          gap: 0.4rem;
+        }
+
+        .ws-rate-source-current {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.4rem;
+        }
+
+        .ws-rate-source-current-label {
+          font-size: 0.58rem;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+
+        .ws-rate-source-current-pill {
+          display: inline-flex;
+          align-items: center;
+          padding: 0.18rem 0.5rem;
+          border-radius: 999px;
+          font-size: 0.62rem;
+          font-weight: 900;
+          border: 1px solid transparent;
+          white-space: nowrap;
+        }
+
+        .ws-rate-source-current-pill-benchmark {
+          background: #eff6ff;
+          color: #1d4ed8;
+          border-color: #bfdbfe;
+        }
+
+        .ws-rate-source-current-pill-formula {
+          background: #f5f3ff;
+          color: #6d28d9;
+          border-color: #ddd6fe;
+        }
+
+        .ws-rate-source-current-pill-manual {
+          background: #f0fdf4;
+          color: #15803d;
+          border-color: #bbf7d0;
         }
 
         .ws-src-btn {
@@ -6441,13 +6565,13 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
 
         /* ── SUBTOTAL ── */
-        .ws-subtotal-row { background: #f8fafc; }
+        .ws-subtotal-row { background: linear-gradient(180deg, #f8fafc 0%, #eef6ff 100%); }
         .ws-subtotal-val {
           text-align: right !important;
-          font-weight: 800; font-size: 0.75rem;
-          color: #334155;
-          padding: 0.375rem 0.625rem !important;
-          border-bottom: 2px solid #e2e8f0;
+          font-weight: 900; font-size: 0.78rem;
+          color: #1e293b;
+          padding: 0.7rem 0.85rem !important;
+          border-bottom: 2px solid #bfdbfe;
         }
 
         .ws-add-row td { padding: 0.25rem 0.625rem !important; background: #fafbfc; border-bottom: 2px solid #e2e8f0; }
@@ -7215,6 +7339,37 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
 
 
+          /* --- Polish Refinements --- */
+          .ws-table-row {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          .ws-table-row:hover {
+            background-color: #f8fafc !important;
+            border: 1px solid rgba(147, 197, 253, 0.6) !important;
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04) !important;
+            transform: translateY(-1px) !important;
+            z-index: 10 !important;
+          }
+          .ws-table-row.selected {
+            background: linear-gradient(90deg, #eff6ff 0%, #ffffff 100%) !important;
+            border-left: 4px solid #2563eb !important;
+            border-top: 1px solid rgba(59, 130, 246, 0.3) !important;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.3) !important;
+            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.08) !important;
+          }
+          .ws-table-cell {
+            font-family: 'Inter', system-ui, sans-serif !important;
+            letter-spacing: -0.01em;
+          }
+          .ws-rate-badge.benchmark { border: 1px solid #bfdbfe; background: linear-gradient(135deg, #eff6ff, #dbeafe) !important; }
+          .ws-rate-badge.formula { border: 1px solid #ddd6fe; background: linear-gradient(135deg, #f5f3ff, #ede9fe) !important; }
+          .ws-rate-badge.manual { border: 1px solid #bbf7d0; background: linear-gradient(135deg, #f0fdf4, #d1fae5) !important; }
+          
+          .ws-summary-strip {
+            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.04) !important;
+            border-bottom: 2px solid #e2e8f0 !important;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+          }
       `}</style>
     </div>
   );
