@@ -7339,7 +7339,6 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
 
 
-      `}
           /* --- Polish Refinements --- */
           .ws-table-row {
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -7371,8 +7370,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             border-bottom: 2px solid #e2e8f0 !important;
             background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
           }
-
-        </style>
+      `}</style>
     </div>
   );
 };
