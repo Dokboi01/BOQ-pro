@@ -1427,14 +1427,45 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     (sections || []).some((section) => (section.items || []).length > 0)
   ), [sections]);
   const isSelectionStage = !isCustomWorkspace && boqBuilder?.stage === 'selection';
-  const activeProjectSection = (sections || []).find((section) => section.id === activeBillSectionId) || sections[0] || null;
+  const workspaceVisibleSections = React.useMemo(() => {
+    if (isSelectionStage) {
+      return sections || [];
+    }
+
+    const visibleSections = (sections || []).filter((section) => {
+      const hasItems = (section.items || []).length > 0;
+      const hasCatalogDefinition = Boolean(getStructureSectionCatalog(projectStructureType, section.billSectionId));
+
+      return hasItems || !hasCatalogDefinition;
+    });
+
+    return visibleSections.length > 0 ? visibleSections : (sections || []);
+  }, [isSelectionStage, projectStructureType, sections]);
+  const activeProjectSection = workspaceVisibleSections.find((section) => section.id === activeBillSectionId) || workspaceVisibleSections[0] || null;
   const activeSectionMeta = activeProjectSection ? getSectionUiMeta(activeProjectSection) : null;
   const activeCatalogSection = activeProjectSection
     ? getStructureSectionCatalog(projectStructureType, activeProjectSection.billSectionId)
     : null;
   const workspaceSections = activeBillSectionId
-    ? (sections || []).filter((section) => section.id === activeBillSectionId)
-    : (sections || []);
+    ? workspaceVisibleSections.filter((section) => section.id === activeBillSectionId)
+    : workspaceVisibleSections;
+
+  React.useEffect(() => {
+    if (isSelectionStage || !workspaceVisibleSections.length) {
+      return;
+    }
+
+    const activeSectionStillVisible = workspaceVisibleSections.some((section) => section.id === activeBillSectionId);
+    if (!activeSectionStillVisible) {
+      const fallbackSectionId = workspaceVisibleSections[0].id;
+      setActiveBillSectionId(fallbackSectionId);
+      setBoqBuilder((prev) => (
+        prev
+          ? { ...prev, activeBillSectionId: fallbackSectionId }
+          : prev
+      ));
+    }
+  }, [activeBillSectionId, isSelectionStage, workspaceVisibleSections]);
 
   const matchesWorkspaceSearch = (section, item, sectionMeta, normalizedQuery) => {
     const haystack = [
@@ -1919,7 +1950,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const renderBillTabs = (mode = 'workspace') => (
     <div className={`ws-bill-tabs-shell ${mode === 'selection' ? 'selection' : 'workspace'}`}>
       <div className="ws-bill-tabs">
-        {(sections || []).map((section, index) => {
+        {(mode === 'selection' ? (sections || []) : workspaceVisibleSections).map((section, index) => {
           const isActive = activeBillSectionId === section.id;
           const sectionTotal = sectionTotalsBySection?.[section.id] || 0;
           const selectionCount = selectionCountsBySection?.[section.id] || 0;
