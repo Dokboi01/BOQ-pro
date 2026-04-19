@@ -373,7 +373,7 @@ const BOQItemDetailPanel = ({
           }
 
           .idp-panel-docked .idp-header {
-            padding: 1rem 1rem 0.9rem;
+            padding: 1.25rem 1.5rem;
           }
 
           .idp-panel-docked .idp-title {
@@ -389,7 +389,7 @@ const BOQItemDetailPanel = ({
             display: flex; 
             align-items: center; 
             justify-content: space-between; 
-            padding: 1.15rem 1.45rem; 
+            padding: 1.25rem 1.5rem; 
             background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%); 
             border: none; 
             cursor: pointer; 
@@ -397,10 +397,10 @@ const BOQItemDetailPanel = ({
             transition: background 0.15s ease; 
           }
 
-          .idp-panel-docked .idp-section-body { padding: 0.25rem 1.45rem 1.25rem; display: flex; flex-direction: column; gap: 0.85rem; }
+          .idp-panel-docked .idp-section-body { padding: 0.25rem 1.5rem 1.5rem; display: flex; flex-direction: column; gap: 0.85rem; }
 
           .idp-panel-docked .idp-footer {
-            padding: 0.8rem 1rem;
+            padding: 1.25rem 1.5rem;
             background: #ffffff;
           }
 

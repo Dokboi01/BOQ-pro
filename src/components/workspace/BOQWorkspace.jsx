@@ -3620,7 +3620,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         />
       </div>
           </div>
-          <aside className={`ws-detail-dock ${selectedItemContext ? 'has-selection' : 'is-empty'}`}>
+          <aside className={`ws-detail-dock right-panel ${selectedItemContext ? 'has-selection' : 'is-empty'}`}>
             {selectedItemContext ? (
               <>
                 <div className="ws-detail-dock-header">
@@ -3851,6 +3851,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           scrollbar-width: thin;
           scrollbar-color: #cbd5e1 transparent;
         }
+        .right-panel {
+          padding: 0; /* Children handle internal padding for alignment */
+        }
         .ws-detail-dock::-webkit-scrollbar { width: 5px; }
         .ws-detail-dock::-webkit-scrollbar-track { background: transparent; }
         .ws-detail-dock::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
@@ -3862,7 +3865,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           display: flex;
           flex-direction: column;
           gap: 0.9rem;
-          padding: 1rem 1rem 0.95rem;
+          padding: 1.25rem 1.5rem;
           border-bottom: 1px solid #e2e8f0;
           background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
         }
@@ -3899,7 +3902,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           flex-direction: column;
           justify-content: center;
           gap: 0.75rem;
-          padding: 1.4rem;
+          padding: 1.5rem;
           flex: 1;
           background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
         }
