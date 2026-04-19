@@ -3922,6 +3922,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           gap: 0.6rem;
         }
         .ws-summary-strip {
+          min-width: 0;
           display: flex;
           flex-direction: column;
           gap: 1.05rem;
@@ -5627,7 +5628,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
         /* ── TABLE ── */
         .ws-table-wrap {
-          flex: 0 0 auto;
+          flex: 1 1 auto;
+          min-width: 0;
           overflow-y: visible;
           overflow-x: auto;
           background: #ffffff;
@@ -5974,6 +5976,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-input:focus { background: white; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,0.08); }
 
         .ws-desc-input {
+          width: 100%;
+          max-width: 100%;
           min-height: 3.45rem;
           font-weight: 600;
           line-height: 1.45;
