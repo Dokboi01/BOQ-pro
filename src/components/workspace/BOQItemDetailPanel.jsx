@@ -338,9 +338,35 @@ const BOQItemDetailPanel = ({
             width: 100%;
             height: 100%;
             min-height: 0;
-            border-left: 1px solid #e2e8f0;
-            border-radius: 24px 0 0 24px;
-            box-shadow: -10px 0 32px rgba(15, 23, 42, 0.08);
+            border-left: none;
+            border-radius: 0;
+            box-shadow: none;
+            background: transparent;
+          }
+
+          .idp-panel-docked .idp-header {
+            padding: 1rem 1rem 0.9rem;
+          }
+
+          .idp-panel-docked .idp-title {
+            font-size: 1rem;
+          }
+
+          .idp-panel-docked .idp-body {
+            padding-top: 0.2rem;
+          }
+
+          .idp-panel-docked .idp-section-header {
+            padding: 0.8rem 1rem;
+          }
+
+          .idp-panel-docked .idp-section-body {
+            padding: 0 1rem 0.95rem;
+          }
+
+          .idp-panel-docked .idp-footer {
+            padding: 0.8rem 1rem;
+            background: #ffffff;
           }
 
           .idp-header {
