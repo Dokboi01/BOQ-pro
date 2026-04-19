@@ -11,6 +11,7 @@ import ProjectNotesAccordion from './ProjectNotesAccordion';
 import BOQFormulaModal from './BOQFormulaModal';
 import BOQItemDetailPanel from './BOQItemDetailPanel';
 import BOQSelectionStage from './BOQSelectionStage';
+import BOQBillPanel from './BOQBillPanel';
 import { getMaterials } from '../../db/database';
 import {
   cloneCatalogItemToProjectItem,
@@ -2019,6 +2020,81 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   return (
     <div className="ws-container">
       <div className="ws-workspace-body">
+        <div className="ws-workspace-shell">
+          <BOQBillPanel
+            sections={workspaceVisibleSections}
+            activeSectionId={activeBillSectionId}
+            sectionTotalsBySection={sectionTotalsBySection}
+            selectionCountsBySection={selectionCountsBySection}
+            onSelectBill={scrollToSection}
+          />
+          <div className="ws-main-pane">
+            <div className="ws-summary-strip">
+              <div className="ws-summary-headline">
+                <span className="ws-workbook-eyebrow">BOQ-Pro Workbook</span>
+                <div className="ws-summary-title-row">
+                  <h1>{project?.name || 'Untitled Project'}</h1>
+                  <span className={`ws-workbook-health ws-workbook-health-${benchmarkWorkspaceHealth.tone}`}>
+                    {benchmarkWorkspaceHealth.label}
+                  </span>
+                </div>
+                <p>{workbookSubtitle} | {marketRegionDisplay} market benchmark | {activeSheetLabel}</p>
+              </div>
+              <div className="ws-summary-metrics-row">
+                <article className="ws-summary-metric">
+                  <span>Active Bill</span>
+                  <strong>{activeProjectSection?.title || 'No active bill'}</strong>
+                  <small>{activeSectionLineCount} line{activeSectionLineCount === 1 ? '' : 's'} · {activeCatalogSelectionCount} selected</small>
+                </article>
+                <article className="ws-summary-metric">
+                  <span>Bill Subtotal</span>
+                  <strong>N{activeSectionSubtotal.toLocaleString()}</strong>
+                  <small>{activeSectionPendingItems > 0 ? `${activeSectionPendingItems} pending pricing review` : 'Current bill fully priced'}</small>
+                </article>
+                <article className="ws-summary-metric">
+                  <span>Pricing Coverage</span>
+                  <strong>{workspaceAnalytics.pricingCoveragePercent.toFixed(0)}%</strong>
+                  <small>{workspaceAnalytics.pricedItems}/{workspaceAnalytics.totalItems} items priced</small>
+                </article>
+                <article className="ws-summary-metric ws-summary-metric-strong">
+                  <span>Project Grand Total</span>
+                  <strong>N{calculateGrandTotal.toLocaleString()}</strong>
+                  <small>{marketRegionDisplay} basis · {workspaceAnalytics.benchmarkItems} benchmark-backed items</small>
+                </article>
+              </div>
+              <div className="ws-summary-actions-row">
+                <div className="ws-sheet-tabbar ws-sheet-tabbar-compact">
+                  <button
+                    className={`ws-sheet-tab ${viewMode === 'estimation' ? 'active' : ''}`}
+                    onClick={() => setViewMode('estimation')}
+                  >
+                    Estimate Sheet
+                  </button>
+                  <button
+                    className={`ws-sheet-tab ${viewMode === 'valuation' ? 'active' : ''}`}
+                    onClick={() => setViewMode('valuation')}
+                  >
+                    Valuation Sheet
+                  </button>
+                  <div className="ws-sheet-tabbar-meta">
+                    <span className="ws-sheet-meta-chip">{project?.region || 'Lagos'} Region</span>
+                    <span className="ws-sheet-meta-chip">{workspaceAnalytics.benchmarkItems} Benchmark Items</span>
+                    <span className="ws-sheet-meta-chip">{workspaceAnalytics.customItems} Custom Items</span>
+                  </div>
+                </div>
+                <div className="ws-summary-actions">
+                  <button className={`ws-analytics-toggle ${showAnalytics ? 'active' : ''}`} onClick={() => setShowAnalytics(!showAnalytics)}>
+                    {showAnalytics ? 'Hide Analytics' : 'Workspace Analytics'}
+                  </button>
+                  <button className="ws-head-action" onClick={() => enterSelectionStage(activeBillSectionId || sections[0]?.id)}>
+                    <Plus size={13} /> Edit BOQ Selection
+                  </button>
+                  <button className="ws-head-action ws-head-action-strong" onClick={refreshBenchmarks}>
+                    <RefreshCcw size={13} /> Refresh Benchmarks
+                  </button>
+                </div>
+              </div>
+            </div>
       <div className="ws-workbook-top">
         <div className="ws-workbook-head">
           <div className="ws-workbook-copy">
@@ -2882,10 +2958,21 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                           className={`ws-desc ${isWorkspaceCellSelected(section.id, item.id, 'description') ? 'ws-cell-selected' : ''}`}
                           onClick={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'description', itemCode, rowNumber: spreadsheetRowNumber })}
                         >
+                          <div className="ws-item-heading-row">
+                            <div className="ws-item-heading-copy">
+                              <strong className="ws-item-name">{item.name || item.description || 'Untitled BOQ item'}</strong>
+                              <span className="ws-item-code-pill">{item.code || itemCode}</span>
+                            </div>
+                            <div className="ws-item-indicators">
+                              <span className={`ws-state-pill ws-state-pill-${itemStatusMeta.tone}`}>{itemStatusMeta.label}</span>
+                              {hasFormulaOption && <span className="ws-state-pill ws-state-pill-info">Formula</span>}
+                              {hasBenchmarkRate && <span className="ws-state-pill ws-state-pill-info">Benchmark</span>}
+                            </div>
+                          </div>
                           <div className="ws-desc-inner">
                             {item.isVO && <span className="ws-vo">VO</span>}
                             <textarea
-                              rows={3}
+                              rows={2}
                               className="ws-input ws-desc-input"
                               value={item.description}
                               onChange={(e) => updateItem(section.id, item.id, 'description', e.target.value)}
@@ -2893,33 +2980,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                             />
                             {outlier && <AlertCircle size={11} className="ws-outlier-icon" title="Rate variance detected" />}
                           </div>
-                          <div className="ws-item-meta-row">
-                            <input
-                              type="text"
-                              className="ws-input ws-meta-input"
-                              value={item.subcategory || ''}
-                              onChange={(e) => updateItem(section.id, item.id, 'subcategory', e.target.value)}
-                              placeholder="Subcategory"
-                            />
-                            <input
-                              type="text"
-                              className="ws-input ws-meta-input"
-                              value={(item.materials || []).join(', ')}
-                              onChange={(e) => {
-                                const parsed = e.target.value
-                                  .split(',')
-                                  .map((entry) => entry.trim())
-                                  .filter(Boolean);
-                                updateItem(section.id, item.id, 'materials', parsed);
-                              }}
-                              placeholder="Materials (comma separated)"
-                            />
-                          </div>
-                          <div className="ws-status-row">
-                            <span className={`ws-state-pill ws-state-pill-${itemStatusMeta.tone}`}>{itemStatusMeta.label}</span>
-                            {selectedRateSource === 'benchmark' && hasBenchmarkRate && (
-                              <span className="ws-state-pill ws-state-pill-info">Auto amount on quantity entry</span>
-                            )}
+                          <div className="ws-item-secondary">
+                            {item.subcategory ? `Subcategory: ${item.subcategory}` : 'Description focused row editing'}
                           </div>
                         </td>
                         <td
@@ -3590,6 +3652,80 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           onChange={(updates) => onUpdate(project.id, sections, project.region, updates)}
         />
       </div>
+          </div>
+          <aside className={`ws-detail-dock ${selectedItemContext ? 'has-selection' : 'is-empty'}`}>
+            {selectedItemContext ? (
+              <>
+                <div className="ws-detail-dock-header">
+                  <div className="ws-detail-dock-copy">
+                    <span className="ws-detail-dock-eyebrow">Selected Row</span>
+                    <strong>{selectedItemContext.itemCode} · {selectedItemContext.item.name || selectedItemContext.item.description || 'Untitled BOQ item'}</strong>
+                    <small>
+                      {selectedItemContext.section.title} · Qty {selectedItemContext.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} · Rate N{selectedItemContext.unitRate.toLocaleString()} · Amount N{selectedItemContext.total.toLocaleString()}
+                    </small>
+                  </div>
+                  <div className="ws-detail-dock-actions">
+                    <button
+                      className="ws-helper-btn"
+                      onClick={() => setCalculatingQtyForItem({ sectionId: selectedItemContext.section.id, item: selectedItemContext.item })}
+                    >
+                      <Calculator size={12} /> Takeoff
+                    </button>
+                    {isFormulaDrivenItem(selectedItemContext.item) && (
+                      <button
+                        className="ws-helper-btn"
+                        onClick={() => openFormulaEditor(selectedItemContext.section.id, selectedItemContext.item)}
+                      >
+                        fx Formula
+                      </button>
+                    )}
+                    <button
+                      className="ws-helper-btn"
+                      onClick={() => openDetailedAnalysis(selectedItemContext.section.id, selectedItemContext.item)}
+                    >
+                      <Pencil size={12} /> Analysis
+                    </button>
+                    <button
+                      className="ws-helper-btn"
+                      onClick={() => setSelectedCell(null)}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+                <BOQItemDetailPanel
+                  variant="docked"
+                  item={selectedItemContext.item}
+                  section={selectedItemContext.section}
+                  benchmarkRate={selectedItemContext.benchmarkRate}
+                  formulaRate={selectedItemContext.item.formulaCalculatedRate || 0}
+                  resolvedUnitRate={selectedItemContext.unitRate}
+                  selectedRateSource={resolveItemRateSource(selectedItemContext.item)}
+                  onClose={() => setSelectedCell(null)}
+                  onNotesChange={(notes) => updateItem(selectedItemContext.section.id, selectedItemContext.item.id, 'notes', notes)}
+                  onOpenFormulaEditor={isFormulaDrivenItem(selectedItemContext.item) ? () => openFormulaEditor(selectedItemContext.section.id, selectedItemContext.item) : null}
+                />
+              </>
+            ) : (
+              <div className="ws-detail-empty">
+                <span className="ws-detail-empty-eyebrow">Item Intelligence Panel</span>
+                <strong>Select a BOQ row to inspect its pricing logic.</strong>
+                <p>
+                  Formula text, pricing basis, benchmark metadata, worked examples, and notes will appear here
+                  without cluttering the main estimate sheet.
+                </p>
+                <div className="ws-detail-empty-actions">
+                  <button className="ws-btn ws-btn-primary" onClick={() => enterSelectionStage(activeBillSectionId || sections[0]?.id)}>
+                    <Plus size={14} /> Edit Bill Selection
+                  </button>
+                  <button className="ws-btn ws-btn-ghost" onClick={refreshBenchmarks}>
+                    <RefreshCcw size={14} /> Refresh Benchmarks
+                  </button>
+                </div>
+              </div>
+            )}
+          </aside>
+        </div>
       </div>
 
       {/* Modals */}
@@ -3710,6 +3846,288 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       <style jsx="true">{`
 
         /* --- NEW COMPACT LAYOUT STYLES --- */
+        .ws-workspace-shell {
+          display: grid;
+          grid-template-columns: 248px minmax(0, 1fr) 380px;
+          gap: 1rem;
+          min-height: 0;
+          align-items: start;
+        }
+        .ws-main-pane {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+        .ws-detail-dock {
+          min-width: 0;
+          position: sticky;
+          top: 0.75rem;
+          align-self: start;
+          min-height: calc(100vh - 2rem);
+          background: #ffffff;
+          border: 1px solid #dbe3ef;
+          border-radius: 24px;
+          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+          overflow: hidden;
+        }
+        .ws-detail-dock.is-empty {
+          display: flex;
+          align-items: stretch;
+        }
+        .ws-detail-dock-header {
+          display: flex;
+          flex-direction: column;
+          gap: 0.85rem;
+          padding: 1rem 1rem 0.85rem;
+          border-bottom: 1px solid #e2e8f0;
+          background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+        }
+        .ws-detail-dock-copy {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+        }
+        .ws-detail-dock-eyebrow,
+        .ws-detail-empty-eyebrow {
+          font-size: 0.68rem;
+          font-weight: 800;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+        .ws-detail-dock-copy strong {
+          font-size: 0.96rem;
+          color: #0f172a;
+          line-height: 1.4;
+        }
+        .ws-detail-dock-copy small {
+          color: #64748b;
+          font-size: 0.76rem;
+          line-height: 1.5;
+        }
+        .ws-detail-dock-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.45rem;
+        }
+        .ws-detail-empty {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          gap: 0.75rem;
+          padding: 1.4rem;
+          min-height: 100%;
+          background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+        }
+        .ws-detail-empty strong {
+          color: #0f172a;
+          font-size: 1rem;
+        }
+        .ws-detail-empty p {
+          margin: 0;
+          color: #64748b;
+          font-size: 0.84rem;
+          line-height: 1.6;
+        }
+        .ws-detail-empty-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.6rem;
+        }
+        .ws-summary-strip {
+          display: flex;
+          flex-direction: column;
+          gap: 0.95rem;
+          padding: 1rem 1.1rem;
+          border: 1px solid #dbe3ef;
+          border-radius: 24px;
+          background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+          box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
+        }
+        .ws-summary-headline {
+          display: flex;
+          flex-direction: column;
+          gap: 0.32rem;
+        }
+        .ws-summary-title-row {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+        }
+        .ws-summary-title-row h1 {
+          margin: 0;
+          font-size: 2rem;
+          line-height: 1.05;
+          color: #0f172a;
+        }
+        .ws-summary-headline p {
+          margin: 0;
+          color: #64748b;
+          font-size: 0.88rem;
+        }
+        .ws-summary-metrics-row {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 0.8rem;
+        }
+        .ws-summary-metric {
+          display: flex;
+          flex-direction: column;
+          gap: 0.2rem;
+          padding: 0.95rem 1rem;
+          border-radius: 18px;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+        }
+        .ws-summary-metric span {
+          font-size: 0.7rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          color: #64748b;
+        }
+        .ws-summary-metric strong {
+          font-size: 1.2rem;
+          color: #0f172a;
+          line-height: 1.2;
+        }
+        .ws-summary-metric small {
+          color: #64748b;
+          font-size: 0.76rem;
+          line-height: 1.5;
+        }
+        .ws-summary-metric-strong {
+          background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
+          border-color: #1e40af;
+        }
+        .ws-summary-metric-strong span,
+        .ws-summary-metric-strong strong,
+        .ws-summary-metric-strong small {
+          color: #ffffff;
+        }
+        .ws-summary-actions-row {
+          display: flex;
+          justify-content: space-between;
+          gap: 1rem;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+        .ws-summary-actions {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          flex-wrap: wrap;
+        }
+        .ws-sheet-tabbar-compact {
+          margin: 0;
+          padding: 0;
+          border: none;
+          background: transparent;
+        }
+        .ws-analytics-inline-card {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 1rem;
+          padding: 0.9rem 1rem;
+          border-radius: 18px;
+          border: 1px solid #dbeafe;
+          background: #eff6ff;
+        }
+        .ws-analytics-inline-copy {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+        }
+        .ws-analytics-inline-copy strong {
+          color: #1e3a8a;
+          font-size: 0.88rem;
+        }
+        .ws-analytics-inline-copy small {
+          color: #475569;
+          font-size: 0.76rem;
+        }
+        .ws-item-heading-row {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 0.75rem;
+          margin-bottom: 0.45rem;
+        }
+        .ws-item-heading-copy {
+          display: flex;
+          flex-direction: column;
+          gap: 0.3rem;
+          min-width: 0;
+        }
+        .ws-item-name {
+          font-size: 0.92rem;
+          color: #0f172a;
+          line-height: 1.35;
+        }
+        .ws-item-code-pill {
+          display: inline-flex;
+          align-items: center;
+          width: fit-content;
+          padding: 0.2rem 0.5rem;
+          border-radius: 999px;
+          background: #eff6ff;
+          color: #1d4ed8;
+          font-size: 0.68rem;
+          font-weight: 800;
+        }
+        .ws-item-indicators {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+          gap: 0.35rem;
+        }
+        .ws-item-secondary {
+          margin-top: 0.35rem;
+          font-size: 0.72rem;
+          color: #64748b;
+          line-height: 1.5;
+        }
+        .ws-workbook-top,
+        .ws-workspace-command-center,
+        .ws-bill-tabs-shell.workspace,
+        .ws-analytics-board,
+        .ws-mobile-summary {
+          display: none !important;
+        }
+        @media (max-width: 1500px) {
+          .ws-workspace-shell {
+            grid-template-columns: 228px minmax(0, 1fr) 340px;
+          }
+          .ws-summary-metrics-row {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+        @media (max-width: 1180px) {
+          .ws-workspace-shell {
+            grid-template-columns: 1fr;
+          }
+          .ws-detail-dock {
+            position: static;
+            min-height: auto;
+          }
+          .ws-summary-actions-row,
+          .ws-analytics-inline-card {
+            flex-direction: column;
+            align-items: stretch;
+          }
+        }
+        @media (max-width: 768px) {
+          .ws-summary-metrics-row {
+            grid-template-columns: 1fr;
+          }
+          .ws-summary-title-row h1 {
+            font-size: 1.45rem;
+          }
+        }
         .ws-workbook-metrics-compact {
           display: flex;
           align-items: center;
