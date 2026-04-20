@@ -3933,12 +3933,16 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           min-width: 0;
           display: flex;
           flex-direction: column;
-          gap: 1.05rem;
-          padding: 1.05rem 1.15rem 1.15rem;
-          border: 1px solid #dbe3ef;
+          gap: 0.6rem;
+          padding: 0;
+          border: none;
           border-radius: 26px;
-          background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-          box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
+          background: transparent;
+          box-shadow: none;
+        }
+        .ws-summary-headline,
+        .ws-summary-metrics-row {
+          display: none;
         }
         .ws-summary-headline {
           display: flex;
@@ -4041,6 +4045,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           gap: 1rem;
           align-items: center;
           flex-wrap: wrap;
+          padding: 0;
         }
         .ws-summary-actions {
           display: flex;
@@ -7405,12 +7410,11 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             gap: 1.15rem !important;
           }
           .ws-summary-strip {
-            border: 1px solid #dbe4ee !important;
-            border-bottom: 1px solid #dbe4ee !important;
-            border-radius: 28px !important;
-            box-shadow: 0 20px 42px rgba(15, 23, 42, 0.08), 0 6px 16px rgba(15, 23, 42, 0.04) !important;
-            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
-            padding: 1.15rem 1.2rem 1.2rem !important;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            background: transparent !important;
+            padding: 0 !important;
           }
           .ws-summary-headline {
             gap: 0.45rem !important;
@@ -7450,8 +7454,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           .ws-summary-metric-strong small { color: rgba(255, 255, 255, 0.78) !important; }
           .ws-summary-metric-strong span:first-child { color: rgba(255, 255, 255, 0.82) !important; }
           .ws-summary-actions-row {
-            padding-top: 0.45rem !important;
-            border-top: 1px solid rgba(226, 232, 240, 0.95) !important;
+            padding-top: 0 !important;
+            border-top: none !important;
           }
           .ws-sheet-tabbar-compact {
             padding: 0.38rem !important;
