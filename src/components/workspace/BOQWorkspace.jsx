@@ -2032,40 +2032,6 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           />
           <div className="ws-main-pane">
             <div className="ws-summary-strip">
-              <div className="ws-summary-headline">
-                <span className="ws-workbook-eyebrow">BOQ-Pro Workbook</span>
-                <div className="ws-summary-title-row">
-                  <h1>{project?.name || 'Untitled Project'}</h1>
-                  <span className={`ws-workbook-health ws-workbook-health-${benchmarkWorkspaceHealth.tone}`}>
-                    {benchmarkWorkspaceHealth.label}
-                  </span>
-                </div>
-                <p>{workbookSubtitle} | {marketRegionDisplay} market benchmark | {activeSheetLabel}</p>
-              </div>
-              <div className="ws-summary-metrics-row">
-                <article className="ws-summary-metric ws-summary-metric-secondary">
-                  <span className="ws-summary-badge">Current</span>
-                  <span>Active Bill</span>
-                  <strong>{activeProjectSection?.title || 'No active bill'}</strong>
-                  <small>{activeSectionLineCount} line{activeSectionLineCount === 1 ? '' : 's'} · {activeCatalogSelectionCount} selected</small>
-                </article>
-                <article className="ws-summary-metric ws-summary-metric-secondary">
-                  <span>Bill Subtotal</span>
-                  <strong>N{activeSectionSubtotal.toLocaleString()}</strong>
-                  <small>{activeSectionPendingItems > 0 ? `${activeSectionPendingItems} pending pricing review` : 'Current bill fully priced'}</small>
-                </article>
-                <article className="ws-summary-metric ws-summary-metric-tertiary">
-                  <span>Pricing Coverage</span>
-                  <strong>{workspaceAnalytics.pricingCoveragePercent.toFixed(0)}%</strong>
-                  <small>{workspaceAnalytics.pricedItems}/{workspaceAnalytics.totalItems} items priced</small>
-                </article>
-                <article className="ws-summary-metric ws-summary-metric-strong">
-                  <span className="ws-summary-badge ws-summary-badge-strong">Total</span>
-                  <span>Project Grand Total</span>
-                  <strong>N{calculateGrandTotal.toLocaleString()}</strong>
-                  <small>{marketRegionDisplay} basis · {workspaceAnalytics.benchmarkItems} benchmark-backed items</small>
-                </article>
-              </div>
               <div className="ws-summary-actions-row">
                 <div className="ws-sheet-tabbar ws-sheet-tabbar-compact">
                   <button
