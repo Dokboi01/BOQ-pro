@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useToast } from '../ui/useToast';
 import { useAuth } from '../../context/useAuth';
 import RateAnalysisModal from './RateAnalysisModal';
@@ -396,7 +396,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     const benchmarkRate = sanitizeNonNegativeNumber(item.benchmarkRate ?? item.benchmark);
     // Backward-compat shim: derive selectedRateSource from legacy flags if missing
     const selectedRateSource = resolveItemRateSource(item);
-    // Manual rate — prefer explicit manualRate field
+    // Manual rate â€” prefer explicit manualRate field
     const manualRate = sanitizeNonNegativeNumber(item.manualRate ?? (selectedRateSource === 'manual' ? (item.unitRate ?? item.rate) : 0));
     // Resolve the active unit rate from the tri-modal source
     const resolvedUnitRate = selectedRateSource === 'benchmark'
@@ -956,7 +956,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       benchmarkRateUpdates > 0 ? `${benchmarkRateUpdates} live benchmark amount${benchmarkRateUpdates === 1 ? '' : 's'} updated` : '',
       referenceOnlyUpdates > 0 ? `${referenceOnlyUpdates} custom/manual item${referenceOnlyUpdates === 1 ? '' : 's'} kept their saved rate` : '',
       newBenchmarkLinks > 0 ? `${newBenchmarkLinks} item${newBenchmarkLinks === 1 ? '' : 's'} gained a fresh benchmark link` : '',
-    ].filter(Boolean).join(' · ');
+    ].filter(Boolean).join(' Â· ');
 
     toast.success(summary);
 
@@ -1101,7 +1101,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       segments.push(item.customPricing.supplierQuote);
     }
 
-    return segments.join(' • ');
+    return segments.join(' â€¢ ');
   };
 
   const formatEvidenceUpdatedLabel = (value) => {
@@ -1208,7 +1208,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
     if (selectedRateSource === 'benchmark' && benchmarkRate <= 0) {
       return {
-        text: 'No benchmark rate available — switch to custom pricing.',
+        text: 'No benchmark rate available â€” switch to custom pricing.',
         tone: 'warning'
       };
     }
@@ -1250,7 +1250,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     if (selectedRateSource === 'benchmark') {
       if (benchmarkRate <= 0) {
         return {
-          title: 'No benchmark rate available — switch to custom pricing',
+          title: 'No benchmark rate available â€” switch to custom pricing',
           detail: `This item is not yet covered by the ${marketRegionLabel} market benchmark.`,
           tone: 'warning'
         };
@@ -1258,7 +1258,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
       return {
         title: 'Auto-priced using current market benchmark',
-        detail: `Amount = Quantity × ${marketRegionLabel} market benchmark.`,
+        detail: `Amount = Quantity Ã— ${marketRegionLabel} market benchmark.`,
         tone: 'success'
       };
     }
@@ -1353,7 +1353,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       return null;
     }
 
-    return `Amount = ${quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} × ₦${rate.toLocaleString()}`;
+    return `Amount = ${quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} Ã— â‚¦${rate.toLocaleString()}`;
   };
 
   const getQuantityDisplayValue = (item) => {
@@ -1960,7 +1960,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           const itemCount = (section.items || []).length;
           const meta = mode === 'selection'
             ? `${selectionCount} selected`
-            : `${itemCount} line${itemCount === 1 ? '' : 's'}${sectionTotal > 0 ? ` · N${sectionTotal.toLocaleString()}` : ''}`;
+            : `${itemCount} line${itemCount === 1 ? '' : 's'}${sectionTotal > 0 ? ` Â· N${sectionTotal.toLocaleString()}` : ''}`;
 
           return (
             <button
@@ -2047,7 +2047,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                   <span className="ws-summary-badge">Current</span>
                   <span>Active Bill</span>
                   <strong>{activeProjectSection?.title || 'No active bill'}</strong>
-                  <small>{activeSectionLineCount} line{activeSectionLineCount === 1 ? '' : 's'} · {activeCatalogSelectionCount} selected</small>
+                  <small>{activeSectionLineCount} line{activeSectionLineCount === 1 ? '' : 's'} Â· {activeCatalogSelectionCount} selected</small>
                 </article>
                 <article className="ws-summary-metric ws-summary-metric-secondary">
                   <span>Bill Subtotal</span>
@@ -2063,7 +2063,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                   <span className="ws-summary-badge ws-summary-badge-strong">Total</span>
                   <span>Project Grand Total</span>
                   <strong>N{calculateGrandTotal.toLocaleString()}</strong>
-                  <small>{marketRegionDisplay} basis · {workspaceAnalytics.benchmarkItems} benchmark-backed items</small>
+                  <small>{marketRegionDisplay} basis Â· {workspaceAnalytics.benchmarkItems} benchmark-backed items</small>
                 </article>
               </div>
               <div className="ws-summary-actions-row">
@@ -2116,17 +2116,17 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
               <article className="ws-head-stat-card">
                 <span>Active Bill</span>
                 <strong>{activeProjectSection?.title || 'No active bill'}</strong>
-                <small>{activeSectionLineCount} line{activeSectionLineCount === 1 ? '' : 's'} · {activeCatalogSelectionCount} selected for this bill</small>
+                <small>{activeSectionLineCount} line{activeSectionLineCount === 1 ? '' : 's'} Â· {activeCatalogSelectionCount} selected for this bill</small>
               </article>
               <article className="ws-head-stat-card">
                 <span>Pricing Coverage</span>
                 <strong>{workspaceAnalytics.pricingCoveragePercent.toFixed(0)}%</strong>
-                <small>{workspaceAnalytics.pricedItems}/{workspaceAnalytics.totalItems} items priced · {activeSectionPendingItems} pending in active bill</small>
+                <small>{workspaceAnalytics.pricedItems}/{workspaceAnalytics.totalItems} items priced Â· {activeSectionPendingItems} pending in active bill</small>
               </article>
               <article className="ws-head-stat-card ws-head-stat-card-strong">
                 <span>Project Total</span>
                 <strong>N{calculateGrandTotal.toLocaleString()}</strong>
-                <small>{marketRegionDisplay} market basis · {workspaceAnalytics.benchmarkItems} benchmark-backed items</small>
+                <small>{marketRegionDisplay} market basis Â· {workspaceAnalytics.benchmarkItems} benchmark-backed items</small>
               </article>
             </div>
             <div className="ws-workbook-actions">
@@ -2174,7 +2174,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           <strong className="ws-cost-value">{activeProjectSection?.title || 'No active bill'}</strong>
           <small className="ws-cost-meta">
             {activeProjectSection
-              ? `${activeSectionLineCount} line${activeSectionLineCount === 1 ? '' : 's'} · Qty ${activeSectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+              ? `${activeSectionLineCount} line${activeSectionLineCount === 1 ? '' : 's'} Â· Qty ${activeSectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
               : 'Choose a bill section to start measuring'}
           </small>
         </div>
@@ -2191,14 +2191,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           <span className="ws-cost-label">{isFilteredView ? `${activeWorkspaceFilterLabel} View` : 'Visible Sheet Total'}</span>
           <strong className="ws-cost-value">N{visibleGrandTotal.toLocaleString()}</strong>
           <small className="ws-cost-meta">
-            {filteredSectionCount} visible bill{filteredSectionCount === 1 ? '' : 's'} · {filteredItemCount} visible item{filteredItemCount === 1 ? '' : 's'}
+            {filteredSectionCount} visible bill{filteredSectionCount === 1 ? '' : 's'} Â· {filteredItemCount} visible item{filteredItemCount === 1 ? '' : 's'}
           </small>
         </div>
         <div className="ws-cost-card ws-cost-card-total">
           <span className="ws-cost-label">Project Grand Total</span>
           <strong className="ws-cost-value">N{calculateGrandTotal.toLocaleString()}</strong>
           <small className="ws-cost-meta">
-            {project?.region || 'Lagos'} market basis · {workspaceAnalytics.totalItems} measured item{workspaceAnalytics.totalItems === 1 ? '' : 's'}
+            {project?.region || 'Lagos'} market basis Â· {workspaceAnalytics.totalItems} measured item{workspaceAnalytics.totalItems === 1 ? '' : 's'}
           </small>
         </div>
       </div>
@@ -2219,7 +2219,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             <>
               <div className="ws-helper-copy">
                 <span className="ws-helper-label">Selected Row</span>
-                <strong>{selectedItemContext.itemCode} · {selectedItemContext.item.name || selectedItemContext.item.description || 'Untitled BOQ item'}</strong>
+                <strong>{selectedItemContext.itemCode} Â· {selectedItemContext.item.name || selectedItemContext.item.description || 'Untitled BOQ item'}</strong>
                 <small>
                   {selectedItemContext.section.title} | Qty {selectedItemContext.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} | Rate N{selectedItemContext.unitRate.toLocaleString()} | Amount N{selectedItemContext.total.toLocaleString()}
                 </small>
@@ -2319,14 +2319,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           <strong className="ws-insight-value">{workspaceAnalytics.pricingCoveragePercent.toFixed(0)}%</strong>
           <p className="ws-insight-copy">
             {workspaceAnalytics.pricedItems} of {workspaceAnalytics.totalItems} items priced
-            {workspaceAnalytics.benchmarkItems > 0 ? ` · ${workspaceAnalytics.benchmarkItems} auto-priced from benchmark` : ''}
-            {workspaceAnalytics.unpricedItems > 0 ? ` · ${workspaceAnalytics.unpricedItems} still need review` : ' · full coverage reached'}
+            {workspaceAnalytics.benchmarkItems > 0 ? ` Â· ${workspaceAnalytics.benchmarkItems} auto-priced from benchmark` : ''}
+            {workspaceAnalytics.unpricedItems > 0 ? ` Â· ${workspaceAnalytics.unpricedItems} still need review` : ' Â· full coverage reached'}
           </p>
         </div>
         <div className="ws-insight-card">
           <span className="ws-insight-label">Benchmark Automation</span>
           <strong className="ws-insight-value">
-            {workspaceAnalytics.benchmarkItems} live · {workspaceAnalytics.customItems} override
+            {workspaceAnalytics.benchmarkItems} live Â· {workspaceAnalytics.customItems} override
           </strong>
           <p className="ws-insight-copy">
             {workspaceAnalytics.benchmarkReferencedItems} items linked to current market benchmark
@@ -2378,10 +2378,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
               <strong>{benchmarkRefreshAnalytics.actionableItems} benchmark item{benchmarkRefreshAnalytics.actionableItems === 1 ? '' : 's'} need review</strong>
               <p>
                 {benchmarkRefreshAnalytics.benchmarkRateUpdates} live benchmark item{benchmarkRefreshAnalytics.benchmarkRateUpdates === 1 ? '' : 's'} can update amount now
-                {' · '}
+                {' Â· '}
                 {benchmarkRefreshAnalytics.referenceOnlyUpdates} custom/manual item{benchmarkRefreshAnalytics.referenceOnlyUpdates === 1 ? '' : 's'} will keep their current rate
-                {benchmarkRefreshAnalytics.reviewItems > 0 ? ` · ${benchmarkRefreshAnalytics.reviewItems} still need manual benchmark review` : ''}
-                {benchmarkSyncLabel ? ` · checked ${benchmarkSyncLabel}` : ''}
+                {benchmarkRefreshAnalytics.reviewItems > 0 ? ` Â· ${benchmarkRefreshAnalytics.reviewItems} still need manual benchmark review` : ''}
+                {benchmarkSyncLabel ? ` Â· checked ${benchmarkSyncLabel}` : ''}
               </p>
             </>
           ) : (
@@ -2529,7 +2529,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         </div>
         <div className="ws-mobile-stat-card ws-mobile-stat-card-total">
           <span>Contract Sum</span>
-          <strong>₦{calculateGrandTotal.toLocaleString()}</strong>
+          <strong>â‚¦{calculateGrandTotal.toLocaleString()}</strong>
         </div>
       </div>
 
@@ -2542,14 +2542,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           <strong className="ws-insight-value">{workspaceAnalytics.pricingCoveragePercent.toFixed(0)}%</strong>
           <p className="ws-insight-copy">
             {workspaceAnalytics.pricedItems} of {workspaceAnalytics.totalItems} items priced
-            {workspaceAnalytics.benchmarkItems > 0 ? ` · ${workspaceAnalytics.benchmarkItems} auto-priced from benchmark` : ''}
-            {workspaceAnalytics.unpricedItems > 0 ? ` · ${workspaceAnalytics.unpricedItems} still need review` : ' · full coverage reached'}
+            {workspaceAnalytics.benchmarkItems > 0 ? ` Â· ${workspaceAnalytics.benchmarkItems} auto-priced from benchmark` : ''}
+            {workspaceAnalytics.unpricedItems > 0 ? ` Â· ${workspaceAnalytics.unpricedItems} still need review` : ' Â· full coverage reached'}
           </p>
         </div>
         <div className="ws-insight-card">
           <span className="ws-insight-label">Benchmark Automation</span>
           <strong className="ws-insight-value">
-            {workspaceAnalytics.benchmarkItems} live · {workspaceAnalytics.customItems} override
+            {workspaceAnalytics.benchmarkItems} live Â· {workspaceAnalytics.customItems} override
           </strong>
           <p className="ws-insight-copy">
             {workspaceAnalytics.benchmarkReferencedItems} items linked to current market benchmark
@@ -2601,10 +2601,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
               <strong>{benchmarkRefreshAnalytics.actionableItems} benchmark item{benchmarkRefreshAnalytics.actionableItems === 1 ? '' : 's'} need review</strong>
               <p>
                 {benchmarkRefreshAnalytics.benchmarkRateUpdates} live benchmark item{benchmarkRefreshAnalytics.benchmarkRateUpdates === 1 ? '' : 's'} can update amount now
-                {' · '}
+                {' Â· '}
                 {benchmarkRefreshAnalytics.referenceOnlyUpdates} custom/manual item{benchmarkRefreshAnalytics.referenceOnlyUpdates === 1 ? '' : 's'} will keep their current rate
-                {benchmarkRefreshAnalytics.reviewItems > 0 ? ` · ${benchmarkRefreshAnalytics.reviewItems} still need manual benchmark review` : ''}
-                {benchmarkSyncLabel ? ` · checked ${benchmarkSyncLabel}` : ''}
+                {benchmarkRefreshAnalytics.reviewItems > 0 ? ` Â· ${benchmarkRefreshAnalytics.reviewItems} still need manual benchmark review` : ''}
+                {benchmarkSyncLabel ? ` Â· checked ${benchmarkSyncLabel}` : ''}
               </p>
             </>
           ) : (
@@ -2646,7 +2646,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             <>
               <div className="ws-helper-copy">
                 <span className="ws-helper-label">Selected Row</span>
-                <strong>{selectedItemContext.itemCode} · {selectedItemContext.item.description || 'Untitled BOQ item'}</strong>
+                <strong>{selectedItemContext.itemCode} Â· {selectedItemContext.item.description || 'Untitled BOQ item'}</strong>
                 <small>
                   {selectedItemContext.section.title} | Qty {selectedItemContext.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} | Rate N{selectedItemContext.unitRate.toLocaleString()} | Amount N{selectedItemContext.total.toLocaleString()}
                 </small>
@@ -2743,7 +2743,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           <strong className="ws-cost-value">{activeProjectSection?.title || 'No active bill'}</strong>
           <small className="ws-cost-meta">
             {activeProjectSection
-              ? `${(activeProjectSection.items || []).length} line${(activeProjectSection.items || []).length === 1 ? '' : 's'} · Qty ${activeSectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+              ? `${(activeProjectSection.items || []).length} line${(activeProjectSection.items || []).length === 1 ? '' : 's'} Â· Qty ${activeSectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
               : 'Choose a bill section to start measuring'}
           </small>
         </div>
@@ -2760,14 +2760,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           <span className="ws-cost-label">{isFilteredView ? `${activeWorkspaceFilterLabel} View` : 'Visible Sheet Total'}</span>
           <strong className="ws-cost-value">N{visibleGrandTotal.toLocaleString()}</strong>
           <small className="ws-cost-meta">
-            {filteredSectionCount} visible bill{filteredSectionCount === 1 ? '' : 's'} · {filteredItemCount} visible item{filteredItemCount === 1 ? '' : 's'}
+            {filteredSectionCount} visible bill{filteredSectionCount === 1 ? '' : 's'} Â· {filteredItemCount} visible item{filteredItemCount === 1 ? '' : 's'}
           </small>
         </div>
         <div className="ws-cost-card ws-cost-card-total">
           <span className="ws-cost-label">Project Grand Total</span>
           <strong className="ws-cost-value">N{calculateGrandTotal.toLocaleString()}</strong>
           <small className="ws-cost-meta">
-            {project?.region || 'Lagos'} market basis · {workspaceAnalytics.totalItems} measured item{workspaceAnalytics.totalItems === 1 ? '' : 's'}
+            {project?.region || 'Lagos'} market basis Â· {workspaceAnalytics.totalItems} measured item{workspaceAnalytics.totalItems === 1 ? '' : 's'}
           </small>
         </div>
       </div>
@@ -2804,8 +2804,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                   <th className="ws-th-sm">%</th>
                 </>
               ) : null}
-              <th className="ws-th-rate">Rate (₦)</th>
-              <th className="ws-th-total">Amount (₦)</th>
+              <th className="ws-th-rate">Rate (â‚¦)</th>
+              <th className="ws-th-total">Amount (â‚¦)</th>
               <th className="ws-th-act"></th>
             </tr>
           </thead>
@@ -2859,7 +2859,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                         <span className="ws-section-meta">QTY {sectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                         <span className="ws-section-badge">{section.items?.length || 0}</span>
                         {!section.expanded && (
-                          <span className="ws-section-total">₦{sectionSubtotal.toLocaleString()}</span>
+                          <span className="ws-section-total">â‚¦{sectionSubtotal.toLocaleString()}</span>
                         )}
                       </div>
                     </td>
@@ -3168,7 +3168,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                             )}
                             {hasBenchmarkRate && selectedRateSource !== 'benchmark' && (
                               <span className="ws-rate-chip ws-rate-chip-bm-ref" title="Current market benchmark for this item">
-                                Benchmark: ₦{Math.round(benchmarkRate).toLocaleString()}
+                                Benchmark: â‚¦{Math.round(benchmarkRate).toLocaleString()}
                               </span>
                             )}
                             {benchmarkRefreshMeta?.canApplyRefresh && (
@@ -3208,7 +3208,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                           {selectedRateSource === 'benchmark' && (
                             <div className="ws-benchmark-override">
                               <Pencil size={10} className="ws-benchmark-override-icon" />
-                              <span className="ws-benchmark-override-label">Benchmark (₦):</span>
+                              <span className="ws-benchmark-override-label">Benchmark (â‚¦):</span>
                               <input
                                 type="number"
                                 className="ws-input ws-benchmark-override-input"
@@ -3250,7 +3250,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                           className={`ws-total-cell ${isWorkspaceCellSelected(section.id, item.id, 'amount') ? 'ws-cell-selected' : ''}`}
                           onClick={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'amount', itemCode, rowNumber: spreadsheetRowNumber })}
                         >
-                          <strong className="ws-total-main">₦{itemTotal.toLocaleString()}</strong>
+                          <strong className="ws-total-main">â‚¦{itemTotal.toLocaleString()}</strong>
                           {amountFormula && <span className="ws-total-formula">{amountFormula}</span>}
                           <span className={`ws-total-status ws-total-status-${automationMeta.tone}`}>{automationMeta.title}</span>
                         </td>
@@ -3290,7 +3290,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                               </div>
                               <div className="ws-mobile-card-total">
                                 <span>Amount</span>
-                                <strong>₦{itemTotal.toLocaleString()}</strong>
+                                <strong>â‚¦{itemTotal.toLocaleString()}</strong>
                                 {amountFormula && <small>{amountFormula}</small>}
                               </div>
                             </div>
@@ -3581,7 +3581,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                       <tr className="ws-subtotal-row">
                         <td colSpan={subtotalLeadingSpan}></td>
                         <td colSpan="2" className="ws-subtotal-val">
-                          Section Total · Qty {sectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })} · Amount ₦{sectionSubtotal.toLocaleString()}
+                          Section Total Â· Qty {sectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })} Â· Amount â‚¦{sectionSubtotal.toLocaleString()}
                         </td>
                         <td></td>
                       </tr>
@@ -3608,7 +3608,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           <tfoot>
             <tr className="ws-grand-total">
               <td colSpan={viewMode === 'valuation' ? 7 : 6}>CONTRACT SUM</td>
-              <td className="ws-grand-val">₦{calculateGrandTotal.toLocaleString()}</td>
+              <td className="ws-grand-val">â‚¦{calculateGrandTotal.toLocaleString()}</td>
               <td></td>
             </tr>
           </tfoot>
@@ -3626,9 +3626,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                 <div className="ws-detail-dock-header">
                   <div className="ws-detail-dock-copy">
                     <span className="ws-detail-dock-eyebrow">Selected Row</span>
-                    <strong>{selectedItemContext.itemCode} · {selectedItemContext.item.name || selectedItemContext.item.description || 'Untitled BOQ item'}</strong>
+                    <strong>{selectedItemContext.itemCode} Â· {selectedItemContext.item.name || selectedItemContext.item.description || 'Untitled BOQ item'}</strong>
                     <small>
-                      {selectedItemContext.section.title} · Qty {selectedItemContext.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} · Rate N{selectedItemContext.unitRate.toLocaleString()} · Amount N{selectedItemContext.total.toLocaleString()}
+                      {selectedItemContext.section.title} Â· Qty {selectedItemContext.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} Â· Rate N{selectedItemContext.unitRate.toLocaleString()} Â· Amount N{selectedItemContext.total.toLocaleString()}
                     </small>
                   </div>
                   <div className="ws-detail-dock-actions">
@@ -4516,9 +4516,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
            border-radius: 999px;
         }
 
-        /* ═══════════════════════════════════════════ */
-        /*  BOQ WORKSPACE — FULL-PAGE SHEET           */
-        /* ═══════════════════════════════════════════ */
+        /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+        /*  BOQ WORKSPACE â€” FULL-PAGE SHEET           */
+        /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
         .ws-container {
           display: flex;
@@ -5248,7 +5248,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           border-color: #fca5a5;
         }
 
-        /* ── TOOLBAR ── */
+        /* â”€â”€ TOOLBAR â”€â”€ */
         .ws-toolbar {
           display: flex;
           align-items: center;
@@ -5427,38 +5427,51 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 0.7rem;
         }
-        .ws-head-stat-card {
+                .ws-head-stat-card {
           display: flex;
           flex-direction: column;
-          gap: 0.22rem;
-          padding: 0.95rem 1rem;
-          border-radius: 18px;
-          border: 1px solid rgba(148, 163, 184, 0.18);
-          background: rgba(255, 255, 255, 0.94);
-          box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
+          gap: 0.35rem;
+          padding: 1.25rem 1.5rem;
+          border-radius: 20px;
+          border: 1px solid #f1f5f9;
+          background: #ffffff;
+          box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .ws-head-stat-card span {
-          font-size: 0.62rem;
-          font-weight: 900;
-          letter-spacing: 0.08em;
+        .ws-head-stat-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+          border-color: #e2e8f0;
+        }
+                .ws-head-stat-card span {
+          font-size: 0.65rem;
+          font-weight: 800;
+          letter-spacing: 0.1em;
           text-transform: uppercase;
-          color: #64748b;
+          color: #94a3b8;
         }
-        .ws-head-stat-card strong {
-          font-size: 1rem;
+                .ws-head-stat-card strong {
+          font-size: 1.25rem;
           font-weight: 900;
           color: #0f172a;
-          line-height: 1.2;
+          line-height: 1.1;
         }
-        .ws-head-stat-card small {
-          font-size: 0.7rem;
-          line-height: 1.45;
-          color: #475569;
+                .ws-head-stat-card small {
+          font-size: 0.75rem;
+          font-weight: 500;
+          line-height: 1.5;
+          color: #64748b;
+          margin-top: 0.1rem;
         }
-        .ws-head-stat-card-strong {
-          background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 100%);
-          border-color: #1d4ed8;
+                .ws-head-stat-card-strong {
+          background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+          border-color: #1e1b4b;
+          box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
         }
+        .ws-head-stat-card-strong:hover {
+          box-shadow: 0 15px 35px rgba(15, 23, 42, 0.2);
+        }
+        .ws-head-stat-card-strong span { color: rgba(255, 255, 255, 0.6); }
         .ws-head-stat-card-strong span,
         .ws-head-stat-card-strong strong,
         .ws-head-stat-card-strong small {
@@ -5640,7 +5653,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           border-color: #bfdbfe;
         }
 
-        /* ── TABLE ── */
+        /* â”€â”€ TABLE â”€â”€ */
         .ws-table-wrap {
           flex: 1 1 auto;
           min-width: 0;
@@ -5742,7 +5755,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-th-total { width: 160px; text-align: right; }
         .ws-th-act { width: 72px; }
 
-        /* ── SECTION ROW ── */
+        /* â”€â”€ SECTION ROW â”€â”€ */
         .ws-section-row {
           cursor: pointer;
           background: #f0f4f8;
@@ -5852,7 +5865,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           color: #1e293b;
         }
 
-        /* ── ITEM ROW ── */
+        /* â”€â”€ ITEM ROW â”€â”€ */
         .ws-item-row {
           border-bottom: 1px solid #f1f5f9;
           transition: background 0.15s, box-shadow 0.15s;
@@ -5998,7 +6011,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
         .ws-outlier-icon { color: #f59e0b; flex-shrink: 0; }
 
-        /* ── INPUTS ── */
+        /* â”€â”€ INPUTS â”€â”€ */
         .ws-input {
           width: 100%;
           max-width: 100%;
@@ -6393,7 +6406,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           transition: width 0.3s;
         }
 
-        /* ── ACTIONS ── */
+        /* â”€â”€ ACTIONS â”€â”€ */
         .ws-act-cell { text-align: center; }
         .ws-act-group { display: flex; gap: 2px; justify-content: center; }
         .ws-btn-icon {
@@ -6413,7 +6426,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-btn-info { color: #64748b; }
         .ws-btn-info:hover { background: #eff6ff; color: #2563eb; opacity: 1 !important; }
 
-        /* ── RATE SOURCE SELECTOR (3-button tri-modal) ── */
+        /* â”€â”€ RATE SOURCE SELECTOR (3-button tri-modal) â”€â”€ */
         .ws-rate-source-selector {
           display: flex;
           flex-direction: column;
@@ -6497,7 +6510,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           color: #64748b;
         }
 
-        /* ── RATE REFERENCE ROW ── */
+        /* â”€â”€ RATE REFERENCE ROW â”€â”€ */
         .ws-rate-reference-row {
           display: flex;
           flex-wrap: wrap;
@@ -6530,7 +6543,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           margin-top: 0.45rem;
         }
 
-        /* ── EMPTY SECTION CTA ── */
+        /* â”€â”€ EMPTY SECTION CTA â”€â”€ */
         .ws-empty-section-row td { padding: 0 !important; }
         .ws-empty-section {
           display: flex;
@@ -6568,7 +6581,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
 
 
-        /* ── SUBTOTAL ── */
+        /* â”€â”€ SUBTOTAL â”€â”€ */
         .ws-subtotal-row { background: linear-gradient(180deg, #f8fafc 0%, #eef6ff 100%); }
         .ws-subtotal-val {
           text-align: right !important;
@@ -6600,7 +6613,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           border-color: #bfdbfe;
         }
 
-        /* ── GRAND TOTAL ── */
+        /* â”€â”€ GRAND TOTAL â”€â”€ */
         .ws-grand-total {
           background: #0f172a;
           color: white;
@@ -6618,7 +6631,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           color: #60a5fa !important;
         }
 
-        /* ── MOBILE ── */
+        /* â”€â”€ MOBILE â”€â”€ */
         @media (max-width: 1100px) {
           .ws-stage-shell {
             flex-direction: column;
@@ -6637,6 +6650,20 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
 
+          .ws-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #f8fafc;
+          }
+          .ws-container-selection {
+            flex: 1;
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+          }
           .ws-head-stat-card-strong {
             grid-column: 1 / -1;
           }
@@ -6939,7 +6966,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           }
         }
 
-        /* ── PRESENCE AVATARS ── */
+        /* â”€â”€ PRESENCE AVATARS â”€â”€ */
         .ws-presence {
           display: flex;
           align-items: center;
@@ -6967,7 +6994,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           font-size: 0.5rem;
         }
 
-        /* ── COLLAB MODAL ── */
+        /* â”€â”€ COLLAB MODAL â”€â”€ */
         .collab-overlay {
           position: fixed; inset: 0;
           background: rgba(0,0,0,0.5);
@@ -7043,7 +7070,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
         .collab-remove-btn:hover { background: #fef2f2; color: #ef4444; }
 
-        /* ── ACTIVITY PANEL ── */
+        /* â”€â”€ ACTIVITY PANEL â”€â”€ */
         .activity-panel {
           position: fixed; right: 0; top: 0; bottom: 0;
           width: 300px; background: white;
@@ -7395,10 +7422,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             background-color: #f4f7fa !important;
           }
           /* Active row highlight */
-          .ws-item-row.ws-item-row-selected {
-            background-color: #eff6ff !important;
-            box-shadow: inset 3px 0 0 #2563eb !important;
-          }
+                  .ws-item-row.ws-item-row-selected {
+              background-color: #f0f7ff !important;
+              box-shadow: inset 4px 0 0 #2563eb, 0 4px 12px rgba(37, 99, 235, 0.05) !important;
+            }
           .ws-item-row.ws-item-row-selected td {
             border-bottom: 1px solid #bfdbfe !important;
           }
@@ -7452,4 +7479,5 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 };
 
 export default BOQWorkspace;
+
 
