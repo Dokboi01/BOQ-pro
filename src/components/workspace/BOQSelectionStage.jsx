@@ -264,9 +264,9 @@ const BOQSelectionStage = ({
       </aside>
 
       <div className="boq-selection-content">
-        <section className="boq-selection-overview">
+        <section className="boq-selection-page-header">
           <div className="boq-selection-overview-copy">
-            <span className="boq-selection-eyebrow">{structureType || 'BOQ Builder'}</span>
+            <span className="boq-selection-eyebrow">{structureType || 'Item Selection Stage'}</span>
             <h2>{section?.title || 'Choose a bill section'}</h2>
             <p>{section?.description || sectionMeta?.description || 'Pick only the items you want to measure in this bill before generating the BOQ sheet.'}</p>
             <div className="boq-selection-overview-tags">
@@ -274,15 +274,21 @@ const BOQSelectionStage = ({
               <span>{marketRegion || 'Market region'}</span>
               <span>{catalogItems.length} library items</span>
             </div>
-            <div className="boq-selection-progress-block">
-              <div className="boq-selection-progress-copy">
-                <strong>{selectionProgress}% of this bill curated</strong>
-                <span>{currentSectionSelectedCount} of {catalogItems.length} available items selected for BOQ generation.</span>
-        <section className="boq-selection-page-header">
+          </div>
+
+          <div className="boq-selection-progress-block">
+            <div className="boq-selection-progress-copy">
+              <strong>{selectionProgress}% of this bill curated</strong>
+              <span>{currentSectionSelectedCount} of {catalogItems.length} available items selected for BOQ generation.</span>
+            </div>
+          </div>
+        </section>
+
+        <section className="boq-selection-page-header-secondary">
           <div className="boq-selection-header-copy">
             <span className="boq-selection-eyebrow">Item Selection Stage</span>
-            <h2>{project?.name || 'Project Workbook'}</h2>
-            <p>{project?.type} | {project?.location} market benchmark | Estimate Sheet</p>
+            <h2>{projectName || 'Project Workbook'}</h2>
+            <p>{structureType || 'Bill of Quantities'} | {marketRegion} market benchmark | Estimate Sheet</p>
           </div>
           
           <div className="boq-selection-header-stats">
@@ -589,7 +595,7 @@ const BOQSelectionStage = ({
           </div>
         </footer>
       </div>
-
+      <style jsx="true">{`
         .boq-selection-shell {
           height: 100vh;
           max-height: 100vh;
@@ -1072,8 +1078,6 @@ const BOQSelectionStage = ({
 
         .boq-selection-empty strong { font-size: 1.5rem; color: #0f172a; font-weight: 800; }
         .boq-selection-empty span { font-size: 1.1rem; color: #64748b; max-width: 450px; line-height: 1.5; }
-      `}</style>
-
         .boq-selection-tools {
           display: grid;
           grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.95fr);
