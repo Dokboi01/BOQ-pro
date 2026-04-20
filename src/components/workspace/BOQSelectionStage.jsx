@@ -206,53 +206,67 @@ const BOQSelectionStage = ({
 
   return (
     <div className="boq-selection-shell">
-      <aside className="boq-selection-bill-browser">
-        <div className="boq-selection-bill-browser-head">
-          <span className="boq-selection-bill-browser-label">Bill Navigation</span>
-          <strong>Pick items bill by bill before generating the BOQ.</strong>
-          <small>{totalSelectedCount} selected across {sections.length} bill{sections.length === 1 ? '' : 's'}.</small>
+      <aside className="boq-selection-sidebar">
+        <div className="boq-selection-sidebar-head">
+          <span className="boq-selection-eyebrow">BOQ Bills</span>
+          <strong>Bill Navigator</strong>
+          <small>{sections.length} active bill{sections.length === 1 ? '' : 's'} in this structure.</small>
         </div>
-        <div className="boq-selection-bill-tabs">
+
+        <div className="boq-selection-sidebar-list">
           {(sections || []).map((entry, index) => {
             const isActive = activeBillSectionId === entry.id;
             const selectedCount = selectionCountsBySection?.[entry.id] || 0;
             const libraryCount = sectionLibraryCounts?.[entry.id] || 0;
-            const meta = `${selectedCount} selected${libraryCount > 0 ? ` - ${libraryCount} library item${libraryCount === 1 ? '' : 's'}` : ''}`;
-
+            
             return (
               <button
                 key={entry.id}
                 type="button"
-                className={`boq-selection-bill-tab ${isActive ? 'active' : ''}`}
+                className={`boq-selection-sidebar-item ${isActive ? 'active' : ''}`}
                 onClick={() => onSelectBill?.(entry.id)}
               >
-                <span className="boq-selection-bill-index">{String(index + 1).padStart(2, '0')}</span>
-                <span className="boq-selection-bill-copy">
-                  <strong>{entry.title}</strong>
-                  <small>{meta}</small>
+                <span className="boq-selection-index">{String(index + 1).padStart(2, '0')}</span>
+                <span className="boq-selection-copy">
+                  <span className="boq-selection-title-row">
+                    <strong>{entry.title}</strong>
+                    {isActive && <span className="boq-selection-active-pill">Active</span>}
+                  </span>
+                  <span className="boq-selection-meta-row">
+                    <small>{libraryCount} library item{libraryCount === 1 ? '' : 's'}</small>
+                    <small className="highlighted">{selectedCount} selected</small>
+                  </span>
                 </span>
               </button>
             );
           })}
         </div>
-        <div className="boq-selection-bill-browser-summary">
-          <div>
-            <span>Active Bill</span>
-            <strong>{section?.title || 'Choose a bill section'}</strong>
-            <small>{currentSectionSelectedCount} selected</small>
+
+        <div className="boq-selection-sidebar-footer">
+          <div className="boq-selection-sidebar-summary">
+            <span>Total Selected</span>
+            <strong>{totalSelectedCount} items</strong>
           </div>
-          <div>
-            <span>Library Size</span>
-            <strong>{catalogItems.length}</strong>
-            <small>{metrics.recommended} recommended</small>
-          </div>
+          <button
+            type="button"
+            className="boq-selection-generate-btn"
+            onClick={onGenerate}
+            disabled={totalSelectedCount === 0}
+          >
+            <FileSpreadsheet size={16} /> {generateLabel}
+          </button>
+          {hasGeneratedBoq && onReturnToWorkspace && (
+            <button type="button" className="boq-selection-return-link" onClick={onReturnToWorkspace}>
+              Return to Workspace
+            </button>
+          )}
         </div>
       </aside>
 
       <div className="boq-selection-content">
-        <section className="boq-selection-overview">
+        <section className="boq-selection-page-header">
           <div className="boq-selection-overview-copy">
-            <span className="boq-selection-eyebrow">{structureType || 'BOQ Builder'}</span>
+            <span className="boq-selection-eyebrow">{structureType || 'Item Selection Stage'}</span>
             <h2>{section?.title || 'Choose a bill section'}</h2>
             <p>{section?.description || sectionMeta?.description || 'Pick only the items you want to measure in this bill before generating the BOQ sheet.'}</p>
             <div className="boq-selection-overview-tags">
@@ -260,33 +274,33 @@ const BOQSelectionStage = ({
               <span>{marketRegion || 'Market region'}</span>
               <span>{catalogItems.length} library items</span>
             </div>
-            <div className="boq-selection-progress-block">
-              <div className="boq-selection-progress-copy">
-                <strong>{selectionProgress}% of this bill curated</strong>
-                <span>{currentSectionSelectedCount} of {catalogItems.length} available items selected for BOQ generation.</span>
-              </div>
-              <div className="boq-selection-progress-track">
-                <span style={{ width: `${selectionProgress}%` }} />
-              </div>
-            </div>
-            <small>{sectionMeta?.pickerPrompt || 'Selections stay grouped by bill section until you generate the BOQ table.'}</small>
           </div>
 
-          <div className="boq-selection-overview-stats">
-            <div className="boq-selection-metric-card highlighted">
-              <span>Selected in this bill</span>
-              <strong>{currentSectionSelectedCount}</strong>
-              <small>Only these will become BOQ rows for {section?.title || 'this bill'}.</small>
+          <div className="boq-selection-progress-block">
+            <div className="boq-selection-progress-copy">
+              <strong>{selectionProgress}% of this bill curated</strong>
+              <span>{currentSectionSelectedCount} of {catalogItems.length} available items selected for BOQ generation.</span>
             </div>
-            <div className="boq-selection-metric-card">
-              <span>Total selected</span>
-              <strong>{totalSelectedCount}</strong>
-              <small>Across the full structure before BOQ generation.</small>
+          </div>
+        </section>
+
+        <section className="boq-selection-page-header-secondary">
+          <div className="boq-selection-header-copy">
+            <span className="boq-selection-eyebrow">Item Selection Stage</span>
+            <h2>{projectName || 'Project Workbook'}</h2>
+            <p>{structureType || 'Bill of Quantities'} | {marketRegion} market benchmark | Estimate Sheet</p>
+          </div>
+          
+          <div className="boq-selection-header-stats">
+            <div className="boq-selection-stat">
+              <span>Active Bill</span>
+              <strong>{section?.title || 'No Selection'}</strong>
+              <small>{currentSectionSelectedCount} items selected</small>
             </div>
-            <div className="boq-selection-metric-card">
-              <span>Recommended</span>
-              <strong>{metrics.recommended}</strong>
-              <small>Seeded items marked as likely picks for this bill.</small>
+            <div className="boq-selection-stat">
+              <span>Subtotal</span>
+              <strong>N0</strong>
+              <small>0 pending pricing review</small>
             </div>
           </div>
         </section>
@@ -581,360 +595,489 @@ const BOQSelectionStage = ({
           </div>
         </footer>
       </div>
-
       <style jsx="true">{`
         .boq-selection-shell {
-          height: 100%;
-          min-height: 0;
+          height: 100vh;
+          max-height: 100vh;
           display: grid;
-          grid-template-columns: 280px minmax(0, 1fr);
-          gap: 1rem;
-          background:
-            radial-gradient(circle at top right, rgba(191, 219, 254, 0.35), transparent 30%),
-            linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
-          padding: 1.25rem;
+          grid-template-columns: 340px minmax(0, 1fr);
+          background: #ffffff;
           overflow: hidden;
         }
 
-        .boq-selection-content {
-          min-width: 0;
+        /* --- SIDEBAR --- */
+        .boq-selection-sidebar {
+          background: #f8fafc;
+          border-right: 1px solid #e2e8f0;
+          display: flex;
+          flex-direction: column;
+          height: 100%;
           min-height: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-          overflow-y: auto;
-          padding-right: 0.2rem;
+          z-index: 10;
         }
 
-        .boq-selection-content::-webkit-scrollbar,
-        .boq-selection-bill-tabs::-webkit-scrollbar {
-          width: 10px;
-        }
-
-        .boq-selection-content::-webkit-scrollbar-thumb,
-        .boq-selection-bill-tabs::-webkit-scrollbar-thumb {
-          background: rgba(148, 163, 184, 0.4);
-          border-radius: 999px;
-        }
-
-        .boq-selection-content::-webkit-scrollbar-track,
-        .boq-selection-bill-tabs::-webkit-scrollbar-track {
-          background: transparent;
-        }
-
-        .boq-selection-overview {
-          display: grid;
-          grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr);
-          gap: 1rem;
-          align-items: stretch;
-        }
-
-        .boq-selection-overview-copy,
-        .boq-selection-overview-stats {
-          border-radius: 24px;
-          border: 1px solid rgba(148, 163, 184, 0.18);
-          box-shadow: 0 20px 48px rgba(15, 23, 42, 0.08);
-        }
-
-        .boq-selection-overview-copy {
-          padding: 1.35rem 1.45rem;
-          background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
-          color: #0f172a;
-          display: flex;
-          flex-direction: column;
-          gap: 0.55rem;
-        }
-
-        .boq-selection-eyebrow {
-          display: inline-flex;
-          align-items: center;
-          width: fit-content;
-          border-radius: 999px;
-          padding: 0.34rem 0.72rem;
-          background: #dbeafe;
-          color: #1d4ed8;
-          font-size: 0.7rem;
-          font-weight: 800;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-        }
-
-        .boq-selection-overview-copy h2 {
-          margin: 0;
-          font-size: 1.55rem;
-          line-height: 1.12;
-          color: #0f172a;
-        }
-
-        .boq-selection-overview-copy p,
-        .boq-selection-overview-copy small {
-          margin: 0;
-          line-height: 1.6;
-          color: #64748b;
-        }
-
-        .boq-selection-overview-tags {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.45rem;
-          margin-top: 0.15rem;
-        }
-
-        .boq-selection-overview-tags span {
-          display: inline-flex;
-          align-items: center;
-          border-radius: 999px;
-          padding: 0.38rem 0.72rem;
-          background: #eff6ff;
-          border: 1px solid #dbeafe;
-          font-size: 0.74rem;
-          font-weight: 700;
-          color: #1e3a8a;
-        }
-
-        .boq-selection-progress-block {
+        .boq-selection-sidebar-head {
+          padding: 2rem 1.5rem;
           display: flex;
           flex-direction: column;
           gap: 0.6rem;
-          margin-top: 0.15rem;
-        }
-
-        .boq-selection-progress-copy {
-          display: flex;
-          justify-content: space-between;
-          gap: 0.75rem;
-          align-items: baseline;
-          flex-wrap: wrap;
-        }
-
-        .boq-selection-progress-copy strong {
-          color: #0f172a;
-          font-size: 0.92rem;
-        }
-
-        .boq-selection-progress-copy span {
-          color: #64748b;
-          font-size: 0.8rem;
-        }
-
-        .boq-selection-progress-track {
-          height: 10px;
-          border-radius: 999px;
-          background: #dbeafe;
-          overflow: hidden;
-          position: relative;
-        }
-
-        .boq-selection-progress-track span {
-          display: block;
-          height: 100%;
-          border-radius: inherit;
-          background: linear-gradient(90deg, #2563eb 0%, #0f172a 100%);
-        }
-
-        .boq-selection-overview-stats {
-          padding: 1rem;
-          background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-          display: grid;
-          gap: 0.75rem;
-        }
-
-        .boq-selection-metric-card {
-          border-radius: 20px;
-          padding: 1rem;
           background: #f8fafc;
-          border: 1px solid #e2e8f0;
-          display: flex;
-          flex-direction: column;
-          gap: 0.28rem;
         }
 
-        .boq-selection-metric-card.highlighted {
-          background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-          border-color: #bfdbfe;
-        }
-
-        .boq-selection-metric-card span {
+        .boq-selection-eyebrow {
           font-size: 0.7rem;
           font-weight: 800;
+          letter-spacing: 0.15em;
           text-transform: uppercase;
-          letter-spacing: 0.06em;
           color: #64748b;
         }
 
-        .boq-selection-metric-card strong {
-          font-size: 1.3rem;
+        .boq-selection-sidebar-head strong {
+          font-size: 1.35rem;
           color: #0f172a;
-        }
-
-        .boq-selection-metric-card small {
-          line-height: 1.55;
-          color: #475569;
-        }
-
-        .boq-selection-bill-browser {
-          display: flex;
-          flex-direction: column;
-          gap: 0.85rem;
-          min-height: 0;
-          height: 100%;
-          padding: 1rem 1.05rem;
-          position: sticky;
-          top: 0;
-          z-index: 7;
-          border-radius: 24px;
-          border: 1px solid rgba(148, 163, 184, 0.18);
-          background: rgba(248, 250, 252, 0.96);
-          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.05);
-          overflow: hidden;
-        }
-
-        .boq-selection-bill-browser-head {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 0.3rem;
-          padding-bottom: 0.35rem;
-          border-bottom: 1px solid #e2e8f0;
-        }
-
-        .boq-selection-bill-browser-head strong {
-          display: block;
-          font-size: 0.96rem;
-          color: #0f172a;
-        }
-
-        .boq-selection-bill-browser-head small,
-        .boq-selection-bill-browser-label {
-          color: #64748b;
-        }
-
-        .boq-selection-bill-browser-head small {
-          line-height: 1.55;
-        }
-
-        .boq-selection-bill-browser-label {
-          display: inline-flex;
-          font-size: 0.68rem;
-          font-weight: 800;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-        }
-
-        .boq-selection-bill-browser-summary {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 0.65rem;
-          padding-top: 0.15rem;
-        }
-
-        .boq-selection-bill-browser-summary div {
-          min-width: 0;
-          border-radius: 18px;
-          border: 1px solid #dbe3ef;
-          background: rgba(255, 255, 255, 0.9);
-          padding: 0.8rem;
-          display: flex;
-          flex-direction: column;
-          gap: 0.18rem;
-        }
-
-        .boq-selection-bill-browser-summary span {
-          font-size: 0.68rem;
-          font-weight: 800;
-          color: #64748b;
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-        }
-
-        .boq-selection-bill-browser-summary strong {
-          color: #0f172a;
-          font-size: 0.9rem;
-          line-height: 1.35;
-        }
-
-        .boq-selection-bill-browser-summary small {
-          color: #64748b;
-          font-size: 0.72rem;
-          line-height: 1.45;
-        }
-
-        .boq-selection-bill-tabs {
-          min-height: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 0.65rem;
-          overflow-y: auto;
-          padding-right: 0.15rem;
-          scrollbar-width: thin;
-        }
-
-        .boq-selection-bill-tab {
-          border: 1px solid #dbe3ef;
-          background: #ffffff;
-          border-radius: 18px;
-          padding: 0.8rem 0.9rem;
-          display: grid;
-          grid-template-columns: 40px minmax(0, 1fr);
-          gap: 0.75rem;
-          align-items: center;
-          text-align: left;
-          cursor: pointer;
-          transition: all 0.18s ease;
-          box-shadow: 0 12px 24px rgba(15, 23, 42, 0.04);
-        }
-
-        .boq-selection-bill-tab:hover {
-          transform: translateX(2px);
-          border-color: #93c5fd;
-          box-shadow: 0 14px 28px rgba(37, 99, 235, 0.08);
-        }
-
-        .boq-selection-bill-tab.active {
-          border-color: #2563eb;
-          background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
-          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-        }
-
-        .boq-selection-bill-index {
-          width: 40px;
-          height: 40px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 12px;
-          background: #f1f5f9;
-          color: #475569;
-          font-size: 0.8rem;
+          line-height: 1.2;
           font-weight: 900;
         }
 
-        .boq-selection-bill-tab.active .boq-selection-bill-index {
-          background: #dbeafe;
-          color: #1d4ed8;
+        .boq-selection-sidebar-head small {
+          font-size: 0.85rem;
+          color: #64748b;
+          font-weight: 500;
         }
 
-        .boq-selection-bill-copy {
-          min-width: 0;
+        .boq-selection-sidebar-list {
+          flex: 1;
+          overflow-y: auto;
+          padding: 0 1rem 1rem;
           display: flex;
           flex-direction: column;
-          gap: 0.2rem;
+          gap: 0.85rem;
+          scrollbar-width: thin;
         }
 
-        .boq-selection-bill-copy strong {
-          font-size: 0.84rem;
-          color: #0f172a;
-          line-height: 1.35;
+        .boq-selection-sidebar-list::-webkit-scrollbar { width: 4px; }
+        .boq-selection-sidebar-list::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 2px; }
+
+        .boq-selection-sidebar-item {
+          display: grid;
+          grid-template-columns: 44px 1fr;
+          align-items: center;
+          gap: 1.2rem;
+          padding: 1.15rem;
+          border-radius: 20px;
+          border: 1px solid #e2e8f0;
+          background: #ffffff;
+          text-align: left;
+          cursor: pointer;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .boq-selection-bill-copy small {
-          font-size: 0.72rem;
+        .boq-selection-sidebar-item:hover {
+          transform: translateY(-2px);
+          border-color: #cbd5e1;
+          box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+        }
+
+        .boq-selection-sidebar-item.active {
+          border-color: #2563eb;
+          background: #ffffff;
+          box-shadow: 0 12px 32px rgba(37, 99, 235, 0.1);
+          transform: none;
+          z-index: 2;
+        }
+
+        .boq-selection-index {
+          width: 44px;
+          height: 44px;
+          border-radius: 14px;
+          background: #f1f5f9;
           color: #64748b;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.85rem;
+          font-weight: 900;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .active .boq-selection-index {
+          background: #2563eb;
+          color: white;
+          box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+        }
+
+        .boq-selection-copy {
+          display: flex;
+          flex-direction: column;
+          gap: 0.4rem;
+          min-width: 0;
+        }
+
+        .boq-selection-title-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.5rem;
+        }
+
+        .boq-selection-title-row strong {
+          font-size: 0.95rem;
+          color: #0f172a;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          font-weight: 800;
         }
 
+        .boq-selection-active-pill {
+          padding: 0.2rem 0.5rem;
+          background: #eff6ff;
+          color: #2563eb;
+          border-radius: 999px;
+          font-size: 0.6rem;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          flex-shrink: 0;
+        }
+
+        .boq-selection-meta-row {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+        }
+
+        .boq-selection-meta-row small {
+          font-size: 0.75rem;
+          color: #64748b;
+          font-weight: 600;
+        }
+
+        .boq-selection-meta-row small.highlighted {
+          color: #16a34a;
+          font-weight: 800;
+          display: flex;
+          align-items: center;
+          gap: 0.25rem;
+        }
+
+        .boq-selection-meta-row small.highlighted::before {
+          content: '•';
+          font-size: 1.2rem;
+        }
+
+        .boq-selection-sidebar-footer {
+          padding: 1.75rem;
+          border-top: 1px solid #e2e8f0;
+          background: #ffffff;
+          display: flex;
+          flex-direction: column;
+          gap: 1.25rem;
+          box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.02);
+        }
+
+        .boq-selection-sidebar-summary {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .boq-selection-sidebar-summary span {
+          font-size: 0.8rem;
+          font-weight: 700;
+          color: #64748b;
+        }
+
+        .boq-selection-sidebar-summary strong {
+          font-size: 1.05rem;
+          color: #0f172a;
+          font-weight: 900;
+        }
+
+        .boq-selection-generate-btn {
+          width: 100%;
+          padding: 1.1rem;
+          background: #0f172a;
+          color: white;
+          border: none;
+          border-radius: 18px;
+          font-size: 0.95rem;
+          font-weight: 800;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.75rem;
+          cursor: pointer;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 10px 25px rgba(15, 23, 42, 0.2);
+        }
+
+        .boq-selection-generate-btn:hover:not(:disabled) {
+          background: #1e293b;
+          transform: translateY(-3px);
+          box-shadow: 0 15px 35px rgba(15, 23, 42, 0.25);
+        }
+
+        .boq-selection-generate-btn:active:not(:disabled) {
+          transform: translateY(-1px);
+        }
+
+        .boq-selection-generate-btn:disabled {
+          opacity: 0.35;
+          cursor: not-allowed;
+          box-shadow: none;
+          background: #94a3b8;
+        }
+
+        .boq-selection-return-link {
+          background: none;
+          border: none;
+          color: #64748b;
+          font-size: 0.8rem;
+          font-weight: 700;
+          text-decoration: none;
+          cursor: pointer;
+          text-align: center;
+          transition: color 0.2s;
+        }
+        .boq-selection-return-link:hover { color: #0f172a; }
+
+        /* --- CONTENT AREA --- */
+        .boq-selection-content {
+          flex: 1;
+          height: 100%;
+          overflow-y: auto;
+          background: #ffffff;
+          padding: 3rem 4rem;
+          display: flex;
+          flex-direction: column;
+          gap: 3rem;
+          scrollbar-width: thin;
+        }
+
+        .boq-selection-content::-webkit-scrollbar { width: 8px; }
+        .boq-selection-content::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+
+        .boq-selection-page-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          gap: 3rem;
+          padding-bottom: 2.5rem;
+          border-bottom: 1px solid #f1f5f9;
+        }
+
+        .boq-selection-header-copy { flex: 1; }
+
+        .boq-selection-header-copy h2 {
+          font-size: 2.75rem;
+          font-weight: 900;
+          color: #0f172a;
+          margin: 0.75rem 0;
+          letter-spacing: -0.035em;
+          line-height: 1;
+        }
+
+        .boq-selection-header-copy p {
+          font-size: 1.1rem;
+          color: #64748b;
+          font-weight: 500;
+          max-width: 600px;
+        }
+
+        .boq-selection-header-stats {
+          display: flex;
+          gap: 1.25rem;
+        }
+
+        .boq-selection-stat {
+          background: white;
+          padding: 1.5rem 1.75rem;
+          border-radius: 24px;
+          border: 1px solid #f1f5f9;
+          min-width: 240px;
+          display: flex;
+          flex-direction: column;
+          gap: 0.4rem;
+          box-shadow: 0 4px 16px rgba(15, 23, 42, 0.02);
+        }
+
+        .boq-selection-stat span {
+          font-size: 0.7rem;
+          font-weight: 800;
+          color: #94a3b8;
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+        }
+
+        .boq-selection-stat strong {
+          font-size: 1.45rem;
+          color: #0f172a;
+          font-weight: 900;
+          line-height: 1.1;
+        }
+
+        .boq-selection-stat small {
+          font-size: 0.8rem;
+          color: #64748b;
+          font-weight: 500;
+        }
+
+        .boq-selection-stat:first-child {
+          border-color: #dbeafe;
+          background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+        }
+
+        .boq-selection-stat:first-child strong { color: #2563eb; }
+
+        /* --- RESULTS GRID --- */
+        .boq-selection-results {
+          display: flex;
+          flex-direction: column;
+          gap: 2rem;
+        }
+
+        .boq-selection-results-head {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .boq-selection-results-label {
+          font-size: 0.8rem;
+          font-weight: 800;
+          color: #94a3b8;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          display: block;
+          margin-bottom: 0.5rem;
+        }
+
+        .boq-selection-results-head strong {
+          font-size: 1.5rem;
+          font-weight: 900;
+          color: #0f172a;
+        }
+
+        .boq-selection-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+          gap: 1.5rem;
+        }
+
+        .boq-selection-card {
+          background: white;
+          border: 1.5px solid #f1f5f9;
+          border-radius: 24px;
+          padding: 1.75rem;
+          text-align: left;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          display: flex;
+          flex-direction: column;
+          gap: 1.25rem;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .boq-selection-card:hover {
+          border-color: #cbd5e1;
+          transform: translateY(-4px);
+          box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+        }
+
+        .boq-selection-card.selected {
+          border-color: #2563eb;
+          background: #f9fbff;
+          box-shadow: 0 12px 40px rgba(37, 99, 235, 0.1);
+        }
+
+        .boq-selection-card-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 1rem;
+        }
+
+        .boq-selection-card-heading strong {
+          font-size: 1.15rem;
+          color: #0f172a;
+          line-height: 1.35;
+          font-weight: 800;
+          display: block;
+        }
+
+        .boq-selection-state {
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          padding: 0.5rem 0.85rem;
+          border-radius: 999px;
+          font-size: 0.8rem;
+          font-weight: 800;
+          transition: all 0.2s;
+          background: #f1f5f9;
+          color: #64748b;
+        }
+
+        .boq-selection-state.selected {
+          background: #2563eb;
+          color: white;
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        }
+
+        .boq-selection-card p {
+          font-size: 0.95rem;
+          line-height: 1.6;
+          color: #475569;
+          margin: 0;
+          display: -webkit-box;
+          -webkit-line-clamp: 3;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+
+        .boq-selection-card-footer {
+          margin-top: auto;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding-top: 1.25rem;
+          border-top: 1px solid #f1f5f9;
+        }
+
+        .boq-selection-card-footer span {
+          font-size: 0.75rem;
+          color: #94a3b8;
+          font-weight: 600;
+        }
+
+        .boq-selection-card-footer strong {
+          font-size: 0.8rem;
+          color: #0f172a;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .selected .boq-selection-card-footer strong { color: #2563eb; }
+
+        .boq-selection-empty {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 6rem 2rem;
+          text-align: center;
+          background: #f8fafc;
+          border-radius: 40px;
+          border: 2px dashed #e2e8f0;
+          gap: 1.25rem;
+        }
+
+        .boq-selection-empty strong { font-size: 1.5rem; color: #0f172a; font-weight: 800; }
+        .boq-selection-empty span { font-size: 1.1rem; color: #64748b; max-width: 450px; line-height: 1.5; }
         .boq-selection-tools {
           display: grid;
           grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.95fr);
