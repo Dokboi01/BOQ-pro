@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useToast } from '../ui/useToast';
 import { useAuth } from '../../context/useAuth';
 import RateAnalysisModal from './RateAnalysisModal';
@@ -396,7 +396,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     const benchmarkRate = sanitizeNonNegativeNumber(item.benchmarkRate ?? item.benchmark);
     // Backward-compat shim: derive selectedRateSource from legacy flags if missing
     const selectedRateSource = resolveItemRateSource(item);
-    // Manual rate — prefer explicit manualRate field
+    // Manual rate â€” prefer explicit manualRate field
     const manualRate = sanitizeNonNegativeNumber(item.manualRate ?? (selectedRateSource === 'manual' ? (item.unitRate ?? item.rate) : 0));
     // Resolve the active unit rate from the tri-modal source
     const resolvedUnitRate = selectedRateSource === 'benchmark'
@@ -956,7 +956,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       benchmarkRateUpdates > 0 ? `${benchmarkRateUpdates} live benchmark amount${benchmarkRateUpdates === 1 ? '' : 's'} updated` : '',
       referenceOnlyUpdates > 0 ? `${referenceOnlyUpdates} custom/manual item${referenceOnlyUpdates === 1 ? '' : 's'} kept their saved rate` : '',
       newBenchmarkLinks > 0 ? `${newBenchmarkLinks} item${newBenchmarkLinks === 1 ? '' : 's'} gained a fresh benchmark link` : '',
-    ].filter(Boolean).join(' · ');
+    ].filter(Boolean).join(' Â· ');
 
     toast.success(summary);
 
@@ -1101,7 +1101,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       segments.push(item.customPricing.supplierQuote);
     }
 
-    return segments.join(' • ');
+    return segments.join(' â€¢ ');
   };
 
   const formatEvidenceUpdatedLabel = (value) => {
@@ -1208,7 +1208,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
     if (selectedRateSource === 'benchmark' && benchmarkRate <= 0) {
       return {
-        text: 'No benchmark rate available — switch to custom pricing.',
+        text: 'No benchmark rate available â€” switch to custom pricing.',
         tone: 'warning'
       };
     }
@@ -1250,7 +1250,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     if (selectedRateSource === 'benchmark') {
       if (benchmarkRate <= 0) {
         return {
-          title: 'No benchmark rate available — switch to custom pricing',
+          title: 'No benchmark rate available â€” switch to custom pricing',
           detail: `This item is not yet covered by the ${marketRegionLabel} market benchmark.`,
           tone: 'warning'
         };
@@ -1258,7 +1258,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
       return {
         title: 'Auto-priced using current market benchmark',
-        detail: `Amount = Quantity × ${marketRegionLabel} market benchmark.`,
+        detail: `Amount = Quantity Ã— ${marketRegionLabel} market benchmark.`,
         tone: 'success'
       };
     }
@@ -1353,7 +1353,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       return null;
     }
 
-    return `Amount = ${quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} × ₦${rate.toLocaleString()}`;
+    return `Amount = ${quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} Ã— â‚¦${rate.toLocaleString()}`;
   };
 
   const getQuantityDisplayValue = (item) => {
@@ -1960,7 +1960,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           const itemCount = (section.items || []).length;
           const meta = mode === 'selection'
             ? `${selectionCount} selected`
-            : `${itemCount} line${itemCount === 1 ? '' : 's'}${sectionTotal > 0 ? ` · N${sectionTotal.toLocaleString()}` : ''}`;
+            : `${itemCount} line${itemCount === 1 ? '' : 's'}${sectionTotal > 0 ? ` Â· N${sectionTotal.toLocaleString()}` : ''}`;
 
           return (
             <button
@@ -2047,7 +2047,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                   <span className="ws-summary-badge">Current</span>
                   <span>Active Bill</span>
                   <strong>{activeProjectSection?.title || 'No active bill'}</strong>
-                  <small>{activeSectionLineCount} line{activeSectionLineCount === 1 ? '' : 's'} · {activeCatalogSelectionCount} selected</small>
+                  <small>{activeSectionLineCount} line{activeSectionLineCount === 1 ? '' : 's'} Â· {activeCatalogSelectionCount} selected</small>
                 </article>
                 <article className="ws-summary-metric ws-summary-metric-secondary">
                   <span>Bill Subtotal</span>
@@ -2063,7 +2063,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                   <span className="ws-summary-badge ws-summary-badge-strong">Total</span>
                   <span>Project Grand Total</span>
                   <strong>N{calculateGrandTotal.toLocaleString()}</strong>
-                  <small>{marketRegionDisplay} basis · {workspaceAnalytics.benchmarkItems} benchmark-backed items</small>
+                  <small>{marketRegionDisplay} basis Â· {workspaceAnalytics.benchmarkItems} benchmark-backed items</small>
                 </article>
               </div>
               <div className="ws-summary-actions-row">
@@ -2116,17 +2116,17 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
               <article className="ws-head-stat-card">
                 <span>Active Bill</span>
                 <strong>{activeProjectSection?.title || 'No active bill'}</strong>
-                <small>{activeSectionLineCount} line{activeSectionLineCount === 1 ? '' : 's'} · {activeCatalogSelectionCount} selected for this bill</small>
+                <small>{activeSectionLineCount} line{activeSectionLineCount === 1 ? '' : 's'} Â· {activeCatalogSelectionCount} selected for this bill</small>
               </article>
               <article className="ws-head-stat-card">
                 <span>Pricing Coverage</span>
                 <strong>{workspaceAnalytics.pricingCoveragePercent.toFixed(0)}%</strong>
-                <small>{workspaceAnalytics.pricedItems}/{workspaceAnalytics.totalItems} items priced · {activeSectionPendingItems} pending in active bill</small>
+                <small>{workspaceAnalytics.pricedItems}/{workspaceAnalytics.totalItems} items priced Â· {activeSectionPendingItems} pending in active bill</small>
               </article>
               <article className="ws-head-stat-card ws-head-stat-card-strong">
                 <span>Project Total</span>
                 <strong>N{calculateGrandTotal.toLocaleString()}</strong>
-                <small>{marketRegionDisplay} market basis · {workspaceAnalytics.benchmarkItems} benchmark-backed items</small>
+                <small>{marketRegionDisplay} market basis Â· {workspaceAnalytics.benchmarkItems} benchmark-backed items</small>
               </article>
             </div>
             <div className="ws-workbook-actions">
@@ -2174,7 +2174,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           <strong className="ws-cost-value">{activeProjectSection?.title || 'No active bill'}</strong>
           <small className="ws-cost-meta">
             {activeProjectSection
-              ? `${activeSectionLineCount} line${activeSectionLineCount === 1 ? '' : 's'} · Qty ${activeSectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+              ? `${activeSectionLineCount} line${activeSectionLineCount === 1 ? '' : 's'} Â· Qty ${activeSectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
               : 'Choose a bill section to start measuring'}
           </small>
         </div>
@@ -2191,14 +2191,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           <span className="ws-cost-label">{isFilteredView ? `${activeWorkspaceFilterLabel} View` : 'Visible Sheet Total'}</span>
           <strong className="ws-cost-value">N{visibleGrandTotal.toLocaleString()}</strong>
           <small className="ws-cost-meta">
-            {filteredSectionCount} visible bill{filteredSectionCount === 1 ? '' : 's'} · {filteredItemCount} visible item{filteredItemCount === 1 ? '' : 's'}
+            {filteredSectionCount} visible bill{filteredSectionCount === 1 ? '' : 's'} Â· {filteredItemCount} visible item{filteredItemCount === 1 ? '' : 's'}
           </small>
         </div>
         <div className="ws-cost-card ws-cost-card-total">
           <span className="ws-cost-label">Project Grand Total</span>
           <strong className="ws-cost-value">N{calculateGrandTotal.toLocaleString()}</strong>
           <small className="ws-cost-meta">
-            {project?.region || 'Lagos'} market basis · {workspaceAnalytics.totalItems} measured item{workspaceAnalytics.totalItems === 1 ? '' : 's'}
+            {project?.region || 'Lagos'} market basis Â· {workspaceAnalytics.totalItems} measured item{workspaceAnalytics.totalItems === 1 ? '' : 's'}
           </small>
         </div>
       </div>
@@ -2219,7 +2219,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             <>
               <div className="ws-helper-copy">
                 <span className="ws-helper-label">Selected Row</span>
-                <strong>{selectedItemContext.itemCode} · {selectedItemContext.item.name || selectedItemContext.item.description || 'Untitled BOQ item'}</strong>
+                <strong>{selectedItemContext.itemCode} Â· {selectedItemContext.item.name || selectedItemContext.item.description || 'Untitled BOQ item'}</strong>
                 <small>
                   {selectedItemContext.section.title} | Qty {selectedItemContext.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} | Rate N{selectedItemContext.unitRate.toLocaleString()} | Amount N{selectedItemContext.total.toLocaleString()}
                 </small>
@@ -2319,14 +2319,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           <strong className="ws-insight-value">{workspaceAnalytics.pricingCoveragePercent.toFixed(0)}%</strong>
           <p className="ws-insight-copy">
             {workspaceAnalytics.pricedItems} of {workspaceAnalytics.totalItems} items priced
-            {workspaceAnalytics.benchmarkItems > 0 ? ` · ${workspaceAnalytics.benchmarkItems} auto-priced from benchmark` : ''}
-            {workspaceAnalytics.unpricedItems > 0 ? ` · ${workspaceAnalytics.unpricedItems} still need review` : ' · full coverage reached'}
+            {workspaceAnalytics.benchmarkItems > 0 ? ` Â· ${workspaceAnalytics.benchmarkItems} auto-priced from benchmark` : ''}
+            {workspaceAnalytics.unpricedItems > 0 ? ` Â· ${workspaceAnalytics.unpricedItems} still need review` : ' Â· full coverage reached'}
           </p>
         </div>
         <div className="ws-insight-card">
           <span className="ws-insight-label">Benchmark Automation</span>
           <strong className="ws-insight-value">
-            {workspaceAnalytics.benchmarkItems} live · {workspaceAnalytics.customItems} override
+            {workspaceAnalytics.benchmarkItems} live Â· {workspaceAnalytics.customItems} override
           </strong>
           <p className="ws-insight-copy">
             {workspaceAnalytics.benchmarkReferencedItems} items linked to current market benchmark
@@ -2378,10 +2378,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
               <strong>{benchmarkRefreshAnalytics.actionableItems} benchmark item{benchmarkRefreshAnalytics.actionableItems === 1 ? '' : 's'} need review</strong>
               <p>
                 {benchmarkRefreshAnalytics.benchmarkRateUpdates} live benchmark item{benchmarkRefreshAnalytics.benchmarkRateUpdates === 1 ? '' : 's'} can update amount now
-                {' · '}
+                {' Â· '}
                 {benchmarkRefreshAnalytics.referenceOnlyUpdates} custom/manual item{benchmarkRefreshAnalytics.referenceOnlyUpdates === 1 ? '' : 's'} will keep their current rate
-                {benchmarkRefreshAnalytics.reviewItems > 0 ? ` · ${benchmarkRefreshAnalytics.reviewItems} still need manual benchmark review` : ''}
-                {benchmarkSyncLabel ? ` · checked ${benchmarkSyncLabel}` : ''}
+                {benchmarkRefreshAnalytics.reviewItems > 0 ? ` Â· ${benchmarkRefreshAnalytics.reviewItems} still need manual benchmark review` : ''}
+                {benchmarkSyncLabel ? ` Â· checked ${benchmarkSyncLabel}` : ''}
               </p>
             </>
           ) : (
@@ -2529,7 +2529,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         </div>
         <div className="ws-mobile-stat-card ws-mobile-stat-card-total">
           <span>Contract Sum</span>
-          <strong>₦{calculateGrandTotal.toLocaleString()}</strong>
+          <strong>â‚¦{calculateGrandTotal.toLocaleString()}</strong>
         </div>
       </div>
 
@@ -2542,14 +2542,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           <strong className="ws-insight-value">{workspaceAnalytics.pricingCoveragePercent.toFixed(0)}%</strong>
           <p className="ws-insight-copy">
             {workspaceAnalytics.pricedItems} of {workspaceAnalytics.totalItems} items priced
-            {workspaceAnalytics.benchmarkItems > 0 ? ` · ${workspaceAnalytics.benchmarkItems} auto-priced from benchmark` : ''}
-            {workspaceAnalytics.unpricedItems > 0 ? ` · ${workspaceAnalytics.unpricedItems} still need review` : ' · full coverage reached'}
+            {workspaceAnalytics.benchmarkItems > 0 ? ` Â· ${workspaceAnalytics.benchmarkItems} auto-priced from benchmark` : ''}
+            {workspaceAnalytics.unpricedItems > 0 ? ` Â· ${workspaceAnalytics.unpricedItems} still need review` : ' Â· full coverage reached'}
           </p>
         </div>
         <div className="ws-insight-card">
           <span className="ws-insight-label">Benchmark Automation</span>
           <strong className="ws-insight-value">
-            {workspaceAnalytics.benchmarkItems} live · {workspaceAnalytics.customItems} override
+            {workspaceAnalytics.benchmarkItems} live Â· {workspaceAnalytics.customItems} override
           </strong>
           <p className="ws-insight-copy">
             {workspaceAnalytics.benchmarkReferencedItems} items linked to current market benchmark
@@ -2601,10 +2601,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
               <strong>{benchmarkRefreshAnalytics.actionableItems} benchmark item{benchmarkRefreshAnalytics.actionableItems === 1 ? '' : 's'} need review</strong>
               <p>
                 {benchmarkRefreshAnalytics.benchmarkRateUpdates} live benchmark item{benchmarkRefreshAnalytics.benchmarkRateUpdates === 1 ? '' : 's'} can update amount now
-                {' · '}
+                {' Â· '}
                 {benchmarkRefreshAnalytics.referenceOnlyUpdates} custom/manual item{benchmarkRefreshAnalytics.referenceOnlyUpdates === 1 ? '' : 's'} will keep their current rate
-                {benchmarkRefreshAnalytics.reviewItems > 0 ? ` · ${benchmarkRefreshAnalytics.reviewItems} still need manual benchmark review` : ''}
-                {benchmarkSyncLabel ? ` · checked ${benchmarkSyncLabel}` : ''}
+                {benchmarkRefreshAnalytics.reviewItems > 0 ? ` Â· ${benchmarkRefreshAnalytics.reviewItems} still need manual benchmark review` : ''}
+                {benchmarkSyncLabel ? ` Â· checked ${benchmarkSyncLabel}` : ''}
               </p>
             </>
           ) : (
@@ -2646,7 +2646,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             <>
               <div className="ws-helper-copy">
                 <span className="ws-helper-label">Selected Row</span>
-                <strong>{selectedItemContext.itemCode} · {selectedItemContext.item.description || 'Untitled BOQ item'}</strong>
+                <strong>{selectedItemContext.itemCode} Â· {selectedItemContext.item.description || 'Untitled BOQ item'}</strong>
                 <small>
                   {selectedItemContext.section.title} | Qty {selectedItemContext.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} | Rate N{selectedItemContext.unitRate.toLocaleString()} | Amount N{selectedItemContext.total.toLocaleString()}
                 </small>
@@ -2743,7 +2743,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           <strong className="ws-cost-value">{activeProjectSection?.title || 'No active bill'}</strong>
           <small className="ws-cost-meta">
             {activeProjectSection
-              ? `${(activeProjectSection.items || []).length} line${(activeProjectSection.items || []).length === 1 ? '' : 's'} · Qty ${activeSectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+              ? `${(activeProjectSection.items || []).length} line${(activeProjectSection.items || []).length === 1 ? '' : 's'} Â· Qty ${activeSectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
               : 'Choose a bill section to start measuring'}
           </small>
         </div>
@@ -2760,14 +2760,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           <span className="ws-cost-label">{isFilteredView ? `${activeWorkspaceFilterLabel} View` : 'Visible Sheet Total'}</span>
           <strong className="ws-cost-value">N{visibleGrandTotal.toLocaleString()}</strong>
           <small className="ws-cost-meta">
-            {filteredSectionCount} visible bill{filteredSectionCount === 1 ? '' : 's'} · {filteredItemCount} visible item{filteredItemCount === 1 ? '' : 's'}
+            {filteredSectionCount} visible bill{filteredSectionCount === 1 ? '' : 's'} Â· {filteredItemCount} visible item{filteredItemCount === 1 ? '' : 's'}
           </small>
         </div>
         <div className="ws-cost-card ws-cost-card-total">
           <span className="ws-cost-label">Project Grand Total</span>
           <strong className="ws-cost-value">N{calculateGrandTotal.toLocaleString()}</strong>
           <small className="ws-cost-meta">
-            {project?.region || 'Lagos'} market basis · {workspaceAnalytics.totalItems} measured item{workspaceAnalytics.totalItems === 1 ? '' : 's'}
+            {project?.region || 'Lagos'} market basis Â· {workspaceAnalytics.totalItems} measured item{workspaceAnalytics.totalItems === 1 ? '' : 's'}
           </small>
         </div>
       </div>
@@ -2804,8 +2804,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                   <th className="ws-th-sm">%</th>
                 </>
               ) : null}
-              <th className="ws-th-rate">Rate (₦)</th>
-              <th className="ws-th-total">Amount (₦)</th>
+              <th className="ws-th-rate">Rate (â‚¦)</th>
+              <th className="ws-th-total">Amount (â‚¦)</th>
               <th className="ws-th-act"></th>
             </tr>
           </thead>
@@ -2859,7 +2859,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                         <span className="ws-section-meta">QTY {sectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                         <span className="ws-section-badge">{section.items?.length || 0}</span>
                         {!section.expanded && (
-                          <span className="ws-section-total">₦{sectionSubtotal.toLocaleString()}</span>
+                          <span className="ws-section-total">â‚¦{sectionSubtotal.toLocaleString()}</span>
                         )}
                       </div>
                     </td>
@@ -3168,7 +3168,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                             )}
                             {hasBenchmarkRate && selectedRateSource !== 'benchmark' && (
                               <span className="ws-rate-chip ws-rate-chip-bm-ref" title="Current market benchmark for this item">
-                                Benchmark: ₦{Math.round(benchmarkRate).toLocaleString()}
+                                Benchmark: â‚¦{Math.round(benchmarkRate).toLocaleString()}
                               </span>
                             )}
                             {benchmarkRefreshMeta?.canApplyRefresh && (
@@ -3208,7 +3208,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                           {selectedRateSource === 'benchmark' && (
                             <div className="ws-benchmark-override">
                               <Pencil size={10} className="ws-benchmark-override-icon" />
-                              <span className="ws-benchmark-override-label">Benchmark (₦):</span>
+                              <span className="ws-benchmark-override-label">Benchmark (â‚¦):</span>
                               <input
                                 type="number"
                                 className="ws-input ws-benchmark-override-input"
@@ -3250,7 +3250,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                           className={`ws-total-cell ${isWorkspaceCellSelected(section.id, item.id, 'amount') ? 'ws-cell-selected' : ''}`}
                           onClick={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'amount', itemCode, rowNumber: spreadsheetRowNumber })}
                         >
-                          <strong className="ws-total-main">₦{itemTotal.toLocaleString()}</strong>
+                          <strong className="ws-total-main">â‚¦{itemTotal.toLocaleString()}</strong>
                           {amountFormula && <span className="ws-total-formula">{amountFormula}</span>}
                           <span className={`ws-total-status ws-total-status-${automationMeta.tone}`}>{automationMeta.title}</span>
                         </td>
@@ -3290,7 +3290,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                               </div>
                               <div className="ws-mobile-card-total">
                                 <span>Amount</span>
-                                <strong>₦{itemTotal.toLocaleString()}</strong>
+                                <strong>â‚¦{itemTotal.toLocaleString()}</strong>
                                 {amountFormula && <small>{amountFormula}</small>}
                               </div>
                             </div>
@@ -3581,7 +3581,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                       <tr className="ws-subtotal-row">
                         <td colSpan={subtotalLeadingSpan}></td>
                         <td colSpan="2" className="ws-subtotal-val">
-                          Section Total · Qty {sectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })} · Amount ₦{sectionSubtotal.toLocaleString()}
+                          Section Total Â· Qty {sectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })} Â· Amount â‚¦{sectionSubtotal.toLocaleString()}
                         </td>
                         <td></td>
                       </tr>
@@ -3608,7 +3608,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           <tfoot>
             <tr className="ws-grand-total">
               <td colSpan={viewMode === 'valuation' ? 7 : 6}>CONTRACT SUM</td>
-              <td className="ws-grand-val">₦{calculateGrandTotal.toLocaleString()}</td>
+              <td className="ws-grand-val">â‚¦{calculateGrandTotal.toLocaleString()}</td>
               <td></td>
             </tr>
           </tfoot>
@@ -3626,9 +3626,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                 <div className="ws-detail-dock-header">
                   <div className="ws-detail-dock-copy">
                     <span className="ws-detail-dock-eyebrow">Selected Row</span>
-                    <strong>{selectedItemContext.itemCode} · {selectedItemContext.item.name || selectedItemContext.item.description || 'Untitled BOQ item'}</strong>
+                    <strong>{selectedItemContext.itemCode} Â· {selectedItemContext.item.name || selectedItemContext.item.description || 'Untitled BOQ item'}</strong>
                     <small>
-                      {selectedItemContext.section.title} · Qty {selectedItemContext.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} · Rate N{selectedItemContext.unitRate.toLocaleString()} · Amount N{selectedItemContext.total.toLocaleString()}
+                      {selectedItemContext.section.title} Â· Qty {selectedItemContext.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} Â· Rate N{selectedItemContext.unitRate.toLocaleString()} Â· Amount N{selectedItemContext.total.toLocaleString()}
                     </small>
                   </div>
                   <div className="ws-detail-dock-actions">
@@ -3811,3676 +3811,147 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
 
       <style jsx="true">{`
-
-        /* --- NEW COMPACT LAYOUT STYLES --- */
-        .ws-workspace-shell {
-          display: grid;
-          grid-template-columns: 280px minmax(0, 1fr) 360px;
-          gap: 1rem;
-          width: 100%;
-          height: calc(100vh - 56px);
-          min-height: 0;
-          min-width: 0;
-          align-items: stretch;
-          overflow: hidden;
-        }
-        .ws-main-pane {
-          min-width: 0;
-          max-width: 100%;
-          min-height: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-          overflow-y: auto;
-          overflow-x: hidden;
-          scrollbar-width: thin;
-          scrollbar-color: #cbd5e1 transparent;
-          box-sizing: border-box;
-        }
-        .ws-main-pane > * {
-          min-width: 0;
-          max-width: 100%;
-          box-sizing: border-box;
-        }
-        .ws-main-pane::-webkit-scrollbar { width: 6px; }
-        .ws-main-pane::-webkit-scrollbar-track { background: transparent; }
-        .ws-main-pane::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        .ws-main-pane::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        .ws-detail-dock {
-          width: 360px;
-          min-width: 360px;
-          max-width: 360px;
-          min-height: 0;
-          display: flex;
-          flex-direction: column;
-          background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-          border: 1px solid #dbe3ef;
-          border-radius: 26px;
-          box-shadow: 0 20px 44px rgba(15, 23, 42, 0.08);
-          overflow-y: auto;
-          overflow-x: hidden;
-          scrollbar-width: thin;
-          scrollbar-color: #ccc transparent;
-        }
-        .right-panel {
-          padding: 0; /* Children handle internal padding for alignment */
-        }
-        .ws-detail-dock::-webkit-scrollbar { width: 6px; }
-        .ws-detail-dock::-webkit-scrollbar-track { background: transparent; }
-        .ws-detail-dock::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
-        .ws-detail-dock.is-empty {
-          display: flex;
-          align-items: stretch;
-        }
-        .ws-detail-dock-header {
-          display: flex;
-          flex-direction: column;
-          gap: 0.9rem;
-          padding: 1.25rem 1.5rem;
-          border-bottom: 1px solid #e2e8f0;
-          background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
-        }
-        .ws-detail-dock-copy {
-          display: flex;
-          flex-direction: column;
-          gap: 0.25rem;
-        }
-        .ws-detail-dock-eyebrow,
-        .ws-detail-empty-eyebrow {
-          font-size: 0.68rem;
-          font-weight: 800;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: #64748b;
-        }
-        .ws-detail-dock-copy strong {
-          font-size: 0.96rem;
-          color: #0f172a;
-          line-height: 1.4;
-        }
-        .ws-detail-dock-copy small {
-          color: #64748b;
-          font-size: 0.76rem;
-          line-height: 1.5;
-        }
-        .ws-detail-dock-actions {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.45rem;
-        }
-        .ws-detail-empty {
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          gap: 0.75rem;
-          padding: 1.5rem;
-          flex: 1;
-          background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
-        }
-        .ws-detail-empty strong {
-          color: #0f172a;
-          font-size: 1rem;
-        }
-        .ws-detail-empty p {
-          margin: 0;
-          color: #64748b;
-          font-size: 0.84rem;
-          line-height: 1.6;
-        }
-        .ws-detail-empty-actions {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.6rem;
-        }
-        .ws-summary-strip {
-          min-width: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 1.05rem;
-          padding: 1.05rem 1.15rem 1.15rem;
-          border: 1px solid #dbe3ef;
-          border-radius: 26px;
-          background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-          box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
-        }
-        .ws-summary-headline {
-          display: flex;
-          flex-direction: column;
-          gap: 0.36rem;
-        }
-        .ws-summary-title-row {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          flex-wrap: wrap;
-        }
-        .ws-summary-title-row h1 {
-          margin: 0;
-          font-size: 2rem;
-          line-height: 1.02;
-          color: #0f172a;
-        }
-        .ws-summary-headline p {
-          margin: 0;
-          color: #64748b;
-          font-size: 0.88rem;
-        }
-        .ws-summary-metrics-row {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 0.8rem;
-        }
-        .ws-summary-metric {
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          gap: 0.26rem;
-          padding: 1rem 1rem 0.95rem;
-          border-radius: 20px;
-          background: #ffffff;
-          border: 1px solid #e2e8f0;
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
-        }
-        .ws-summary-badge {
-          position: absolute;
-          top: 0.8rem;
-          right: 0.8rem;
-          display: inline-flex;
-          align-items: center;
-          padding: 0.16rem 0.46rem;
-          border-radius: 999px;
-          background: #eff6ff;
-          color: #1d4ed8;
-          font-size: 0.58rem;
-          font-weight: 900;
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-        }
-        .ws-summary-badge-strong {
-          background: rgba(255,255,255,0.18);
-          color: #ffffff;
-        }
-        .ws-summary-metric > span:not(.ws-summary-badge) {
-          font-size: 0.7rem;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
-          color: #64748b;
-        }
-        .ws-summary-metric strong {
-          font-size: 1.24rem;
-          color: #0f172a;
-          line-height: 1.2;
-          padding-right: 1.25rem;
-        }
-        .ws-summary-metric small {
-          color: #64748b;
-          font-size: 0.76rem;
-          line-height: 1.5;
-        }
-        .ws-summary-metric-secondary {
-          background: #ffffff;
-        }
-        .ws-summary-metric-tertiary {
-          background: #f8fafc;
-          border-style: dashed;
-        }
-        .ws-summary-metric-tertiary strong {
-          font-size: 1.05rem;
-        }
-        .ws-summary-metric-strong {
-          background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
-          border-color: #1e40af;
-          box-shadow: 0 18px 36px rgba(37, 99, 235, 0.22);
-          transform: translateY(-1px);
-        }
-        .ws-summary-metric-strong > span:not(.ws-summary-badge),
-        .ws-summary-metric-strong strong,
-        .ws-summary-metric-strong small {
-          color: #ffffff;
-        }
-        .ws-summary-actions-row {
-          display: flex;
-          justify-content: space-between;
-          gap: 1rem;
-          align-items: center;
-          flex-wrap: wrap;
-        }
-        .ws-summary-actions {
-          display: flex;
-          align-items: center;
-          gap: 0.6rem;
-          flex-wrap: wrap;
-        }
-        .ws-sheet-tabbar-compact {
-          margin: 0;
-          padding: 0;
-          border: none;
-          background: transparent;
-        }
-        .ws-analytics-inline-card {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 1rem;
-          padding: 0.9rem 1rem;
-          border-radius: 18px;
-          border: 1px solid #dbeafe;
-          background: #eff6ff;
-        }
-        .ws-analytics-inline-copy {
-          display: flex;
-          flex-direction: column;
-          gap: 0.25rem;
-        }
-        .ws-analytics-inline-copy strong {
-          color: #1e3a8a;
-          font-size: 0.88rem;
-        }
-        .ws-analytics-inline-copy small {
-          color: #475569;
-          font-size: 0.76rem;
-        }
-        .ws-item-heading-row {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 0.75rem;
-          margin-bottom: 0.45rem;
-        }
-        .ws-item-heading-copy {
-          display: flex;
-          flex-direction: column;
-          gap: 0.3rem;
-          min-width: 0;
-        }
-        .ws-item-name {
-          font-size: 0.95rem;
-          color: #0f172a;
-          line-height: 1.32;
-          letter-spacing: -0.01em;
-        }
-        .ws-item-code-pill {
-          display: inline-flex;
-          align-items: center;
-          width: fit-content;
-          padding: 0.2rem 0.5rem;
-          border-radius: 999px;
-          background: #eff6ff;
-          color: #1d4ed8;
-          font-size: 0.68rem;
-          font-weight: 800;
-        }
-        .ws-item-indicators {
-          display: flex;
-          align-items: center;
-          flex-wrap: wrap;
-          justify-content: flex-end;
-          gap: 0.35rem;
-        }
-        .ws-item-secondary {
-          margin-top: 0.35rem;
-          font-size: 0.72rem;
-          color: #64748b;
-          line-height: 1.5;
-        }
-        .ws-workbook-top,
-        .ws-workspace-command-center,
-        .ws-bill-tabs-shell.workspace,
-        .ws-analytics-board,
-        .ws-mobile-summary {
-          display: none !important;
-        }
-        @media (max-width: 1500px) {
+          /* --- WORKSPACE CORE LAYOUT --- */
           .ws-workspace-shell {
+            display: grid;
             grid-template-columns: 280px minmax(0, 1fr) 360px;
-          }
-          .ws-summary-metrics-row {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-        }
-        @media (max-width: 1180px) {
-          .ws-container {
-            height: auto;
-            max-height: none;
-            overflow: visible;
-          }
-          .ws-workspace-shell {
-            grid-template-columns: 1fr;
-            height: auto;
-            overflow: visible;
+            height: 100vh;
+            overflow: hidden;
+            background: #f8fafc;
           }
           .ws-main-pane {
-            overflow-y: visible;
-            overflow-x: visible;
-          }
-          .ws-detail-dock {
-            position: static;
-            width: 100%;
-            min-width: 0;
-            max-width: 100%;
-            min-height: auto;
-            overflow-y: visible;
-          }
-          .ws-summary-actions-row,
-          .ws-analytics-inline-card {
+            display: flex;
             flex-direction: column;
-            align-items: stretch;
-          }
-        }
-        @media (max-width: 768px) {
-          .ws-summary-metrics-row {
-            grid-template-columns: 1fr;
-          }
-          .ws-summary-title-row h1 {
-            font-size: 1.45rem;
-          }
-        }
-        .ws-workbook-metrics-compact {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-        .ws-analytics-toggle {
-          display: inline-flex;
-          align-items: center;
-          padding: 0.45rem 1.4rem;
-          background: #eff6ff;
-          color: #1d4ed8;
-          border: 1px solid #bfdbfe;
-          border-radius: 999px;
-          font-size: 0.72rem;
-          font-weight: 800;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .ws-analytics-toggle:hover {
-          background: #dbeafe;
-        }
-        .ws-analytics-toggle.active {
-          background: #1e3a8a;
-          color: white;
-          border-color: #1e3a8a;
-        }
-        .ws-analytics-board {
-          display: flex;
-          flex-direction: column;
-          background: #f8fafc;
-          border-bottom: 1px solid #dbe4ee;
-          padding-bottom: 0.5rem;
-          box-shadow: inset 0 6px 14px rgba(15,23,42,0.03);
-        }
-        .ws-stat-compact {
-          display: flex; align-items: center; gap: 0.5rem;
-        }
-        .ws-region-sel-compact {
-           background: rgba(255,255,255,0.1);
-           border: 1px solid rgba(255,255,255,0.2);
-           color: white;
-           padding: 2px 6px;
-           border-radius: 4px;
-           outline: none;
-           font-size: 0.65rem;
-           cursor: pointer;
-        }
-        .ws-region-sel-compact:hover {
-           background: rgba(255,255,255,0.15);
-        }
-        .ws-region-sel-compact option {
-           background: #1e293b;
-           color: white;
-        }
-        .ws-filter-group-compact {
-           display: flex;
-           gap: 0.25rem;
-           background: rgba(0,0,0,0.15);
-           padding: 0.22rem;
-           border-radius: 6px;
-        }
-        .ws-filter-chip-compact {
-           background: transparent;
-           border: none;
-           color: rgba(255,255,255,0.6);
-           font-size: 0.64rem;
-           font-weight: 800;
-           padding: 0.25rem 0.6rem;
-           border-radius: 4px;
-           cursor: pointer;
-           transition: all 0.2s;
-        }
-        .ws-filter-chip-compact:hover {
-           color: white;
-           background: rgba(255,255,255,0.1);
-        }
-        .ws-filter-chip-compact.active {
-           background: rgba(255,255,255,0.2);
-           color: white;
-        }
-        .ws-bill-nav {
-           padding: 0.5rem 0.75rem !important;
-        }
-        .ws-bill-pill {
-           padding: 0.25rem 0.5rem;
-           border-radius: 999px;
-           flex-direction: row;
-           align-items: center;
-           min-width: unset;
-        }
-        .ws-bill-pill-title {
-           font-size: 0.72rem;
-        }
-        .ws-bill-pill-meta {
-           display: none;
-        }
-        .ws-bill-pill-picker {
-           padding: 0.15rem 0.45rem;
-           font-size: 0.62rem;
-           border-radius: 999px;
-        }
-        .ws-bill-nav-hidden {
-          display: none !important;
-        }
-        .ws-workspace-body {
-          display: flex;
-          flex-direction: column;
-          flex: 1;
-          min-height: 0;
-          overflow: hidden;
-        }
-        .ws-bill-tabs-shell {
-          position: sticky;
-          top: 0;
-          z-index: 18;
-          background: rgba(248, 250, 252, 0.94);
-          backdrop-filter: blur(14px);
-          border-bottom: 1px solid rgba(148, 163, 184, 0.18);
-          padding: 0.85rem 1rem;
-        }
-        .ws-bill-tabs {
-          display: grid;
-          grid-auto-flow: column;
-          grid-auto-columns: minmax(220px, 1fr);
-          gap: 0.65rem;
-          overflow-x: auto;
-          scrollbar-width: none;
-        }
-        .ws-bill-tabs::-webkit-scrollbar { display: none; }
-        .ws-bill-tab {
-          border: 1px solid #dbe3ef;
-          background: #ffffff;
-          border-radius: 18px;
-          padding: 0.8rem 0.9rem;
-          display: grid;
-          grid-template-columns: 40px minmax(0, 1fr);
-          gap: 0.75rem;
-          align-items: center;
-          text-align: left;
-          cursor: pointer;
-          transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
-        }
-        .ws-bill-tab:hover {
-          transform: translateY(-1px);
-          border-color: #93c5fd;
-          box-shadow: 0 14px 28px rgba(37, 99, 235, 0.08);
-        }
-        .ws-bill-tab.active {
-          border-color: #2563eb;
-          background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
-          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-        }
-        .ws-bill-tab-index {
-          width: 40px;
-          height: 40px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 12px;
-          background: #f1f5f9;
-          color: #475569;
-          font-size: 0.72rem;
-          font-weight: 800;
-        }
-        .ws-bill-tab.active .ws-bill-tab-index {
-          background: #dbeafe;
-          color: #1d4ed8;
-        }
-        .ws-bill-tab-copy {
-          min-width: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 0.2rem;
-        }
-        .ws-bill-tab-copy strong {
-          font-size: 0.84rem;
-          color: #0f172a;
-          line-height: 1.35;
-        }
-        .ws-bill-tab-copy small {
-          font-size: 0.72rem;
-          color: #64748b;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .ws-stage-shell {
-          display: block;
-          min-height: 0;
-          border-top: none;
-          background: transparent;
-        }
-        .ws-stage-shell-selection {
-          min-height: 0;
-        }
-        .ws-stage-main {
-          width: 100%;
-          min-height: 0;
-          display: flex;
-          flex-direction: column;
-          background: transparent;
-        }
-        .ws-stage-main-selection {
-          overflow: hidden;
-        }
-        .ws-selection-stage-chip {
-          display: inline-flex;
-          align-items: center;
-          padding: 0.45rem 1rem;
-          border-radius: 999px;
-          background: #eff6ff;
-          color: #1d4ed8;
-          border: 1px solid #bfdbfe;
-          font-size: 0.72rem;
-          font-weight: 800;
-        }
-        .ws-sheet-tabbar-selection {
-          justify-content: space-between;
-          gap: 1rem;
-          align-items: center;
-        }
-        .ws-selection-tabbar-copy {
-          display: flex;
-          flex-direction: column;
-          gap: 0.25rem;
-          color: #0f172a;
-        }
-        .ws-selection-tabbar-copy strong {
-          font-size: 0.92rem;
-        }
-        .ws-selection-tabbar-copy span {
-          font-size: 0.78rem;
-          line-height: 1.5;
-          color: #475569;
-        }
-
-        /* --- NEW COMPACT LAYOUT STYLES --- */
-        .ws-workbook-metrics-compact {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-        .ws-analytics-toggle {
-          display: inline-flex;
-          align-items: center;
-          padding: 0.45rem 1.4rem;
-          background: #eff6ff;
-          color: #1d4ed8;
-          border: 1px solid #bfdbfe;
-          border-radius: 999px;
-          font-size: 0.72rem;
-          font-weight: 800;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .ws-analytics-toggle:hover {
-          background: #dbeafe;
-        }
-        .ws-analytics-toggle.active {
-          background: #1e3a8a;
-          color: white;
-          border-color: #1e3a8a;
-        }
-        .ws-analytics-board {
-          display: flex;
-          flex-direction: column;
-          background: #f8fafc;
-          border-bottom: 1px solid #dbe4ee;
-          padding-bottom: 0.5rem;
-          box-shadow: inset 0 6px 14px rgba(15,23,42,0.03);
-        }
-        .ws-stat-compact {
-          display: flex; align-items: center; gap: 0.5rem;
-        }
-        .ws-region-sel-compact {
-           background: rgba(255,255,255,0.1);
-           border: 1px solid rgba(255,255,255,0.2);
-           color: white;
-           padding: 2px 6px;
-           border-radius: 4px;
-           outline: none;
-           font-size: 0.65rem;
-           cursor: pointer;
-        }
-        .ws-region-sel-compact:hover {
-           background: rgba(255,255,255,0.15);
-        }
-        .ws-region-sel-compact option {
-           background: #1e293b;
-           color: white;
-        }
-        .ws-filter-group-compact {
-           display: flex;
-           gap: 0.25rem;
-           background: rgba(0,0,0,0.15);
-           padding: 0.22rem;
-           border-radius: 6px;
-        }
-        .ws-filter-chip-compact {
-           background: transparent;
-           border: none;
-           color: rgba(255,255,255,0.6);
-           font-size: 0.64rem;
-           font-weight: 800;
-           padding: 0.25rem 0.6rem;
-           border-radius: 4px;
-           cursor: pointer;
-           transition: all 0.2s;
-        }
-        .ws-filter-chip-compact:hover {
-           color: white;
-           background: rgba(255,255,255,0.1);
-        }
-        .ws-filter-chip-compact.active {
-           background: rgba(255,255,255,0.2);
-           color: white;
-        }
-        .ws-bill-nav {
-           padding: 0.5rem 0.75rem !important;
-        }
-        .ws-bill-pill {
-           padding: 0.25rem 0.5rem;
-           border-radius: 999px;
-           flex-direction: row;
-           align-items: center;
-           min-width: unset;
-        }
-        .ws-bill-pill-title {
-           font-size: 0.72rem;
-        }
-        .ws-bill-pill-meta {
-           display: none;
-        }
-        .ws-bill-pill-picker {
-           padding: 0.15rem 0.45rem;
-           font-size: 0.62rem;
-           border-radius: 999px;
-        }
-
-        /* ═══════════════════════════════════════════ */
-        /*  BOQ WORKSPACE — FULL-PAGE SHEET           */
-        /* ═══════════════════════════════════════════ */
-
-        .ws-container {
-          display: flex;
-          flex-direction: column;
-          height: calc(100vh - 56px);
-          max-height: calc(100vh - 56px);
-          background: #f1f5f9;
-          overflow: hidden;
-        }
-
-        .ws-mobile-summary,
-        .ws-mobile-row {
-          display: none;
-        }
-
-        .ws-mobile-summary {
-          gap: 0.625rem;
-          padding: 0.75rem;
-          background: linear-gradient(180deg, #f8fafc, #eef2ff);
-          border-bottom: 1px solid #e2e8f0;
-          overflow-x: auto;
-          scrollbar-width: none;
-        }
-        .ws-mobile-summary::-webkit-scrollbar { display: none; }
-
-        .ws-mobile-stat-card {
-          min-width: 130px;
-          display: flex;
-          flex-direction: column;
-          gap: 0.24rem;
-          padding: 0.75rem 0.85rem;
-          background: rgba(255,255,255,0.92);
-          border: 1px solid #dbe4ee;
-          border-radius: 14px;
-          box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
-        }
-        .ws-mobile-stat-card span {
-          font-size: 0.56rem;
-          font-weight: 800;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #64748b;
-        }
-        .ws-mobile-stat-card strong {
-          font-size: 0.92rem;
-          font-weight: 900;
-          color: #0f172a;
-        }
-        .ws-mobile-stat-card-total {
-          background: linear-gradient(135deg, #eff6ff, #dbeafe);
-          border-color: #bfdbfe;
-        }
-        .ws-mobile-stat-card-total strong {
-          color: #1d4ed8;
-        }
-
-        .ws-insight-strip {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 0.55rem;
-          padding: 0.45rem 0.75rem 0.5rem;
-          background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
-          border-bottom: 1px solid #dbe4ee;
-        }
-
-        .ws-insight-card {
-          display: flex;
-          flex-direction: column;
-          gap: 0.16rem;
-          padding: 0.62rem 0.72rem;
-          border-radius: 16px;
-          background: rgba(255, 255, 255, 0.92);
-          border: 1px solid #dbe4ee;
-          box-shadow: 0 10px 20px rgba(15, 23, 42, 0.05);
-        }
-
-        .ws-insight-card-strong {
-          background: linear-gradient(135deg, #eff6ff, #dbeafe);
-          border-color: #bfdbfe;
-        }
-
-        .ws-insight-label {
-          font-size: 0.54rem;
-          font-weight: 900;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #64748b;
-        }
-
-        .ws-insight-value {
-          font-size: 0.82rem;
-          font-weight: 900;
-          color: #0f172a;
-        }
-
-        .ws-insight-copy {
-          margin: 0;
-          font-size: 0.63rem;
-          line-height: 1.38;
-          color: #475569;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-
-        .ws-cost-rail {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 0.65rem;
-          padding: 0.65rem 0.75rem 0.8rem;
-          background: linear-gradient(180deg, #eef2ff 0%, #f8fafc 100%);
-          border-bottom: 1px solid #dbe4ee;
-        }
-
-        .ws-cost-card {
-          display: flex;
-          flex-direction: column;
-          gap: 0.24rem;
-          padding: 0.78rem 0.9rem;
-          border-radius: 16px;
-          background: rgba(255, 255, 255, 0.92);
-          border: 1px solid #dbe4ee;
-          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
-        }
-
-        .ws-cost-card-total {
-          background: linear-gradient(135deg, #0f172a, #1e3a8a);
-          border-color: #1e3a8a;
-        }
-
-        .ws-cost-label {
-          font-size: 0.56rem;
-          font-weight: 900;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #64748b;
-        }
-
-        .ws-cost-value {
-          font-size: 1rem;
-          font-weight: 900;
-          color: #0f172a;
-          line-height: 1.2;
-        }
-
-        .ws-cost-meta {
-          font-size: 0.68rem;
-          line-height: 1.45;
-          color: #475569;
-        }
-
-        .ws-cost-card-total .ws-cost-label,
-        .ws-cost-card-total .ws-cost-value,
-        .ws-cost-card-total .ws-cost-meta {
-          color: #ffffff;
-        }
-
-        .ws-refresh-banner {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 0.75rem;
-          padding: 0.55rem 0.75rem;
-          border-bottom: 1px solid #dbe4ee;
-          background: #f8fafc;
-        }
-        .ws-refresh-banner-active {
-          background: linear-gradient(135deg, #eff6ff, #eef2ff);
-        }
-        .ws-refresh-banner-calm {
-          background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-        }
-        .ws-refresh-banner-warning {
-          background: linear-gradient(135deg, #fff7ed, #fff1f2);
-        }
-        .ws-refresh-banner-copy {
-          display: flex;
-          flex-direction: column;
-          gap: 0.14rem;
-          min-width: 0;
-        }
-        .ws-refresh-banner-copy strong {
-          font-size: 0.76rem;
-          font-weight: 900;
-          color: #0f172a;
-        }
-        .ws-refresh-banner-copy p {
-          margin: 0;
-          font-size: 0.64rem;
-          line-height: 1.35;
-          color: #475569;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        .ws-refresh-banner-eyebrow {
-          font-size: 0.52rem;
-          font-weight: 900;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #64748b;
-        }
-        .ws-refresh-banner-actions {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          flex-shrink: 0;
-        }
-
-        .ws-workbook-top {
-          display: flex;
-          flex-direction: column;
-          gap: 0.45rem;
-          padding: 0.75rem 0.75rem 0.55rem;
-          background: linear-gradient(180deg, #f8fbff 0%, #eef2ff 100%);
-          border-bottom: 1px solid #dbe4ee;
-        }
-        .ws-workbook-head {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 1rem;
-        }
-        .ws-workbook-copy {
-          display: flex;
-          flex-direction: column;
-          gap: 0.22rem;
-          min-width: 0;
-        }
-        .ws-workbook-eyebrow {
-          font-size: 0.56rem;
-          font-weight: 900;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #64748b;
-        }
-        .ws-workbook-title-row {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          flex-wrap: wrap;
-        }
-        .ws-workbook-title-row h1 {
-          margin: 0;
-          font-size: 1.25rem;
-          line-height: 1.1;
-          font-weight: 900;
-          color: #0f172a;
-        }
-        .ws-workbook-copy p {
-          margin: 0;
-          font-size: 0.7rem;
-          line-height: 1.35;
-          color: #475569;
-        }
-        .ws-workbook-health {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.18rem 0.6rem;
-          border-radius: 999px;
-          font-size: 0.56rem;
-          font-weight: 900;
-          letter-spacing: 0.03em;
-          white-space: nowrap;
-        }
-        .ws-workbook-health-success {
-          background: #dcfce7;
-          color: #166534;
-        }
-        .ws-workbook-health-active {
-          background: #dbeafe;
-          color: #1d4ed8;
-        }
-        .ws-workbook-health-warning {
-          background: #ffedd5;
-          color: #c2410c;
-        }
-        .ws-workbook-health-muted {
-          background: #e2e8f0;
-          color: #475569;
-        }
-        .ws-search-results {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.24rem 0.55rem;
-          border-radius: 999px;
-          background: rgba(255,255,255,0.08);
-          border: 1px solid rgba(255,255,255,0.12);
-          color: rgba(255,255,255,0.76);
-          font-size: 0.58rem;
-          font-weight: 900;
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-          white-space: nowrap;
-        }
-        .ws-workbook-metrics {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 0.45rem;
-          min-width: 340px;
-        }
-        .ws-workbook-metric {
-          display: flex;
-          flex-direction: column;
-          gap: 0.16rem;
-          padding: 0.58rem 0.68rem;
-          border-radius: 14px;
-          background: rgba(255,255,255,0.92);
-          border: 1px solid #dbe4ee;
-          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
-        }
-        .ws-workbook-metric span {
-          font-size: 0.52rem;
-          font-weight: 900;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #64748b;
-        }
-        .ws-workbook-metric strong {
-          font-size: 0.84rem;
-          font-weight: 900;
-          color: #0f172a;
-        }
-        .ws-sheet-tabbar {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 0.55rem;
-          padding: 0.22rem 0.2rem 0;
-          border-top: 1px solid rgba(148, 163, 184, 0.24);
-        }
-        .ws-sheet-tabbar-meta {
-          display: flex;
-          align-items: center;
-          gap: 0.45rem;
-          flex-wrap: wrap;
-          justify-content: flex-end;
-        }
-        .ws-sheet-tab {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.46rem 0.86rem;
-          border: 1px solid #dbe4ee;
-          border-radius: 14px 14px 0 0;
-          background: rgba(255,255,255,0.72);
-          color: #475569;
-          font-size: 0.68rem;
-          font-weight: 900;
-          cursor: pointer;
-          transition: all 0.15s ease;
-        }
-        .ws-sheet-tab:hover {
-          background: rgba(255,255,255,0.92);
-          color: #0f172a;
-        }
-        .ws-sheet-tab.active {
-          background: white;
-          color: #1d4ed8;
-          border-color: #bfdbfe;
-          box-shadow: 0 -1px 0 0 white, inset 0 3px 0 #2563eb;
-        }
-        .ws-sheet-meta-chip {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.18rem 0.48rem;
-          border-radius: 999px;
-          background: rgba(255,255,255,0.82);
-          border: 1px solid #dbe4ee;
-          font-size: 0.52rem;
-          font-weight: 900;
-          letter-spacing: 0.04em;
-          color: #475569;
-          white-space: nowrap;
-        }
-
-        .ws-sheet-tools {
-          padding: 0.35rem 0.75rem 0;
-          background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-          border-bottom: 1px solid #e2e8f0;
-        }
-        .ws-sheet-tools.is-idle {
-          padding-bottom: 0.1rem;
-        }
-        .ws-formula-bar {
-          display: grid;
-          grid-template-columns: 76px 30px minmax(0, 1fr);
-          align-items: stretch;
-          border: 1px solid #dbe4ee;
-          border-radius: 12px 12px 0 0;
-          background: white;
-          overflow: hidden;
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
-        }
-        .ws-formula-address,
-        .ws-formula-fx {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 0.64rem;
-          font-weight: 900;
-          letter-spacing: 0.05em;
-          color: #334155;
-          background: #f8fafc;
-          border-right: 1px solid #e2e8f0;
-        }
-        .ws-formula-fx {
-          color: #2563eb;
-          text-transform: lowercase;
-        }
-        .ws-formula-body {
-          display: flex;
-          flex-direction: column;
-          gap: 0.12rem;
-          padding: 0.42rem 0.6rem;
-          min-width: 0;
-        }
-        .ws-formula-body strong {
-          font-size: 0.56rem;
-          font-weight: 900;
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
-          color: #64748b;
-        }
-        .ws-formula-body span {
-          font-size: 0.74rem;
-          font-weight: 700;
-          color: #0f172a;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .ws-formula-body small {
-          font-size: 0.56rem;
-          line-height: 1.35;
-          color: #64748b;
-        }
-        .ws-helper-strip {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 0.6rem;
-          padding: 0.42rem 0.05rem 0.5rem;
-        }
-        .ws-helper-strip.is-idle {
-          align-items: center;
-        }
-        .ws-helper-copy {
-          display: flex;
-          flex-direction: column;
-          gap: 0.12rem;
-          min-width: 0;
-        }
-        .ws-helper-label {
-          font-size: 0.52rem;
-          font-weight: 900;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #64748b;
-        }
-        .ws-helper-copy strong {
-          font-size: 0.74rem;
-          font-weight: 900;
-          color: #0f172a;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .ws-helper-copy small {
-          font-size: 0.61rem;
-          line-height: 1.45;
-          color: #475569;
-        }
-        .ws-helper-strip.is-idle .ws-helper-copy small {
-          display: none;
-        }
-        .ws-helper-actions {
-          display: flex;
-          align-items: center;
-          justify-content: flex-end;
-          gap: 0.36rem;
-          flex-wrap: wrap;
-        }
-        .ws-helper-chip {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.18rem 0.46rem;
-          border-radius: 999px;
-          font-size: 0.5rem;
-          font-weight: 900;
-          letter-spacing: 0.04em;
-          white-space: nowrap;
-        }
-        .ws-helper-chip-benchmark { background: #dbeafe; color: #1d4ed8; }
-        .ws-helper-chip-custom { background: #ccfbf1; color: #0f766e; }
-        .ws-helper-chip-calculated { background: #ede9fe; color: #6d28d9; }
-        .ws-helper-chip-manual { background: #e2e8f0; color: #475569; }
-        .ws-helper-chip-warning { background: #ffedd5; color: #c2410c; }
-        .ws-helper-chip-muted { background: #f1f5f9; color: #64748b; }
-        .ws-helper-btn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.35rem;
-          padding: 0.42rem 0.62rem;
-          border-radius: 10px;
-          border: 1px solid #dbe4ee;
-          background: white;
-          color: #334155;
-          font-size: 0.61rem;
-          font-weight: 900;
-          cursor: pointer;
-          transition: all 0.15s ease;
-          white-space: nowrap;
-        }
-        .ws-helper-btn:hover {
-          border-color: #cbd5e1;
-          background: #f8fafc;
-        }
-        .ws-helper-btn-strong {
-          background: #eff6ff;
-          border-color: #bfdbfe;
-          color: #1d4ed8;
-        }
-        .ws-helper-btn-strong:hover {
-          background: #dbeafe;
-        }
-
-        .ws-mobile-cell {
-          padding: 0.6rem 0.75rem !important;
-          background: #f8fafc;
-          border-bottom: 1px solid #e2e8f0;
-        }
-
-        .ws-mobile-card {
-          display: flex;
-          flex-direction: column;
-          gap: 0.8rem;
-          padding: 0.95rem;
-          background: white;
-          border: 1px solid #e2e8f0;
-          border-radius: 18px;
-          box-shadow: 0 18px 32px rgba(15, 23, 42, 0.07);
-        }
-        .ws-mobile-card-benchmark {
-          border-color: #bfdbfe;
-          box-shadow: 0 18px 32px rgba(37, 99, 235, 0.08);
-        }
-        .ws-mobile-card-custom {
-          border-color: #cbd5e1;
-        }
-        .ws-mobile-card-incomplete {
-          border-color: #fdba74;
-          background: #fffaf0;
-        }
-
-        .ws-mobile-card-head {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 0.75rem;
-        }
-
-        .ws-mobile-card-badges {
-          display: flex;
-          align-items: center;
-          gap: 0.42rem;
-          flex-wrap: wrap;
-        }
-
-        .ws-mobile-item-code,
-        .ws-mobile-unit-pill {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 999px;
-          font-size: 0.62rem;
-          font-weight: 900;
-          padding: 0.28rem 0.55rem;
-        }
-
-        .ws-mobile-item-code {
-          background: #e2e8f0;
-          color: #0f172a;
-          letter-spacing: 0.03em;
-        }
-
-        .ws-mobile-unit-pill {
-          background: #eff6ff;
-          color: #1d4ed8;
-          text-transform: lowercase;
-        }
-
-        .ws-mobile-card-total {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 0.16rem;
-          flex-shrink: 0;
-          text-align: right;
-        }
-        .ws-mobile-card-total span {
-          font-size: 0.56rem;
-          font-weight: 800;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #64748b;
-        }
-        .ws-mobile-card-total strong {
-          font-size: 0.95rem;
-          font-weight: 900;
-          color: #0f172a;
-        }
-        .ws-mobile-card-total small {
-          max-width: 180px;
-          font-size: 0.58rem;
-          line-height: 1.35;
-          color: #64748b;
-        }
-
-        .ws-mobile-meta-grid,
-        .ws-mobile-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 0.7rem;
-        }
-
-        .ws-mobile-field-block {
-          display: flex;
-          flex-direction: column;
-          gap: 0.35rem;
-          min-width: 0;
-        }
-        .ws-mobile-field-block .ws-rate-note {
-          align-items: flex-start;
-        }
-        .ws-mobile-field-block .ws-benchmark-evidence {
-          align-items: flex-start;
-          text-align: left;
-        }
-        .ws-mobile-field-block .ws-benchmark-refresh {
-          align-items: flex-start;
-          text-align: left;
-        }
-        .ws-mobile-field-block .ws-qty-display,
-        .ws-mobile-field-block .ws-qty-meta {
-          justify-content: flex-start;
-        }
-        .ws-qty-display-mobile .ws-qty-main {
-          font-size: 1rem;
-        }
-        .ws-mobile-field-block label {
-          font-size: 0.6rem;
-          font-weight: 900;
-          letter-spacing: 0.07em;
-          text-transform: uppercase;
-          color: #64748b;
-        }
-        .ws-mobile-field-block-full {
-          grid-column: 1 / -1;
-        }
-        .ws-mobile-field-block-wide {
-          grid-column: span 2;
-        }
-
-        .ws-mobile-icon-btn {
-          width: 30px;
-          height: 30px;
-          flex-shrink: 0;
-        }
-
-        .ws-strategy-toggle-mobile {
-          width: 100%;
-          justify-content: stretch;
-        }
-        .ws-strategy-toggle-mobile .ws-strat-btn {
-          flex: 1;
-        }
-
-        .ws-rate-meta-mobile {
-          justify-content: flex-start;
-        }
-
-        .ws-mobile-actions {
-          display: flex;
-          gap: 0.5rem;
-          overflow-x: auto;
-          padding-bottom: 0.1rem;
-          scrollbar-width: none;
-        }
-        .ws-mobile-actions::-webkit-scrollbar { display: none; }
-
-        .ws-mobile-action-btn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.38rem;
-          min-height: 38px;
-          padding: 0.65rem 0.9rem;
-          border: 1px solid #dbe4ee;
-          border-radius: 12px;
-          background: #f8fafc;
-          color: #334155;
-          font-size: 0.7rem;
-          font-weight: 800;
-          white-space: nowrap;
-          cursor: pointer;
-          transition: all 0.15s;
-        }
-        .ws-mobile-action-btn:hover {
-          background: #e2e8f0;
-          border-color: #cbd5e1;
-        }
-        .ws-mobile-action-btn-danger {
-          background: #fff5f5;
-          border-color: #fecaca;
-          color: #dc2626;
-        }
-        .ws-mobile-action-btn-danger:hover {
-          background: #fee2e2;
-          border-color: #fca5a5;
-        }
-
-        /* ── TOOLBAR ── */
-        .ws-toolbar {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0.375rem 0.75rem;
-          background: #0f172a;
-          color: white;
-          gap: 0.75rem;
-          flex-shrink: 0;
-        }
-        .ws-toolbar-left { display: flex; align-items: center; gap: 0.5rem; }
-        .ws-toolbar-center { display: flex; align-items: center; gap: 1rem; }
-        .ws-toolbar-right { display: flex; align-items: center; gap: 0.375rem; }
-
-        .ws-bill-nav {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-          gap: 0.75rem;
-          padding: 0.75rem;
-          background: #f8fafc;
-          border-bottom: 1px solid #e2e8f0;
-        }
-
-        .ws-bill-pill {
-          display: flex;
-          align-items: stretch;
-          gap: 0.45rem;
-          padding: 0.45rem;
-          border: 1px solid #dbe3ef;
-          border-radius: 16px;
-          background: white;
-        }
-
-        .ws-bill-pill.active {
-          border-color: #60a5fa;
-          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
-        }
-
-        .ws-bill-pill-main {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          gap: 0.25rem;
-          padding: 0.2rem 0.35rem;
-          border: none;
-          background: transparent;
-          cursor: pointer;
-          text-align: left;
-        }
-
-        .ws-bill-pill-title {
-          font-size: 0.84rem;
-          font-weight: 800;
-          color: #0f172a;
-        }
-
-        .ws-bill-pill-meta {
-          font-size: 0.72rem;
-          color: #64748b;
-        }
-
-        .ws-bill-pill-picker {
-          align-self: center;
-          border: 1px solid #bfdbfe;
-          background: #eff6ff;
-          color: #1d4ed8;
-          border-radius: 12px;
-          padding: 0.55rem 0.7rem;
-          font-size: 0.72rem;
-          font-weight: 800;
-          cursor: pointer;
-          white-space: nowrap;
-        }
-
-        .ws-search {
-          display: flex;
-          align-items: center;
-          gap: 0.375rem;
-          background: rgba(255,255,255,0.08);
-          border: 1px solid rgba(255,255,255,0.12);
-          padding: 0.3rem 0.625rem;
-          border-radius: 6px;
-          color: white;
-          width: 180px;
-        }
-        .ws-search input {
-          background: none;
-          border: none;
-          outline: none;
-          color: white;
-          font-size: 0.6875rem;
-          width: 100%;
-        }
-        .ws-search input::placeholder { color: rgba(255,255,255,0.4); }
-        .ws-search-clear {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 18px;
-          height: 18px;
-          border: none;
-          border-radius: 999px;
-          background: rgba(255,255,255,0.12);
-          color: rgba(255,255,255,0.8);
-          cursor: pointer;
-          flex-shrink: 0;
-        }
-        .ws-search-clear:hover {
-          background: rgba(255,255,255,0.18);
-          color: white;
-        }
-
-        .ws-mode-switch { display: flex; background: rgba(255,255,255,0.06); border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
-        .ws-mode-btn {
-          display: flex; align-items: center; gap: 0.25rem;
-          padding: 0.25rem 0.625rem;
-          font-size: 0.625rem; font-weight: 700;
-          color: rgba(255,255,255,0.5);
-          background: none; border: none; cursor: pointer;
-          transition: all 0.15s;
-        }
-        .ws-mode-btn.active { background: rgba(255,255,255,0.12); color: white; }
-
-        .ws-stat { display: flex; flex-direction: column; align-items: center; gap: 1px; }
-        .ws-stat-label { font-size: 0.5rem; font-weight: 700; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.06em; }
-        .ws-stat-val { font-size: 0.75rem; font-weight: 900; color: white; }
-        .ws-stat-total .ws-stat-val { color: #60a5fa; }
-
-        .ws-region-sel {
-          background: rgba(255,255,255,0.08);
-          border: 1px solid rgba(255,255,255,0.15);
-          color: white;
-          font-size: 0.625rem; font-weight: 800;
-          padding: 1px 4px; border-radius: 4px;
-          outline: none; cursor: pointer;
-        }
-
-        .ws-btn {
-          display: flex; align-items: center; gap: 0.25rem;
-          padding: 0.3rem 0.625rem; border-radius: 6px;
-          font-size: 0.625rem; font-weight: 700; cursor: pointer;
-          border: none; transition: all 0.15s;
-        }
-        .ws-btn-ghost { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.1); }
-        .ws-btn-ghost:hover { background: rgba(255,255,255,0.12); color: white; }
-        .ws-btn-custom {
-          background: linear-gradient(135deg, rgba(16,185,129,0.95), rgba(5,150,105,0.95));
-          color: white;
-          box-shadow: 0 10px 20px rgba(5, 150, 105, 0.25);
-        }
-        .ws-btn-custom:hover {
-          filter: brightness(1.05);
-        }
-        .ws-btn-primary { background: #2563eb; color: white; }
-        .ws-btn-primary:hover { background: #1d4ed8; }
-
-        .ws-workspace-command-center {
-          display: flex;
-          flex-direction: column;
-          gap: 0.85rem;
-          padding: 0.95rem 0.95rem 0;
-          background: linear-gradient(180deg, #f8fbff 0%, #f8fafc 100%);
-        }
-        .ws-workbook-head {
-          align-items: stretch;
-          gap: 1.25rem;
-        }
-        .ws-workbook-console {
-          min-width: min(560px, 100%);
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-        }
-        .ws-workbook-metrics-compact {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 0.7rem;
-        }
-                .ws-head-stat-card {
-          display: flex;
-          flex-direction: column;
-          gap: 0.35rem;
-          padding: 1.25rem 1.5rem;
-          border-radius: 20px;
-          border: 1px solid #f1f5f9;
-          background: #ffffff;
-          box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .ws-head-stat-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
-          border-color: #e2e8f0;
-        }
-                .ws-head-stat-card span {
-          font-size: 0.65rem;
-          font-weight: 800;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: #94a3b8;
-        }
-                .ws-head-stat-card strong {
-          font-size: 1.25rem;
-          font-weight: 900;
-          color: #0f172a;
-          line-height: 1.1;
-        }
-                .ws-head-stat-card small {
-          font-size: 0.75rem;
-          font-weight: 500;
-          line-height: 1.5;
-          color: #64748b;
-          margin-top: 0.1rem;
-        }
-                .ws-head-stat-card-strong {
-          background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-          border-color: #1e1b4b;
-          box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
-        }
-        .ws-head-stat-card-strong:hover {
-          box-shadow: 0 15px 35px rgba(15, 23, 42, 0.2);
-        }
-        .ws-head-stat-card-strong span { color: rgba(255, 255, 255, 0.6); }
-        .ws-head-stat-card-strong span,
-        .ws-head-stat-card-strong strong,
-        .ws-head-stat-card-strong small {
-          color: #ffffff;
-        }
-        .ws-workbook-actions {
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: flex-end;
-          gap: 0.6rem;
-        }
-        .ws-head-action {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.4rem;
-          padding: 0.72rem 0.95rem;
-          border-radius: 14px;
-          border: 1px solid #dbe4ee;
-          background: rgba(255, 255, 255, 0.94);
-          color: #334155;
-          font-size: 0.78rem;
-          font-weight: 800;
-          cursor: pointer;
-          transition: all 0.18s ease;
-        }
-        .ws-head-action:hover {
-          border-color: #bfdbfe;
-          background: #eff6ff;
-          color: #1d4ed8;
-        }
-        .ws-head-action-strong {
-          border-color: #bfdbfe;
-          background: #eff6ff;
-          color: #1d4ed8;
-        }
-        .ws-analytics-toggle {
-          padding: 0.72rem 1rem;
-          border-radius: 14px;
-          font-size: 0.78rem;
-        }
-        .ws-sheet-tabbar {
-          padding-top: 0.7rem;
-          margin-top: 0.1rem;
-        }
-        .ws-bill-tabs-shell {
-          padding: 0.9rem 0.95rem;
-          background: rgba(248, 250, 252, 0.98);
-          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
-        }
-        .ws-cost-rail {
-          padding: 0;
-          background: transparent;
-          border-bottom: none;
-        }
-        .ws-cost-card {
-          border-radius: 18px;
-          padding: 0.95rem 1rem;
-        }
-        .ws-sheet-tools {
-          padding: 0;
-          background: transparent;
-          border-bottom: none;
-        }
-        .ws-formula-bar {
-          border-radius: 18px 18px 0 0;
-          box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
-        }
-        .ws-helper-strip {
-          padding: 0.9rem 1rem 1rem;
-          background: rgba(255, 255, 255, 0.94);
-          border: 1px solid #dbe4ee;
-          border-top: none;
-          border-radius: 0 0 18px 18px;
-          box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
-        }
-        .ws-analytics-board {
-          border-radius: 22px;
-          border: 1px solid #dbe4ee;
-          background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
-          overflow: hidden;
-        }
-        .ws-toolbar {
-          margin: 0.1rem 0 0;
-          padding: 0.85rem 1rem;
-          border-radius: 20px;
-          border: 1px solid #dbe4ee;
-          background: rgba(255, 255, 255, 0.96);
-          color: #0f172a;
-          box-shadow: 0 16px 36px rgba(15, 23, 42, 0.06);
-          flex-wrap: wrap;
-        }
-        .ws-toolbar-left,
-        .ws-toolbar-center,
-        .ws-toolbar-right {
-          min-height: 44px;
-        }
-        .ws-toolbar-left {
-          flex: 1 1 320px;
-        }
-        .ws-toolbar-center {
-          flex: 1 1 320px;
-          justify-content: center;
-        }
-        .ws-toolbar-right {
-          flex: 1 1 420px;
-          justify-content: flex-end;
-          flex-wrap: wrap;
-        }
-        .ws-search {
-          width: min(360px, 100%);
-          background: #f8fafc;
-          border: 1px solid #dbe4ee;
-          border-radius: 14px;
-          padding: 0.72rem 0.85rem;
-          color: #0f172a;
-        }
-        .ws-search input {
-          color: #0f172a;
-          font-size: 0.8rem;
-        }
-        .ws-search input::placeholder { color: #94a3b8; }
-        .ws-search-results {
-          background: #eff6ff;
-          border: 1px solid #bfdbfe;
-          color: #1d4ed8;
-          font-size: 0.62rem;
-        }
-        .ws-stat-label {
-          color: #64748b;
-        }
-        .ws-region-sel-compact {
-          background: #ffffff;
-          border: 1px solid #dbe4ee;
-          color: #0f172a;
-          border-radius: 10px;
-          padding: 0.35rem 0.55rem;
-          font-size: 0.72rem;
-        }
-        .ws-region-sel-compact option {
-          background: #ffffff;
-          color: #0f172a;
-        }
-        .ws-filter-group-compact {
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
-          border-radius: 12px;
-          padding: 0.25rem;
-          flex-wrap: wrap;
-        }
-        .ws-filter-chip-compact {
-          color: #64748b;
-          font-size: 0.7rem;
-          border-radius: 10px;
-          padding: 0.45rem 0.7rem;
-        }
-        .ws-filter-chip-compact:hover {
-          color: #0f172a;
-          background: #e2e8f0;
-        }
-        .ws-filter-chip-compact.active {
-          background: #0f172a;
-          color: #ffffff;
-        }
-        .ws-btn {
-          padding: 0.55rem 0.8rem;
-          border-radius: 12px;
-          font-size: 0.72rem;
-        }
-        .ws-btn-ghost {
-          background: #f8fafc;
-          color: #334155;
-          border: 1px solid #dbe4ee;
-        }
-        .ws-btn-ghost:hover {
-          background: #eff6ff;
-          color: #1d4ed8;
-          border-color: #bfdbfe;
-        }
-
-        /* ── TABLE ── */
-        .ws-table-wrap {
-          flex: 1 1 auto;
-          min-width: 0;
-          max-width: 100%;
-          overflow-y: auto;
-          overflow-x: auto;
-          min-height: 340px;
-          background: #ffffff;
-          border: 1px solid #dbe4ee;
-          border-radius: 24px;
-          box-shadow: 0 18px 36px rgba(15, 23, 42, 0.05);
-          padding-bottom: 1.4rem;
-          box-sizing: border-box;
-        }
-        .ws-table-wrap::-webkit-scrollbar { width: 6px; height: 6px; }
-        .ws-table-wrap::-webkit-scrollbar-track { background: #f1f5f9; }
-        .ws-table-wrap::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-
-        .ws-column-letters {
-          display: grid;
-          position: sticky;
-          top: 0;
-          z-index: 14;
-          min-width: 100%;
-          border-bottom: 1px solid #dbe4ee;
-          background: #f8fafc;
-        }
-        .ws-column-letter {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 0.35rem;
-          min-width: 0;
-          padding: 0.48rem 0.7rem;
-          border-right: 1px solid #cbd5e1;
-          background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-          color: #475569;
-        }
-        .ws-column-letter:last-child {
-          border-right: none;
-        }
-        .ws-column-letter span {
-          font-size: 0.72rem;
-          font-weight: 900;
-          color: #0f172a;
-        }
-        .ws-column-letter small {
-          font-size: 0.52rem;
-          font-weight: 800;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #64748b;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .ws-column-letter.active {
-          background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
-          color: #1d4ed8;
-        }
-        .ws-column-letter.active span,
-        .ws-column-letter.active small {
-          color: #1d4ed8;
-        }
-
-        .ws-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 0.82rem;
-          background: white;
-          table-layout: fixed;
-          min-width: 1360px;
-        }
-
-        .ws-table thead { position: sticky; top: 40px; z-index: 10; }
-        .ws-table th {
-          background: #f8fafc;
-          padding: 0.62rem 0.7rem;
-          text-align: left;
-          font-size: 0.58rem;
-          font-weight: 800;
-          color: #64748b;
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-          border-bottom: 2px solid #e2e8f0;
-          border-right: 1px solid #e2e8f0;
-          white-space: nowrap;
-        }
-        .ws-table th:last-child,
-        .ws-table td:last-child { border-right: none; }
-
-        .ws-th-num { width: 76px; text-align: center; }
-        .ws-th-desc { width: 40%; }
-        .ws-th-unit { width: 72px; text-align: center; }
-        .ws-th-qty { width: 138px; text-align: center; }
-        .ws-th-sm { width: 80px; text-align: center; }
-        .ws-th-strategy { width: 156px; text-align: center; }
-        .ws-th-rate { width: 160px; text-align: right; }
-        .ws-th-total { width: 160px; text-align: right; }
-        .ws-th-act { width: 72px; }
-
-        /* ── SECTION ROW ── */
-        .ws-section-row {
-          cursor: pointer;
-          background: #f0f4f8;
-          border-top: 2px solid #e2e8f0;
-          transition: background 0.15s;
-        }
-        .ws-section-row:hover { background: #e8eef4; }
-        .ws-section-cell { padding: 0.5rem 0.625rem !important; }
-        .ws-section-inner {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          color: #334155;
-        }
-        .ws-section-letter {
-          display: inline-flex; align-items: center; justify-content: center;
-          width: 22px; height: 22px;
-          background: #1e293b; color: white;
-          font-size: 0.625rem; font-weight: 900;
-          border-radius: 5px; flex-shrink: 0;
-        }
-        .ws-section-title-input {
-          background: none; border: none; outline: none;
-          font-size: 0.8125rem; font-weight: 700; color: #1e293b;
-          flex: 1; padding: 2px 4px; border-radius: 3px;
-        }
-        .ws-section-title-input:focus { background: white; box-shadow: 0 0 0 2px rgba(37,99,235,0.15); }
-        .ws-section-refresh-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.28rem;
-          border: 1px solid #bfdbfe;
-          background: #eff6ff;
-          color: #1d4ed8;
-          border-radius: 999px;
-          padding: 0.22rem 0.5rem;
-          font-size: 0.56rem;
-          font-weight: 900;
-          cursor: pointer;
-          transition: all 0.15s ease;
-        }
-        .ws-section-refresh-btn:hover {
-          background: #1d4ed8;
-          color: white;
-          border-color: #1d4ed8;
-        }
-        .ws-section-review-chip {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          border: 1px solid #fdba74;
-          background: #fff7ed;
-          color: #c2410c;
-          border-radius: 999px;
-          padding: 0.22rem 0.5rem;
-          font-size: 0.56rem;
-          font-weight: 900;
-        }
-        .ws-section-badge {
-          font-size: 0.5625rem; font-weight: 800;
-          background: #1e293b; color: white;
-          padding: 1px 7px; border-radius: 100px;
-          flex-shrink: 0;
-        }
-        .ws-section-meta {
-          font-size: 0.625rem;
-          font-weight: 700;
-          color: #475569;
-          background: rgba(148, 163, 184, 0.15);
-          padding: 2px 6px;
-          border-radius: 999px;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-        }
-        .ws-section-total {
-          font-size: 0.75rem; font-weight: 800; color: #2563eb;
-          margin-left: auto; flex-shrink: 0;
-        }
-
-        .ws-subcategory-row {
-          background: linear-gradient(90deg, #f8fafc, #eef2ff);
-        }
-
-        .ws-subcategory-cell {
-          padding: 0.35rem 0.625rem !important;
-          border-top: 1px solid #e2e8f0;
-          border-bottom: 1px solid #eef2f7;
-        }
-
-        .ws-subcategory-inner {
-          display: flex;
-          align-items: center;
-          gap: 0.55rem;
-        }
-
-        .ws-subcategory-label {
-          font-size: 0.56rem;
-          font-weight: 900;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #64748b;
-        }
-
-        .ws-subcategory-title {
-          font-size: 0.72rem;
-          font-weight: 800;
-          color: #1e293b;
-        }
-
-        /* ── ITEM ROW ── */
-        .ws-item-row {
-          border-bottom: 1px solid #f1f5f9;
-          transition: background 0.15s, box-shadow 0.15s;
-        }
-        .ws-item-row:nth-of-type(2n) td {
-          background: #fcfdff;
-        }
-        .ws-item-row:hover { background: #f8fafc; }
-        .ws-item-row:hover td { background: #f8fafc; }
-        .ws-item-row-selected {
-          background: #f8fbff !important;
-          width: 100%;
-          max-width: 100%;
-          min-width: 0;
-          overflow: hidden;
-          box-sizing: border-box;
-        }
-        .ws-item-row td {
-          padding: 0.55rem 0.7rem;
-          vertical-align: middle;
-          min-width: 0;
-          border-right: 1px solid #eef2f7;
-          border-bottom: 1px solid #eef2f7;
-          background: inherit;
-          box-sizing: border-box;
-        }
-        .ws-item-row-selected td {
-          background: linear-gradient(180deg, #f8fbff 0%, #f0f7ff 100%);
-          border-bottom-color: #dbeafe;
-        }
-        .ws-item-row-selected .ws-row-number,
-        .ws-item-row-selected .ws-line-code {
-          color: #1d4ed8;
-        }
-        .ws-item-row-selected td:first-child {
-          box-shadow: inset 4px 0 0 #2563eb;
-        }
-        .ws-outlier { background: #fffbeb !important; }
-        .ws-item-row-benchmark td:first-child,
-        .ws-item-row-custom td:first-child,
-        .ws-item-incomplete td:first-child {
-          box-shadow: inset 3px 0 0 transparent;
-        }
-        .ws-item-row-benchmark td:first-child { box-shadow: inset 3px 0 0 #2563eb; }
-        .ws-item-row-custom td:first-child { box-shadow: inset 3px 0 0 #0f766e; }
-        .ws-item-incomplete { background: #fffaf0 !important; }
-        .ws-item-incomplete td:first-child { box-shadow: inset 3px 0 0 #f59e0b; }
-
-        .ws-num {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 0.12rem;
-          text-align: center;
-          font-size: 0.6875rem; font-weight: 700;
-          color: #94a3b8;
-          font-family: 'Inter', system-ui, monospace;
-        }
-        .ws-row-number {
-          font-size: 0.6rem;
-          font-weight: 800;
-          color: #94a3b8;
-        }
-        .ws-line-code {
-          font-size: 0.76rem;
-          font-weight: 900;
-          color: #334155;
-        }
-
-        .ws-desc-inner { display: flex; align-items: flex-start; gap: 0.375rem; }
-        .ws-desc,
-        .ws-desc-inner,
-        .ws-item-heading-row,
-        .ws-item-heading-copy,
-        .ws-item-secondary,
-        .ws-rate-source-selector,
-        .ws-rate-source-current,
-        .ws-rate-source-buttons {
-          width: 100%;
-          max-width: 100%;
-          min-width: 0;
-          overflow: hidden;
-          box-sizing: border-box;
-        }
-        .ws-item-meta-row {
-          display: grid;
-          grid-template-columns: 180px minmax(0, 1fr);
-          gap: 0.375rem;
-          margin-top: 0.2rem;
-        }
-        .ws-status-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.28rem;
-          margin-top: 0.32rem;
-        }
-        .ws-state-pill {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.14rem 0.46rem;
-          border-radius: 999px;
-          font-size: 0.55rem;
-          font-weight: 900;
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-          white-space: nowrap;
-        }
-        .ws-state-pill-benchmark { background: #dbeafe; color: #1d4ed8; }
-        .ws-state-pill-custom { background: #ccfbf1; color: #0f766e; }
-        .ws-state-pill-calculated { background: #ede9fe; color: #6d28d9; }
-        .ws-state-pill-manual { background: #e2e8f0; color: #475569; }
-        .ws-state-pill-warning { background: #ffedd5; color: #c2410c; }
-        .ws-state-pill-info { background: #ecfdf5; color: #15803d; }
-        .ws-availability-pill {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.14rem 0.46rem;
-          border-radius: 999px;
-          font-size: 0.55rem;
-          font-weight: 900;
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-          white-space: nowrap;
-          border: 1px solid transparent;
-        }
-        .ws-availability-pill-formula {
-          background: #f5f3ff;
-          color: #6d28d9;
-          border-color: #ddd6fe;
-        }
-        .ws-availability-pill-benchmark {
-          background: #eff6ff;
-          color: #1d4ed8;
-          border-color: #bfdbfe;
-        }
-        .ws-vo {
-          font-size: 0.5rem; font-weight: 900;
-          background: #fef3c7; color: #92400e;
-          padding: 1px 5px; border-radius: 3px; flex-shrink: 0;
-        }
-        .ws-outlier-icon { color: #f59e0b; flex-shrink: 0; }
-
-        /* ── INPUTS ── */
-        .ws-input {
-          width: 100%;
-          max-width: 100%;
-          min-width: 0;
-          box-sizing: border-box;
-          border: 1px solid #e2e8f0;
-          background: #ffffff;
-          padding: 0.25rem 0.375rem;
-          border-radius: 6px;
-          font-size: 0.8125rem;
-          transition: all 0.15s;
-          outline: none;
-          color: #1e293b;
-        }
-        .ws-input:hover { border-color: #cbd5e1; }
-        .ws-input:focus { background: white; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,0.08); }
-
-                .ws-desc-input {
-          width: 100%;
-          max-width: 100%;
-          min-width: 0;
-          box-sizing: border-box;
-          min-height: 2.85rem;
-          max-height: 120px;
-          font-weight: 620;
-          line-height: 1.4;
-          resize: vertical;
-          white-space: pre-wrap;
-          font-size: 0.85rem;
-          overflow-y: auto;
-        }
-        .ws-meta-input {
-          border-color: #e2e8f0;
-          background: #f8fafc;
-          font-size: 0.6875rem;
-          color: #475569;
-          padding: 0.22rem 0.35rem;
-        }
-        .ws-unit-input { text-align: center; font-weight: 700; text-transform: uppercase; font-size: 0.6875rem; color: #64748b; letter-spacing: 0.04em; }
-        .ws-qty-input { text-align: right; font-weight: 700; font-size: 0.88rem; }
-        .ws-rate-input { text-align: right; font-weight: 600; }
-        .ws-sm-input { text-align: center; font-weight: 600; width: 100%; }
-        .ws-input:disabled { color: #94a3b8; background: #f8fafc; }
-        .ws-qty-display {
-          margin-top: 0.26rem;
-          display: flex;
-          align-items: baseline;
-          justify-content: flex-end;
-          gap: 0.26rem;
-        }
-        .ws-qty-main {
-          font-size: 0.86rem;
-          line-height: 1.1;
-          font-weight: 900;
-          color: #0f172a;
-        }
-        .ws-qty-unit-text {
-          font-size: 0.62rem;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          color: #64748b;
-        }
-        .ws-qty-meta {
-          margin-top: 0.12rem;
-          display: flex;
-          justify-content: flex-end;
-        }
-        .ws-qty-source {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.14rem 0.42rem;
-          border-radius: 999px;
-          font-size: 0.55rem;
-          font-weight: 800;
-          background: #eff6ff;
-          color: #1d4ed8;
-        }
-        .ws-field-feedback {
-          margin-top: 0.22rem;
-          font-size: 0.62rem;
-          line-height: 1.35;
-        }
-        .ws-field-feedback-success { color: #15803d; }
-        .ws-field-feedback-warning { color: #c2410c; }
-        .ws-field-feedback-muted { color: #64748b; }
-
-        .ws-qty-wrap, .ws-rate-wrap { display: flex; align-items: center; gap: 0.25rem; }
-
-        .ws-geo-btn, .ws-analysis-btn {
-          display: flex; align-items: center; justify-content: center;
-          width: 22px; height: 22px;
-          border: none; background: #f1f5f9; color: #64748b;
-          border-radius: 4px; cursor: pointer; flex-shrink: 0;
-          transition: all 0.15s; opacity: 0;
-        }
-        .ws-item-row:hover .ws-geo-btn,
-        .ws-item-row:hover .ws-analysis-btn,
-        .ws-item-row-selected .ws-geo-btn,
-        .ws-item-row-selected .ws-analysis-btn { opacity: 1; }
-        .ws-geo-btn:hover, .ws-analysis-btn:hover { background: #2563eb; color: white; }
-        .ws-custom-studio-btn { background: #ecfeff; color: #0f766e; }
-        .ws-custom-studio-btn:hover { background: #0f766e !important; color: white !important; }
-
-        .ws-strategy-toggle {
-          display: inline-flex;
-          gap: 0.2rem;
-          justify-content: center;
-          background: white;
-          border: 1px solid #dbe4ee;
-          border-radius: 999px;
-          padding: 0.18rem;
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.75);
-        }
-        .ws-strat-btn {
-          padding: 0.26rem 0.58rem;
-          min-width: 72px;
-          font-size: 0.56rem;
-          font-weight: 800;
-          border: 1px solid transparent;
-          border-radius: 999px;
-          background: transparent;
-          color: #64748b;
-          cursor: pointer; transition: all 0.15s;
-        }
-        .ws-strat-btn.active { color: white; }
-        .ws-strat-btn:first-child.active { background: #0f766e; border-color: #0f766e; }
-        .ws-strat-btn:last-child.active { background: #1d4ed8; border-color: #1d4ed8; }
-
-        .ws-total-cell {
-          text-align: right;
-          font-weight: 700;
-          color: #1e293b;
-          font-size: 0.8125rem;
-          white-space: normal;
-        }
-        .ws-total-main {
-          display: block;
-          font-size: 0.84rem;
-          line-height: 1.15;
-          color: #0f172a;
-        }
-        .ws-total-formula {
-          display: block;
-          font-size: 0.6rem;
-          color: #64748b;
-          line-height: 1.3;
-          margin-top: 0.14rem;
-        }
-        .ws-total-status {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.14rem 0.44rem;
-          border-radius: 999px;
-          font-size: 0.55rem;
-          font-weight: 900;
-          letter-spacing: 0.04em;
-          margin-top: 0.2rem;
-        }
-        .ws-total-status-success { background: #dcfce7; color: #166534; }
-        .ws-total-status-warning { background: #ffedd5; color: #c2410c; }
-        .ws-total-status-custom { background: #ccfbf1; color: #0f766e; }
-        .ws-total-status-calculated { background: #ede9fe; color: #6d28d9; }
-        .ws-rate-cell { text-align: right; }
-        .ws-rate-meta {
-          display: flex;
-          justify-content: flex-end;
-          flex-wrap: wrap;
-          gap: 0.25rem;
-          margin-top: 0.2rem;
-        }
-        .ws-rate-chip {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.16rem 0.42rem;
-          border-radius: 999px;
-          font-size: 0.58rem;
-          font-weight: 800;
-          letter-spacing: 0.02em;
-          white-space: nowrap;
-        }
-        .ws-rate-chip-benchmark { background: #eff6ff; color: #1d4ed8; }
-        .ws-rate-chip-custom { background: #ecfeff; color: #0f766e; }
-        .ws-rate-chip-calculated { background: #f5f3ff; color: #6d28d9; }
-        .ws-rate-chip-manual { background: #f8fafc; color: #475569; }
-        .ws-rate-chip-aligned { background: #f0fdf4; color: #15803d; }
-        .ws-rate-chip-high { background: #fff7ed; color: #c2410c; }
-        .ws-rate-chip-low { background: #eff6ff; color: #2563eb; }
-        .ws-rate-chip-down { background: #ecfdf5; color: #15803d; }
-        .ws-rate-chip-muted { background: #f1f5f9; color: #64748b; }
-        .ws-rate-chip-warning { background: #fff7ed; color: #c2410c; }
-        .ws-cell-selected {
-          position: relative;
-          background: #eef6ff !important;
-          box-shadow: inset 0 0 0 2px #2563eb, inset 0 0 0 9999px rgba(255,255,255,0.08);
-        }
-        .ws-cell-selected .ws-input {
-          border-color: #93c5fd;
-          background: #ffffff;
-        }
-        .ws-cell-selected .ws-geo-btn,
-        .ws-cell-selected .ws-analysis-btn {
-          opacity: 1;
-        }
-        .ws-th-num,
-        .ws-num {
-          position: sticky;
-          left: 0;
-          z-index: 5;
-          background: inherit;
-        }
-                .ws-th-desc,
-        .ws-desc {
-          position: sticky;
-          left: 76px;
-          z-index: 4;
-          background: inherit;
-          min-width: 280px;
-          max-width: 480px;
-          width: 480px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .ws-table thead .ws-th-num,
-        .ws-table thead .ws-th-desc {
-          z-index: 12;
-          background: #f8fafc;
-        }
-        .ws-item-row .ws-num,
-        .ws-item-row .ws-desc {
-          background: white;
-        }
-        .ws-item-row:hover .ws-num,
-        .ws-item-row:hover .ws-desc {
-          background: #f8fafc;
-        }
-        .ws-outlier .ws-num,
-        .ws-outlier .ws-desc {
-          background: #fffbeb !important;
-        }
-        .ws-item-incomplete .ws-num,
-        .ws-item-incomplete .ws-desc {
-          background: #fffaf0 !important;
-        }
-        .ws-benchmark-evidence {
-          margin-top: 0.26rem;
-          padding: 0.42rem 0.56rem;
-          border-radius: 10px;
-          border: 1px solid #dbe4ee;
-          background: #f8fafc;
-          display: flex;
-          flex-direction: column;
-          gap: 0.14rem;
-          align-items: flex-end;
-        }
-        .ws-benchmark-evidence strong {
-          font-size: 0.6rem;
-          font-weight: 900;
-          letter-spacing: 0.03em;
-          text-transform: uppercase;
-        }
-        .ws-benchmark-evidence span,
-        .ws-benchmark-evidence small {
-          font-size: 0.6rem;
-          line-height: 1.35;
-          color: inherit;
-        }
-        .ws-benchmark-evidence small {
-          opacity: 0.85;
-        }
-        .ws-benchmark-evidence-benchmark {
-          border-color: #bfdbfe;
-          background: linear-gradient(180deg, #f8fbff 0%, #eff6ff 100%);
-          color: #1d4ed8;
-        }
-        .ws-benchmark-evidence-custom {
-          border-color: #99f6e4;
-          background: linear-gradient(180deg, #f4fffd 0%, #ecfeff 100%);
-          color: #0f766e;
-        }
-        .ws-benchmark-evidence-muted {
-          border-color: #dbe4ee;
-          background: #f8fafc;
-          color: #475569;
-        }
-        .ws-benchmark-evidence-warning {
-          border-color: #fdba74;
-          background: linear-gradient(180deg, #fffaf5 0%, #fff7ed 100%);
-          color: #c2410c;
-        }
-        .ws-benchmark-refresh {
-          margin-top: 0.26rem;
-          padding: 0.42rem 0.56rem;
-          border-radius: 10px;
-          border: 1px solid #dbe4ee;
-          background: #f8fafc;
-          display: flex;
-          flex-direction: column;
-          gap: 0.14rem;
-          align-items: flex-end;
-        }
-        .ws-benchmark-refresh strong {
-          font-size: 0.6rem;
-          font-weight: 900;
-          letter-spacing: 0.03em;
-          text-transform: uppercase;
-        }
-        .ws-benchmark-refresh span,
-        .ws-benchmark-refresh small {
-          font-size: 0.6rem;
-          line-height: 1.35;
-          color: inherit;
-        }
-        .ws-benchmark-refresh small {
-          opacity: 0.85;
-        }
-        .ws-benchmark-refresh-benchmark {
-          border-color: #bfdbfe;
-          background: linear-gradient(180deg, #f8fbff 0%, #eff6ff 100%);
-          color: #1d4ed8;
-        }
-        .ws-benchmark-refresh-aligned,
-        .ws-benchmark-refresh-down {
-          border-color: #bbf7d0;
-          background: linear-gradient(180deg, #f7fff9 0%, #ecfdf5 100%);
-          color: #15803d;
-        }
-        .ws-benchmark-refresh-high,
-        .ws-benchmark-refresh-warning {
-          border-color: #fdba74;
-          background: linear-gradient(180deg, #fffaf5 0%, #fff7ed 100%);
-          color: #c2410c;
-        }
-        .ws-benchmark-refresh-muted {
-          border-color: #dbe4ee;
-          background: #f8fafc;
-          color: #475569;
-        }
-        .ws-rate-note {
-          margin-top: 0.22rem;
-          font-size: 0.62rem;
-          line-height: 1.35;
-          display: flex;
-          flex-direction: column;
-          gap: 0.14rem;
-          align-items: flex-end;
-        }
-        .ws-rate-note strong {
-          font-size: 0.6rem;
-          letter-spacing: 0.03em;
-          text-transform: uppercase;
-        }
-        .ws-rate-note span {
-          color: inherit;
-        }
-        .ws-rate-note-success { color: #166534; }
-        .ws-rate-note-warning { color: #c2410c; }
-        .ws-rate-note-custom { color: #0f766e; }
-        .ws-rate-note-calculated { color: #6d28d9; }
-        .ws-rate-note-manual { color: #475569; }
-        .ws-rate-note-benchmark { color: #1d4ed8; }
-        .ws-rate-note-muted { color: #64748b; }
-        .ws-rate-link {
-          border: none;
-          background: #ecfeff;
-          color: #0f766e;
-          border-radius: 999px;
-          padding: 0.16rem 0.46rem;
-          font-size: 0.58rem;
-          font-weight: 800;
-          cursor: pointer;
-        }
-        .ws-rate-link:hover {
-          background: #0f766e;
-          color: white;
-        }
-        .ws-rate-link-strong {
-          background: #eff6ff;
-          color: #1d4ed8;
-        }
-        .ws-rate-link-strong:hover {
-          background: #1d4ed8;
-          color: white;
-        }
-
-        .ws-progress-bar {
-          height: 18px; background: #f1f5f9;
-          border-radius: 100px; position: relative;
-          overflow: hidden; font-size: 0.5625rem;
-          font-weight: 800; display: flex; align-items: center;
-          justify-content: center; color: #1e293b;
-        }
-        .ws-progress-fill {
-          position: absolute; top: 0; left: 0; bottom: 0;
-          background: linear-gradient(90deg, #2563eb, #3b82f6);
-          border-radius: 100px;
-          transition: width 0.3s;
-        }
-
-        /* ── ACTIONS ── */
-        .ws-act-cell { text-align: center; }
-        .ws-act-group { display: flex; gap: 2px; justify-content: center; }
-        .ws-btn-icon {
-          display: flex; align-items: center; justify-content: center;
-          width: 24px; height: 24px;
-          border: none; background: transparent; color: #94a3b8;
-          border-radius: 4px; cursor: pointer;
-          transition: all 0.15s; opacity: 0;
-        }
-        .ws-item-row:hover .ws-btn-icon,
-        .ws-section-row:hover .ws-btn-icon,
-        .ws-item-row-selected .ws-btn-icon { opacity: 1; }
-        .ws-btn-danger:hover { background: #fef2f2; color: #ef4444; }
-        .ws-btn-library:hover { background: #eff6ff; color: #1d4ed8; }
-        .ws-bid-active { opacity: 1 !important; color: #2563eb; }
-        .ws-vo-active { opacity: 1 !important; color: #f59e0b; }
-        .ws-btn-info { color: #64748b; }
-        .ws-btn-info:hover { background: #eff6ff; color: #2563eb; opacity: 1 !important; }
-
-        /* ── RATE SOURCE SELECTOR (3-button tri-modal) ── */
-        .ws-rate-source-selector {
-          display: flex;
-          flex-direction: column;
-          gap: 0.4rem;
-        }
-
-        .ws-rate-source-current {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 0.4rem;
-        }
-
-        .ws-rate-source-current-label {
-          font-size: 0.58rem;
-          font-weight: 900;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #64748b;
-        }
-
-        .ws-rate-source-current-pill {
-          display: inline-flex;
-          align-items: center;
-          padding: 0.18rem 0.5rem;
-          border-radius: 999px;
-          font-size: 0.62rem;
-          font-weight: 900;
-          border: 1px solid transparent;
-          white-space: nowrap;
-        }
-
-        .ws-rate-source-current-pill-benchmark {
-          background: #eff6ff;
-          color: #1d4ed8;
-          border-color: #bfdbfe;
-        }
-
-        .ws-rate-source-current-pill-formula {
-          background: #f5f3ff;
-          color: #6d28d9;
-          border-color: #ddd6fe;
-        }
-
-        .ws-rate-source-current-pill-manual {
-          background: #f0fdf4;
-          color: #15803d;
-          border-color: #bbf7d0;
-        }
-
-        .ws-src-btn {
-          padding: 0.3rem 0.6rem;
-          border-radius: 8px;
-          border: 1.5px solid #e2e8f0;
-          background: #f8fafc;
-          color: #64748b;
-          font-size: 0.73rem;
-          font-weight: 600;
-          cursor: pointer;
-          text-align: left;
-          transition: all 0.12s;
-          white-space: nowrap;
-        }
-
-        .ws-src-btn:hover:not(:disabled) { border-color: #94a3b8; background: #f1f5f9; color: #0f172a; }
-        .ws-src-btn.active { font-weight: 800; }
-        .ws-src-btn-bm.active    { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
-        .ws-src-btn-formula.active { background: #f5f3ff; border-color: #c4b5fd; color: #6d28d9; }
-        .ws-src-btn-manual.active  { background: #f0fdf4; border-color: #86efac; color: #15803d; }
-        .ws-src-btn-disabled { opacity: 0.38; cursor: not-allowed; }
-        .ws-rate-source-buttons {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 0.32rem;
-        }
-        .ws-rate-source-help {
-          display: block;
-          margin-top: 0.08rem;
-          font-size: 0.63rem;
-          line-height: 1.35;
-          color: #64748b;
-        }
-
-        /* ── RATE REFERENCE ROW ── */
-        .ws-rate-reference-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.3rem;
-          margin: 0.35rem 0 0;
-        }
-
-        .ws-rate-ref-pill {
-          display: inline-flex;
-          align-items: center;
-          padding: 0.18rem 0.45rem;
-          border-radius: 999px;
-          background: #f1f5f9;
-          border: 1px solid #e2e8f0;
-          color: #64748b;
-          font-size: 0.65rem;
-          font-weight: 600;
-        }
-
-        .ws-rate-ref-pill.ws-rate-ref-active {
-          background: #0f172a;
-          border-color: #0f172a;
-          color: white;
-          font-weight: 800;
-        }
-
-        .ws-rate-ref-formula { border-color: #ddd6fe; color: #6d28d9; }
-        .ws-rate-ref-manual  { border-color: #bbf7d0; color: #15803d; }
-        .ws-rate-reference-row-mobile {
-          margin-top: 0.45rem;
-        }
-
-        /* ── EMPTY SECTION CTA ── */
-        .ws-empty-section-row td { padding: 0 !important; }
-        .ws-empty-section {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0.7rem;
-          padding: 2.6rem 2rem;
-          background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
-          border: 1px dashed #93c5fd;
-          border-radius: 18px;
-          margin: 1rem;
-          text-align: center;
-        }
-        .ws-empty-section-eyebrow {
-          font-size: 0.64rem;
-          font-weight: 900;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: #1d4ed8;
-        }
-        .ws-empty-section-title { font-size: 0.9rem; color: #0f172a; display: block; }
-        .ws-empty-section-msg {
-          margin: 0;
-          font-size: 0.8rem;
-          color: #64748b;
-          max-width: 480px;
-          line-height: 1.6;
-        }
-        .ws-empty-section-actions {
-          display: flex;
-          gap: 0.6rem;
-          flex-wrap: wrap;
-          justify-content: center;
-          margin-top: 0.35rem;
-        }
-
-
-        /* ── SUBTOTAL ── */
-        .ws-subtotal-row { background: linear-gradient(180deg, #f8fafc 0%, #eef6ff 100%); }
-        .ws-subtotal-val {
-          text-align: right !important;
-          font-weight: 900; font-size: 0.78rem;
-          color: #1e293b;
-          padding: 0.7rem 0.85rem !important;
-          border-bottom: 2px solid #bfdbfe;
-        }
-
-        .ws-add-row td { padding: 0.25rem 0.625rem !important; background: #fafbfc; border-bottom: 2px solid #e2e8f0; }
-        .ws-add-row-actions {
-          display: flex;
-          gap: 0.5rem;
-        }
-        .ws-add-btn {
-          display: flex; align-items: center; gap: 0.25rem;
-          background: none; border: 1px dashed #cbd5e1; color: #64748b;
-          padding: 0.25rem 0.75rem; border-radius: 4px;
-          font-size: 0.6875rem; font-weight: 600;
-          cursor: pointer; transition: all 0.15s;
-          width: 100%;
-          justify-content: center;
-        }
-        .ws-add-btn:hover { border-color: #2563eb; color: #2563eb; background: rgba(37,99,235,0.03); }
-        .ws-add-btn-primary {
-          border-style: solid;
-          background: #eff6ff;
-          color: #1d4ed8;
-          border-color: #bfdbfe;
-        }
-
-        /* ── GRAND TOTAL ── */
-        .ws-grand-total {
-          background: #0f172a;
-          color: white;
-        }
-        .ws-grand-total td {
-          padding: 0.75rem 0.625rem !important;
-          font-weight: 900;
-          font-size: 0.75rem;
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
-        }
-        .ws-grand-val {
-          text-align: right !important;
-          font-size: 1rem !important;
-          color: #60a5fa !important;
-        }
-
-        /* ── MOBILE ── */
-        @media (max-width: 1100px) {
-          .ws-stage-shell {
-            flex-direction: column;
-          }
-
-          .ws-stage-main {
-            min-height: auto;
-          }
-
-          .ws-workbook-console {
             min-width: 0;
-            width: 100%;
-          }
-
-          .ws-workbook-metrics-compact {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-
-          .ws-container {
             height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            background: #f8fafc;
+            overflow-y: auto;
+            position: relative;
+            background: #ffffff;
           }
-          .ws-container-selection {
-            flex: 1;
-            height: 100%;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-          }
-          .ws-head-stat-card-strong {
-            grid-column: 1 / -1;
-          }
+          .ws-main-pane::-webkit-scrollbar { width: 6px; }
+          .ws-main-pane::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
 
-          .ws-workbook-actions {
-            justify-content: flex-start;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .ws-container {
-            height: auto;
-            min-height: calc(100vh - 56px);
-          }
-          .ws-workspace-command-center {
-            padding: 0.75rem 0.7rem 0;
-            gap: 0.7rem;
-          }
-          .ws-bill-tabs-shell {
-            padding: 0.65rem 0.7rem;
-          }
-          .ws-bill-tabs {
-            grid-auto-columns: minmax(210px, 1fr);
-          }
-          .ws-bill-tab {
-            padding: 0.72rem 0.78rem;
-            grid-template-columns: 36px minmax(0, 1fr);
-          }
-          .ws-bill-tab-index {
-            width: 36px;
-            height: 36px;
-          }
+          /* --- WORKBOOK HEADER --- */
           .ws-workbook-top {
-            padding: 0.75rem 0.7rem 0.65rem;
-          }
-          .ws-workbook-head {
-            flex-direction: column;
-            align-items: stretch;
-          }
-          .ws-workbook-console {
-            min-width: 0;
-            width: 100%;
-          }
-          .ws-workbook-metrics-compact {
-            grid-template-columns: 1fr;
-            gap: 0.55rem;
-          }
-          .ws-head-stat-card,
-          .ws-head-stat-card-strong {
-            padding: 0.85rem 0.9rem;
-            border-radius: 16px;
-          }
-          .ws-workbook-actions {
-            width: 100%;
-            justify-content: stretch;
-            gap: 0.5rem;
-          }
-          .ws-head-action,
-          .ws-head-action-strong,
-          .ws-analytics-toggle {
-            width: 100%;
-            justify-content: center;
+            padding: 0.6rem 1rem;
+            background: linear-gradient(180deg, #f8fbff 0%, #f1f5f9 100%);
+            border-bottom: 1px solid #e2e8f0;
+            flex-shrink: 0;
           }
           .ws-workbook-title-row h1 {
-            font-size: 1.15rem;
-          }
-          .ws-workbook-metrics {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            min-width: 0;
-          }
-          .ws-workbook-metric:last-child {
-            grid-column: 1 / -1;
-          }
-          .ws-helper-strip {
-            flex-direction: column;
-            align-items: stretch;
-            padding: 0.85rem 0.9rem 0.95rem;
-            border-radius: 0 0 16px 16px;
-          }
-          .ws-helper-actions {
-            justify-content: flex-start;
-          }
-          .ws-search-results {
-            width: 100%;
-            justify-content: center;
-          }
-          .ws-sheet-tabbar {
-            flex-direction: column;
-            align-items: stretch;
-          }
-          .ws-sheet-tabbar-meta {
-            justify-content: flex-start;
-          }
-          .ws-selection-tabbar-copy {
-            width: 100%;
-          }
-          .ws-sheet-tab {
-            width: 100%;
-            border-radius: 12px;
-          }
-          .ws-sheet-tools {
-            padding: 0.35rem 0.6rem 0;
-          }
-          .ws-formula-bar {
-            grid-template-columns: 68px 30px minmax(0, 1fr);
-            border-radius: 12px;
-          }
-          .ws-refresh-banner {
-            flex-direction: column;
-            align-items: stretch;
-            padding: 0.7rem 0.75rem;
-          }
-          .ws-refresh-banner-actions {
-            width: 100%;
-          }
-          .ws-refresh-banner-actions .ws-btn {
-            width: 100%;
-            justify-content: center;
-          }
-          .ws-toolbar {
-            flex-wrap: wrap;
-            align-items: stretch;
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #0f172a;
             margin: 0;
-            padding: 0.65rem;
-            gap: 0.55rem;
           }
-          .ws-toolbar-left,
-          .ws-toolbar-right {
-            width: 100%;
-          }
-          .ws-toolbar-left {
-            flex-wrap: wrap;
-          }
-          .ws-toolbar-center {
+          .ws-head-stat-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 0.4rem 0.6rem;
+            min-width: 140px;
             display: flex;
-            width: 100%;
-            flex: 1 1 100%;
-            justify-content: flex-start;
-            overflow-x: auto;
-            padding-bottom: 0.15rem;
-            scrollbar-width: none;
+            flex-direction: column;
+            gap: 2px;
           }
-          .ws-toolbar-center::-webkit-scrollbar { display: none; }
-          .ws-filter-group-compact {
-            flex-wrap: nowrap;
-          }
-          .ws-bill-nav {
-            grid-auto-flow: column;
-            grid-auto-columns: minmax(220px, 1fr);
-            overflow-x: auto;
-            padding-bottom: 0.85rem;
-            scrollbar-width: none;
-          }
-          .ws-bill-nav::-webkit-scrollbar { display: none; }
-          .ws-search {
-            width: 100%;
-            min-width: 0;
-          }
-          .ws-region-sel {
-            min-height: 34px;
-          }
-          .ws-toolbar-right {
-            display: flex;
-            flex-wrap: nowrap;
-            overflow-x: auto;
-            padding-bottom: 0.2rem;
-            scrollbar-width: none;
-          }
-          .ws-toolbar-right::-webkit-scrollbar { display: none; }
-          .ws-btn {
-            flex-shrink: 0;
-            min-height: 34px;
-          }
-          .ws-mobile-summary {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            margin: 0.05rem 0.7rem 0.75rem;
-            padding: 0;
-            background: transparent;
-            border: none;
-            gap: 0.55rem;
-            overflow: visible;
-          }
-          .ws-mobile-stat-card {
-            min-width: 0;
-          }
-          .ws-mobile-stat-card-total {
-            grid-column: 1 / -1;
-          }
-          .ws-insight-strip {
-            display: grid;
-            grid-auto-flow: column;
-            grid-auto-columns: minmax(190px, 1fr);
-            overflow-x: auto;
-            padding-bottom: 0.65rem;
-            scrollbar-width: none;
-          }
-          .ws-insight-strip::-webkit-scrollbar { display: none; }
-          .ws-cost-rail {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            padding: 0;
-            gap: 0.65rem;
-          }
-          .ws-cost-card-total {
-            grid-column: span 2;
-          }
+          .ws-head-stat-card span { font-size: 0.55rem; font-weight: 800; color: #64748b; text-transform: uppercase; }
+          .ws-head-stat-card strong { font-size: 0.9rem; font-weight: 800; color: #0f172a; }
+          .ws-head-stat-card small { font-size: 0.58rem; color: #94a3b8; }
+
+          /* --- TABLE COMPACT STYLING --- */
           .ws-table-wrap {
-            background: #f8fafc;
-          }
-          .ws-column-letters {
-            display: none;
+            padding: 0;
+            overflow-x: auto;
           }
           .ws-table {
-            font-size: 0.75rem;
-            background: transparent;
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            table-layout: fixed;
+            min-width: 1200px;
           }
           .ws-table thead {
-            display: none;
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: #f8fafc;
+            box-shadow: 0 1px 0 #e2e8f0;
           }
-          .ws-item-row {
-            display: none;
-          }
-          .ws-mobile-row {
-            display: table-row;
-          }
-          .ws-rate-source-buttons-mobile {
-            grid-template-columns: 1fr;
-          }
-          .ws-rate-source-selector-mobile .ws-src-btn {
-            text-align: center;
-          }
-          .ws-section-row td,
-          .ws-subcategory-cell,
-          .ws-subtotal-val,
-          .ws-add-row td,
-          .ws-grand-total td {
-            padding-left: 0.75rem !important;
-            padding-right: 0.75rem !important;
-          }
-          .ws-section-cell {
-            padding-top: 0.75rem !important;
-          }
-          .ws-section-inner {
-            flex-wrap: wrap;
-          }
-          .ws-section-refresh-btn {
-            order: 3;
-          }
-          .ws-section-total {
-            width: 100%;
-            margin-left: 0;
-            padding-left: 1.9rem;
-          }
-          .ws-subcategory-inner {
-            flex-wrap: wrap;
-          }
-          .ws-item-meta-row {
-            grid-template-columns: 1fr;
-          }
-          .ws-rate-wrap {
-            width: 100%;
-          }
-          .ws-rate-input {
-            min-width: 0;
-          }
-          .ws-subtotal-row td:first-child,
-          .ws-subtotal-row td:last-child {
-            display: none;
-          }
-          .ws-subtotal-val {
-            display: block;
-            text-align: left !important;
-          }
-          .ws-add-row-actions {
-            flex-direction: column;
-          }
-          .ws-grand-total td:first-child {
-            width: auto;
-          }
-        }
-
-        @media (max-width: 560px) {
-          .ws-insight-card {
-            min-height: 120px;
-          }
-          .ws-mobile-meta-grid,
-          .ws-mobile-grid {
-            grid-template-columns: 1fr;
-          }
-          .ws-mobile-field-block-wide {
-            grid-column: auto;
-          }
-          .ws-mobile-card-head {
-            flex-direction: column;
-            align-items: stretch;
-          }
-          .ws-mobile-card-total {
-            align-items: flex-start;
-            text-align: left;
-          }
-        }
-
-        /* ── PRESENCE AVATARS ── */
-        .ws-presence {
-          display: flex;
-          align-items: center;
-          margin-right: 0.25rem;
-        }
-        .ws-avatar {
-          width: 26px; height: 26px;
-          border-radius: 50%;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 0.5rem; font-weight: 800;
-          color: white; position: relative;
-          border: 2px solid #0f172a;
-          margin-left: -6px;
-          cursor: default;
-        }
-        .ws-avatar:first-child { margin-left: 0; }
-        .ws-avatar-dot {
-          position: absolute; bottom: -1px; right: -1px;
-          width: 8px; height: 8px;
-          background: #22c55e; border: 2px solid #0f172a;
-          border-radius: 50%;
-        }
-        .ws-avatar-more {
-          background: #475569;
-          font-size: 0.5rem;
-        }
-
-        /* ── COLLAB MODAL ── */
-        .collab-overlay {
-          position: fixed; inset: 0;
-          background: rgba(0,0,0,0.5);
-          display: flex; align-items: center; justify-content: center;
-          z-index: 1000;
-        }
-        .collab-modal {
-          background: white; width: 440px;
-          border-radius: 14px; overflow: hidden;
-          box-shadow: 0 25px 50px rgba(0,0,0,0.25);
-        }
-        .collab-modal-header {
-          padding: 1.25rem 1.5rem;
-          display: flex; justify-content: space-between; align-items: center;
-          border-bottom: 1px solid #f1f5f9;
-        }
-        .collab-title-row { display: flex; align-items: center; gap: 0.5rem; }
-        .collab-title-row h3 { margin: 0; font-size: 1rem; font-weight: 800; }
-        .collab-close {
-          background: none; border: none; color: #94a3b8;
-          cursor: pointer; padding: 4px; border-radius: 6px;
-        }
-        .collab-close:hover { background: #f1f5f9; color: #1e293b; }
-        .collab-modal-body { padding: 1.25rem 1.5rem; }
-
-        .collab-invite-row {
-          display: flex; gap: 0.5rem; align-items: center;
-        }
-        .collab-input {
-          flex: 1; padding: 0.625rem 0.75rem;
-          border: 1px solid #e2e8f0; border-radius: 8px;
-          font-size: 0.8125rem; outline: none;
-        }
-        .collab-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-        .collab-role-select {
-          padding: 0.625rem 0.5rem; border: 1px solid #e2e8f0;
-          border-radius: 8px; font-size: 0.75rem; font-weight: 700;
-          background: white; cursor: pointer; outline: none;
-        }
-        .collab-invite-btn {
-          width: 38px; height: 38px;
-          display: flex; align-items: center; justify-content: center;
-          background: #2563eb; color: white; border: none;
-          border-radius: 8px; cursor: pointer; flex-shrink: 0;
-        }
-        .collab-invite-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .collab-invite-btn:hover:not(:disabled) { background: #1d4ed8; }
-
-        .collab-list { margin-top: 1rem; }
-        .collab-list-label {
-          font-size: 0.5625rem; font-weight: 800; color: #94a3b8;
-          text-transform: uppercase; letter-spacing: 0.06em;
-          display: block; margin-bottom: 0.5rem;
-        }
-        .collab-person {
-          display: flex; align-items: center; gap: 0.625rem;
-          padding: 0.5rem 0; border-bottom: 1px solid #f8fafc;
-        }
-        .collab-person-avatar {
-          width: 30px; height: 30px; border-radius: 50%;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 0.5625rem; font-weight: 800; color: white; flex-shrink: 0;
-        }
-        .collab-person-info { flex: 1; display: flex; flex-direction: column; }
-        .collab-person-email { font-size: 0.8125rem; font-weight: 600; color: #1e293b; }
-        .collab-person-role {
-          font-size: 0.625rem; font-weight: 700; color: #94a3b8;
-          text-transform: uppercase;
-        }
-        .collab-remove-btn {
-          background: none; border: none; color: #cbd5e1;
-          font-size: 1.125rem; cursor: pointer; padding: 2px 6px; border-radius: 4px;
-        }
-        .collab-remove-btn:hover { background: #fef2f2; color: #ef4444; }
-
-        /* ── ACTIVITY PANEL ── */
-        .activity-panel {
-          position: fixed; right: 0; top: 0; bottom: 0;
-          width: 300px; background: white;
-          box-shadow: -4px 0 20px rgba(0,0,0,0.1);
-          z-index: 100; display: flex; flex-direction: column;
-        }
-        .activity-panel-header {
-          padding: 1rem 1.25rem;
-          display: flex; justify-content: space-between; align-items: center;
-          border-bottom: 1px solid #f1f5f9;
-        }
-        .activity-panel-header h4 {
-          margin: 0; font-size: 0.875rem; font-weight: 800;
-          display: flex; align-items: center; gap: 0.5rem; color: #1e293b;
-        }
-        .activity-list { flex: 1; overflow-y: auto; padding: 0.75rem; }
-        .activity-empty {
-          text-align: center; color: #94a3b8;
-          font-size: 0.8125rem; padding: 2rem 0;
-        }
-        .activity-entry {
-          display: flex; gap: 0.625rem; padding: 0.5rem 0;
-          border-bottom: 1px solid #f8fafc;
-        }
-        .activity-icon { font-size: 0.875rem; flex-shrink: 0; margin-top: 2px; }
-        .activity-content { display: flex; flex-direction: column; flex: 1; }
-        .activity-text { font-size: 0.75rem; font-weight: 600; color: #334155; }
-        .activity-meta { font-size: 0.625rem; color: #94a3b8; margin-top: 1px; }
-        /* Signatures Grid */
-        .signatures-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 2rem;
-          margin-top: 1.5rem;
-        }
-        
-        .sig-box {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          border-top: 1px dashed var(--border-medium);
-          padding-top: 1rem;
-        }
-        
-        .sig-box span {
-          font-weight: 700;
-          font-size: 0.8125rem;
-          color: var(--primary-600);
-          white-space: nowrap;
-        }
-        
-        .sig-box input {
-          flex: 1;
-          border: none;
-          background: transparent;
-          font-family: inherit;
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: var(--primary-900);
-          border-bottom: 1px solid var(--border-light);
-          padding: 0.25rem 0.5rem;
-        }
-        
-        .sig-box input:focus {
-          outline: none;
-          border-bottom-color: var(--accent-500);
-        }
-
-        .meta-form {
-          margin-top: 3rem;
-          padding: 2rem;
-          background: white;
-          border-radius: var(--radius-md);
-          border: 1px solid var(--border-light);
-        }
-
-        .meta-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 2rem;
-        }
-
-        .meta-col {
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-        }
-
-        .meta-col label {
-          font-size: 0.8125rem;
-          font-weight: 800;
-          color: var(--primary-500);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-
-        .meta-col textarea {
-          width: 100%;
-          border: 1px solid var(--border-medium);
-          border-radius: var(--radius-sm);
-          padding: 1rem;
-          font-size: 0.875rem;
-          color: var(--primary-800);
-          resize: vertical;
-          background: var(--bg-main);
-          transition: all 0.2s;
-        }
-
-        .meta-col textarea:focus {
-          outline: none;
-          border-color: var(--accent-400);
-          background: white;
-          box-shadow: 0 0 0 3px rgba(37,99,235,0.05);
-        }
-
-        .note-panel {
-          gap: 0;
-        }
-
-        .note-panel-header {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 0.5rem;
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
-          border-radius: 10px;
-          padding: 0.75rem 1rem;
-          cursor: pointer;
-          transition: background 0.2s, border-color 0.2s;
-        }
-
-        .note-panel-header:hover {
-          background: #f1f5f9;
-          border-color: #cbd5e1;
-        }
-
-        .note-panel-title {
-          font-size: 0.8125rem;
-          font-weight: 800;
-          color: var(--primary-500);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-
-        .note-panel-chevron {
-          color: #64748b;
-          transition: transform 0.25s ease, color 0.25s ease;
-        }
-
-        .note-panel.expanded .note-panel-chevron {
-          transform: rotate(180deg);
-          color: #2563eb;
-        }
-
-        .note-panel-content {
-          max-height: 0;
-          opacity: 0;
-          overflow: hidden;
-          transition: max-height 0.3s ease, opacity 0.2s ease, padding-top 0.3s ease;
-          padding-top: 0;
-        }
-
-        .note-panel.expanded .note-panel-content {
-          max-height: 320px;
-          opacity: 1;
-          padding-top: 0.75rem;
-        }
-
-        /* Notes Accordion */
-        .notes-launcher-row {
-          display: flex;
-          justify-content: flex-end;
-          margin: 0 1.5rem;
-        }
-
-        .notes-launcher-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.45rem;
-          border: 1px solid #cbd5e1;
-          border-radius: 999px;
-          background: #f8fafc;
-          color: #334155;
-          padding: 0.45rem 0.8rem;
-          font-size: 0.75rem;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .notes-launcher-btn:hover {
-          border-color: #93c5fd;
-          color: #1d4ed8;
-          background: #eff6ff;
-        }
-
-        .notes-panel-controls {
-          display: flex;
-          justify-content: flex-end;
-          margin: 0 1.5rem 0.5rem;
-        }
-
-        .notes-hide-btn {
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          background: #ffffff;
-          color: #475569;
-          padding: 0.35rem 0.65rem;
-          font-size: 0.75rem;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .notes-hide-btn:hover {
-          border-color: #cbd5e1;
-          background: #f8fafc;
-          color: #334155;
-        }
-
-        .notes-accordion {
-          background: white;
-          border: 1px solid #e2e8f0;
-          border-radius: 12px;
-          margin: 0 1.5rem 1.5rem;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-          overflow: hidden;
-        }
-
-        .notes-header {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 1.25rem 1.75rem;
-          background: #f8fafc;
-          border: none;
-          cursor: pointer;
-          transition: background 0.2s;
-        }
-
-        .notes-header:hover {
-          background: #f1f5f9;
-        }
-
-        .notes-content {
-          max-height: 0;
-          opacity: 0;
-          overflow: hidden;
-          padding: 0 2rem;
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-          border-top: 1px solid transparent;
-          background: white;
-        }
-
-        .notes-accordion.expanded .notes-content {
-          max-height: 2000px;
-          opacity: 1;
-          padding: 2.5rem 2rem;
-          border-top: 1px solid #e2e8f0;
-        }
-
-        .chevron-wrap {
-          transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-          color: #94a3b8;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          background: transparent;
-        }
-
-        .chevron-wrap.active {
-          transform: rotate(180deg);
-          color: #2563eb;
-          background: #eff6ff;
-        }
-
-        .chevron-icon {
-           /* no base rotate here, let wrap handle it */
-        }
-
-        .signatures-grid {
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-          justify-content: center;
-        }
-
-        .sig-box {
-          border-top: 1px dashed #cbd5e1;
-          padding-top: 0.75rem;
-        }
-
-
-          /* --- Polish Refinements --- */
-          .ws-table-row {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-          }
-          .ws-table-row:hover {
-            background-color: #f8fafc !important;
-            border: 1px solid rgba(147, 197, 253, 0.6) !important;
-            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04) !important;
-            transform: translateY(-1px) !important;
-            z-index: 10 !important;
-          }
-          .ws-table-row.selected {
-            background: linear-gradient(90deg, #eff6ff 0%, #ffffff 100%) !important;
-            border-left: 4px solid #2563eb !important;
-            border-top: 1px solid rgba(59, 130, 246, 0.3) !important;
-            border-bottom: 1px solid rgba(59, 130, 246, 0.3) !important;
-            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.08) !important;
-          }
-          .ws-table-cell {
-            font-family: 'Inter', system-ui, sans-serif !important;
-            letter-spacing: -0.01em;
-          }
-          .ws-rate-badge.benchmark { border: 1px solid #bfdbfe; background: linear-gradient(135deg, #eff6ff, #dbeafe) !important; }
-          .ws-rate-badge.formula { border: 1px solid #ddd6fe; background: linear-gradient(135deg, #f5f3ff, #ede9fe) !important; }
-          .ws-rate-badge.manual { border: 1px solid #bbf7d0; background: linear-gradient(135deg, #f0fdf4, #d1fae5) !important; }
-          
-          .ws-summary-strip {
-            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.04) !important;
-            border-bottom: 2px solid #e2e8f0 !important;
-            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
-          }
-          /* --- BOQ UI REFINEMENT CSS STYLES --- */
           .ws-table th {
-            background: #f8fafc !important;
-            color: #334155 !important;
-            border-bottom: 2px solid #cbd5e1 !important;
-            font-weight: 800 !important;
-            letter-spacing: 0.05em !important;
-            padding: 0.95rem 1rem !important;
+            padding: 0.4rem 0.6rem;
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 0.58rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            border-bottom: 2px solid #e2e8f0;
+            border-right: 1px solid #f1f5f9;
           }
-          .ws-item-row {
-            transition: background 0.2s ease, box-shadow 0.2s ease !important;
-            border-bottom: 1px solid #f1f5f9 !important;
+          .ws-item-row td {
+            padding: 0.35rem 0.55rem;
+            vertical-align: middle;
+            border-bottom: 1px solid #f1f5f9;
+            border-right: 1px solid #f1f5f9;
+            background: white;
           }
-          /* Subtle row striping */
-          .ws-table tbody > tr.ws-item-row:nth-child(even) {
-            background-color: #fbfbfb !important;
+          .ws-item-row:hover td { background: #f8fafc; }
+          .ws-item-row-selected td {
+            background: #f0f7ff !important;
+            border-bottom-color: #bfdbfe;
           }
-          .ws-item-row:hover {
-            background-color: #f4f7fa !important;
+
+          /* --- DESCRIPTOR COLUMN --- */
+          .ws-th-desc, .ws-desc {
+            width: 340px;
+            max-width: 340px;
+            min-width: 340px;
+            position: sticky;
+            left: 76px;
+            z-index: 5;
+            background: inherit;
           }
-          /* Active row highlight */
-          .ws-item-row.ws-item-row-selected {
-            background-color: #f0f7ff !important;
-            box-shadow: inset 4px 0 0 #2563eb, 0 4px 12px rgba(37, 99, 235, 0.05) !important;
-            display: table-row !important;
+          .ws-desc-input {
+            width: 100%;
+            font-size: 0.8rem;
+            font-weight: 600;
+            min-height: 2rem;
+            max-height: 120px;
+            border: 1px solid transparent;
+            background: transparent;
+            resize: vertical;
+            padding: 2px 4px;
           }
-          .ws-item-row.ws-item-row-selected td {
-            border-bottom: 1px solid #bfdbfe !important;
+          .ws-item-row:hover .ws-desc-input,
+          .ws-item-row-selected .ws-desc-input {
+            background: white;
+            border-color: #e2e8f0;
           }
-          /* Compact Rate Source Select Badge */
-          .ws-compact-source-badge {
-            margin-top: 0.35rem;
-            padding: 0.15rem 0.35rem;
+
+          /* --- NUMERIC / UTILITY COLUMNS --- */
+          .ws-th-num, .ws-num { width: 76px; position: sticky; left: 0; z-index: 6; background: inherit; }
+          .ws-row-number { font-size: 0.55rem; color: #94a3b8; font-weight: 800; }
+          .ws-line-code { font-size: 0.68rem; color: #1e293b; font-weight: 800; }
+
+          /* --- MOBILE / ANALYTICS (HIDDEN IN COMPACT) --- */
+          .ws-analytics-board { display: none; }
+          
+          /* --- BTNS & PILLS --- */
+          .ws-state-pill {
+            padding: 0.12rem 0.4rem;
+            font-size: 0.52rem;
+            font-weight: 900;
+            border-radius: 999px;
+            text-transform: uppercase;
+          }
+          .ws-state-pill-benchmark { background: #eff6ff; color: #1d4ed8; }
+          .ws-state-pill-warning { background: #fff7ed; color: #c2410c; }
+          
+          .ws-btn {
+            padding: 0.35rem 0.6rem;
             font-size: 0.65rem;
             font-weight: 800;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
-            border: 1px solid transparent;
-            outline: none;
-            width: fit-content;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            text-align: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-          }
-          .ws-compact-source-benchmark { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
-          .ws-compact-source-formula { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
-          .ws-compact-source-manual { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
-          /* Availability pills */
-          .ws-availability-pill {
-            padding: 0.15rem 0.4rem !important;
-            font-size: 0.62rem !important;
-            border-radius: 999px !important;
-            font-weight: 800 !important;
-          }
-          /* Emphasize grand total summary metric */
-          .ws-summary-metric-strong {
-            background: #0f172a !important;
-            color: #ffffff !important;
-            border-color: #0f172a !important;
-            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15) !important;
-          }
-          .ws-summary-metric-strong strong { color: #ffffff !important; }
-          .ws-summary-metric-strong small { color: #94a3b8 !important; }
-          .ws-summary-metric-strong span:first-child { color: #cbd5e1 !important; }
-          /* Better empty sections */
-          .ws-empty-section {
-            padding: 2.5rem 1rem !important;
-            background: #f8fafc !important;
-            border: 1px dashed #cbd5e1 !important;
-            border-radius: 12px !important;
           }
       `}</style>
     </div>
