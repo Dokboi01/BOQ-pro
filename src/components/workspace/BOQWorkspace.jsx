@@ -3817,8 +3817,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           display: grid;
           grid-template-columns: 280px minmax(0, 1fr) 360px;
           gap: 1rem;
+          width: 100%;
           height: calc(100vh - 56px);
           min-height: 0;
+          min-width: 0;
           align-items: stretch;
           overflow: hidden;
         }
@@ -3829,17 +3831,24 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           display: flex;
           flex-direction: column;
           gap: 1rem;
-          overflow-y: auto;
-          overflow-x: hidden;
+          overflow: hidden;
           scrollbar-width: thin;
           scrollbar-color: #cbd5e1 transparent;
+          box-sizing: border-box;
+        }
+        .ws-main-pane > * {
+          min-width: 0;
+          max-width: 100%;
+          box-sizing: border-box;
         }
         .ws-main-pane::-webkit-scrollbar { width: 6px; }
         .ws-main-pane::-webkit-scrollbar-track { background: transparent; }
         .ws-main-pane::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         .ws-main-pane::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         .ws-detail-dock {
-          min-width: 0;
+          width: 360px;
+          min-width: 360px;
+          max-width: 360px;
           min-height: 0;
           display: flex;
           flex-direction: column;
@@ -4123,7 +4132,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
         @media (max-width: 1500px) {
           .ws-workspace-shell {
-            grid-template-columns: 228px minmax(0, 1fr) 340px;
+            grid-template-columns: 280px minmax(0, 1fr) 360px;
           }
           .ws-summary-metrics-row {
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4146,6 +4155,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           }
           .ws-detail-dock {
             position: static;
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
             min-height: auto;
             overflow-y: visible;
           }
@@ -5632,13 +5644,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           flex: 1 1 auto;
           min-width: 0;
           max-width: 100%;
-          overflow-y: visible;
+          overflow-y: auto;
           overflow-x: auto;
           background: #ffffff;
           border: 1px solid #dbe4ee;
           border-radius: 24px;
           box-shadow: 0 18px 36px rgba(15, 23, 42, 0.05);
           padding-bottom: 1.4rem;
+          box-sizing: border-box;
         }
         .ws-table-wrap::-webkit-scrollbar { width: 6px; height: 6px; }
         .ws-table-wrap::-webkit-scrollbar-track { background: #f1f5f9; }
@@ -5849,6 +5862,11 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-item-row:hover td { background: #f8fafc; }
         .ws-item-row-selected {
           background: #f8fbff !important;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          overflow: hidden;
+          box-sizing: border-box;
         }
         .ws-item-row td {
           padding: 0.55rem 0.7rem;
@@ -5902,6 +5920,20 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
 
         .ws-desc-inner { display: flex; align-items: flex-start; gap: 0.375rem; }
+        .ws-desc,
+        .ws-desc-inner,
+        .ws-item-heading-row,
+        .ws-item-heading-copy,
+        .ws-item-secondary,
+        .ws-rate-source-selector,
+        .ws-rate-source-current,
+        .ws-rate-source-buttons {
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          overflow: hidden;
+          box-sizing: border-box;
+        }
         .ws-item-meta-row {
           display: grid;
           grid-template-columns: 180px minmax(0, 1fr);
@@ -5966,6 +5998,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-input {
           width: 100%;
           max-width: 100%;
+          min-width: 0;
           box-sizing: border-box;
           border: 1px solid #e2e8f0;
           background: #ffffff;
@@ -5982,6 +6015,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-desc-input {
           width: 100%;
           max-width: 100%;
+          min-width: 0;
           box-sizing: border-box;
           min-height: 3.45rem;
           font-weight: 600;
