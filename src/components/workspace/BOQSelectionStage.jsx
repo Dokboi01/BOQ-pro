@@ -206,6 +206,41 @@ const BOQSelectionStage = ({
 
   return (
     <div className="boq-selection-shell">
+      <section className="boq-selection-bill-browser">
+        <div className="boq-selection-bill-browser-head">
+          <div>
+            <span className="boq-selection-bill-browser-label">Bill Navigation</span>
+            <strong>Switch bills first, then pick exact items for each bill.</strong>
+          </div>
+          <small>
+            {currentSectionSelectedCount} selected in {section?.title || 'this bill'} - {totalSelectedCount} selected overall
+          </small>
+        </div>
+        <div className="boq-selection-bill-tabs">
+          {(sections || []).map((entry, index) => {
+            const isActive = activeBillSectionId === entry.id;
+            const selectedCount = selectionCountsBySection?.[entry.id] || 0;
+            const libraryCount = sectionLibraryCounts?.[entry.id] || 0;
+            const meta = `${selectedCount} selected${libraryCount > 0 ? ` - ${libraryCount} library item${libraryCount === 1 ? '' : 's'}` : ''}`;
+
+            return (
+              <button
+                key={entry.id}
+                type="button"
+                className={`boq-selection-bill-tab ${isActive ? 'active' : ''}`}
+                onClick={() => onSelectBill?.(entry.id)}
+              >
+                <span className="boq-selection-bill-index">{String(index + 1).padStart(2, '0')}</span>
+                <span className="boq-selection-bill-copy">
+                  <strong>{entry.title}</strong>
+                  <small>{meta}</small>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
       <section className="boq-selection-overview">
         <div className="boq-selection-overview-copy">
           <span className="boq-selection-eyebrow">{structureType || 'BOQ Builder'}</span>
@@ -244,41 +279,6 @@ const BOQSelectionStage = ({
             <strong>{metrics.recommended}</strong>
             <small>Seeded items marked as likely picks for this bill.</small>
           </div>
-        </div>
-      </section>
-
-      <section className="boq-selection-bill-browser">
-        <div className="boq-selection-bill-browser-head">
-          <div>
-            <span className="boq-selection-bill-browser-label">Bill Navigation</span>
-            <strong>Switch bills the same way you do in the workspace.</strong>
-          </div>
-          <small>
-            {currentSectionSelectedCount} selected in {section?.title || 'this bill'} · {totalSelectedCount} selected overall
-          </small>
-        </div>
-        <div className="boq-selection-bill-tabs">
-          {(sections || []).map((entry, index) => {
-            const isActive = activeBillSectionId === entry.id;
-            const selectedCount = selectionCountsBySection?.[entry.id] || 0;
-            const libraryCount = sectionLibraryCounts?.[entry.id] || 0;
-            const meta = `${selectedCount} selected${libraryCount > 0 ? ` · ${libraryCount} library item${libraryCount === 1 ? '' : 's'}` : ''}`;
-
-            return (
-              <button
-                key={entry.id}
-                type="button"
-                className={`boq-selection-bill-tab ${isActive ? 'active' : ''}`}
-                onClick={() => onSelectBill?.(entry.id)}
-              >
-                <span className="boq-selection-bill-index">{String(index + 1).padStart(2, '0')}</span>
-                <span className="boq-selection-bill-copy">
-                  <strong>{entry.title}</strong>
-                  <small>{meta}</small>
-                </span>
-              </button>
-            );
-          })}
         </div>
       </section>
 
@@ -740,6 +740,9 @@ const BOQSelectionStage = ({
           flex-direction: column;
           gap: 0.85rem;
           padding: 1rem 1.05rem;
+          position: sticky;
+          top: 0.25rem;
+          z-index: 7;
           border-radius: 24px;
           border: 1px solid rgba(148, 163, 184, 0.18);
           background: rgba(248, 250, 252, 0.96);
@@ -1492,6 +1495,7 @@ const BOQSelectionStage = ({
 
           .boq-selection-bill-browser {
             padding: 0.9rem;
+            position: static;
           }
 
           .boq-selection-bill-tabs {
