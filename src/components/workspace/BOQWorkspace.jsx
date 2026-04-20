@@ -580,8 +580,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   };
 
   const handleQuantityChange = (sectionId, item, rawValue) => {
+    const safeQty = sanitizeNonNegativeNumber(rawValue);
     updateItem(sectionId, item.id, {
-      qty: sanitizeNonNegativeNumber(rawValue),
+      qty: safeQty,
+      quantity: safeQty,
       qtySource: 'manual'
     });
   };
@@ -7587,5 +7589,4 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 };
 
 export default BOQWorkspace;
-
 
