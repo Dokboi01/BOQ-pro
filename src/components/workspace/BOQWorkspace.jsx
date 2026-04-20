@@ -3831,7 +3831,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           display: flex;
           flex-direction: column;
           gap: 1rem;
-          overflow: hidden;
+          overflow-y: auto;
+          overflow-x: hidden;
           scrollbar-width: thin;
           scrollbar-color: #cbd5e1 transparent;
           box-sizing: border-box;
@@ -5646,6 +5647,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           max-width: 100%;
           overflow-y: auto;
           overflow-x: auto;
+          min-height: 340px;
           background: #ffffff;
           border: 1px solid #dbe4ee;
           border-radius: 24px;
@@ -5871,9 +5873,11 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-item-row td {
           padding: 0.55rem 0.7rem;
           vertical-align: middle;
+          min-width: 0;
           border-right: 1px solid #eef2f7;
           border-bottom: 1px solid #eef2f7;
           background: inherit;
+          box-sizing: border-box;
         }
         .ws-item-row-selected td {
           background: linear-gradient(180deg, #f8fbff 0%, #f0f7ff 100%);
