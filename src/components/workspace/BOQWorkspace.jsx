@@ -7400,46 +7400,185 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           .ws-rate-badge.formula { border: 1px solid #ddd6fe; background: linear-gradient(135deg, #f5f3ff, #ede9fe) !important; }
           .ws-rate-badge.manual { border: 1px solid #bbf7d0; background: linear-gradient(135deg, #f0fdf4, #d1fae5) !important; }
           
-          .ws-summary-strip {
-            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.04) !important;
-            border-bottom: 2px solid #e2e8f0 !important;
-            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+          .ws-workspace-shell {
+            gap: 1.15rem !important;
           }
-          /* --- BOQ UI REFINEMENT CSS STYLES --- */
+          .ws-summary-strip {
+            border: 1px solid #dbe4ee !important;
+            border-bottom: 1px solid #dbe4ee !important;
+            border-radius: 28px !important;
+            box-shadow: 0 20px 42px rgba(15, 23, 42, 0.08), 0 6px 16px rgba(15, 23, 42, 0.04) !important;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+            padding: 1.15rem 1.2rem 1.2rem !important;
+          }
+          .ws-summary-headline {
+            gap: 0.45rem !important;
+          }
+          .ws-summary-headline p {
+            margin: 0 !important;
+            font-size: 0.84rem !important;
+            line-height: 1.55 !important;
+            color: #64748b !important;
+          }
+          .ws-summary-metrics-row {
+            gap: 0.9rem !important;
+          }
+          .ws-summary-metric {
+            min-height: 122px !important;
+            border-radius: 20px !important;
+            padding: 1rem 1rem 0.95rem !important;
+            border: 1px solid #e2e8f0 !important;
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.05) !important;
+          }
+          .ws-summary-metric strong {
+            font-size: 1.34rem !important;
+            padding-right: 1.45rem !important;
+          }
+          .ws-summary-metric-tertiary {
+            background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%) !important;
+            border-style: solid !important;
+          }
+          .ws-summary-metric-strong {
+            background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 100%) !important;
+            color: #ffffff !important;
+            border-color: #1d4ed8 !important;
+            box-shadow: 0 20px 40px rgba(29, 78, 216, 0.2) !important;
+            transform: none !important;
+          }
+          .ws-summary-metric-strong strong { color: #ffffff !important; }
+          .ws-summary-metric-strong small { color: rgba(255, 255, 255, 0.78) !important; }
+          .ws-summary-metric-strong span:first-child { color: rgba(255, 255, 255, 0.82) !important; }
+          .ws-summary-actions-row {
+            padding-top: 0.45rem !important;
+            border-top: 1px solid rgba(226, 232, 240, 0.95) !important;
+          }
+          .ws-sheet-tabbar-compact {
+            padding: 0.38rem !important;
+            border-radius: 18px !important;
+            border: 1px solid #e2e8f0 !important;
+            background: #f8fafc !important;
+          }
+          .ws-sheet-meta-chip {
+            background: #ffffff !important;
+            border: 1px solid #dbe4ee !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75) !important;
+          }
+          .ws-head-action,
+          .ws-analytics-toggle {
+            min-height: 42px !important;
+            border-radius: 14px !important;
+            box-shadow: 0 8px 16px rgba(15, 23, 42, 0.06) !important;
+          }
+          .ws-detail-dock {
+            border: 1px solid #dbe4ee !important;
+            border-radius: 28px !important;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+            box-shadow: 0 20px 46px rgba(15, 23, 42, 0.08) !important;
+          }
+          .ws-detail-dock-header {
+            padding: 1.1rem 1.25rem !important;
+            gap: 0.8rem !important;
+            background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%) !important;
+          }
+          .ws-detail-dock-actions {
+            gap: 0.5rem !important;
+          }
+          .ws-detail-empty {
+            padding: 1.7rem !important;
+            gap: 0.9rem !important;
+            background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%) !important;
+          }
+          .ws-sheet-tools {
+            padding: 0 !important;
+            background: transparent !important;
+            border-bottom: none !important;
+            margin-top: 0.15rem !important;
+          }
+          .ws-formula-bar {
+            border-radius: 18px 18px 0 0 !important;
+            border-color: #dbe4ee !important;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06) !important;
+          }
+          .ws-helper-strip {
+            gap: 0.85rem !important;
+            padding: 0.95rem 1rem 1rem !important;
+            background: rgba(255, 255, 255, 0.96) !important;
+            border: 1px solid #dbe4ee !important;
+            border-top: none !important;
+            border-radius: 0 0 18px 18px !important;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06) !important;
+          }
+          .ws-helper-copy strong {
+            font-size: 0.98rem !important;
+            color: #0f172a !important;
+          }
+          .ws-helper-copy small {
+            font-size: 0.77rem !important;
+            line-height: 1.55 !important;
+          }
+          .ws-helper-chip {
+            padding: 0.22rem 0.56rem !important;
+            font-size: 0.58rem !important;
+            border-radius: 999px !important;
+          }
+          .ws-helper-btn {
+            min-height: 34px !important;
+            border-radius: 10px !important;
+            border: 1px solid #dbe4ee !important;
+            background: #ffffff !important;
+            box-shadow: 0 6px 12px rgba(15, 23, 42, 0.05) !important;
+          }
+          .ws-helper-btn:hover {
+            transform: translateY(-1px);
+            border-color: #bfdbfe !important;
+            box-shadow: 0 10px 18px rgba(37, 99, 235, 0.08) !important;
+          }
+          .ws-table-wrap {
+            margin-top: 0.2rem !important;
+            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%) !important;
+            border: 1px solid #dbe4ee !important;
+            border-radius: 26px !important;
+            box-shadow: 0 22px 46px rgba(15, 23, 42, 0.06) !important;
+            padding-bottom: 1rem !important;
+          }
+          .ws-column-letters {
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%) !important;
+            border-bottom: 1px solid #dbe4ee !important;
+          }
           .ws-table th {
             background: #f8fafc !important;
             color: #334155 !important;
             border-bottom: 2px solid #cbd5e1 !important;
             font-weight: 800 !important;
             letter-spacing: 0.05em !important;
-            padding: 0.95rem 1rem !important;
+            padding: 1rem !important;
+          }
+          .ws-table td {
+            padding-top: 0.85rem !important;
+            padding-bottom: 0.85rem !important;
           }
           .ws-item-row {
             transition: background 0.2s ease, box-shadow 0.2s ease !important;
-            border-bottom: 1px solid #f1f5f9 !important;
+            border-bottom: 1px solid #eef2f7 !important;
           }
-          /* Subtle row striping */
           .ws-table tbody > tr.ws-item-row:nth-child(even) {
-            background-color: #fbfbfb !important;
+            background: linear-gradient(180deg, #fcfdff 0%, #fbfcfe 100%) !important;
           }
           .ws-item-row:hover {
-            background-color: #f4f7fa !important;
+            background-color: #f7fbff !important;
           }
-          /* Active row highlight */
           .ws-item-row.ws-item-row-selected {
-            background-color: #f0f7ff !important;
-            box-shadow: inset 4px 0 0 #2563eb, 0 4px 12px rgba(37, 99, 235, 0.05) !important;
+            background: linear-gradient(90deg, rgba(219, 234, 254, 0.88) 0%, rgba(239, 246, 255, 0.96) 100%) !important;
+            box-shadow: inset 4px 0 0 #2563eb, 0 12px 24px rgba(37, 99, 235, 0.08) !important;
+          }
+          .ws-item-row.ws-item-row-selected td {
+            border-bottom: 1px solid #bfdbfe !important;
           }
           .ws-head-stat-card strong {
             font-size: 0.95rem;
             font-weight: 800;
             color: #0f172a;
           }
-
-          .ws-item-row.ws-item-row-selected td {
-            border-bottom: 1px solid #bfdbfe !important;
-          }
-          /* Compact Rate Source Select Badge */
           .ws-compact-source-badge {
             margin-top: 0.35rem;
             padding: 0.15rem 0.35rem;
@@ -7459,29 +7598,17 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           .ws-compact-source-benchmark { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
           .ws-compact-source-formula { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
           .ws-compact-source-manual { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
-          /* Availability pills */
           .ws-availability-pill {
             padding: 0.15rem 0.4rem !important;
             font-size: 0.62rem !important;
             border-radius: 999px !important;
             font-weight: 800 !important;
           }
-          /* Emphasize grand total summary metric */
-          .ws-summary-metric-strong {
-            background: #0f172a !important;
-            color: #ffffff !important;
-            border-color: #0f172a !important;
-            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15) !important;
-          }
-          .ws-summary-metric-strong strong { color: #ffffff !important; }
-          .ws-summary-metric-strong small { color: #94a3b8 !important; }
-          .ws-summary-metric-strong span:first-child { color: #cbd5e1 !important; }
-          /* Better empty sections */
           .ws-empty-section {
             padding: 2.5rem 1rem !important;
             background: #f8fafc !important;
             border: 1px dashed #cbd5e1 !important;
-            border-radius: 12px !important;
+            border-radius: 16px !important;
           }
       `}</style>
     </div>
