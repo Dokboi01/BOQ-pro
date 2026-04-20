@@ -5724,7 +5724,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           min-width: 1360px;
         }
 
-        .ws-table thead { position: sticky; top: 40px; z-index: 10; }
+        .ws-table thead { position: sticky; top: 0; z-index: 10; }
         .ws-table th {
           background: #f8fafc;
           padding: 0.62rem 0.7rem;
@@ -6219,15 +6219,15 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-num {
           position: sticky;
           left: 0;
-          z-index: 5;
-          background: inherit;
+          z-index: 10;
+          background: #ffffff;
         }
-                .ws-th-desc,
+        .ws-th-desc,
         .ws-desc {
           position: sticky;
           left: 76px;
-          z-index: 4;
-          background: inherit;
+          z-index: 9;
+          background: #ffffff;
           min-width: 250px;
           max-width: 340px;
           width: 340px;
@@ -6245,7 +6245,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
         .ws-item-row:hover .ws-num,
         .ws-item-row:hover .ws-desc {
-          background: #f8fafc;
+          background: #f8fafc !important;
         }
         .ws-outlier .ws-num,
         .ws-outlier .ws-desc {
