@@ -54,8 +54,9 @@ const BOQBillPanel = ({
 
       <style>{`
         .wbp-panel {
-          width: 248px;
-          min-width: 248px;
+          width: 280px;
+          min-width: 280px;
+          max-width: 280px;
           display: flex;
           flex-direction: column;
           gap: 1rem;
@@ -260,6 +261,7 @@ const BOQBillPanel = ({
           .wbp-panel {
             width: 100%;
             min-width: 0;
+            max-width: 100%;
             position: static;
             border-right: none;
             padding-right: 0;
