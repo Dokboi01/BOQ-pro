@@ -10,12 +10,34 @@ const BOQBillPanel = ({
   selectionCountsBySection = {},
   onSelectBill,
 }) => {
+  const totalLines = sections.reduce((sum, section) => sum + ((section.items || []).length || 0), 0);
+  const totalSelected = sections.reduce((sum, section) => (
+    sum + (selectionCountsBySection?.[section.id] || (section.items || []).length || 0)
+  ), 0);
+  const activeSubtotal = sectionTotalsBySection?.[activeSectionId] || 0;
+  const pricedBills = sections.filter((section) => (sectionTotalsBySection?.[section.id] || 0) > 0).length;
+
   return (
     <aside className="wbp-panel">
       <div className="wbp-header">
         <span className="wbp-eyebrow">BOQ Bills</span>
         <strong>Bill Navigator</strong>
         <small>{sections.length} active bill{sections.length === 1 ? '' : 's'} in this workbook.</small>
+        <div className="wbp-header-stats">
+          <div className="wbp-header-stat">
+            <span>Lines</span>
+            <strong>{totalLines}</strong>
+          </div>
+          <div className="wbp-header-stat">
+            <span>Selected</span>
+            <strong>{totalSelected}</strong>
+          </div>
+          <div className="wbp-header-stat wbp-header-stat-strong">
+            <span>Active Total</span>
+            <strong>{formatMoney(activeSubtotal)}</strong>
+            <small>{pricedBills}/{sections.length} priced</small>
+          </div>
+        </div>
       </div>
 
       <div className="wbp-list">
@@ -75,12 +97,12 @@ const BOQBillPanel = ({
         .wbp-header {
           display: flex;
           flex-direction: column;
-          gap: 0.38rem;
-          padding: 1rem 1rem 0.95rem;
-          border-radius: 20px;
-          background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-          border: 1px solid rgba(203, 213, 225, 0.9);
-          box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
+          gap: 0.5rem;
+          padding: 1rem 1rem 1rem;
+          border-radius: 22px;
+          background: linear-gradient(180deg, #ffffff 0%, #f8fbff 52%, #f1f5f9 100%);
+          border: 1px solid rgba(203, 213, 225, 0.92);
+          box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
         }
 
         .wbp-eyebrow {
@@ -103,12 +125,67 @@ const BOQBillPanel = ({
           color: #64748b;
         }
 
+        .wbp-header-stats {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.6rem;
+          margin-top: 0.15rem;
+        }
+
+        .wbp-header-stat {
+          display: flex;
+          flex-direction: column;
+          gap: 0.15rem;
+          padding: 0.72rem 0.8rem;
+          border-radius: 16px;
+          background: rgba(255, 255, 255, 0.92);
+          border: 1px solid #e2e8f0;
+        }
+
+        .wbp-header-stat span {
+          font-size: 0.62rem;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+
+        .wbp-header-stat strong {
+          font-size: 0.96rem;
+          color: #0f172a;
+          line-height: 1.25;
+        }
+
+        .wbp-header-stat small {
+          font-size: 0.68rem;
+          line-height: 1.4;
+          color: #64748b;
+        }
+
+        .wbp-header-stat-strong {
+          grid-column: span 2;
+          background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+          border-color: #1e40af;
+          box-shadow: 0 12px 24px rgba(37, 99, 235, 0.16);
+        }
+
+        .wbp-header-stat-strong span,
+        .wbp-header-stat-strong strong,
+        .wbp-header-stat-strong small {
+          color: #ffffff;
+        }
+
+        .wbp-header-stat-strong small {
+          color: rgba(255, 255, 255, 0.78);
+        }
+
         .wbp-list {
           display: flex;
           flex-direction: column;
           gap: 0.6rem;
           overflow: auto;
           padding-right: 0.15rem;
+          padding-bottom: 0.35rem;
         }
 
         .wbp-item {
@@ -116,16 +193,16 @@ const BOQBillPanel = ({
           grid-template-columns: 44px minmax(0, 1fr) auto;
           align-items: center;
           gap: 0.85rem;
-          padding: 0.95rem 0.9rem;
-          border-radius: 20px;
+          padding: 1rem 0.95rem;
+          border-radius: 22px;
           border: 1px solid rgba(226, 232, 240, 0.95);
-          background: #ffffff;
+          background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
           text-align: left;
           cursor: pointer;
           position: relative;
           overflow: hidden;
           transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
-          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+          box-shadow: 0 10px 22px rgba(15, 23, 42, 0.05);
         }
 
         .wbp-item::before {
@@ -146,8 +223,8 @@ const BOQBillPanel = ({
 
         .wbp-item.active {
           border-color: rgba(59, 130, 246, 0.88);
-          box-shadow: 0 16px 30px rgba(37, 99, 235, 0.14);
-          background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+          box-shadow: 0 18px 34px rgba(37, 99, 235, 0.16);
+          background: linear-gradient(180deg, #eff6ff 0%, #ffffff 72%);
         }
 
         .wbp-item.active::before {
@@ -231,7 +308,8 @@ const BOQBillPanel = ({
           flex-direction: column;
           align-items: flex-end;
           gap: 0.18rem;
-          min-width: 88px;
+          min-width: 96px;
+          padding-left: 0.35rem;
         }
 
         .wbp-total-label {
@@ -276,6 +354,14 @@ const BOQBillPanel = ({
             padding-bottom: 0.25rem;
           }
 
+          .wbp-header-stats {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
+
+          .wbp-header-stat-strong {
+            grid-column: span 1;
+          }
+
           .wbp-item {
             min-width: 260px;
           }
@@ -284,6 +370,10 @@ const BOQBillPanel = ({
         @media (max-width: 640px) {
           .wbp-header {
             padding: 0.9rem;
+          }
+
+          .wbp-header-stats {
+            grid-template-columns: 1fr;
           }
 
           .wbp-item {

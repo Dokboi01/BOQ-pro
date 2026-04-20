@@ -23,6 +23,9 @@ import {
 const formatMoney = (value) =>
   `₦${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 
+const formatCurrency = (value) =>
+  `N${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+
 const CONFIDENCE_COLORS = {
   high: '#059669',
   medium: '#2563eb',
@@ -132,7 +135,7 @@ const BOQItemDetailPanel = ({
         <div className="idp-header">
           <div className="idp-header-top">
             <div className="idp-header-left">
-               <span className="idp-eyebrow">Item Intelligence Matrix</span>
+               <span className="idp-eyebrow">BOQ Intelligence</span>
                <h3 className="idp-title">{item.name || 'Estimate Item'}</h3>
                <div className="idp-header-meta">
                    {item.code && <span className="idp-meta-tag idp-meta-tag-code">{item.code}</span>}
@@ -150,11 +153,11 @@ const BOQItemDetailPanel = ({
           <div className="idp-hero-price">
             <div className="idp-hero-price-main">
               <span className="idp-hero-label">Resolved Unit Rate</span>
-              <strong className="idp-hero-value">{formatMoney(resolvedUnitRate)}</strong>
+              <strong className="idp-hero-value">{formatCurrency(resolvedUnitRate)}</strong>
             </div>
             <div className="idp-hero-price-alt">
               <span className="idp-hero-label">Line Total (Qty {Number(item.qty || 0).toLocaleString()})</span>
-              <strong className="idp-hero-total">{formatMoney((item.qty || 0) * resolvedUnitRate)}</strong>
+              <strong className="idp-hero-total">{formatCurrency((item.qty || 0) * resolvedUnitRate)}</strong>
             </div>
           </div>
         </div>
@@ -163,7 +166,7 @@ const BOQItemDetailPanel = ({
         <div className="idp-body">
           
           {/* Item Strategic Context */}
-          <Section icon={Target} title="Strategic Context">
+          <Section icon={Target} title="Item Overview">
             <div className="idp-strategic-card">
               <div className="idp-strat-identity">
                 <Info size={16} />
@@ -180,12 +183,12 @@ const BOQItemDetailPanel = ({
           </Section>
 
           {/* Pricing Basis */}
-          <Section icon={CreditCard} title="Pricing Basis Matrix">
+          <Section icon={CreditCard} title="Rate Summary">
             <div className="idp-basis-grid">
               <BasisCard
                 icon={BarChart2}
                 label="Benchmark Basis"
-                value={formatMoney(benchmarkRate)}
+                value={formatCurrency(benchmarkRate)}
                 active={selectedRateSource === 'benchmark'}
                 tone="teal"
                 description="Live market resource rate from engineering index."
@@ -194,7 +197,7 @@ const BOQItemDetailPanel = ({
                 <BasisCard
                   icon={Cpu}
                   label="Formula Synthesis"
-                  value={formatMoney(formulaRate)}
+                  value={formatCurrency(formulaRate)}
                   active={selectedRateSource === 'formula'}
                   tone="indigo"
                   description="Computed from first-principles engineering logic."
@@ -203,7 +206,7 @@ const BOQItemDetailPanel = ({
               <BasisCard
                 icon={SlidersHorizontal}
                 label="Manual Allocation"
-                value={formatMoney(item.manualRate ?? item.rate ?? 0)}
+                value={formatCurrency(item.manualRate ?? item.rate ?? 0)}
                 active={selectedRateSource === 'manual'}
                 tone="slate"
                 description="Custom override or specifically negotiated rate."
@@ -213,7 +216,7 @@ const BOQItemDetailPanel = ({
 
           {/* Logic & Inputs (Only if formula exists) */}
           {hasFormula && (
-            <Section icon={Cpu} title="Engineering Logic">
+            <Section icon={Cpu} title="Formula Logic">
               <div className="idp-logic-wrap">
                 <div className="idp-logic-header">
                   <span>Computed Expression</span>
@@ -254,7 +257,7 @@ const BOQItemDetailPanel = ({
           )}
 
           {/* Market Intelligence */}
-          <Section icon={BarChart2} title="Market Intelligence" defaultOpen={false}>
+          <Section icon={BarChart2} title="Benchmark Source" defaultOpen={false}>
              {benchmarkRate > 0 ? (
                <div className="idp-intelligence-card">
                   <div className="idp-intel-header">
@@ -283,7 +286,7 @@ const BOQItemDetailPanel = ({
           </Section>
 
           {/* Decision Logs */}
-          <Section icon={FileText} title="Decision Logs & Analysis" defaultOpen={false}>
+          <Section icon={FileText} title="Notes & Analysis" defaultOpen={false}>
             <div className="idp-notes-wrap">
               <span className="idp-sub-label">Estimator Observations</span>
               <textarea
@@ -375,18 +378,18 @@ const BOQItemDetailPanel = ({
             min-height: 0;
             border-left: none;
             box-shadow: none;
-            background: #fdfdfe;
+            background: linear-gradient(180deg, #fcfdff 0%, #f8fbff 100%);
             animation: none;
           }
 
           /* --- HEADER --- */
           .idp-header {
-            padding: 2.5rem 2rem 2rem;
+            padding: 1.5rem 1.35rem 1.2rem;
             background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
             border-bottom: 1px solid var(--idp-border);
             display: flex;
             flex-direction: column;
-            gap: 2rem;
+            gap: 1.2rem;
             flex-shrink: 0;
           }
 
@@ -417,8 +420,9 @@ const BOQItemDetailPanel = ({
 
           .idp-header-meta {
             display: flex;
+            flex-wrap: wrap;
             gap: 0.6rem;
-            margin-top: 1rem;
+            margin-top: 0.8rem;
           }
 
           .idp-meta-tag {
@@ -483,7 +487,7 @@ const BOQItemDetailPanel = ({
 
           .idp-section-header {
             width: 100%;
-            padding: 1.5rem 2rem;
+            padding: 1rem 1.35rem;
             display: flex; align-items: center; justify-content: space-between;
             background: transparent; border: none; cursor: pointer;
             transition: all 0.2s;
@@ -506,7 +510,7 @@ const BOQItemDetailPanel = ({
           .idp-section-collapse { display: none; }
           .idp-section-collapse-open { display: block; }
 
-          .idp-section-body { padding: 0 2rem 2.5rem; }
+          .idp-section-body { padding: 0 1.35rem 1.4rem; }
 
           /* --- CARDS & GRIDS --- */
           .idp-strategic-card {
@@ -532,10 +536,10 @@ const BOQItemDetailPanel = ({
           .idp-strat-pill-blue      { background: #eff6ff; color: #2563eb; }
           .idp-strat-pill-teal      { background: #f0fdfa; color: #0d9488; }
 
-          .idp-basis-grid { display: flex; flex-direction: column; gap: 1rem; }
+          .idp-basis-grid { display: flex; flex-direction: column; gap: 0.8rem; }
           .idp-basis-card {
             background: white; border: 1px solid #eef2f7;
-            padding: 1.25rem; border-radius: var(--idp-radius-md);
+            padding: 1rem; border-radius: var(--idp-radius-md);
             transition: all 0.3s; position: relative;
           }
           .idp-basis-card:hover { border-color: #cbd5e1; transform: translateY(-2px); }
@@ -600,9 +604,9 @@ const BOQItemDetailPanel = ({
 
           /* --- FOOTER --- */
           .idp-footer {
-            padding: 1.5rem 2rem; border-top: 1px solid var(--idp-border);
+            padding: 1rem 1.35rem; border-top: 1px solid var(--idp-border);
             display: flex; align-items: center; justify-content: space-between;
-            background: #ffffff; flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.96); flex-shrink: 0;
           }
           .idp-footer-info { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: #94a3b8; font-weight: 700; }
           .idp-footer-dot { width: 8px; height: 8px; border-radius: 50%; }
@@ -616,7 +620,7 @@ const BOQItemDetailPanel = ({
 
           /* --- TEXTAREA --- */
           .idp-premium-textarea {
-            width: 100%; border: 1.5px solid #e2e8f0; border-radius: var(--idp-radius-md); padding: 1.25rem;
+            width: 100%; max-width: 100%; box-sizing: border-box; border: 1.5px solid #e2e8f0; border-radius: var(--idp-radius-md); padding: 1rem;
             font-size: 0.95rem; font-weight: 500; font-family: inherit; line-height: 1.6;
             outline: none; transition: border-color 0.2s;
           }
