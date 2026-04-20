@@ -206,15 +206,11 @@ const BOQSelectionStage = ({
 
   return (
     <div className="boq-selection-shell">
-      <section className="boq-selection-bill-browser">
+      <aside className="boq-selection-bill-browser">
         <div className="boq-selection-bill-browser-head">
-          <div>
-            <span className="boq-selection-bill-browser-label">Bill Navigation</span>
-            <strong>Switch bills first, then pick exact items for each bill.</strong>
-          </div>
-          <small>
-            {currentSectionSelectedCount} selected in {section?.title || 'this bill'} - {totalSelectedCount} selected overall
-          </small>
+          <span className="boq-selection-bill-browser-label">Bill Navigation</span>
+          <strong>Pick items bill by bill before generating the BOQ.</strong>
+          <small>{totalSelectedCount} selected across {sections.length} bill{sections.length === 1 ? '' : 's'}.</small>
         </div>
         <div className="boq-selection-bill-tabs">
           {(sections || []).map((entry, index) => {
@@ -239,52 +235,64 @@ const BOQSelectionStage = ({
             );
           })}
         </div>
-      </section>
-
-      <section className="boq-selection-overview">
-        <div className="boq-selection-overview-copy">
-          <span className="boq-selection-eyebrow">{structureType || 'BOQ Builder'}</span>
-          <h2>{section?.title || 'Choose a bill section'}</h2>
-          <p>{section?.description || sectionMeta?.description || 'Pick only the items you want to measure in this bill before generating the BOQ sheet.'}</p>
-          <div className="boq-selection-overview-tags">
-            <span>{projectName || 'Current Project'}</span>
-            <span>{marketRegion || 'Market region'}</span>
-            <span>{catalogItems.length} library items</span>
+        <div className="boq-selection-bill-browser-summary">
+          <div>
+            <span>Active Bill</span>
+            <strong>{section?.title || 'Choose a bill section'}</strong>
+            <small>{currentSectionSelectedCount} selected</small>
           </div>
-          <div className="boq-selection-progress-block">
-            <div className="boq-selection-progress-copy">
-              <strong>{selectionProgress}% of this bill curated</strong>
-              <span>{currentSectionSelectedCount} of {catalogItems.length} available items selected for BOQ generation.</span>
-            </div>
-            <div className="boq-selection-progress-track">
-              <span style={{ width: `${selectionProgress}%` }} />
-            </div>
-          </div>
-          <small>{sectionMeta?.pickerPrompt || 'Selections stay grouped by bill section until you generate the BOQ table.'}</small>
-        </div>
-
-        <div className="boq-selection-overview-stats">
-          <div className="boq-selection-metric-card highlighted">
-            <span>Selected in this bill</span>
-            <strong>{currentSectionSelectedCount}</strong>
-            <small>Only these will become BOQ rows for {section?.title || 'this bill'}.</small>
-          </div>
-          <div className="boq-selection-metric-card">
-            <span>Total selected</span>
-            <strong>{totalSelectedCount}</strong>
-            <small>Across the full structure before BOQ generation.</small>
-          </div>
-          <div className="boq-selection-metric-card">
-            <span>Recommended</span>
-            <strong>{metrics.recommended}</strong>
-            <small>Seeded items marked as likely picks for this bill.</small>
+          <div>
+            <span>Library Size</span>
+            <strong>{catalogItems.length}</strong>
+            <small>{metrics.recommended} recommended</small>
           </div>
         </div>
-      </section>
+      </aside>
 
-      <section className="boq-selection-workbench">
-        <aside className="boq-selection-control-panel">
-          <div className="boq-selection-panel-card">
+      <div className="boq-selection-content">
+        <section className="boq-selection-overview">
+          <div className="boq-selection-overview-copy">
+            <span className="boq-selection-eyebrow">{structureType || 'BOQ Builder'}</span>
+            <h2>{section?.title || 'Choose a bill section'}</h2>
+            <p>{section?.description || sectionMeta?.description || 'Pick only the items you want to measure in this bill before generating the BOQ sheet.'}</p>
+            <div className="boq-selection-overview-tags">
+              <span>{projectName || 'Current Project'}</span>
+              <span>{marketRegion || 'Market region'}</span>
+              <span>{catalogItems.length} library items</span>
+            </div>
+            <div className="boq-selection-progress-block">
+              <div className="boq-selection-progress-copy">
+                <strong>{selectionProgress}% of this bill curated</strong>
+                <span>{currentSectionSelectedCount} of {catalogItems.length} available items selected for BOQ generation.</span>
+              </div>
+              <div className="boq-selection-progress-track">
+                <span style={{ width: `${selectionProgress}%` }} />
+              </div>
+            </div>
+            <small>{sectionMeta?.pickerPrompt || 'Selections stay grouped by bill section until you generate the BOQ table.'}</small>
+          </div>
+
+          <div className="boq-selection-overview-stats">
+            <div className="boq-selection-metric-card highlighted">
+              <span>Selected in this bill</span>
+              <strong>{currentSectionSelectedCount}</strong>
+              <small>Only these will become BOQ rows for {section?.title || 'this bill'}.</small>
+            </div>
+            <div className="boq-selection-metric-card">
+              <span>Total selected</span>
+              <strong>{totalSelectedCount}</strong>
+              <small>Across the full structure before BOQ generation.</small>
+            </div>
+            <div className="boq-selection-metric-card">
+              <span>Recommended</span>
+              <strong>{metrics.recommended}</strong>
+              <small>Seeded items marked as likely picks for this bill.</small>
+            </div>
+          </div>
+        </section>
+
+        <section className="boq-selection-tools">
+          <div className="boq-selection-panel-card boq-selection-panel-card-wide">
             <span className="boq-selection-panel-label">Search Library</span>
             <div className="boq-selection-search">
               <Search size={15} />
@@ -298,25 +306,26 @@ const BOQSelectionStage = ({
             <small className="boq-selection-panel-help">
               Search by code, item name, formula basis, benchmark hints, or keywords.
             </small>
-          </div>
 
-          <div className="boq-selection-panel-card">
-            <span className="boq-selection-panel-label">
-              <ListFilter size={14} /> Quick Filters
-            </span>
-            <div className="boq-selection-chip-grid">
-              {FILTER_OPTIONS.map((filter) => (
-                <button
-                  key={filter.id}
-                  type="button"
-                  className={`boq-selection-chip ${activeFilter === filter.id ? 'active' : ''}`}
-                  onClick={() => setActiveFilter(filter.id)}
-                >
-                  {filter.label}
-                </button>
-              ))}
+            <div className="boq-selection-filter-section">
+              <span className="boq-selection-panel-label">
+                <ListFilter size={14} /> Quick Filters
+              </span>
+              <div className="boq-selection-chip-grid">
+                {FILTER_OPTIONS.map((filter) => (
+                  <button
+                    key={filter.id}
+                    type="button"
+                    className={`boq-selection-chip ${activeFilter === filter.id ? 'active' : ''}`}
+                    onClick={() => setActiveFilter(filter.id)}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="boq-selection-sort-row">
+
+            <div className="boq-selection-tools-row">
               <label className="boq-selection-sort-field">
                 <span>Sort results</span>
                 <select value={activeSort} onChange={(event) => setActiveSort(event.target.value)}>
@@ -325,26 +334,26 @@ const BOQSelectionStage = ({
                   ))}
                 </select>
               </label>
+
+              <div className="boq-selection-category-wrap">
+                <span className="boq-selection-panel-label">Categories</span>
+                <div className="boq-selection-category-list">
+                  {categories.map((category) => (
+                    <button
+                      key={category}
+                      type="button"
+                      className={`boq-selection-category ${activeCategory === category ? 'active' : ''}`}
+                      onClick={() => setActiveCategory(category)}
+                    >
+                      {category === 'all' ? 'All Categories' : category}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="boq-selection-panel-card">
-            <span className="boq-selection-panel-label">Categories</span>
-            <div className="boq-selection-category-list">
-              {categories.map((category) => (
-                <button
-                  key={category}
-                  type="button"
-                  className={`boq-selection-category ${activeCategory === category ? 'active' : ''}`}
-                  onClick={() => setActiveCategory(category)}
-                >
-                  {category === 'all' ? 'All Categories' : category}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="boq-selection-panel-card">
+          <div className="boq-selection-panel-card boq-selection-panel-card-summary">
             <span className="boq-selection-panel-label">
               <Sparkles size={14} /> Selection Summary
             </span>
@@ -403,9 +412,9 @@ const BOQSelectionStage = ({
               </button>
             </div>
           </div>
-        </aside>
+        </section>
 
-        <div className="boq-selection-results">
+        <section className="boq-selection-results">
           <div className="boq-selection-results-head">
             <div>
               <span className="boq-selection-results-label">Available Items</span>
@@ -540,49 +549,77 @@ const BOQSelectionStage = ({
               })}
             </div>
           )}
-        </div>
-      </section>
+        </section>
 
-      <footer className="boq-selection-footer">
-        <div className="boq-selection-footer-copy">
-          <strong>{totalSelectedCount} item{totalSelectedCount === 1 ? '' : 's'} ready for BOQ generation</strong>
-          <span>
-            Generate the BOQ only when you are happy with the selected items across all bills.
-          </span>
-        </div>
+        <footer className="boq-selection-footer">
+          <div className="boq-selection-footer-copy">
+            <strong>{totalSelectedCount} item{totalSelectedCount === 1 ? '' : 's'} ready for BOQ generation</strong>
+            <span>
+              Generate the BOQ only when you are happy with the selected items across all bills.
+            </span>
+          </div>
 
-        <div className="boq-selection-footer-actions">
-          {hasGeneratedBoq && onReturnToWorkspace && (
-            <button type="button" className="boq-selection-btn secondary" onClick={onReturnToWorkspace}>
-              <FileSpreadsheet size={14} /> Return to BOQ
+          <div className="boq-selection-footer-actions">
+            {hasGeneratedBoq && onReturnToWorkspace && (
+              <button type="button" className="boq-selection-btn secondary" onClick={onReturnToWorkspace}>
+                <FileSpreadsheet size={14} /> Return to BOQ
+              </button>
+            )}
+            {hasNextSection && (
+              <button type="button" className="boq-selection-btn secondary" onClick={onNextSection}>
+                Next Bill <ArrowRight size={14} />
+              </button>
+            )}
+            <button
+              type="button"
+              className="boq-selection-btn primary"
+              onClick={onGenerate}
+              disabled={totalSelectedCount === 0}
+            >
+              <FileSpreadsheet size={14} /> {generateLabel}
             </button>
-          )}
-          {hasNextSection && (
-            <button type="button" className="boq-selection-btn secondary" onClick={onNextSection}>
-              Next Bill <ArrowRight size={14} />
-            </button>
-          )}
-          <button
-            type="button"
-            className="boq-selection-btn primary"
-            onClick={onGenerate}
-            disabled={totalSelectedCount === 0}
-          >
-            <FileSpreadsheet size={14} /> {generateLabel}
-          </button>
-        </div>
-      </footer>
+          </div>
+        </footer>
+      </div>
 
       <style jsx="true">{`
         .boq-selection-shell {
-          min-height: 100%;
-          display: flex;
-          flex-direction: column;
+          height: 100%;
+          min-height: 0;
+          display: grid;
+          grid-template-columns: 280px minmax(0, 1fr);
           gap: 1rem;
           background:
             radial-gradient(circle at top right, rgba(191, 219, 254, 0.35), transparent 30%),
             linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
           padding: 1.25rem;
+          overflow: hidden;
+        }
+
+        .boq-selection-content {
+          min-width: 0;
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+          overflow-y: auto;
+          padding-right: 0.2rem;
+        }
+
+        .boq-selection-content::-webkit-scrollbar,
+        .boq-selection-bill-tabs::-webkit-scrollbar {
+          width: 10px;
+        }
+
+        .boq-selection-content::-webkit-scrollbar-thumb,
+        .boq-selection-bill-tabs::-webkit-scrollbar-thumb {
+          background: rgba(148, 163, 184, 0.4);
+          border-radius: 999px;
+        }
+
+        .boq-selection-content::-webkit-scrollbar-track,
+        .boq-selection-bill-tabs::-webkit-scrollbar-track {
+          background: transparent;
         }
 
         .boq-selection-overview {
@@ -739,22 +776,26 @@ const BOQSelectionStage = ({
           display: flex;
           flex-direction: column;
           gap: 0.85rem;
+          min-height: 0;
+          height: 100%;
           padding: 1rem 1.05rem;
           position: sticky;
-          top: 0.25rem;
+          top: 0;
           z-index: 7;
           border-radius: 24px;
           border: 1px solid rgba(148, 163, 184, 0.18);
           background: rgba(248, 250, 252, 0.96);
           box-shadow: 0 18px 40px rgba(15, 23, 42, 0.05);
+          overflow: hidden;
         }
 
         .boq-selection-bill-browser-head {
           display: flex;
-          align-items: flex-end;
-          justify-content: space-between;
-          gap: 0.8rem;
-          flex-wrap: wrap;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.3rem;
+          padding-bottom: 0.35rem;
+          border-bottom: 1px solid #e2e8f0;
         }
 
         .boq-selection-bill-browser-head strong {
@@ -768,26 +809,65 @@ const BOQSelectionStage = ({
           color: #64748b;
         }
 
+        .boq-selection-bill-browser-head small {
+          line-height: 1.55;
+        }
+
         .boq-selection-bill-browser-label {
           display: inline-flex;
-          margin-bottom: 0.18rem;
           font-size: 0.68rem;
           font-weight: 800;
           letter-spacing: 0.08em;
           text-transform: uppercase;
         }
 
-        .boq-selection-bill-tabs {
+        .boq-selection-bill-browser-summary {
           display: grid;
-          grid-auto-flow: column;
-          grid-auto-columns: minmax(220px, 1fr);
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 0.65rem;
-          overflow-x: auto;
-          scrollbar-width: none;
-          padding-bottom: 0.1rem;
+          padding-top: 0.15rem;
         }
 
-        .boq-selection-bill-tabs::-webkit-scrollbar { display: none; }
+        .boq-selection-bill-browser-summary div {
+          min-width: 0;
+          border-radius: 18px;
+          border: 1px solid #dbe3ef;
+          background: rgba(255, 255, 255, 0.9);
+          padding: 0.8rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.18rem;
+        }
+
+        .boq-selection-bill-browser-summary span {
+          font-size: 0.68rem;
+          font-weight: 800;
+          color: #64748b;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+        }
+
+        .boq-selection-bill-browser-summary strong {
+          color: #0f172a;
+          font-size: 0.9rem;
+          line-height: 1.35;
+        }
+
+        .boq-selection-bill-browser-summary small {
+          color: #64748b;
+          font-size: 0.72rem;
+          line-height: 1.45;
+        }
+
+        .boq-selection-bill-tabs {
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 0.65rem;
+          overflow-y: auto;
+          padding-right: 0.15rem;
+          scrollbar-width: thin;
+        }
 
         .boq-selection-bill-tab {
           border: 1px solid #dbe3ef;
@@ -805,7 +885,7 @@ const BOQSelectionStage = ({
         }
 
         .boq-selection-bill-tab:hover {
-          transform: translateY(-1px);
+          transform: translateX(2px);
           border-color: #93c5fd;
           box-shadow: 0 14px 28px rgba(37, 99, 235, 0.08);
         }
@@ -855,17 +935,11 @@ const BOQSelectionStage = ({
           text-overflow: ellipsis;
         }
 
-        .boq-selection-workbench {
+        .boq-selection-tools {
           display: grid;
-          grid-template-columns: 320px minmax(0, 1fr);
+          grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.95fr);
           gap: 1rem;
           min-height: 0;
-        }
-
-        .boq-selection-control-panel {
-          display: flex;
-          flex-direction: column;
-          gap: 0.85rem;
         }
 
         .boq-selection-panel-card {
@@ -878,6 +952,30 @@ const BOQSelectionStage = ({
           display: flex;
           flex-direction: column;
           gap: 0.75rem;
+          min-width: 0;
+        }
+
+        .boq-selection-panel-card-wide {
+          gap: 0.95rem;
+        }
+
+        .boq-selection-filter-section {
+          display: flex;
+          flex-direction: column;
+          gap: 0.6rem;
+        }
+
+        .boq-selection-tools-row {
+          display: grid;
+          grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+          gap: 1rem;
+          align-items: start;
+        }
+
+        .boq-selection-category-wrap {
+          display: flex;
+          flex-direction: column;
+          gap: 0.55rem;
         }
 
         .boq-selection-panel-label {
@@ -919,7 +1017,7 @@ const BOQSelectionStage = ({
 
         .boq-selection-chip-grid {
           display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
           gap: 0.45rem;
         }
 
@@ -946,16 +1044,8 @@ const BOQSelectionStage = ({
 
         .boq-selection-category-list {
           display: flex;
-          flex-direction: column;
+          flex-wrap: wrap;
           gap: 0.45rem;
-          max-height: 240px;
-          overflow-y: auto;
-          padding-right: 0.2rem;
-        }
-
-        .boq-selection-sort-row {
-          padding-top: 0.2rem;
-          border-top: 1px solid #e2e8f0;
         }
 
         .boq-selection-sort-field {
@@ -1040,7 +1130,7 @@ const BOQSelectionStage = ({
 
         .boq-selection-panel-actions {
           display: flex;
-          flex-direction: column;
+          flex-wrap: wrap;
           gap: 0.55rem;
         }
 
@@ -1459,27 +1549,48 @@ const BOQSelectionStage = ({
           cursor: not-allowed;
         }
 
-        @media (max-width: 1200px) {
+        @media (max-width: 1280px) {
           .boq-selection-overview,
-          .boq-selection-workbench,
-          .boq-selection-footer {
+          .boq-selection-tools {
             grid-template-columns: 1fr;
-            flex-direction: column;
-            align-items: stretch;
+          }
+
+          .boq-selection-tools-row {
+            grid-template-columns: 1fr;
           }
 
           .boq-selection-overview-stats {
             grid-template-columns: repeat(3, minmax(0, 1fr));
           }
-
-          .boq-selection-bill-browser-head {
-            align-items: stretch;
-          }
         }
 
-        @media (max-width: 860px) {
+        @media (max-width: 1080px) {
           .boq-selection-shell {
+            grid-template-columns: 1fr;
+            height: auto;
+            overflow: visible;
             padding: 0.9rem;
+          }
+
+          .boq-selection-content {
+            overflow: visible;
+            padding-right: 0;
+          }
+
+          .boq-selection-bill-browser {
+            position: static;
+            height: auto;
+            max-height: none;
+            padding: 0.9rem;
+          }
+
+          .boq-selection-bill-tabs {
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: minmax(220px, 1fr);
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding-bottom: 0.15rem;
           }
 
           .boq-selection-overview-stats {
@@ -1492,18 +1603,13 @@ const BOQSelectionStage = ({
             flex-direction: column;
             align-items: stretch;
           }
-
-          .boq-selection-bill-browser {
-            padding: 0.9rem;
-            position: static;
-          }
-
-          .boq-selection-bill-tabs {
-            grid-auto-columns: minmax(210px, 1fr);
-          }
         }
 
         @media (max-width: 720px) {
+          .boq-selection-bill-browser-summary {
+            grid-template-columns: 1fr;
+          }
+
           .boq-selection-bill-tab {
             padding: 0.72rem 0.78rem;
             grid-template-columns: 36px minmax(0, 1fr);
