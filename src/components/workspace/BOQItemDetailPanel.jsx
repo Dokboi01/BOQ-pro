@@ -6,12 +6,35 @@ import {
   SlidersHorizontal,
   Info,
   FileText,
-  ChevronDown,
   ChevronRight,
   Target,
   Zap,
   ShieldCheck,
-  CreditCard
+  CreditCard,
+  PenLine,
+  Layers,
+  TrendingUp,
+  Check,
+  Lock,
+  Sparkles,
+  Calculator,
+  Gavel,
+  Copy,
+  Trash2,
+  Plus,
+  RefreshCcw,
+  Download,
+  ArrowUpRight,
+  Percent,
+  DollarSign,
+  Package,
+  AlertTriangle,
+  Hash,
+  Ruler,
+  Eye,
+  Settings2,
+  Clipboard,
+  ExternalLink
 } from 'lucide-react';
 import {
   getFormulaDisplayText,
@@ -19,9 +42,6 @@ import {
   isFormulaDrivenItem,
   normalizeEditableInputs,
 } from '../../utils/boqFormulas';
-
-const formatMoney = (value) =>
-  `₦${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 
 const formatCurrency = (value) =>
   `N${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
@@ -32,23 +52,24 @@ const CONFIDENCE_COLORS = {
   low: '#d97706',
 };
 
-const Section = ({ icon: Icon, title, children, defaultOpen = true }) => {
+const Section = ({ icon: Icon, title, children, defaultOpen = true, badge, compact }) => {
   const [open, setOpen] = React.useState(defaultOpen);
   return (
     <div className={`idp-section ${open ? 'idp-section-open' : ''}`}>
       <button
         type="button"
-        className="idp-section-header"
+        className={`idp-section-header ${compact ? 'idp-section-header-compact' : ''}`}
         onClick={() => setOpen((v) => !v)}
       >
         <span className="idp-section-header-left">
           <div className="idp-section-icon-wrap">
-            {Icon && <Icon size={14} />}
+            {Icon && <Icon size={12} />}
           </div>
           <strong>{title}</strong>
+          {badge && <span className="idp-section-badge">{badge}</span>}
         </span>
         <div className={`idp-section-chevron ${open ? 'idp-section-chevron-open' : ''}`}>
-          <ChevronRight size={14} />
+          <ChevronRight size={12} />
         </div>
       </button>
       <div className={`idp-section-collapse ${open ? 'idp-section-collapse-open' : ''}`}>
@@ -58,31 +79,27 @@ const Section = ({ icon: Icon, title, children, defaultOpen = true }) => {
   );
 };
 
-const BasisCard = ({ label, value, active, tone, icon: Icon, description }) => (
-  <div className={`idp-basis-card idp-basis-card-${tone} ${active ? 'idp-basis-card-active' : ''}`}>
-    <div className="idp-basis-card-header">
-      <div className="idp-basis-card-icon">
-        {Icon && <Icon size={16} />}
-      </div>
-      <div className="idp-basis-card-copy">
-        <span className="idp-basis-label">{label}</span>
-        <span className="idp-basis-value">{value}</span>
-      </div>
-      {active && <div className="idp-active-indicator"><ShieldCheck size={12} /> Active</div>}
-    </div>
-    {description && <p className="idp-basis-desc">{description}</p>}
-  </div>
-);
-
-const MetaRow = ({ label, value }) => {
+const MetaRow = ({ label, value, mono }) => {
   if (!value) return null;
   return (
     <div className="idp-meta-row">
       <span className="idp-meta-label">{label}</span>
-      <span className="idp-meta-value">{value}</span>
+      <span className={`idp-meta-value ${mono ? 'idp-meta-mono' : ''}`}>{value}</span>
     </div>
   );
 };
+
+const QuickAction = ({ icon: Icon, label, onClick, tone = 'default', disabled }) => (
+  <button
+    type="button"
+    className={`idp-quick-action idp-quick-action-${tone}`}
+    onClick={onClick}
+    disabled={disabled}
+  >
+    <Icon size={13} />
+    <span>{label}</span>
+  </button>
+);
 
 const BOQItemDetailPanel = ({
   item,
@@ -93,7 +110,18 @@ const BOQItemDetailPanel = ({
   selectedRateSource,
   onClose,
   onNotesChange,
+  onDescriptionChange,
+  onRateSourceChange,
   onOpenFormulaEditor,
+  onOpenRateAnalysis,
+  onOpenCustomPricing,
+  onOpenTakeoff,
+  onOpenBidManager,
+  onDuplicate,
+  onDelete,
+  onAddBelow,
+  onRefreshBenchmark,
+  onExport,
   variant = 'overlay',
 }) => {
   if (!item) return null;
@@ -102,10 +130,12 @@ const BOQItemDetailPanel = ({
   const workedExample = getWorkedExamplePreview(item, { preferEditableInputs: true });
   const hasFormula = isFormulaDrivenItem(item);
   const editableInputs = normalizeEditableInputs(item.editableInputs);
-  const formulaBasis = Array.isArray(item.formulaBasis)
-    ? item.formulaBasis.filter(Boolean)
-    : [];
   const benchmarkMeta = item.benchmarkMetadata || {};
+  const quantity = Number(item.qty || 0);
+  const lineTotal = quantity * resolvedUnitRate;
+  const hasBids = item.bids?.length > 0;
+  const hasCustomPricing = Boolean(item.customPricing);
+  const hasBreakdown = Boolean(item.breakdown);
 
   const sourceLabels = {
     benchmark: 'Benchmark',
@@ -113,10 +143,66 @@ const BOQItemDetailPanel = ({
     manual: 'Manual',
   };
 
+  const sourceDescriptions = {
+    benchmark: 'Market-indexed rate from engineering database',
+    formula: 'Computed via first-principles logic engine',
+    manual: 'Custom rate override or negotiated value',
+  };
+
   const getConfidenceLabel = (level) => {
      if (!level) return 'N/A';
      return level.charAt(0).toUpperCase() + level.slice(1);
   };
+
+  const hasBenchmarkAvailable = benchmarkRate > 0;
+
+  const pricingOptions = [
+    {
+      key: 'benchmark',
+      label: 'Benchmark',
+      icon: BarChart2,
+      value: formatCurrency(benchmarkRate),
+      tone: 'teal',
+      available: hasBenchmarkAvailable,
+      sub: 'Market rate',
+    },
+    ...(hasFormula ? [{
+      key: 'formula',
+      label: 'Formula',
+      icon: Cpu,
+      value: formatCurrency(formulaRate),
+      tone: 'indigo',
+      available: true,
+      sub: 'Calculated',
+    }] : []),
+    {
+      key: 'manual',
+      label: 'Manual',
+      icon: PenLine,
+      value: formatCurrency(item.manualRate ?? item.rate ?? 0),
+      tone: 'slate',
+      available: true,
+      sub: 'Custom rate',
+    },
+  ];
+
+  // Compute breakdown percentages
+  const breakdownSummary = (() => {
+    if (!hasBreakdown && !hasCustomPricing) return null;
+    const bd = item.customPricing || item.breakdown || {};
+    const materials = Array.isArray(bd.materials) ? bd.materials.reduce((a, r) => a + (Number(r.amount || r.total || 0)), 0) : 0;
+    const labor = Array.isArray(bd.labor) ? bd.labor.reduce((a, r) => a + (Number(r.amount || r.total || 0)), 0) : 0;
+    const plant = Array.isArray(bd.plant) ? bd.plant.reduce((a, r) => a + (Number(r.amount || r.total || 0)), 0) : 0;
+    const transport = Array.isArray(bd.transport || bd.logistics) ? (bd.transport || bd.logistics).reduce((a, r) => a + (Number(r.amount || r.total || 0)), 0) : 0;
+    const total = materials + labor + plant + transport || 1;
+    return {
+      materials: { amount: materials, pct: Math.round((materials / total) * 100) },
+      labor: { amount: labor, pct: Math.round((labor / total) * 100) },
+      plant: { amount: plant, pct: Math.round((plant / total) * 100) },
+      transport: { amount: transport, pct: Math.round((transport / total) * 100) },
+      total,
+    };
+  })();
 
   return (
     <div
@@ -125,511 +211,470 @@ const BOQItemDetailPanel = ({
     >
       <div
         className={`idp-panel ${variant === 'docked' ? 'idp-panel-docked' : ''}`}
-        onClick={(e) => {
-          if (variant === 'overlay') {
-            e.stopPropagation();
-          }
-        }}
+        onClick={(e) => { if (variant === 'overlay') e.stopPropagation(); }}
       >
-        {/* ── Dynamic Progress Header ─────────────────────────────────── */}
+        {/* ── Header ── */}
         <div className="idp-header">
           <div className="idp-header-top">
             <div className="idp-header-left">
-               <span className="idp-eyebrow">BOQ Intelligence</span>
+               <span className="idp-eyebrow"><Sparkles size={9} style={{ display: 'inline', marginRight: '3px', verticalAlign: 'middle' }} />Item Intelligence</span>
                <h3 className="idp-title">{item.name || 'Estimate Item'}</h3>
                <div className="idp-header-meta">
                    {item.code && <span className="idp-meta-tag idp-meta-tag-code">{item.code}</span>}
                    <span className="idp-meta-tag">{item.unit}</span>
                    {section?.title && <span className="idp-meta-tag idp-meta-tag-section">{section.title}</span>}
+                   <span className={`idp-meta-tag idp-meta-tag-${selectedRateSource}`}>{sourceLabels[selectedRateSource]}</span>
                </div>
             </div>
             {onClose && (
-              <button type="button" className="idp-close-trigger" onClick={onClose}>
-                <X size={20} />
-              </button>
+              <button type="button" className="idp-close-trigger" onClick={onClose}><X size={16} /></button>
             )}
           </div>
           
-          <div className="idp-hero-price">
-            <div className="idp-hero-price-main">
-              <span className="idp-hero-label">Resolved Unit Rate</span>
-              <strong className="idp-hero-value">{formatCurrency(resolvedUnitRate)}</strong>
+          {/* Quick Stats */}
+          <div className="idp-stats-row">
+            <div className="idp-stat idp-stat-dark">
+              <span className="idp-stat-lbl">UNIT RATE</span>
+              <strong>{formatCurrency(resolvedUnitRate)}</strong>
             </div>
-            <div className="idp-hero-price-alt">
-              <span className="idp-hero-label">Line Total (Qty {Number(item.qty || 0).toLocaleString()})</span>
-              <strong className="idp-hero-total">{formatCurrency((item.qty || 0) * resolvedUnitRate)}</strong>
+            <div className="idp-stat">
+              <span className="idp-stat-lbl">QTY</span>
+              <strong>{quantity.toLocaleString()} <small>{item.unit}</small></strong>
+            </div>
+            <div className="idp-stat idp-stat-accent">
+              <span className="idp-stat-lbl">LINE TOTAL</span>
+              <strong>{formatCurrency(lineTotal)}</strong>
             </div>
           </div>
         </div>
 
-        {/* ── Scrollable Body ────────────────────────────────────────── */}
+        {/* ── Body ── */}
         <div className="idp-body">
-          
-          {/* Item Strategic Context */}
-          <Section icon={Target} title="Item Overview">
-            <div className="idp-strategic-card">
-              <div className="idp-strat-identity">
-                <Info size={16} />
-                <p>{item.description || 'Global specification for this resource requirement.'}</p>
-              </div>
-              <div className="idp-strat-badges">
-                 <div className={`idp-strat-pill idp-strat-pill-${selectedRateSource}`}>
-                    <Zap size={10} /> {sourceLabels[selectedRateSource]} Driven
-                 </div>
-                 {hasFormula && <div className="idp-strat-pill idp-strat-pill-blue">Logic-Enabled</div>}
-                 {benchmarkRate > 0 && <div className="idp-strat-pill idp-strat-pill-teal">Market Synchronized</div>}
-              </div>
+
+          {/* Quick Actions */}
+          <div className="idp-actions-bar">
+            {onOpenTakeoff && <QuickAction icon={Calculator} label="Takeoff" onClick={onOpenTakeoff} />}
+            {onOpenRateAnalysis && <QuickAction icon={BarChart2} label="Analysis" onClick={onOpenRateAnalysis} tone="blue" />}
+            {onOpenCustomPricing && <QuickAction icon={SlidersHorizontal} label="Custom Price" onClick={onOpenCustomPricing} tone="teal" />}
+            {hasFormula && onOpenFormulaEditor && <QuickAction icon={Cpu} label="Formula" onClick={onOpenFormulaEditor} tone="indigo" />}
+            {onOpenBidManager && <QuickAction icon={Gavel} label={hasBids ? `Bids (${item.bids.length})` : 'Bids'} onClick={onOpenBidManager} tone={hasBids ? 'amber' : 'default'} />}
+            {onRefreshBenchmark && <QuickAction icon={RefreshCcw} label="Refresh BM" onClick={onRefreshBenchmark} />}
+            {onDuplicate && <QuickAction icon={Copy} label="Duplicate" onClick={onDuplicate} />}
+            {onAddBelow && <QuickAction icon={Plus} label="Add Below" onClick={onAddBelow} />}
+            {onDelete && <QuickAction icon={Trash2} label="Delete" onClick={onDelete} tone="danger" />}
+          </div>
+
+          {/* Pricing Strategy */}
+          <Section icon={CreditCard} title="Pricing Strategy" badge={sourceLabels[selectedRateSource]}>
+            <div className="idp-pricing-stack">
+              {pricingOptions.map((opt) => {
+                const isActive = selectedRateSource === opt.key;
+                const Icon = opt.icon;
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    className={`idp-price-opt idp-price-opt-${opt.tone} ${isActive ? 'idp-price-opt-on' : ''} ${!opt.available ? 'idp-price-opt-off' : ''}`}
+                    onClick={() => opt.available && onRateSourceChange?.(opt.key)}
+                    disabled={!opt.available}
+                  >
+                    <div className="idp-price-opt-l">
+                      <div className="idp-price-opt-ico"><Icon size={14} /></div>
+                      <div className="idp-price-opt-copy">
+                        <span className="idp-price-opt-name">{opt.label}</span>
+                        <span className="idp-price-opt-sub">{opt.sub}</span>
+                      </div>
+                    </div>
+                    <div className="idp-price-opt-r">
+                      <strong>{opt.value}</strong>
+                      {isActive && <span className="idp-price-check"><Check size={11} /></span>}
+                      {!opt.available && <Lock size={10} className="idp-price-lock" />}
+                    </div>
+                  </button>
+                );
+              })}
+              <p className="idp-pricing-hint"><Info size={10} />{sourceDescriptions[selectedRateSource]}</p>
             </div>
           </Section>
 
-          {/* Pricing Basis */}
-          <Section icon={CreditCard} title="Rate Summary">
-            <div className="idp-basis-grid">
-              <BasisCard
-                icon={BarChart2}
-                label="Benchmark Basis"
-                value={formatCurrency(benchmarkRate)}
-                active={selectedRateSource === 'benchmark'}
-                tone="teal"
-                description="Live market resource rate from engineering index."
-              />
-              {hasFormula && (
-                <BasisCard
-                  icon={Cpu}
-                  label="Formula Synthesis"
-                  value={formatCurrency(formulaRate)}
-                  active={selectedRateSource === 'formula'}
-                  tone="indigo"
-                  description="Computed from first-principles engineering logic."
-                />
+          {/* Cost Breakdown Preview */}
+          {breakdownSummary && (
+            <Section icon={Layers} title="Cost Breakdown" compact>
+              <div className="idp-breakdown-grid">
+                {[
+                  { label: 'Materials', ...breakdownSummary.materials, color: '#2563eb' },
+                  { label: 'Labour', ...breakdownSummary.labor, color: '#7c3aed' },
+                  { label: 'Plant', ...breakdownSummary.plant, color: '#0d9488' },
+                  { label: 'Transport', ...breakdownSummary.transport, color: '#ea580c' },
+                ].map((cat) => (
+                  <div key={cat.label} className="idp-bd-row">
+                    <div className="idp-bd-bar-bg">
+                      <div className="idp-bd-bar-fill" style={{ width: `${cat.pct}%`, background: cat.color }} />
+                    </div>
+                    <span className="idp-bd-label">{cat.label}</span>
+                    <span className="idp-bd-pct">{cat.pct}%</span>
+                    <span className="idp-bd-val">{formatCurrency(cat.amount)}</span>
+                  </div>
+                ))}
+                <div className="idp-bd-total">
+                  <span>Direct Cost Total</span>
+                  <strong>{formatCurrency(breakdownSummary.total)}</strong>
+                </div>
+              </div>
+              {onOpenCustomPricing && (
+                <button className="idp-link-btn" onClick={onOpenCustomPricing}>
+                  <ExternalLink size={11} /> Open Custom Pricing Studio
+                </button>
               )}
-              <BasisCard
-                icon={SlidersHorizontal}
-                label="Manual Allocation"
-                value={formatCurrency(item.manualRate ?? item.rate ?? 0)}
-                active={selectedRateSource === 'manual'}
-                tone="slate"
-                description="Custom override or specifically negotiated rate."
+            </Section>
+          )}
+
+          {/* Description */}
+          <Section icon={PenLine} title="Description">
+            <div className="idp-desc-edit">
+              <textarea
+                className="idp-desc-ta"
+                rows={3}
+                value={item.description || ''}
+                placeholder="Describe this BOQ item — scope, specs, assumptions..."
+                onChange={(e) => onDescriptionChange?.(e.target.value)}
               />
+              <span className="idp-desc-hint">Edit the item description. Changes sync to the table.</span>
             </div>
           </Section>
 
-          {/* Logic & Inputs (Only if formula exists) */}
+          {/* Formula Logic */}
           {hasFormula && (
-            <Section icon={Cpu} title="Formula Logic">
-              <div className="idp-logic-wrap">
-                <div className="idp-logic-header">
-                  <span>Computed Expression</span>
+            <Section icon={Cpu} title="Formula Logic" badge="ACTIVE">
+              <div className="idp-logic-card">
+                <div className="idp-logic-expr">
+                  <span className="idp-micro-label">Expression</span>
                   <code>{formulaText}</code>
                 </div>
-                
                 {editableInputs.length > 0 && (
-                  <div className="idp-inputs-display">
-                    <span className="idp-sub-label">Operating Variables</span>
-                    <div className="idp-inputs-mini-grid">
+                  <div className="idp-vars-grid">
+                    <span className="idp-micro-label">Variables</span>
+                    <div className="idp-vars-chips">
                       {editableInputs.map((input) => (
-                        <div key={input.id} className="idp-input-chip">
-                          <span className="idp-input-chip-label">{input.label}</span>
-                          <span className="idp-input-chip-value">
-                            {Number(input.value).toLocaleString()}
-                            <small>{input.unit}</small>
-                          </span>
+                        <div key={input.id} className="idp-var-chip">
+                          <span className="idp-var-name">{input.label}</span>
+                          <strong>{Number(input.value).toLocaleString()}<small>{input.unit}</small></strong>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
-
                 {workedExample && (
-                   <div className="idp-logic-preview">
-                      <span className="idp-sub-label">Logic Preview</span>
+                   <div className="idp-logic-result">
+                      <span className="idp-micro-label">Preview</span>
                       <p>{workedExample}</p>
                    </div>
                 )}
-
                 {onOpenFormulaEditor && (
-                  <button type="button" className="idp-logic-btn" onClick={onOpenFormulaEditor}>
-                    <SlidersHorizontal size={14} /> Open Logic Editor
+                  <button className="idp-logic-btn" onClick={onOpenFormulaEditor}>
+                    <SlidersHorizontal size={12} /> Edit Formula
                   </button>
                 )}
               </div>
             </Section>
           )}
 
-          {/* Market Intelligence */}
-          <Section icon={BarChart2} title="Benchmark Source" defaultOpen={false}>
+          {/* Item Metadata */}
+          <Section icon={Hash} title="Item Metadata" defaultOpen={false}>
+            <div className="idp-meta-grid">
+              <MetaRow label="Item Name" value={item.name || item.description} />
+              <MetaRow label="Code" value={item.code} mono />
+              <MetaRow label="Unit" value={item.unit} />
+              <MetaRow label="Section" value={section?.title} />
+              <MetaRow label="Subcategory" value={item.subcategory} />
+              <MetaRow label="Rate Source" value={sourceLabels[selectedRateSource]} />
+              <MetaRow label="Benchmark Rate" value={benchmarkRate > 0 ? formatCurrency(benchmarkRate) : '—'} />
+              <MetaRow label="Manual Rate" value={formatCurrency(item.manualRate ?? 0)} />
+              {hasFormula && <MetaRow label="Formula Rate" value={formatCurrency(formulaRate)} />}
+              <MetaRow label="Resolved Rate" value={formatCurrency(resolvedUnitRate)} mono />
+              <MetaRow label="Quantity" value={`${quantity.toLocaleString()} ${item.unit || ''}`} />
+              <MetaRow label="Line Total" value={formatCurrency(lineTotal)} mono />
+              {item.qtyCompleted !== undefined && <MetaRow label="Qty Completed" value={Number(item.qtyCompleted || 0).toLocaleString()} />}
+              {item.progressPercent !== undefined && <MetaRow label="Progress" value={`${Math.round(item.progressPercent || 0)}%`} />}
+              {hasCustomPricing && <MetaRow label="Custom Pricing" value="Active" />}
+              {hasBids && <MetaRow label="Bids Received" value={`${item.bids.length}`} />}
+              <MetaRow label="Qty Source" value={item.qtySource || 'manual'} />
+            </div>
+          </Section>
+
+          {/* Benchmark Intelligence */}
+          <Section icon={TrendingUp} title="Benchmark Intel" defaultOpen={false}>
              {benchmarkRate > 0 ? (
-               <div className="idp-intelligence-card">
-                  <div className="idp-intel-header">
-                    <div className="idp-intel-source">
-                      <span className="idp-sub-label">Primary Source</span>
-                      <strong>{benchmarkMeta.sourceType?.toUpperCase() || 'MARKET FEED'}</strong>
-                    </div>
-                    <div className="idp-intel-confidence" style={{ '--conf-color': CONFIDENCE_COLORS[benchmarkMeta.confidenceLevel] || '#64748b' }}>
-                      <span className="idp-sub-label">Confidence</span>
-                      <strong className="idp-conf-text">{getConfidenceLabel(benchmarkMeta.confidenceLevel)}</strong>
+               <div className="idp-intel-card">
+                  <div className="idp-intel-row">
+                    <div><span className="idp-micro-label">Source</span><strong>{benchmarkMeta.sourceType?.toUpperCase() || 'MARKET FEED'}</strong></div>
+                    <div style={{ textAlign: 'right' }}>
+                      <span className="idp-micro-label">Confidence</span>
+                      <strong className="idp-conf" style={{ '--cf': CONFIDENCE_COLORS[benchmarkMeta.confidenceLevel] || '#64748b' }}>{getConfidenceLabel(benchmarkMeta.confidenceLevel)}</strong>
                     </div>
                   </div>
-                  
-                  <div className="idp-intel-meta-grid">
+                  <div className="idp-intel-meta">
                     <MetaRow label="Last Updated" value={benchmarkMeta.dateCaptured || 'Real-time'} />
-                    <MetaRow label="Jurisdiction" value={benchmarkMeta.region || 'National'} />
+                    <MetaRow label="Region" value={benchmarkMeta.region || 'National'} />
                     <MetaRow label="Basis Note" value={benchmarkMeta.sourceNote} />
+                    {benchmarkMeta.rate && <MetaRow label="Base Rate" value={formatCurrency(benchmarkMeta.rate)} />}
                   </div>
+                  {onRefreshBenchmark && (
+                    <button className="idp-link-btn" onClick={onRefreshBenchmark}>
+                      <RefreshCcw size={11} /> Refresh Benchmark Data
+                    </button>
+                  )}
                </div>
              ) : (
-               <div className="idp-empty-state">
-                  <Info size={18} />
-                  <p>No active market benchmark synchronizing with this resource yet.</p>
+               <div className="idp-empty-pill">
+                  <Info size={14} /><span>No benchmark data linked to this item.</span>
                </div>
              )}
           </Section>
 
-          {/* Decision Logs */}
-          <Section icon={FileText} title="Notes & Analysis" defaultOpen={false}>
-            <div className="idp-notes-wrap">
-              <span className="idp-sub-label">Estimator Observations</span>
+          {/* Notes */}
+          <Section icon={FileText} title="Notes & Log" defaultOpen={false}>
+            <div className="idp-notes-block">
               <textarea
-                className="idp-premium-textarea"
-                rows={5}
+                className="idp-notes-ta"
+                rows={4}
                 value={item.notes || ''}
-                placeholder="Document your pricing assumptions or site-specific adjustments here..."
+                placeholder="Document pricing assumptions, site adjustments, or audit notes..."
                 onChange={(e) => onNotesChange?.(e.target.value)}
               />
               {item.pickerHint && (
-                <div className="idp-hint-box">
-                  <ShieldCheck size={14} />
-                  <span>{item.pickerHint}</span>
-                </div>
+                <div className="idp-hint-box"><ShieldCheck size={12} /><span>{item.pickerHint}</span></div>
               )}
             </div>
           </Section>
+
         </div>
 
-        {/* ── Specialized Footer ─────────────────────────────────────── */}
+        {/* ── Footer ── */}
         <div className="idp-footer">
           <div className="idp-footer-info">
              <div className="idp-footer-dot" style={{ background: CONFIDENCE_COLORS[benchmarkMeta.confidenceLevel] || '#cbd5e1' }} />
-             <span>System Integrated · {item.unit} Intelligence</span>
+             <span>{item.unit} · {sourceLabels[selectedRateSource]}</span>
           </div>
-          <button type="button" className="idp-done-btn" onClick={onClose}>
-            Finalize Review
-          </button>
+          <button type="button" className="idp-done-btn" onClick={onClose}>Done</button>
         </div>
 
         <style>{`
-          /* --- DESIGN SYSTEM TOKENS --- */
           :root {
             --idp-bg: #ffffff;
-            --idp-border: #e2e8f0;
-            --idp-text-main: #0f172a;
-            --idp-text-muted: #64748b;
+            --idp-border: #e8edf5;
+            --idp-text: #0f172a;
+            --idp-muted: #64748b;
             --idp-accent: #2563eb;
             --idp-accent-soft: #eff6ff;
-            --idp-radius-lg: 24px;
-            --idp-radius-md: 16px;
-            --idp-shadow: 0 10px 40px -10px rgba(15, 23, 42, 0.1);
+            --idp-r: 14px;
           }
 
           .idp-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 1300;
-            background: rgba(15, 23, 42, 0.4);
-            backdrop-filter: blur(12px);
-            display: flex;
-            justify-content: flex-end;
-            animation: idpFadeIn 0.3s ease-out;
+            position: fixed; inset: 0; z-index: 1300;
+            background: rgba(15,23,42,0.4); backdrop-filter: blur(12px);
+            display: flex; justify-content: flex-end;
+            animation: idpFI 0.3s ease-out;
           }
-
-          @keyframes idpFadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-
-          .idp-overlay-docked {
-            position: static;
-            background: transparent;
-            backdrop-filter: none;
-            display: block;
-            animation: none;
-          }
+          @keyframes idpFI { from { opacity: 0; } to { opacity: 1; } }
+          .idp-overlay-docked { position: static; background: transparent; backdrop-filter: none; display: block; animation: none; }
 
           .idp-panel {
-            width: min(560px, 100vw);
-            height: 100dvh;
-            background: var(--idp-bg);
-            display: flex;
-            flex-direction: column;
-            box-shadow: -20px 0 60px rgba(15, 23, 42, 0.2);
-            overflow: hidden;
-            border-left: 1px solid var(--idp-border);
-            animation: idpSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            width: min(520px, 100vw); height: 100dvh; background: var(--idp-bg);
+            display: flex; flex-direction: column;
+            box-shadow: -16px 0 50px rgba(15,23,42,0.18);
+            overflow: hidden; border-left: 1px solid var(--idp-border);
+            animation: idpSI 0.35s cubic-bezier(0.16,1,0.3,1);
           }
+          @keyframes idpSI { from { transform: translateX(100%); } to { transform: translateX(0); } }
+          .idp-panel-docked { width: 100%; height: 100%; min-height: 0; border-left: none; box-shadow: none; background: linear-gradient(180deg,#fcfdff,#f8fbff); animation: none; }
 
-          @keyframes idpSlideIn {
-            from { transform: translateX(100%); }
-            to { transform: translateX(0); }
-          }
-
-          .idp-panel-docked {
-            width: 100%;
-            height: 100%;
-            min-height: 0;
-            border-left: none;
-            box-shadow: none;
-            background: linear-gradient(180deg, #fcfdff 0%, #f8fbff 100%);
-            animation: none;
-          }
-
-          /* --- HEADER --- */
+          /* Header */
           .idp-header {
-            padding: 1.5rem 1.35rem 1.2rem;
-            background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+            padding: 0.85rem 1rem 0.7rem; background: linear-gradient(180deg,#f8fbff,#fff);
             border-bottom: 1px solid var(--idp-border);
-            display: flex;
-            flex-direction: column;
-            gap: 1.2rem;
-            flex-shrink: 0;
+            display: flex; flex-direction: column; gap: 0.6rem; flex-shrink: 0;
           }
-
-          .idp-header-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-          }
-
-          .idp-eyebrow {
-            font-size: 0.65rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            color: var(--idp-accent);
-            display: block;
-            margin-bottom: 0.5rem;
-          }
-
-          .idp-title {
-            margin: 0;
-            font-size: 1.75rem;
-            font-weight: 900;
-            color: var(--idp-text-main);
-            letter-spacing: -0.03em;
-            line-height: 1.1;
-          }
-
-          .idp-header-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.6rem;
-            margin-top: 0.8rem;
-          }
-
-          .idp-meta-tag {
-            padding: 0.35rem 0.75rem;
-            border-radius: 8px;
-            background: var(--idp-accent-soft);
-            color: var(--idp-accent);
-            font-size: 0.7rem;
-            font-weight: 800;
-          }
+          .idp-header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+          .idp-eyebrow { font-size: 0.52rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; color: var(--idp-accent); display: block; margin-bottom: 0.2rem; }
+          .idp-title { margin: 0; font-size: 1.1rem; font-weight: 900; color: var(--idp-text); letter-spacing: -0.03em; line-height: 1.15; }
+          .idp-header-meta { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.4rem; }
+          .idp-meta-tag { padding: 0.15rem 0.45rem; border-radius: 6px; background: var(--idp-accent-soft); color: var(--idp-accent); font-size: 0.55rem; font-weight: 800; }
           .idp-meta-tag-code { background: #0f172a; color: white; }
           .idp-meta-tag-section { background: #fffbeb; color: #92400e; }
-
-          .idp-hero-price {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            background: #0f172a;
-            border-radius: var(--idp-radius-md);
-            padding: 1.5rem;
-            color: white;
-            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.4);
-          }
-
-          .idp-hero-label {
-            display: block;
-            font-size: 0.65rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #94a3b8;
-            margin-bottom: 4px;
-          }
-
-          .idp-hero-value { font-size: 1.5rem; font-weight: 900; display: block; }
-          .idp-hero-total { font-size: 1.5rem; font-weight: 900; color: #38bdf8; display: block; }
-
-          .idp-close-trigger {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            border: 1px solid var(--idp-border);
-            display: flex; align-items: center; justify-content: center;
-            background: white; color: #94a3b8;
-            cursor: pointer; transition: all 0.2s;
-          }
+          .idp-meta-tag-benchmark { background: #ecfdf5; color: #059669; }
+          .idp-meta-tag-formula { background: #f5f3ff; color: #7c3aed; }
+          .idp-meta-tag-manual { background: #fef2f2; color: #dc2626; }
+          .idp-close-trigger { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--idp-border); display: flex; align-items: center; justify-content: center; background: white; color: #94a3b8; cursor: pointer; transition: all 0.15s; flex-shrink: 0; }
           .idp-close-trigger:hover { background: #fef2f2; color: #ef4444; border-color: #fecaca; }
 
-          /* --- BODY --- */
-          .idp-body {
-            flex: 1;
-            overflow-y: auto;
-            scrollbar-width: thin;
-            background: #ffffff;
-          }
-          .idp-body::-webkit-scrollbar { width: 4px; }
+          /* Stats Row */
+          .idp-stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.4rem; }
+          .idp-stat { background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 10px; padding: 0.45rem 0.5rem; text-align: center; }
+          .idp-stat-lbl { display: block; font-size: 0.44rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; margin-bottom: 1px; }
+          .idp-stat strong { font-size: 0.82rem; font-weight: 900; color: var(--idp-text); display: block; line-height: 1.2; }
+          .idp-stat strong small { font-size: 0.52rem; color: #94a3b8; font-weight: 700; margin-left: 2px; }
+          .idp-stat-dark { background: #0f172a; border-color: #0f172a; }
+          .idp-stat-dark .idp-stat-lbl { color: #94a3b8; }
+          .idp-stat-dark strong { color: #fff; }
+          .idp-stat-accent { background: linear-gradient(135deg,#1e40af,#3b82f6); border-color: transparent; }
+          .idp-stat-accent .idp-stat-lbl { color: rgba(255,255,255,0.65); }
+          .idp-stat-accent strong { color: #fff; }
+
+          /* Body */
+          .idp-body { flex: 1; overflow-y: auto; scrollbar-width: thin; background: #fff; }
+          .idp-body::-webkit-scrollbar { width: 3px; }
           .idp-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
 
-          /* --- SECTIONS --- */
-          .idp-section { border-bottom: 1px solid #f1f5f9; transition: background 0.2s; }
+          /* Actions Bar */
+          .idp-actions-bar {
+            display: flex; flex-wrap: wrap; gap: 0.3rem;
+            padding: 0.6rem 1rem; border-bottom: 1px solid #f1f5f9;
+            background: #fafbff;
+          }
+          .idp-quick-action {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            padding: 0.3rem 0.55rem; border-radius: 8px;
+            border: 1px solid #e2e8f0; background: white;
+            font-size: 0.6rem; font-weight: 700; color: #475569;
+            cursor: pointer; transition: all 0.15s;
+            white-space: nowrap;
+          }
+          .idp-quick-action:hover { background: #f1f5f9; border-color: #cbd5e1; transform: translateY(-1px); }
+          .idp-quick-action-blue { border-color: #bfdbfe; color: #1d4ed8; background: #eff6ff; }
+          .idp-quick-action-blue:hover { background: #dbeafe; }
+          .idp-quick-action-teal { border-color: #99f6e4; color: #0f766e; background: #f0fdfa; }
+          .idp-quick-action-teal:hover { background: #ccfbf1; }
+          .idp-quick-action-indigo { border-color: #c7d2fe; color: #4338ca; background: #eef2ff; }
+          .idp-quick-action-indigo:hover { background: #e0e7ff; }
+          .idp-quick-action-amber { border-color: #fde68a; color: #92400e; background: #fffbeb; }
+          .idp-quick-action-amber:hover { background: #fef3c7; }
+          .idp-quick-action-danger { border-color: #fecaca; color: #dc2626; background: #fef2f2; }
+          .idp-quick-action-danger:hover { background: #fee2e2; }
+
+          /* Sections */
+          .idp-section { border-bottom: 1px solid #f1f5f9; }
           .idp-section-open { background: #fdfdfe; }
-
           .idp-section-header {
-            width: 100%;
-            padding: 1rem 1.35rem;
+            width: 100%; padding: 0.6rem 1rem;
             display: flex; align-items: center; justify-content: space-between;
-            background: transparent; border: none; cursor: pointer;
-            transition: all 0.2s;
+            background: transparent; border: none; cursor: pointer; transition: all 0.15s;
           }
+          .idp-section-header-compact { padding: 0.5rem 1rem; }
           .idp-section-header:hover { background: #f8fafc; }
-
-          .idp-section-header-left { display: flex; align-items: center; gap: 1rem; }
-          .idp-section-icon-wrap {
-            width: 32px; height: 32px;
-            border-radius: 10px; background: #f1f5f9;
-            display: flex; align-items: center; justify-content: center;
-            color: var(--idp-text-muted);
-          }
+          .idp-section-header-left { display: flex; align-items: center; gap: 0.55rem; }
+          .idp-section-icon-wrap { width: 26px; height: 26px; border-radius: 8px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: var(--idp-muted); flex-shrink: 0; }
           .idp-section-open .idp-section-icon-wrap { background: var(--idp-accent-soft); color: var(--idp-accent); }
-
-          .idp-section-header strong { font-size: 1rem; font-weight: 800; color: var(--idp-text-main); }
+          .idp-section-header strong { font-size: 0.76rem; font-weight: 800; color: var(--idp-text); }
+          .idp-section-badge { font-size: 0.48rem; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.12rem 0.4rem; border-radius: 5px; background: var(--idp-accent-soft); color: var(--idp-accent); }
           .idp-section-chevron { color: #cbd5e1; transition: transform 0.2s; }
           .idp-section-chevron-open { transform: rotate(90deg); color: var(--idp-accent); }
-
           .idp-section-collapse { display: none; }
           .idp-section-collapse-open { display: block; }
+          .idp-section-body { padding: 0 1rem 0.8rem; }
 
-          .idp-section-body { padding: 0 1.35rem 1.4rem; }
-
-          /* --- CARDS & GRIDS --- */
-          .idp-strategic-card {
-            background: #f8fafc;
-            border-radius: var(--idp-radius-md);
-            padding: 1.25rem;
-            border: 1px solid #f1f5f9;
+          /* Pricing Options */
+          .idp-pricing-stack { display: flex; flex-direction: column; gap: 0.35rem; }
+          .idp-price-opt {
+            display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+            padding: 0.55rem 0.7rem; border-radius: 10px;
+            border: 1.5px solid #eef2f7; background: white;
+            cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
           }
+          .idp-price-opt:hover:not(:disabled) { border-color: #cbd5e1; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(15,23,42,0.05); }
+          .idp-price-opt-on { border-color: var(--idp-accent) !important; background: linear-gradient(135deg,#f8fbff,#eff6ff) !important; box-shadow: 0 3px 12px rgba(37,99,235,0.1) !important; }
+          .idp-price-opt-on::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--idp-accent); }
+          .idp-price-opt-off { opacity: 0.4; cursor: not-allowed; }
+          .idp-price-opt-l { display: flex; align-items: center; gap: 0.55rem; }
+          .idp-price-opt-ico { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+          .idp-price-opt-teal .idp-price-opt-ico { background: #f0fdfa; color: #0d9488; }
+          .idp-price-opt-indigo .idp-price-opt-ico { background: #f5f3ff; color: #7c3aed; }
+          .idp-price-opt-slate .idp-price-opt-ico { background: #f1f5f9; color: #475569; }
+          .idp-price-opt-on.idp-price-opt-teal .idp-price-opt-ico { background: #ccfbf1; }
+          .idp-price-opt-on.idp-price-opt-indigo .idp-price-opt-ico { background: #ede9fe; }
+          .idp-price-opt-on.idp-price-opt-slate .idp-price-opt-ico { background: #e2e8f0; }
+          .idp-price-opt-copy { display: flex; flex-direction: column; gap: 0; }
+          .idp-price-opt-name { font-size: 0.72rem; font-weight: 800; color: var(--idp-text); }
+          .idp-price-opt-sub { font-size: 0.55rem; color: #94a3b8; font-weight: 600; }
+          .idp-price-opt-r { display: flex; align-items: center; gap: 0.35rem; }
+          .idp-price-opt-r strong { font-size: 0.82rem; font-weight: 900; color: var(--idp-text); }
+          .idp-price-check { width: 18px; height: 18px; border-radius: 50%; background: var(--idp-accent); color: white; display: flex; align-items: center; justify-content: center; }
+          .idp-price-lock { color: #cbd5e1; }
+          .idp-pricing-hint { margin: 0.2rem 0 0; display: flex; align-items: center; gap: 0.3rem; font-size: 0.6rem; color: #94a3b8; font-weight: 600; font-style: italic; }
 
-          .idp-strat-identity { display: flex; gap: 0.75rem; color: #475569; }
-          .idp-strat-identity p { margin: 0; font-size: 0.95rem; line-height: 1.5; font-weight: 500; }
-          .idp-strat-identity svg { flex-shrink: 0; color: var(--idp-accent); margin-top: 3px; }
+          /* Breakdown */
+          .idp-breakdown-grid { display: flex; flex-direction: column; gap: 0.35rem; }
+          .idp-bd-row { display: grid; grid-template-columns: 40px 1fr 32px 70px; gap: 0.4rem; align-items: center; font-size: 0.65rem; }
+          .idp-bd-bar-bg { height: 6px; border-radius: 3px; background: #f1f5f9; overflow: hidden; grid-column: 1/-1; }
+          .idp-bd-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+          .idp-bd-row { display: grid; grid-template-columns: 1fr 32px 70px; gap: 0.3rem; align-items: center; }
+          .idp-bd-label { font-weight: 700; color: #475569; font-size: 0.65rem; }
+          .idp-bd-pct { font-weight: 800; color: var(--idp-text); font-size: 0.62rem; text-align: right; }
+          .idp-bd-val { font-weight: 700; color: #64748b; font-size: 0.6rem; text-align: right; }
+          .idp-bd-total { display: flex; justify-content: space-between; align-items: center; padding-top: 0.4rem; border-top: 1px solid #f1f5f9; margin-top: 0.2rem; }
+          .idp-bd-total span { font-size: 0.62rem; font-weight: 700; color: #64748b; }
+          .idp-bd-total strong { font-size: 0.76rem; font-weight: 900; color: var(--idp-text); }
 
-          .idp-strat-badges { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.25rem; }
-          .idp-strat-pill {
-            padding: 0.35rem 0.65rem; border-radius: 6px;
-            font-size: 0.65rem; font-weight: 800; display: flex; align-items: center; gap: 0.4rem;
-            text-transform: uppercase;
+          /* Description */
+          .idp-desc-edit { display: flex; flex-direction: column; gap: 0.25rem; }
+          .idp-desc-ta {
+            width: 100%; max-width: 100%; box-sizing: border-box;
+            border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 0.6rem 0.7rem;
+            font-size: 0.78rem; font-weight: 520; font-family: inherit; line-height: 1.5;
+            color: #1e293b; outline: none; resize: vertical; min-height: 56px; background: #fafbff;
+            transition: border-color 0.15s, box-shadow 0.15s;
           }
-          .idp-strat-pill-benchmark { background: #ecfdf5; color: #059669; }
-          .idp-strat-pill-formula   { background: #f5f3ff; color: #7c3aed; }
-          .idp-strat-pill-manual    { background: #fef2f2; color: #dc2626; }
-          .idp-strat-pill-blue      { background: #eff6ff; color: #2563eb; }
-          .idp-strat-pill-teal      { background: #f0fdfa; color: #0d9488; }
+          .idp-desc-ta:focus { border-color: var(--idp-accent); box-shadow: 0 0 0 2px rgba(37,99,235,0.08); background: white; }
+          .idp-desc-hint { font-size: 0.55rem; color: #94a3b8; font-weight: 600; }
 
-          .idp-basis-grid { display: flex; flex-direction: column; gap: 0.8rem; }
-          .idp-basis-card {
-            background: white; border: 1px solid #eef2f7;
-            padding: 1rem; border-radius: var(--idp-radius-md);
-            transition: all 0.3s; position: relative;
-          }
-          .idp-basis-card:hover { border-color: #cbd5e1; transform: translateY(-2px); }
-          .idp-basis-card-active { border-color: var(--idp-accent); background: #f9fbff; box-shadow: var(--idp-shadow); }
+          /* Logic */
+          .idp-logic-card { background: #f8fafc; border-radius: var(--idp-r); padding: 0.8rem; border: 1px solid #f1f5f9; }
+          .idp-logic-expr { margin-bottom: 0.7rem; }
+          .idp-micro-label { display: block; font-size: 0.52rem; font-weight: 800; text-transform: uppercase; color: #94a3b8; margin-bottom: 4px; letter-spacing: 0.06em; }
+          .idp-logic-expr code { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #4338ca; background: white; border: 1px solid #e2e8f0; padding: 0.4rem 0.6rem; border-radius: 6px; display: block; }
+          .idp-vars-grid { margin-bottom: 0.7rem; }
+          .idp-vars-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+          .idp-var-chip { background: white; border: 1px solid #e2e8f0; padding: 0.4rem 0.55rem; border-radius: 8px; }
+          .idp-var-name { display: block; font-size: 0.5rem; color: #64748b; font-weight: 800; }
+          .idp-var-chip strong { font-size: 0.78rem; font-weight: 900; color: #0f172a; }
+          .idp-var-chip strong small { font-size: 0.52rem; margin-left: 2px; color: #94a3b8; }
+          .idp-logic-result p { margin: 0; font-size: 0.72rem; color: #475569; line-height: 1.4; }
+          .idp-logic-btn { width: 100%; padding: 0.5rem; border-radius: 8px; background: var(--idp-text); color: white; border: none; font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; transition: all 0.15s; margin-top: 0.6rem; }
+          .idp-logic-btn:hover { background: var(--idp-accent); transform: translateY(-1px); }
 
-          .idp-basis-card-header { display: flex; align-items: center; gap: 1rem; }
-          .idp-basis-card-icon {
-            width: 40px; height: 40px; border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-          }
-          .idp-basis-card-teal .idp-basis-card-icon { background: #f0fdfa; color: #0d9488; }
-          .idp-basis-card-indigo .idp-basis-card-icon { background: #f5f3ff; color: #7c3aed; }
-          .idp-basis-card-slate .idp-basis-card-icon { background: #f1f5f9; color: #475569; }
-
-          .idp-basis-card-copy { display: flex; flex-direction: column; flex: 1; }
-          .idp-basis-label { font-size: 0.7rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
-          .idp-basis-value { font-size: 1.15rem; font-weight: 900; color: var(--idp-text-main); }
-
-          .idp-active-indicator {
-            position: absolute; top: 1.25rem; right: 1.25rem;
-            display: flex; align-items: center; gap: 4px;
-            font-size: 0.6rem; font-weight: 900; color: var(--idp-accent);
-            text-transform: uppercase;
-          }
-
-          .idp-basis-desc { margin: 0.75rem 0 0; font-size: 0.8rem; color: #64748b; line-height: 1.4; }
-
-          /* --- LOGIC --- */
-          .idp-logic-wrap { background: #f8fafc; border-radius: var(--idp-radius-md); padding: 1.5rem; border: 1px solid #f1f5f9; }
-          .idp-logic-header { margin-bottom: 1.5rem; }
-          .idp-logic-header span { display: block; font-size: 0.7rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; }
-          .idp-logic-header code {
-            font-family: 'JetBrains Mono', monospace; font-size: 1rem; color: #4338ca;
-            background: white; border: 1px solid #e2e8f0; padding: 0.75rem 1rem; border-radius: 8px; display: block;
-          }
-
-          .idp-sub-label { font-size: 0.7rem; font-weight: 900; text-transform: uppercase; color: #94a3b8; display: block; margin-bottom: 10px; }
-          .idp-inputs-mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.5rem; }
-          .idp-input-chip { background: white; border: 1px solid #e2e8f0; padding: 0.75rem 1rem; border-radius: 10px; }
-          .idp-input-chip-label { display: block; font-size: 0.6rem; color: #64748b; font-weight: 800; margin-bottom: 2px; }
-          .idp-input-chip-value { font-size: 0.95rem; font-weight: 900; color: #0f172a; }
-          .idp-input-chip-value small { font-size: 0.65rem; margin-left: 4px; color: #94a3b8; }
-
-          .idp-logic-btn {
-            width: 100%; padding: 0.85rem; border-radius: 12px;
-            background: var(--idp-text-main); color: white; border: none;
-            font-size: 0.85rem; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px;
-            cursor: pointer; transition: all 0.2s;
-          }
-          .idp-logic-btn:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2); }
-
-          /* --- INTEL --- */
-          .idp-intelligence-card { background: #fff; border: 1px solid #f1f5f9; border-radius: var(--idp-radius-md); overflow: hidden; }
-          .idp-intel-header { display: flex; justify-content: space-between; padding: 1.25rem; background: #fafafa; border-bottom: 1px solid #f1f5f9; }
-          .idp-intel-confidence { text-align: right; }
-          .idp-conf-text { color: var(--conf-color); font-size: 1rem; font-weight: 900; }
-          .idp-intel-meta-grid { padding: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; }
-
+          /* Meta Grid */
+          .idp-meta-grid { display: flex; flex-direction: column; gap: 0.35rem; }
+          .idp-meta-grid .idp-meta-row { padding: 0.2rem 0; border-bottom: 1px solid #f8fafc; }
+          .idp-meta-grid .idp-meta-row:last-child { border-bottom: none; }
           .idp-meta-row { display: flex; justify-content: space-between; align-items: center; }
-          .idp-meta-label { font-size: 0.75rem; color: #64748b; font-weight: 600; }
-          .idp-meta-value { font-size: 0.85rem; color: #0f172a; font-weight: 800; }
+          .idp-meta-label { font-size: 0.62rem; color: var(--idp-muted); font-weight: 600; }
+          .idp-meta-value { font-size: 0.68rem; color: var(--idp-text); font-weight: 800; }
+          .idp-meta-mono { font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em; }
 
-          /* --- FOOTER --- */
-          .idp-footer {
-            padding: 1rem 1.35rem; border-top: 1px solid var(--idp-border);
-            display: flex; align-items: center; justify-content: space-between;
-            background: rgba(255, 255, 255, 0.96); flex-shrink: 0;
-          }
-          .idp-footer-info { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: #94a3b8; font-weight: 700; }
-          .idp-footer-dot { width: 8px; height: 8px; border-radius: 50%; }
+          /* Intel */
+          .idp-intel-card { background: #fff; border: 1px solid #f1f5f9; border-radius: var(--idp-r); overflow: hidden; }
+          .idp-intel-row { display: flex; justify-content: space-between; padding: 0.7rem; background: #fafafa; border-bottom: 1px solid #f1f5f9; }
+          .idp-intel-row strong { font-size: 0.78rem; }
+          .idp-conf { color: var(--cf); font-weight: 900; }
+          .idp-intel-meta { padding: 0.7rem; display: flex; flex-direction: column; gap: 0.35rem; }
+          .idp-empty-pill { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem; border-radius: 10px; background: #f8fafc; border: 1px solid #f1f5f9; color: #64748b; font-size: 0.7rem; font-weight: 500; }
 
-          .idp-done-btn {
-            padding: 0.85rem 1.75rem; border-radius: 12px;
-            background: var(--idp-accent); color: white; border: none;
-            font-size: 0.85rem; font-weight: 800; cursor: pointer; transition: all 0.2s;
-          }
-          .idp-done-btn:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 10px 20px rgba(37, 99, 235, 0.15); }
+          /* Link button */
+          .idp-link-btn { display: flex; align-items: center; gap: 0.35rem; margin-top: 0.5rem; padding: 0.4rem 0.6rem; border-radius: 8px; border: 1px solid #e2e8f0; background: white; font-size: 0.65rem; font-weight: 700; color: var(--idp-accent); cursor: pointer; transition: all 0.15s; width: 100%; justify-content: center; }
+          .idp-link-btn:hover { background: var(--idp-accent-soft); border-color: #bfdbfe; }
 
-          /* --- TEXTAREA --- */
-          .idp-premium-textarea {
-            width: 100%; max-width: 100%; box-sizing: border-box; border: 1.5px solid #e2e8f0; border-radius: var(--idp-radius-md); padding: 1rem;
-            font-size: 0.95rem; font-weight: 500; font-family: inherit; line-height: 1.6;
-            outline: none; transition: border-color 0.2s;
-          }
-          .idp-premium-textarea:focus { border-color: var(--idp-accent); }
+          /* Notes */
+          .idp-notes-block { display: flex; flex-direction: column; gap: 0.3rem; }
+          .idp-notes-ta { width: 100%; max-width: 100%; box-sizing: border-box; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 0.6rem 0.7rem; font-size: 0.78rem; font-weight: 500; font-family: inherit; line-height: 1.5; outline: none; transition: border-color 0.15s; resize: vertical; min-height: 56px; }
+          .idp-notes-ta:focus { border-color: var(--idp-accent); }
+          .idp-hint-box { margin-top: 0.4rem; padding: 0.5rem; border-radius: 8px; background: #fffbeb; border: 1px solid #fef3c7; display: flex; gap: 8px; color: #92400e; font-size: 0.65rem; font-weight: 600; line-height: 1.3; }
 
-          .idp-hint-box {
-            margin-top: 1rem; padding: 1rem; border-radius: 12px; background: #fffbeb; border: 1px solid #fef3c7;
-            display: flex; gap: 10px; color: #92400e; font-size: 0.8rem; font-weight: 600; line-height: 1.4;
-          }
+          /* Footer */
+          .idp-footer { padding: 0.55rem 1rem; border-top: 1px solid var(--idp-border); display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.96); flex-shrink: 0; }
+          .idp-footer-info { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: #94a3b8; font-weight: 700; }
+          .idp-footer-dot { width: 6px; height: 6px; border-radius: 50%; }
+          .idp-done-btn { padding: 0.45rem 1rem; border-radius: 8px; background: var(--idp-accent); color: white; border: none; font-size: 0.7rem; font-weight: 800; cursor: pointer; transition: all 0.15s; }
+          .idp-done-btn:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(37,99,235,0.15); }
         `}</style>
       </div>
     </div>

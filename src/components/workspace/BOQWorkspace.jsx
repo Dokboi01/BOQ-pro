@@ -2033,378 +2033,96 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             onSelectBill={scrollToSection}
           />
           <div className="ws-main-pane">
-            <div className="ws-summary-strip">
-              <div className="ws-summary-actions-row">
-                <div className="ws-sheet-tabbar ws-sheet-tabbar-compact">
-                  <button
-                    className={`ws-sheet-tab ${viewMode === 'estimation' ? 'active' : ''}`}
-                    onClick={() => setViewMode('estimation')}
-                  >
-                    Estimate Sheet
-                  </button>
-                  <button
-                    className={`ws-sheet-tab ${viewMode === 'valuation' ? 'active' : ''}`}
-                    onClick={() => setViewMode('valuation')}
-                  >
-                    Valuation Sheet
-                  </button>
-                  <div className="ws-sheet-tabbar-meta">
-                    <span className="ws-sheet-meta-chip">{project?.region || 'Lagos'} Region</span>
-                    <span className="ws-sheet-meta-chip">{workspaceAnalytics.benchmarkItems} Benchmark Items</span>
-                    <span className="ws-sheet-meta-chip">{workspaceAnalytics.customItems} Custom Items</span>
+            {/* ── Compact Workspace Header ── */}
+            <div className="ws-compact-header">
+              <div className="ws-compact-header-top">
+                <div className="ws-compact-header-left">
+                  <h2 className="ws-compact-title">{project?.name || 'Untitled Project'}</h2>
+                  <div className="ws-compact-meta-tags">
+                    <span className="ws-compact-meta-tag">{activeSheetLabel}</span>
+                    <span className="ws-compact-meta-tag">{marketRegionDisplay}</span>
+                    <span className={`ws-compact-meta-tag ws-compact-health-${benchmarkWorkspaceHealth.tone}`}>{benchmarkWorkspaceHealth.label}</span>
                   </div>
                 </div>
-                <div className="ws-summary-actions">
-                  <button className={`ws-analytics-toggle ${showAnalytics ? 'active' : ''}`} onClick={() => setShowAnalytics(!showAnalytics)}>
-                    {showAnalytics ? 'Hide Analytics' : 'Workspace Analytics'}
-                  </button>
+                <div className="ws-compact-header-actions">
+                  <div className="ws-sheet-tabbar ws-sheet-tabbar-compact">
+                    <button className={`ws-sheet-tab ${viewMode === 'estimation' ? 'active' : ''}`} onClick={() => setViewMode('estimation')}>Estimate</button>
+                    <button className={`ws-sheet-tab ${viewMode === 'valuation' ? 'active' : ''}`} onClick={() => setViewMode('valuation')}>Valuation</button>
+                  </div>
                   <button className="ws-head-action" onClick={() => enterSelectionStage(activeBillSectionId || sections[0]?.id)}>
-                    <Plus size={13} /> Edit BOQ Selection
+                    <Plus size={13} /> Edit Selection
                   </button>
-                  <button className="ws-head-action ws-head-action-strong" onClick={refreshBenchmarks}>
-                    <RefreshCcw size={13} /> Refresh Benchmarks
+                  <button className="ws-head-action" onClick={refreshBenchmarks}>
+                    <RefreshCcw size={13} /> Refresh
+                  </button>
+                  <button className="ws-head-action" onClick={onExport}>
+                    <Download size={13} /> Export
+                  </button>
+                  <button className="ws-head-action" onClick={onAddSection}>
+                    <Plus size={13} /> Section
                   </button>
                 </div>
               </div>
-            </div>
-      <div className="ws-workbook-top">
-        <div className="ws-workbook-head">
-          <div className="ws-workbook-copy">
-            <span className="ws-workbook-eyebrow">BOQ-Pro Workbook</span>
-            <div className="ws-workbook-title-row">
-              <h1>{project?.name || 'Untitled Project'}</h1>
-              <span className={`ws-workbook-health ws-workbook-health-${benchmarkWorkspaceHealth.tone}`}>
-                {benchmarkWorkspaceHealth.label}
-              </span>
-            </div>
-            <p>{workbookSubtitle} | {marketRegionDisplay} market benchmark | {activeSheetLabel}</p>
-          </div>
-          <div className="ws-workbook-console">
-            <div className="ws-workbook-metrics-compact">
-              <article className="ws-head-stat-card">
-                <span>Active Bill</span>
-                <strong>{activeProjectSection?.title || 'No active bill'}</strong>
-                <small>{activeSectionLineCount} line{activeSectionLineCount === 1 ? '' : 's'} · {activeCatalogSelectionCount} selected for this bill</small>
-              </article>
-              <article className="ws-head-stat-card">
-                <span>Pricing Coverage</span>
-                <strong>{workspaceAnalytics.pricingCoveragePercent.toFixed(0)}%</strong>
-                <small>{workspaceAnalytics.pricedItems}/{workspaceAnalytics.totalItems} items priced · {activeSectionPendingItems} pending in active bill</small>
-              </article>
-              <article className="ws-head-stat-card ws-head-stat-card-strong">
-                <span>Project Total</span>
-                <strong>N{calculateGrandTotal.toLocaleString()}</strong>
-                <small>{marketRegionDisplay} market basis · {workspaceAnalytics.benchmarkItems} benchmark-backed items</small>
-              </article>
-            </div>
-            <div className="ws-workbook-actions">
-              <button className={`ws-analytics-toggle ${showAnalytics ? 'active' : ''}`} onClick={() => setShowAnalytics(!showAnalytics)}>
-                {showAnalytics ? 'Hide Analytics Dashboard' : 'Workspace Metrics & Analytics'}
-              </button>
-              <button
-                className="ws-head-action"
-                onClick={() => enterSelectionStage(activeBillSectionId || sections[0]?.id)}
-              >
-                <Plus size={13} /> Edit BOQ Selection
-              </button>
-              <button className="ws-head-action ws-head-action-strong" onClick={refreshBenchmarks}>
-                <RefreshCcw size={13} /> Refresh Benchmarks
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="ws-sheet-tabbar">
-          <button
-            className={`ws-sheet-tab ${viewMode === 'estimation' ? 'active' : ''}`}
-            onClick={() => setViewMode('estimation')}
-          >
-            Estimate Sheet
-          </button>
-          <button
-            className={`ws-sheet-tab ${viewMode === 'valuation' ? 'active' : ''}`}
-            onClick={() => setViewMode('valuation')}
-          >
-            Valuation Sheet
-          </button>
-          <div className="ws-sheet-tabbar-meta">
-            <span className="ws-sheet-meta-chip">{project?.region || 'Lagos'} Region</span>
-            <span className="ws-sheet-meta-chip">{workspaceAnalytics.benchmarkItems} Benchmark Items</span>
-            <span className="ws-sheet-meta-chip">{workspaceAnalytics.customItems} Custom Items</span>
-          </div>
-        </div>
-      </div>
-      {renderBillTabs('workspace')}
-      <div className="ws-workspace-command-center">
-      {workspaceFilter === '__hide__' ? (
-      <div className="ws-cost-rail">
-        <div className="ws-cost-card">
-          <span className="ws-cost-label">Active Bill</span>
-          <strong className="ws-cost-value">{activeProjectSection?.title || 'No active bill'}</strong>
-          <small className="ws-cost-meta">
-            {activeProjectSection
-              ? `${activeSectionLineCount} line${activeSectionLineCount === 1 ? '' : 's'} · Qty ${activeSectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
-              : 'Choose a bill section to start measuring'}
-          </small>
-        </div>
-        <div className="ws-cost-card">
-          <span className="ws-cost-label">Bill Progress</span>
-          <strong className="ws-cost-value">{activeSectionPricedItems}/{activeSectionLineCount || 0}</strong>
-          <small className="ws-cost-meta">
-            {activeSectionPendingItems > 0
-              ? `${activeSectionPendingItems} line${activeSectionPendingItems === 1 ? '' : 's'} still need pricing review`
-              : 'Current active bill is fully priced'}
-          </small>
-        </div>
-        <div className="ws-cost-card">
-          <span className="ws-cost-label">{isFilteredView ? `${activeWorkspaceFilterLabel} View` : 'Visible Sheet Total'}</span>
-          <strong className="ws-cost-value">N{visibleGrandTotal.toLocaleString()}</strong>
-          <small className="ws-cost-meta">
-            {filteredSectionCount} visible bill{filteredSectionCount === 1 ? '' : 's'} · {filteredItemCount} visible item{filteredItemCount === 1 ? '' : 's'}
-          </small>
-        </div>
-        <div className="ws-cost-card ws-cost-card-total">
-          <span className="ws-cost-label">Project Grand Total</span>
-          <strong className="ws-cost-value">N{calculateGrandTotal.toLocaleString()}</strong>
-          <small className="ws-cost-meta">
-            {project?.region || 'Lagos'} market basis · {workspaceAnalytics.totalItems} measured item{workspaceAnalytics.totalItems === 1 ? '' : 's'}
-          </small>
-        </div>
-      </div>
-      ) : null}
-
-      <div className={`ws-sheet-tools ${selectedItemContext ? 'has-selection' : 'is-idle'}`}>
-        <div className="ws-formula-bar">
-          <div className="ws-formula-address">{formulaBarMeta.address}</div>
-          <div className="ws-formula-fx">fx</div>
-          <div className="ws-formula-body">
-            <strong>{formulaBarMeta.columnLabel}</strong>
-            <span>{formulaBarMeta.value}</span>
-            <small>{formulaBarMeta.detail}</small>
-          </div>
-        </div>
-        <div className={`ws-helper-strip ${selectedItemContext ? 'is-selected' : 'is-idle'}`}>
-          {selectedItemContext ? (
-            <>
-              <div className="ws-helper-copy">
-                <span className="ws-helper-label">Selected Row</span>
-                <strong>{selectedItemContext.itemCode} · {selectedItemContext.item.name || selectedItemContext.item.description || 'Untitled BOQ item'}</strong>
-                <small>
-                  {selectedItemContext.section.title} | Qty {selectedItemContext.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} | Rate N{selectedItemContext.unitRate.toLocaleString()} | Amount N{selectedItemContext.total.toLocaleString()}
-                </small>
-                {selectedItemContext.formulaText && (
-                  <small className="ws-helper-secondary">
-                    Formula: {selectedItemContext.formulaText}
-                    {selectedItemContext.workedExampleText ? ` | ${selectedItemContext.workedExampleText}` : ''}
-                  </small>
-                )}
+              <div className="ws-compact-stats-row">
+                <div className="ws-compact-stat">
+                  <span>Active Bill</span>
+                  <strong>{activeProjectSection?.title || '—'}</strong>
+                  <small>{activeSectionLineCount} line{activeSectionLineCount === 1 ? '' : 's'} · {activeSectionPricedItems} priced</small>
+                </div>
+                <div className="ws-compact-stat">
+                  <span>Coverage</span>
+                  <strong>{workspaceAnalytics.pricingCoveragePercent.toFixed(0)}%</strong>
+                  <small>{workspaceAnalytics.pricedItems}/{workspaceAnalytics.totalItems} items</small>
+                </div>
+                <div className="ws-compact-stat ws-compact-stat-total">
+                  <span>Project Total</span>
+                  <strong>N{calculateGrandTotal.toLocaleString()}</strong>
+                  <small>{workspaceAnalytics.benchmarkItems} benchmark · {workspaceAnalytics.customItems} custom</small>
+                </div>
               </div>
-              <div className="ws-helper-actions">
-                <span className={`ws-helper-chip ws-helper-chip-${selectedItemContext.statusMeta.tone}`}>{selectedItemContext.statusMeta.label}</span>
-                <span className={`ws-helper-chip ws-helper-chip-${selectedItemContext.rateSourceMeta.tone}`}>{selectedItemContext.rateSourceMeta.label}</span>
-                <button
-                  className="ws-helper-btn"
-                  onClick={() => setCalculatingQtyForItem({ sectionId: selectedItemContext.section.id, item: selectedItemContext.item })}
-                >
-                  <Calculator size={12} /> Takeoff
-                </button>
-                {isFormulaDrivenItem(selectedItemContext.item) && (
-                  <button
-                    className="ws-helper-btn"
-                    onClick={() => openFormulaEditor(selectedItemContext.section.id, selectedItemContext.item)}
-                  >
-                    fx Formula Inputs
-                  </button>
-                )}
-                {resolveItemRateSource(selectedItemContext.item) === 'manual' && (
-                  <button
-                    className="ws-helper-btn"
-                    onClick={() => openCustomPricingStudio(selectedItemContext.section.id, selectedItemContext.item)}
-                  >
-                    <SlidersHorizontal size={12} /> Pricing Studio
-                  </button>
-                )}
-                <button
-                  className="ws-helper-btn"
-                  onClick={() => openDetailedAnalysis(selectedItemContext.section.id, selectedItemContext.item)}
-                >
-                  <Pencil size={12} /> Detailed Analysis
-                </button>
-                <button
-                  className="ws-helper-btn"
-                  onClick={() => addItemBelow(selectedItemContext.section.id, selectedItemContext.item.id)}
-                >
-                  <Plus size={12} /> Add Line Below
-                </button>
-                <button
-                  className="ws-helper-btn"
-                  onClick={() => duplicateItem(selectedItemContext.section.id, selectedItemContext.item.id)}
-                >
-                  <Copy size={12} /> Duplicate
-                </button>
-                {benchmarkRefreshAnalytics.itemMap[`${selectedItemContext.section.id}:${selectedItemContext.item.id}`]?.canApplyRefresh && (
-                  <button
-                    className="ws-helper-btn ws-helper-btn-strong"
-                    onClick={() => refreshItemBenchmark(selectedItemContext.section.id, selectedItemContext.item.id)}
-                  >
-                    <RefreshCcw size={12} /> Refresh Benchmark
-                  </button>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="ws-helper-copy">
-                <span className="ws-helper-label">Workspace Flow</span>
-                <strong>Select any row to unlock quick actions and pricing context.</strong>
-                <small>Use search, quantity entry, custom pricing, and benchmark refresh directly inside the sheet.</small>
-              </div>
-              <div className="ws-helper-actions">
-                <span className="ws-helper-chip ws-helper-chip-muted">{sections.length} sections ready</span>
-                <button className="ws-helper-btn" onClick={() => enterSelectionStage(activeBillSectionId || sections[0]?.id)}>
-                  <Plus size={12} /> Edit BOQ Selection
-                </button>
-                <button className="ws-helper-btn" onClick={onAddSection}>
-                  <Plus size={12} /> Add Section
-                </button>
-                <button className="ws-helper-btn" onClick={autoRateProject}>
-                  <Zap size={12} /> Auto-Rate Project
-                </button>
-                <button className="ws-helper-btn ws-helper-btn-strong" onClick={refreshBenchmarks}>
-                  <RefreshCcw size={12} /> Refresh Benchmarks
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {showAnalytics && (
-        <>
-        <div className="ws-analytics-board">
-      <div className="ws-insight-strip">
-        <div className="ws-insight-card ws-insight-card-strong">
-          <span className="ws-insight-label">Pricing Coverage</span>
-          <strong className="ws-insight-value">{workspaceAnalytics.pricingCoveragePercent.toFixed(0)}%</strong>
-          <p className="ws-insight-copy">
-            {workspaceAnalytics.pricedItems} of {workspaceAnalytics.totalItems} items priced
-            {workspaceAnalytics.benchmarkItems > 0 ? ` · ${workspaceAnalytics.benchmarkItems} auto-priced from benchmark` : ''}
-            {workspaceAnalytics.unpricedItems > 0 ? ` · ${workspaceAnalytics.unpricedItems} still need review` : ' · full coverage reached'}
-          </p>
-        </div>
-        <div className="ws-insight-card">
-          <span className="ws-insight-label">Benchmark Automation</span>
-          <strong className="ws-insight-value">
-            {workspaceAnalytics.benchmarkItems} live · {workspaceAnalytics.customItems} override
-          </strong>
-          <p className="ws-insight-copy">
-            {workspaceAnalytics.benchmarkReferencedItems} items linked to current market benchmark
-          </p>
-        </div>
-        <div className="ws-insight-card">
-          <span className="ws-insight-label">Market Tracking</span>
-          <strong className="ws-insight-value">{workspaceAnalytics.benchmarkCoveragePercent.toFixed(0)}%</strong>
-          <p className="ws-insight-copy">
-            {workspaceAnalytics.outlierCount > 0
-              ? `${workspaceAnalytics.outlierCount} item${workspaceAnalytics.outlierCount === 1 ? '' : 's'} outside tolerance`
-              : 'No benchmark drift flags right now'}
-          </p>
-        </div>
-        <div className="ws-insight-card">
-          <span className="ws-insight-label">Commercial Driver</span>
-          <strong className="ws-insight-value">
-            {workspaceAnalytics.dominantSection ? workspaceAnalytics.dominantSection.title : 'Waiting for pricing'}
-          </strong>
-          <p className="ws-insight-copy">
-            {workspaceAnalytics.dominantSection
-              ? `${workspaceAnalytics.dominantSection.percentOfTotal.toFixed(1)}% of current contract sum`
-              : 'Add rates to reveal the heaviest cost section'}
-          </p>
-        </div>
-      </div>
-
-      <div className={`ws-refresh-banner ${
-        benchmarkSyncState.status === 'error'
-          ? 'ws-refresh-banner-warning'
-          : benchmarkRefreshAnalytics.actionableItems > 0
-            ? 'ws-refresh-banner-active'
-            : 'ws-refresh-banner-calm'
-      }`}>
-        <div className="ws-refresh-banner-copy">
-          <span className="ws-refresh-banner-eyebrow">Benchmark Refresh Workflow</span>
-          {benchmarkSyncState.status === 'loading' && !benchmarkSyncLabel ? (
-            <>
-              <strong>Loading the latest market benchmark library</strong>
-              <p>We are pulling fresh benchmark references so drift alerts and refresh actions stay reliable.</p>
-            </>
-          ) : benchmarkSyncState.status === 'error' ? (
-            <>
-              <strong>Market benchmark check is unavailable right now</strong>
-              <p>{benchmarkSyncState.error || 'We could not load the latest market benchmark library.'}</p>
-            </>
-          ) : benchmarkRefreshAnalytics.actionableItems > 0 ? (
-            <>
-              <strong>{benchmarkRefreshAnalytics.actionableItems} benchmark item{benchmarkRefreshAnalytics.actionableItems === 1 ? '' : 's'} need review</strong>
-              <p>
-                {benchmarkRefreshAnalytics.benchmarkRateUpdates} live benchmark item{benchmarkRefreshAnalytics.benchmarkRateUpdates === 1 ? '' : 's'} can update amount now
-                {' · '}
-                {benchmarkRefreshAnalytics.referenceOnlyUpdates} custom/manual item{benchmarkRefreshAnalytics.referenceOnlyUpdates === 1 ? '' : 's'} will keep their current rate
-                {benchmarkRefreshAnalytics.reviewItems > 0 ? ` · ${benchmarkRefreshAnalytics.reviewItems} still need manual benchmark review` : ''}
-                {benchmarkSyncLabel ? ` · checked ${benchmarkSyncLabel}` : ''}
-              </p>
-            </>
-          ) : (
-            <>
-              <strong>Benchmark references are current</strong>
-              <p>
-                This project is aligned with the latest market benchmark library.
-                {benchmarkSyncLabel ? ` Last checked ${benchmarkSyncLabel}.` : ''}
-              </p>
-            </>
-          )}
-        </div>
-        <div className="ws-refresh-banner-actions">
-          {benchmarkSyncState.status === 'error' ? (
-            <button className="ws-btn ws-btn-ghost" onClick={() => loadMarketBenchmarks()}>
-              <RefreshCcw size={14} /> Retry market check
-            </button>
-          ) : (
-            <button className="ws-btn ws-btn-ghost" onClick={refreshBenchmarks}>
-              <RefreshCcw size={14} /> Refresh project benchmarks
-            </button>
-          )}
-        </div>
-      </div>
-      </div>
-      {/* Toolbar */}
-      <div className="ws-toolbar">
+            </div>
+      {/* ── Search & Filter Toolbar ── */}
+      <div className="ws-toolbar-clean">
         <div className="ws-toolbar-left">
-          <div className="ws-search">
-            <Search size={14} />
+          <div className="ws-search-box">
+            <Search size={16} />
             <input
               type="text"
-              placeholder="Search by bill, code, item, formula, hint, or keyword"
+              placeholder="Search items, codes, or descriptions..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             {searchQuery?.trim() && (
-              <button
-                className="ws-search-clear"
-                onClick={() => setSearchQuery('')}
-                title="Clear search"
-              >
-                <X size={12} />
+              <button className="ws-search-clear" onClick={() => setSearchQuery('')}>
+                <X size={14} />
               </button>
             )}
           </div>
           <span className="ws-search-results">
             {isFilteredView
-              ? `${filteredItemCount} visible item${filteredItemCount === 1 ? '' : 's'} in ${filteredSectionCount} bill${filteredSectionCount === 1 ? '' : 's'}`
-              : `${totalItems} live item${totalItems === 1 ? '' : 's'}`}
+              ? `${filteredItemCount} visible items`
+              : `${totalItems} total items`}
           </span>
         </div>
-        <div className="ws-toolbar-center">
-          <div className="ws-stat-compact"><span className="ws-stat-label">Region</span>
-            <select className="ws-region-sel-compact" value={project?.region || 'Lagos'} onChange={(e) => handleRegionChange(e.target.value)}>
+
+        <div className="ws-toolbar-right">
+          <div className="ws-filter-group">
+            {workspaceFilterOptions.map((filterOption) => (
+              <button
+                key={filterOption.id}
+                className={`ws-filter-pill ${workspaceFilter === filterOption.id ? 'active' : ''}`}
+                onClick={() => setWorkspaceFilter(filterOption.id)}
+              >
+                {filterOption.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="ws-divider-v" />
+
+          <div className="ws-region-selector">
+            <Globe size={14} />
+            <select value={project?.region || 'Lagos'} onChange={(e) => handleRegionChange(e.target.value)}>
               <option value="Lagos">Lagos</option>
               <option value="Abuja">Abuja</option>
               <option value="Port_Harcourt">Port Harcourt</option>
@@ -2412,335 +2130,26 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
               <option value="Kano">Kano</option>
             </select>
           </div>
-          <div className="ws-filter-group-compact">
-            {workspaceFilterOptions.map((filterOption) => (
-              <button
-                key={filterOption.id}
-                type="button"
-                className={`ws-filter-chip-compact ${workspaceFilter === filterOption.id ? 'active' : ''}`}
-                onClick={() => setWorkspaceFilter(filterOption.id)}
-              >
-                {filterOption.label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="ws-toolbar-right">
-          {/* Presence Avatars */}
+
           {isCustomWorkspace && presenceUsers.length > 0 && (
-            <div className="ws-presence">
-              {presenceUsers.slice(0, 4).map((u, i) => (
+            <div className="ws-presence-avatars">
+              {presenceUsers.slice(0, 3).map((u, i) => (
                 <div
                   key={u.id}
-                  className="ws-avatar"
+                  className="ws-avatar-circle"
                   style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}
-                  title={`${u.displayName || u.email} (online)`}
+                  title={u.displayName || u.email}
                 >
                   {getInitials(u.displayName || u.email)}
-                  <span className="ws-avatar-dot" />
                 </div>
               ))}
-              {presenceUsers.length > 4 && (
-                <div className="ws-avatar ws-avatar-more">+{presenceUsers.length - 4}</div>
+              {presenceUsers.length > 3 && (
+                <div className="ws-avatar-more">+{presenceUsers.length - 3}</div>
               )}
             </div>
           )}
-          {isCustomWorkspace && (
-            <button className="ws-btn ws-btn-custom" onClick={() => setShowTeamHub(true)} title="Open company workspace">
-              <MessagesSquare size={14} /> Custom Hub
-            </button>
-          )}
-          <button className="ws-btn ws-btn-ghost" onClick={() => {
-            const firstItem = (sections || []).flatMap(s => s.items || [])[0];
-            if (firstItem) {
-              setAnalyzingItem({ sectionId: sections.find(s => (s.items || []).includes(firstItem))?.id, item: firstItem });
-            }
-          }}>
-            <Calculator size={14} /> Rate Analysis
-          </button>
-          <button className="ws-btn ws-btn-ghost" onClick={() => setShowStructuralAnalyzer(true)} title="Import Structural File">
-            <Database size={14} /> Import Design
-          </button>
-          <button className="ws-btn ws-btn-ghost" onClick={autoRateProject} title="Auto-Assign Rates">
-            <Zap size={14} className="text-accent-500" /> Auto-Rate
-          </button>
-          <button
-            className="ws-btn ws-btn-ghost"
-            onClick={refreshBenchmarks}
-            title="Refresh benchmark references with the latest market prices"
-          >
-            <RefreshCcw size={14} /> {benchmarkSyncState.status === 'loading' ? 'Checking Market...' : 'Refresh Benchmarks'}
-          </button>
-          <button className="ws-btn ws-btn-ghost" onClick={() => toast.success('Project saved as a reusable template.')} title="Save as Template">
-            <Save size={14} /> Save Template
-          </button>
-          <button className="ws-btn ws-btn-ghost" onClick={onExport}><Download size={14} /> Export</button>
-          <button className="ws-btn ws-btn-primary" onClick={onAddSection}><Plus size={14} /> Section</button>
         </div>
       </div>
-      </>
-      )}
-      </div>
-
-      <div className="ws-mobile-summary">
-        <div className="ws-mobile-stat-card">
-          <span>Region</span>
-          <strong>{project?.region || 'Lagos'}</strong>
-        </div>
-        <div className="ws-mobile-stat-card">
-          <span>Sections / Items</span>
-          <strong>{sections.length} / {totalItems}</strong>
-        </div>
-        <div className="ws-mobile-stat-card">
-          <span>Total Qty</span>
-          <strong>{totalQuantity.toLocaleString(undefined, { maximumFractionDigits: 2 })}</strong>
-        </div>
-        <div className="ws-mobile-stat-card ws-mobile-stat-card-total">
-          <span>Contract Sum</span>
-          <strong>₦{calculateGrandTotal.toLocaleString()}</strong>
-        </div>
-      </div>
-
-      {workspaceFilter === '__hide__' ? (
-        <>
-        <div className="ws-analytics-board">
-      <div className="ws-insight-strip">
-        <div className="ws-insight-card ws-insight-card-strong">
-          <span className="ws-insight-label">Pricing Coverage</span>
-          <strong className="ws-insight-value">{workspaceAnalytics.pricingCoveragePercent.toFixed(0)}%</strong>
-          <p className="ws-insight-copy">
-            {workspaceAnalytics.pricedItems} of {workspaceAnalytics.totalItems} items priced
-            {workspaceAnalytics.benchmarkItems > 0 ? ` · ${workspaceAnalytics.benchmarkItems} auto-priced from benchmark` : ''}
-            {workspaceAnalytics.unpricedItems > 0 ? ` · ${workspaceAnalytics.unpricedItems} still need review` : ' · full coverage reached'}
-          </p>
-        </div>
-        <div className="ws-insight-card">
-          <span className="ws-insight-label">Benchmark Automation</span>
-          <strong className="ws-insight-value">
-            {workspaceAnalytics.benchmarkItems} live · {workspaceAnalytics.customItems} override
-          </strong>
-          <p className="ws-insight-copy">
-            {workspaceAnalytics.benchmarkReferencedItems} items linked to current market benchmark
-          </p>
-        </div>
-        <div className="ws-insight-card">
-          <span className="ws-insight-label">Market Tracking</span>
-          <strong className="ws-insight-value">{workspaceAnalytics.benchmarkCoveragePercent.toFixed(0)}%</strong>
-          <p className="ws-insight-copy">
-            {workspaceAnalytics.outlierCount > 0
-              ? `${workspaceAnalytics.outlierCount} item${workspaceAnalytics.outlierCount === 1 ? '' : 's'} outside tolerance`
-              : 'No benchmark drift flags right now'}
-          </p>
-        </div>
-        <div className="ws-insight-card">
-          <span className="ws-insight-label">Commercial Driver</span>
-          <strong className="ws-insight-value">
-            {workspaceAnalytics.dominantSection ? workspaceAnalytics.dominantSection.title : 'Waiting for pricing'}
-          </strong>
-          <p className="ws-insight-copy">
-            {workspaceAnalytics.dominantSection
-              ? `${workspaceAnalytics.dominantSection.percentOfTotal.toFixed(1)}% of current contract sum`
-              : 'Add rates to reveal the heaviest cost section'}
-          </p>
-        </div>
-      </div>
-
-      <div className={`ws-refresh-banner ${
-        benchmarkSyncState.status === 'error'
-          ? 'ws-refresh-banner-warning'
-          : benchmarkRefreshAnalytics.actionableItems > 0
-            ? 'ws-refresh-banner-active'
-            : 'ws-refresh-banner-calm'
-      }`}>
-        <div className="ws-refresh-banner-copy">
-          <span className="ws-refresh-banner-eyebrow">Benchmark Refresh Workflow</span>
-          {benchmarkSyncState.status === 'loading' && !benchmarkSyncLabel ? (
-            <>
-              <strong>Loading the latest market benchmark library</strong>
-              <p>We are pulling fresh benchmark references so drift alerts and refresh actions stay reliable.</p>
-            </>
-          ) : benchmarkSyncState.status === 'error' ? (
-            <>
-              <strong>Market benchmark check is unavailable right now</strong>
-              <p>{benchmarkSyncState.error || 'We could not load the latest market benchmark library.'}</p>
-            </>
-          ) : benchmarkRefreshAnalytics.actionableItems > 0 ? (
-            <>
-              <strong>{benchmarkRefreshAnalytics.actionableItems} benchmark item{benchmarkRefreshAnalytics.actionableItems === 1 ? '' : 's'} need review</strong>
-              <p>
-                {benchmarkRefreshAnalytics.benchmarkRateUpdates} live benchmark item{benchmarkRefreshAnalytics.benchmarkRateUpdates === 1 ? '' : 's'} can update amount now
-                {' · '}
-                {benchmarkRefreshAnalytics.referenceOnlyUpdates} custom/manual item{benchmarkRefreshAnalytics.referenceOnlyUpdates === 1 ? '' : 's'} will keep their current rate
-                {benchmarkRefreshAnalytics.reviewItems > 0 ? ` · ${benchmarkRefreshAnalytics.reviewItems} still need manual benchmark review` : ''}
-                {benchmarkSyncLabel ? ` · checked ${benchmarkSyncLabel}` : ''}
-              </p>
-            </>
-          ) : (
-            <>
-              <strong>Benchmark references are current</strong>
-              <p>
-                This project is aligned with the latest market benchmark library.
-                {benchmarkSyncLabel ? ` Last checked ${benchmarkSyncLabel}.` : ''}
-              </p>
-            </>
-          )}
-        </div>
-        <div className="ws-refresh-banner-actions">
-          {benchmarkSyncState.status === 'error' ? (
-            <button className="ws-btn ws-btn-ghost" onClick={() => loadMarketBenchmarks()}>
-              <RefreshCcw size={14} /> Retry market check
-            </button>
-          ) : (
-            <button className="ws-btn ws-btn-ghost" onClick={refreshBenchmarks}>
-              <RefreshCcw size={14} /> Refresh project benchmarks
-            </button>
-          )}
-        </div>
-      </div>
-      </div>
-
-      <div className={`ws-sheet-tools ${selectedItemContext ? 'has-selection' : 'is-idle'}`}>
-        <div className="ws-formula-bar">
-          <div className="ws-formula-address">{formulaBarMeta.address}</div>
-          <div className="ws-formula-fx">fx</div>
-          <div className="ws-formula-body">
-            <strong>{formulaBarMeta.columnLabel}</strong>
-            <span>{formulaBarMeta.value}</span>
-            <small>{formulaBarMeta.detail}</small>
-          </div>
-        </div>
-        <div className={`ws-helper-strip ${selectedItemContext ? 'is-selected' : 'is-idle'}`}>
-          {selectedItemContext ? (
-            <>
-              <div className="ws-helper-copy">
-                <span className="ws-helper-label">Selected Row</span>
-                <strong>{selectedItemContext.itemCode} · {selectedItemContext.item.description || 'Untitled BOQ item'}</strong>
-                <small>
-                  {selectedItemContext.section.title} | Qty {selectedItemContext.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} | Rate N{selectedItemContext.unitRate.toLocaleString()} | Amount N{selectedItemContext.total.toLocaleString()}
-                </small>
-                {selectedItemContext.formulaText && (
-                  <small className="ws-helper-secondary">
-                    Formula: {selectedItemContext.formulaText}
-                    {selectedItemContext.workedExampleText ? ` | ${selectedItemContext.workedExampleText}` : ''}
-                  </small>
-                )}
-              </div>
-              <div className="ws-helper-actions">
-                <span className={`ws-helper-chip ws-helper-chip-${selectedItemContext.statusMeta.tone}`}>{selectedItemContext.statusMeta.label}</span>
-                <span className={`ws-helper-chip ws-helper-chip-${selectedItemContext.rateSourceMeta.tone}`}>{selectedItemContext.rateSourceMeta.label}</span>
-                <button
-                  className="ws-helper-btn"
-                  onClick={() => setCalculatingQtyForItem({ sectionId: selectedItemContext.section.id, item: selectedItemContext.item })}
-                >
-                  <Calculator size={12} /> Takeoff
-                </button>
-                {isFormulaDrivenItem(selectedItemContext.item) && (
-                  <button
-                    className="ws-helper-btn"
-                    onClick={() => openFormulaEditor(selectedItemContext.section.id, selectedItemContext.item)}
-                  >
-                    fx Formula Inputs
-                  </button>
-                )}
-                {resolveItemRateSource(selectedItemContext.item) === 'manual' && (
-                  <button
-                    className="ws-helper-btn"
-                    onClick={() => openCustomPricingStudio(selectedItemContext.section.id, selectedItemContext.item)}
-                  >
-                    <SlidersHorizontal size={12} /> Pricing Studio
-                  </button>
-                )}
-                <button
-                  className="ws-helper-btn"
-                  onClick={() => openDetailedAnalysis(selectedItemContext.section.id, selectedItemContext.item)}
-                >
-                  <Pencil size={12} /> Detailed Analysis
-                </button>
-                <button
-                  className="ws-helper-btn"
-                  onClick={() => addItemBelow(selectedItemContext.section.id, selectedItemContext.item.id)}
-                >
-                  <Plus size={12} /> Add Line Below
-                </button>
-                <button
-                  className="ws-helper-btn"
-                  onClick={() => duplicateItem(selectedItemContext.section.id, selectedItemContext.item.id)}
-                >
-                  <Copy size={12} /> Duplicate
-                </button>
-                {benchmarkRefreshAnalytics.itemMap[`${selectedItemContext.section.id}:${selectedItemContext.item.id}`]?.canApplyRefresh && (
-                  <button
-                    className="ws-helper-btn ws-helper-btn-strong"
-                    onClick={() => refreshItemBenchmark(selectedItemContext.section.id, selectedItemContext.item.id)}
-                  >
-                    <RefreshCcw size={12} /> Refresh Benchmark
-                  </button>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="ws-helper-copy">
-                <span className="ws-helper-label">Workspace Flow</span>
-                <strong>Select any row to unlock quick actions and pricing context.</strong>
-                <small>Use search, quantity entry, custom pricing, and benchmark refresh directly inside the sheet.</small>
-              </div>
-              <div className="ws-helper-actions">
-                <span className="ws-helper-chip ws-helper-chip-muted">{sections.length} sections ready</span>
-                <button className="ws-helper-btn" onClick={() => enterSelectionStage(activeBillSectionId || sections[0]?.id)}>
-                  <Plus size={12} /> Edit BOQ Selection
-                </button>
-                <button className="ws-helper-btn" onClick={onAddSection}>
-                  <Plus size={12} /> Add Section
-                </button>
-                <button className="ws-helper-btn" onClick={autoRateProject}>
-                  <Zap size={12} /> Auto-Rate Project
-                </button>
-                <button className="ws-helper-btn ws-helper-btn-strong" onClick={refreshBenchmarks}>
-                  <RefreshCcw size={12} /> Refresh Benchmarks
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      <div className="ws-cost-rail">
-        <div className="ws-cost-card">
-          <span className="ws-cost-label">Active Bill</span>
-          <strong className="ws-cost-value">{activeProjectSection?.title || 'No active bill'}</strong>
-          <small className="ws-cost-meta">
-            {activeProjectSection
-              ? `${(activeProjectSection.items || []).length} line${(activeProjectSection.items || []).length === 1 ? '' : 's'} · Qty ${activeSectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
-              : 'Choose a bill section to start measuring'}
-          </small>
-        </div>
-        <div className="ws-cost-card">
-          <span className="ws-cost-label">Active Bill Subtotal</span>
-          <strong className="ws-cost-value">N{activeSectionSubtotal.toLocaleString()}</strong>
-          <small className="ws-cost-meta">
-            {activeSectionPendingItems > 0
-              ? `${activeSectionPendingItems} line${activeSectionPendingItems === 1 ? '' : 's'} still need pricing review`
-              : 'Current active bill is fully priced'}
-          </small>
-        </div>
-        <div className="ws-cost-card">
-          <span className="ws-cost-label">{isFilteredView ? `${activeWorkspaceFilterLabel} View` : 'Visible Sheet Total'}</span>
-          <strong className="ws-cost-value">N{visibleGrandTotal.toLocaleString()}</strong>
-          <small className="ws-cost-meta">
-            {filteredSectionCount} visible bill{filteredSectionCount === 1 ? '' : 's'} · {filteredItemCount} visible item{filteredItemCount === 1 ? '' : 's'}
-          </small>
-        </div>
-        <div className="ws-cost-card ws-cost-card-total">
-          <span className="ws-cost-label">Project Grand Total</span>
-          <strong className="ws-cost-value">N{calculateGrandTotal.toLocaleString()}</strong>
-          <small className="ws-cost-meta">
-            {project?.region || 'Lagos'} market basis · {workspaceAnalytics.totalItems} measured item{workspaceAnalytics.totalItems === 1 ? '' : 's'}
-          </small>
-        </div>
-      </div>
-        </>
-      ) : null}
 
       {/* Table */}
       <div className="ws-table-wrap">
@@ -2940,20 +2349,16 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                               {hasBenchmarkRate && <span className="ws-availability-pill ws-availability-pill-benchmark">Benchmark</span>}
                             </div>
                           </div>
-                          <div className="ws-desc-inner">
+                          <div className="ws-desc-inner ws-desc-static">
                             {item.isVO && <span className="ws-vo">VO</span>}
-                            <textarea
-                              rows={2}
-                              className="ws-input ws-desc-input"
-                              value={item.description}
-                              onChange={(e) => updateItem(section.id, item.id, 'description', e.target.value)}
-                              onFocus={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'description', itemCode, rowNumber: spreadsheetRowNumber })}
-                            />
+                            <p className="ws-desc-text">{item.description || 'No description provided'}</p>
                             {outlier && <AlertCircle size={11} className="ws-outlier-icon" title="Rate variance detected" />}
                           </div>
-                          <div className="ws-item-secondary">
-                            {item.subcategory ? `Subcategory: ${item.subcategory}` : 'Description focused row editing'}
-                          </div>
+                          {item.subcategory && (
+                            <div className="ws-item-secondary">
+                              Subcategory: {item.subcategory}
+                            </div>
+                          )}
                         </td>
                         <td
                           className={`ws-unit-cell ${isWorkspaceCellSelected(section.id, item.id, 'unit') ? 'ws-cell-selected' : ''}`}
@@ -3582,52 +2987,40 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           </tfoot>
         </table>
 
-        <ProjectNotesAccordion
-          project={project}
-          onChange={(updates) => onUpdate(project.id, sections, project.region, updates)}
-        />
+        </div>
       </div>
-          </div>
           <aside className={`ws-detail-dock right-panel ${selectedItemContext ? 'has-selection' : 'is-empty'}`}>
             {selectedItemContext ? (
               <>
                 <div className="ws-detail-dock-header">
                   <div className="ws-detail-dock-copy">
-                    <span className="ws-detail-dock-eyebrow">Selected Row</span>
-                    <strong>{selectedItemContext.itemCode} · {selectedItemContext.item.name || selectedItemContext.item.description || 'Untitled BOQ item'}</strong>
-                    <small>
-                      {selectedItemContext.section.title} · Qty {selectedItemContext.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} · Rate N{selectedItemContext.unitRate.toLocaleString()} · Amount N{selectedItemContext.total.toLocaleString()}
-                    </small>
+                    <span className="ws-detail-dock-eyebrow">Item Intelligence</span>
+                    <h3 className="ws-detail-dock-title">
+                      {selectedItemContext.itemCode} · {selectedItemContext.item.name || selectedItemContext.item.description || 'Untitled BOQ item'}
+                    </h3>
+                    <div className="ws-detail-dock-meta">
+                      <span className="ws-detail-meta-pill">{selectedItemContext.section.title}</span>
+                      <span className="ws-detail-meta-pill">Qty: {selectedItemContext.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                    </div>
                   </div>
                   <div className="ws-detail-dock-actions">
                     <button
                       className="ws-helper-btn"
                       onClick={() => setCalculatingQtyForItem({ sectionId: selectedItemContext.section.id, item: selectedItemContext.item })}
+                      title="Geometric Takeoff"
                     >
-                      <Calculator size={12} /> Takeoff
-                    </button>
-                    {isFormulaDrivenItem(selectedItemContext.item) && (
-                      <button
-                        className="ws-helper-btn"
-                        onClick={() => openFormulaEditor(selectedItemContext.section.id, selectedItemContext.item)}
-                      >
-                        fx Formula
-                      </button>
-                    )}
-                    <button
-                      className="ws-helper-btn"
-                      onClick={() => openDetailedAnalysis(selectedItemContext.section.id, selectedItemContext.item)}
-                    >
-                      <Pencil size={12} /> Analysis
+                      <Calculator size={14} />
                     </button>
                     <button
-                      className="ws-helper-btn"
+                      className="ws-helper-btn ws-helper-btn-danger"
                       onClick={() => setSelectedCell(null)}
+                      title="Close Panel"
                     >
-                      Clear
+                      <X size={14} />
                     </button>
                   </div>
                 </div>
+
                 <BOQItemDetailPanel
                   variant="docked"
                   item={selectedItemContext.item}
@@ -3638,27 +3031,35 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                   selectedRateSource={resolveItemRateSource(selectedItemContext.item)}
                   onClose={() => setSelectedCell(null)}
                   onNotesChange={(notes) => updateItem(selectedItemContext.section.id, selectedItemContext.item.id, 'notes', notes)}
+                  onDescriptionChange={(desc) => updateItem(selectedItemContext.section.id, selectedItemContext.item.id, 'description', desc)}
+                  onRateSourceChange={(source) => handleRateSourceChange(selectedItemContext.section.id, selectedItemContext.item, source)}
                   onOpenFormulaEditor={isFormulaDrivenItem(selectedItemContext.item) ? () => openFormulaEditor(selectedItemContext.section.id, selectedItemContext.item) : null}
+                  onOpenRateAnalysis={() => openDetailedAnalysis(selectedItemContext.section.id, selectedItemContext.item)}
+                  onOpenCustomPricing={() => openCustomPricingStudio(selectedItemContext.section.id, selectedItemContext.item)}
+                  onOpenTakeoff={() => setCalculatingQtyForItem({ sectionId: selectedItemContext.section.id, item: selectedItemContext.item })}
+                  onOpenBidManager={() => setBiddingItem({ sectionId: selectedItemContext.section.id, item: selectedItemContext.item })}
+                  onDuplicate={() => duplicateItem(selectedItemContext.section.id, selectedItemContext.item.id)}
+                  onDelete={() => onDelete(project.id, selectedItemContext.section.id, selectedItemContext.item.id)}
+                  onAddBelow={() => addItemBelow(selectedItemContext.section.id, selectedItemContext.item.id)}
+                  onRefreshBenchmark={refreshBenchmarks}
                 />
               </>
             ) : (
               <div className="ws-detail-empty">
-                <span className="ws-detail-empty-eyebrow">Item Intelligence Panel</span>
-                <strong>Select a BOQ row to inspect its pricing logic.</strong>
-                <p>
-                  Formula text, pricing basis, benchmark metadata, worked examples, and notes will appear here
-                  without cluttering the main estimate sheet.
-                </p>
-                <div className="ws-detail-empty-actions">
-                  <button className="ws-btn ws-btn-primary" onClick={() => enterSelectionStage(activeBillSectionId || sections[0]?.id)}>
-                    <Plus size={14} /> Edit Bill Selection
-                  </button>
-                  <button className="ws-btn ws-btn-ghost" onClick={refreshBenchmarks}>
-                    <RefreshCcw size={14} /> Refresh Benchmarks
-                  </button>
+                <div className="ws-detail-empty-inner">
+                  <div className="ws-detail-empty-icon">
+                    <MousePointer2 size={32} strokeWidth={1.5} />
+                  </div>
+                  <h3>Item Intelligence</h3>
+                  <p>Select any line item in the BOQ to reveal its full pricing DNA, rate analysis, and market benchmarks.</p>
+                  <div className="ws-detail-empty-hint">
+                    <span>Click a row to inspect</span>
+                  </div>
                 </div>
               </div>
             )}
+
+
           </aside>
         </div>
       </div>
@@ -3746,7 +3147,17 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             selectedRateSource={panelSelectedSource}
             onClose={() => setItemDetailPanelContext(null)}
             onNotesChange={(notes) => updateItem(itemDetailPanelContext.sectionId, panelItem.id, "notes", notes)}
+            onDescriptionChange={(desc) => updateItem(itemDetailPanelContext.sectionId, panelItem.id, "description", desc)}
+            onRateSourceChange={(source) => handleRateSourceChange(itemDetailPanelContext.sectionId, panelItem, source)}
             onOpenFormulaEditor={isFormulaDrivenItem(panelItem) ? () => { setItemDetailPanelContext(null); openFormulaEditor(itemDetailPanelContext.sectionId, panelItem); } : null}
+            onOpenRateAnalysis={() => { setItemDetailPanelContext(null); openDetailedAnalysis(itemDetailPanelContext.sectionId, panelItem); }}
+            onOpenCustomPricing={() => { setItemDetailPanelContext(null); openCustomPricingStudio(itemDetailPanelContext.sectionId, panelItem); }}
+            onOpenTakeoff={() => setCalculatingQtyForItem({ sectionId: itemDetailPanelContext.sectionId, item: panelItem })}
+            onOpenBidManager={() => setBiddingItem({ sectionId: itemDetailPanelContext.sectionId, item: panelItem })}
+            onDuplicate={() => duplicateItem(itemDetailPanelContext.sectionId, panelItem.id)}
+            onDelete={() => { setItemDetailPanelContext(null); onDelete(project.id, itemDetailPanelContext.sectionId, panelItem.id); }}
+            onAddBelow={() => addItemBelow(itemDetailPanelContext.sectionId, panelItem.id)}
+            onRefreshBenchmark={refreshBenchmarks}
           />
         );
       })()}
@@ -3784,82 +3195,158 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-workspace-shell {
           display: grid;
           grid-template-columns: 280px minmax(0, 1fr) 360px;
-          gap: 1rem;
+          gap: 0; /* Tighten gap for 3-panel feel */
           width: 100%;
           height: calc(100vh - 56px);
-          min-height: 0;
-          min-width: 0;
-          align-items: stretch;
           overflow: hidden;
+          background: #f1f5f9;
         }
         .ws-main-pane {
-          min-width: 0;
-          max-width: 100%;
-          min-height: 0;
           display: flex;
           flex-direction: column;
-          overflow-y: auto;
-          height: 100vh;
-          position: relative;
-        }
-        .ws-main-pane > * {
+          height: 100%;
           min-width: 0;
-          max-width: 100%;
-          box-sizing: border-box;
+          background: #f8fafc;
+          border-left: 1px solid #e2e8f0;
+          border-right: 1px solid #e2e8f0;
+          overflow: hidden; /* Contain scroll to table wrap */
         }
-        .ws-main-pane::-webkit-scrollbar { width: 6px; }
-        .ws-main-pane::-webkit-scrollbar-track { background: transparent; }
-        .ws-main-pane::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        .ws-main-pane::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
         .ws-detail-dock {
           width: 360px;
           min-width: 360px;
           max-width: 360px;
-          min-height: 0;
           display: flex;
           flex-direction: column;
-          background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-          border: 1px solid #dbe3ef;
-          border-radius: 26px;
-          box-shadow: 0 20px 44px rgba(15, 23, 42, 0.08);
+          background: #ffffff;
+          border-left: 1px solid #e2e8f0;
           overflow-y: auto;
           overflow-x: hidden;
-          scrollbar-width: thin;
-          scrollbar-color: #ccc transparent;
         }
-        .right-panel {
-          padding: 0; /* Children handle internal padding for alignment */
-        }
-        .ws-detail-dock::-webkit-scrollbar { width: 6px; }
-        .ws-detail-dock::-webkit-scrollbar-track { background: transparent; }
-        .ws-detail-dock::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
         .ws-detail-dock.is-empty {
-          display: flex;
-          align-items: stretch;
+          background: #f8fafc;
         }
         .ws-detail-dock-header {
           display: flex;
           flex-direction: column;
-          gap: 0.9rem;
-          padding: 1.25rem 1.5rem;
-          border-bottom: 1px solid #e2e8f0;
-          background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+          gap: 1rem;
+          padding: 1.5rem;
+          background: #ffffff;
+          border-bottom: 1px solid #f1f5f9;
         }
         .ws-detail-dock-copy {
           display: flex;
           flex-direction: column;
-          gap: 0.25rem;
+          gap: 0.4rem;
         }
-        .ws-detail-dock-eyebrow,
-        .ws-detail-empty-eyebrow {
-          font-size: 0.68rem;
+        .ws-detail-dock-eyebrow {
+          font-size: 0.65rem;
           font-weight: 800;
-          letter-spacing: 0.12em;
           text-transform: uppercase;
-          color: #64748b;
+          letter-spacing: 0.1em;
+          color: #94a3b8;
         }
-        .ws-detail-dock-copy strong {
-          font-size: 0.96rem;
+        .ws-detail-dock-title {
+          margin: 0;
+          font-size: 1.1rem;
+          font-weight: 900;
+          color: #0f172a;
+          line-height: 1.3;
+        }
+        .ws-detail-dock-meta {
+          display: flex;
+          gap: 0.5rem;
+          margin-top: 0.25rem;
+        }
+        .ws-detail-meta-pill {
+          font-size: 0.62rem;
+          font-weight: 800;
+          padding: 0.2rem 0.5rem;
+          background: #f1f5f9;
+          color: #64748b;
+          border-radius: 4px;
+        }
+        .ws-detail-dock-actions {
+          display: flex;
+          gap: 0.5rem;
+          margin-top: 0.5rem;
+        }
+        .ws-helper-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border: 1px solid #e2e8f0;
+          background: #ffffff;
+          color: #64748b;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .ws-helper-btn:hover {
+          background: #f8fafc;
+          color: #1e293b;
+          border-color: #cbd5e1;
+        }
+        .ws-helper-btn-danger:hover {
+          background: #fef2f2;
+          color: #ef4444;
+          border-color: #fecaca;
+        }
+
+        .ws-detail-empty {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 3rem 2rem;
+          text-align: center;
+        }
+        .ws-detail-empty-inner {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          max-width: 240px;
+        }
+        .ws-detail-empty-icon {
+          width: 64px;
+          height: 64px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 20px;
+          color: #cbd5e1;
+          margin-bottom: 1.5rem;
+          box-shadow: 0 10px 20px rgba(0,0,0,0.02);
+        }
+        .ws-detail-empty h3 {
+          margin: 0 0 0.5rem 0;
+          font-size: 1rem;
+          font-weight: 800;
+          color: #1e293b;
+        }
+        .ws-detail-empty p {
+          margin: 0;
+          font-size: 0.82rem;
+          color: #64748b;
+          line-height: 1.5;
+        }
+        .ws-detail-empty-hint {
+          margin-top: 2rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.72rem;
+          font-weight: 700;
+          color: #3b82f6;
+          padding: 0.5rem 1rem;
+          background: #eff6ff;
+          border-radius: 999px;
+        }
+
           color: #0f172a;
           line-height: 1.4;
         }
@@ -4052,32 +3539,32 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
         .ws-item-heading-row {
           display: flex;
-          align-items: flex-start;
+          align-items: center;
           justify-content: space-between;
-          gap: 0.75rem;
-          margin-bottom: 0.45rem;
+          gap: 0.35rem;
+          margin-bottom: 0.15rem;
         }
         .ws-item-heading-copy {
           display: flex;
           flex-direction: column;
-          gap: 0.3rem;
+          gap: 0.1rem;
           min-width: 0;
         }
         .ws-item-name {
-          font-size: 0.95rem;
+          font-size: 0.78rem;
           color: #0f172a;
-          line-height: 1.32;
+          line-height: 1.2;
           letter-spacing: -0.01em;
         }
         .ws-item-code-pill {
           display: inline-flex;
           align-items: center;
           width: fit-content;
-          padding: 0.2rem 0.5rem;
+          padding: 0.1rem 0.35rem;
           border-radius: 999px;
           background: #eff6ff;
           color: #1d4ed8;
-          font-size: 0.68rem;
+          font-size: 0.55rem;
           font-weight: 800;
         }
         .ws-item-indicators {
@@ -4085,13 +3572,13 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           align-items: center;
           flex-wrap: wrap;
           justify-content: flex-end;
-          gap: 0.35rem;
+          gap: 0.2rem;
         }
         .ws-item-secondary {
-          margin-top: 0.35rem;
-          font-size: 0.72rem;
+          margin-top: 0.1rem;
+          font-size: 0.6rem;
           color: #64748b;
-          line-height: 1.5;
+          line-height: 1.3;
         }
         .ws-workbook-top,
         .ws-workspace-command-center,
@@ -4382,112 +3869,109 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           color: #475569;
         }
 
-        /* --- NEW COMPACT LAYOUT STYLES --- */
-        .ws-workbook-metrics-compact {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-        .ws-analytics-toggle {
-          display: inline-flex;
-          align-items: center;
-          padding: 0.45rem 1.4rem;
-          background: #eff6ff;
-          color: #1d4ed8;
-          border: 1px solid #bfdbfe;
-          border-radius: 999px;
-          font-size: 0.72rem;
-          font-weight: 800;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .ws-analytics-toggle:hover {
-          background: #dbeafe;
-        }
-        .ws-analytics-toggle.active {
-          background: #1e3a8a;
-          color: white;
-          border-color: #1e3a8a;
-        }
-        .ws-analytics-board {
+        /* --- NEW COMPACT 3-PANEL LAYOUT STYLES --- */
+        .ws-compact-header {
           display: flex;
           flex-direction: column;
-          background: #f8fafc;
-          border-bottom: 1px solid #dbe4ee;
-          padding-bottom: 0.5rem;
-          box-shadow: inset 0 6px 14px rgba(15,23,42,0.03);
+          gap: 0.75rem;
+          padding: 1.25rem 1.5rem;
+          background: #ffffff;
+          border-bottom: 1px solid #e2e8f0;
         }
-        .ws-stat-compact {
-          display: flex; align-items: center; gap: 0.5rem;
+        .ws-compact-header-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 1.5rem;
         }
-        .ws-region-sel-compact {
-           background: rgba(255,255,255,0.1);
-           border: 1px solid rgba(255,255,255,0.2);
-           color: white;
-           padding: 2px 6px;
-           border-radius: 4px;
-           outline: none;
-           font-size: 0.65rem;
-           cursor: pointer;
+        .ws-compact-header-left {
+          display: flex;
+          flex-direction: column;
+          gap: 0.35rem;
+          min-width: 0;
         }
-        .ws-region-sel-compact:hover {
-           background: rgba(255,255,255,0.15);
+        .ws-compact-title {
+          margin: 0;
+          font-size: 1.5rem;
+          font-weight: 900;
+          color: #0f172a;
+          letter-spacing: -0.02em;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
-        .ws-region-sel-compact option {
-           background: #1e293b;
-           color: white;
+        .ws-compact-meta-tags {
+          display: flex;
+          gap: 0.5rem;
+          flex-wrap: wrap;
         }
-        .ws-filter-group-compact {
-           display: flex;
-           gap: 0.25rem;
-           background: rgba(0,0,0,0.15);
-           padding: 0.22rem;
-           border-radius: 6px;
+        .ws-compact-meta-tag {
+          font-size: 0.62rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          padding: 0.2rem 0.6rem;
+          background: #f1f5f9;
+          color: #64748b;
+          border-radius: 999px;
+          border: 1px solid #e2e8f0;
         }
-        .ws-filter-chip-compact {
-           background: transparent;
-           border: none;
-           color: rgba(255,255,255,0.6);
-           font-size: 0.64rem;
-           font-weight: 800;
-           padding: 0.25rem 0.6rem;
-           border-radius: 4px;
-           cursor: pointer;
-           transition: all 0.2s;
-        }
-        .ws-filter-chip-compact:hover {
-           color: white;
-           background: rgba(255,255,255,0.1);
-        }
-        .ws-filter-chip-compact.active {
-           background: rgba(255,255,255,0.2);
-           color: white;
-        }
-        .ws-bill-nav {
-           padding: 0.5rem 0.75rem !important;
-        }
-        .ws-bill-pill {
-           padding: 0.25rem 0.5rem;
-           border-radius: 999px;
-           flex-direction: row;
-           align-items: center;
-           min-width: unset;
-        }
-        .ws-bill-pill-title {
-           font-size: 0.72rem;
-        }
-        .ws-bill-pill-meta {
-           display: none;
-        }
-        .ws-bill-pill-picker {
-           padding: 0.15rem 0.45rem;
-           font-size: 0.62rem;
-           border-radius: 999px;
+        .ws-compact-meta-tag.ws-compact-health-success { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+        .ws-compact-meta-tag.ws-compact-health-active { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+        .ws-compact-meta-tag.ws-compact-health-warning { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+
+        .ws-compact-header-actions {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          flex-shrink: 0;
         }
 
-        /* ═══════════════════════════════════════════ */
-        /*  BOQ WORKSPACE — FULL-PAGE SHEET           */
-        /* ═══════════════════════════════════════════ */
+        .ws-compact-stats-row {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1rem;
+          margin-top: 0.25rem;
+        }
+        .ws-compact-stat {
+          display: flex;
+          flex-direction: column;
+          gap: 0.15rem;
+          padding: 0.75rem 1rem;
+          background: #f8fafc;
+          border-radius: 12px;
+          border: 1px solid #f1f5f9;
+          transition: all 0.2s;
+        }
+        .ws-compact-stat:hover {
+          background: #ffffff;
+          border-color: #e2e8f0;
+          box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+        }
+        .ws-compact-stat span {
+          font-size: 0.6rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          color: #94a3b8;
+        }
+        .ws-compact-stat strong {
+          font-size: 1.1rem;
+          font-weight: 900;
+          color: #1e293b;
+          line-height: 1.2;
+        }
+        .ws-compact-stat small {
+          font-size: 0.68rem;
+          color: #64748b;
+        }
+        .ws-compact-stat-total {
+          background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+          border-color: #0f172a;
+        }
+        .ws-compact-stat-total span { color: rgba(255,255,255,0.6); }
+        .ws-compact-stat-total strong { color: #ffffff; }
+        .ws-compact-stat-total small { color: rgba(255,255,255,0.5); }
 
         .ws-container {
           display: flex;
@@ -4498,501 +3982,157 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           overflow: hidden;
         }
 
-        .ws-mobile-summary,
-        .ws-mobile-row {
-          display: none;
-        }
-
-        .ws-mobile-summary {
-          gap: 0.625rem;
-          padding: 0.75rem;
-          background: linear-gradient(180deg, #f8fafc, #eef2ff);
+        /* --- CLEAN TOOLBAR --- */
+        .ws-toolbar-clean {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.65rem 1.5rem;
+          background: #ffffff;
           border-bottom: 1px solid #e2e8f0;
-          overflow-x: auto;
-          scrollbar-width: none;
+          position: sticky;
+          top: 0;
+          z-index: 10;
         }
-        .ws-mobile-summary::-webkit-scrollbar { display: none; }
-
-        .ws-mobile-stat-card {
-          min-width: 130px;
-          display: flex;
-          flex-direction: column;
-          gap: 0.24rem;
-          padding: 0.75rem 0.85rem;
-          background: rgba(255,255,255,0.92);
-          border: 1px solid #dbe4ee;
-          border-radius: 14px;
-          box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
-        }
-        .ws-mobile-stat-card span {
-          font-size: 0.56rem;
-          font-weight: 800;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #64748b;
-        }
-        .ws-mobile-stat-card strong {
-          font-size: 0.92rem;
-          font-weight: 900;
-          color: #0f172a;
-        }
-        .ws-mobile-stat-card-total {
-          background: linear-gradient(135deg, #eff6ff, #dbeafe);
-          border-color: #bfdbfe;
-        }
-        .ws-mobile-stat-card-total strong {
-          color: #1d4ed8;
-        }
-
-        .ws-insight-strip {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 0.55rem;
-          padding: 0.45rem 0.75rem 0.5rem;
-          background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
-          border-bottom: 1px solid #dbe4ee;
-        }
-
-        .ws-insight-card {
-          display: flex;
-          flex-direction: column;
-          gap: 0.16rem;
-          padding: 0.62rem 0.72rem;
-          border-radius: 16px;
-          background: rgba(255, 255, 255, 0.92);
-          border: 1px solid #dbe4ee;
-          box-shadow: 0 10px 20px rgba(15, 23, 42, 0.05);
-        }
-
-        .ws-insight-card-strong {
-          background: linear-gradient(135deg, #eff6ff, #dbeafe);
-          border-color: #bfdbfe;
-        }
-
-        .ws-insight-label {
-          font-size: 0.54rem;
-          font-weight: 900;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #64748b;
-        }
-
-        .ws-insight-value {
-          font-size: 0.82rem;
-          font-weight: 900;
-          color: #0f172a;
-        }
-
-        .ws-insight-copy {
-          margin: 0;
-          font-size: 0.63rem;
-          line-height: 1.38;
-          color: #475569;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-
-        .ws-cost-rail {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 0.65rem;
-          padding: 0.65rem 0.75rem 0.8rem;
-          background: linear-gradient(180deg, #eef2ff 0%, #f8fafc 100%);
-          border-bottom: 1px solid #dbe4ee;
-        }
-
-        .ws-cost-card {
-          display: flex;
-          flex-direction: column;
-          gap: 0.24rem;
-          padding: 0.78rem 0.9rem;
-          border-radius: 16px;
-          background: rgba(255, 255, 255, 0.92);
-          border: 1px solid #dbe4ee;
-          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
-        }
-
-        .ws-cost-card-total {
-          background: linear-gradient(135deg, #0f172a, #1e3a8a);
-          border-color: #1e3a8a;
-        }
-
-        .ws-cost-label {
-          font-size: 0.56rem;
-          font-weight: 900;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #64748b;
-        }
-
-        .ws-cost-value {
-          font-size: 1rem;
-          font-weight: 900;
-          color: #0f172a;
-          line-height: 1.2;
-        }
-
-        .ws-cost-meta {
-          font-size: 0.68rem;
-          line-height: 1.45;
-          color: #475569;
-        }
-
-        .ws-cost-card-total .ws-cost-label,
-        .ws-cost-card-total .ws-cost-value,
-        .ws-cost-card-total .ws-cost-meta {
-          color: #ffffff;
-        }
-
-        .ws-refresh-banner {
+        .ws-toolbar-left {
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          gap: 0.75rem;
-          padding: 0.55rem 0.75rem;
-          border-bottom: 1px solid #dbe4ee;
-          background: #f8fafc;
+          gap: 1.25rem;
+          flex: 1;
         }
-        .ws-refresh-banner-active {
-          background: linear-gradient(135deg, #eff6ff, #eef2ff);
-        }
-        .ws-refresh-banner-calm {
-          background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-        }
-        .ws-refresh-banner-warning {
-          background: linear-gradient(135deg, #fff7ed, #fff1f2);
-        }
-        .ws-refresh-banner-copy {
+        .ws-search-box {
+          position: relative;
           display: flex;
-          flex-direction: column;
-          gap: 0.14rem;
-          min-width: 0;
+          align-items: center;
+          width: 320px;
+          background: #f1f5f9;
+          border: 1px solid #e2e8f0;
+          border-radius: 10px;
+          padding: 0 0.75rem;
+          transition: all 0.2s;
         }
-        .ws-refresh-banner-copy strong {
+        .ws-search-box:focus-within {
+          background: #ffffff;
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .ws-search-box svg { color: #94a3b8; }
+        .ws-search-box input {
+          width: 100%;
+          border: none;
+          background: transparent;
+          padding: 0.5rem 0.5rem;
+          font-size: 0.82rem;
+          font-weight: 500;
+          color: #1e293b;
+          outline: none;
+        }
+        .ws-search-clear {
+          background: transparent;
+          border: none;
+          color: #94a3b8;
+          cursor: pointer;
+          padding: 0.25rem;
+          display: flex;
+          align-items: center;
+        }
+        .ws-search-clear:hover { color: #64748b; }
+        .ws-search-results {
           font-size: 0.76rem;
-          font-weight: 900;
-          color: #0f172a;
-        }
-        .ws-refresh-banner-copy p {
-          margin: 0;
-          font-size: 0.64rem;
-          line-height: 1.35;
-          color: #475569;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        .ws-refresh-banner-eyebrow {
-          font-size: 0.52rem;
-          font-weight: 900;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
+          font-weight: 600;
           color: #64748b;
         }
-        .ws-refresh-banner-actions {
+
+        .ws-toolbar-right {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+        .ws-filter-group {
+          display: flex;
+          gap: 0.35rem;
+        }
+        .ws-filter-pill {
+          background: transparent;
+          border: 1px solid #e2e8f0;
+          padding: 0.35rem 0.75rem;
+          border-radius: 8px;
+          font-size: 0.7rem;
+          font-weight: 700;
+          color: #64748b;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .ws-filter-pill:hover {
+          background: #f8fafc;
+          color: #1e293b;
+        }
+        .ws-filter-pill.active {
+          background: #eff6ff;
+          color: #1d4ed8;
+          border-color: #bfdbfe;
+        }
+        .ws-divider-v {
+          width: 1px;
+          height: 20px;
+          background: #e2e8f0;
+        }
+        .ws-region-selector {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          flex-shrink: 0;
-        }
-
-        .ws-workbook-top {
-          display: flex;
-          flex-direction: column;
-          gap: 0.45rem;
-          padding: 0.75rem 0.75rem 0.55rem;
-          background: linear-gradient(180deg, #f8fbff 0%, #eef2ff 100%);
-          border-bottom: 1px solid #dbe4ee;
-        }
-        .ws-workbook-head {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 1rem;
-        }
-        .ws-workbook-copy {
-          display: flex;
-          flex-direction: column;
-          gap: 0.22rem;
-          min-width: 0;
-        }
-        .ws-workbook-eyebrow {
-          font-size: 0.56rem;
-          font-weight: 900;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #64748b;
-        }
-        .ws-workbook-title-row {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          flex-wrap: wrap;
-        }
-        .ws-workbook-title-row h1 {
-          margin: 0;
-          font-size: 1.25rem;
-          line-height: 1.1;
-          font-weight: 900;
-          color: #0f172a;
-        }
-        .ws-workbook-copy p {
-          margin: 0;
-          font-size: 0.7rem;
-          line-height: 1.35;
-          color: #475569;
-        }
-        .ws-workbook-health {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.18rem 0.6rem;
-          border-radius: 999px;
-          font-size: 0.56rem;
-          font-weight: 900;
-          letter-spacing: 0.03em;
-          white-space: nowrap;
-        }
-        .ws-workbook-health-success {
-          background: #dcfce7;
-          color: #166534;
-        }
-        .ws-workbook-health-active {
-          background: #dbeafe;
-          color: #1d4ed8;
-        }
-        .ws-workbook-health-warning {
-          background: #ffedd5;
-          color: #c2410c;
-        }
-        .ws-workbook-health-muted {
-          background: #e2e8f0;
-          color: #475569;
-        }
-        .ws-search-results {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.24rem 0.55rem;
-          border-radius: 999px;
-          background: rgba(255,255,255,0.08);
-          border: 1px solid rgba(255,255,255,0.12);
-          color: rgba(255,255,255,0.76);
-          font-size: 0.58rem;
-          font-weight: 900;
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-          white-space: nowrap;
-        }
-        .ws-workbook-metrics {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 0.45rem;
-          min-width: 340px;
-        }
-        .ws-workbook-metric {
-          display: flex;
-          flex-direction: column;
-          gap: 0.16rem;
-          padding: 0.58rem 0.68rem;
-          border-radius: 14px;
-          background: rgba(255,255,255,0.92);
-          border: 1px solid #dbe4ee;
-          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
-        }
-        .ws-workbook-metric span {
-          font-size: 0.52rem;
-          font-weight: 900;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #64748b;
-        }
-        .ws-workbook-metric strong {
-          font-size: 0.84rem;
-          font-weight: 900;
-          color: #0f172a;
-        }
-        .ws-sheet-tabbar {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 0.55rem;
-          padding: 0.22rem 0.2rem 0;
-          border-top: 1px solid rgba(148, 163, 184, 0.24);
-        }
-        .ws-sheet-tabbar-meta {
-          display: flex;
-          align-items: center;
-          gap: 0.45rem;
-          flex-wrap: wrap;
-          justify-content: flex-end;
-        }
-        .ws-sheet-tab {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.46rem 0.86rem;
-          border: 1px solid #dbe4ee;
-          border-radius: 14px 14px 0 0;
-          background: rgba(255,255,255,0.72);
-          color: #475569;
-          font-size: 0.68rem;
-          font-weight: 900;
-          cursor: pointer;
-          transition: all 0.15s ease;
-        }
-        .ws-sheet-tab:hover {
-          background: rgba(255,255,255,0.92);
-          color: #0f172a;
-        }
-        .ws-sheet-tab.active {
-          background: white;
-          color: #1d4ed8;
-          border-color: #bfdbfe;
-          box-shadow: 0 -1px 0 0 white, inset 0 3px 0 #2563eb;
-        }
-        .ws-sheet-meta-chip {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.18rem 0.48rem;
-          border-radius: 999px;
-          background: rgba(255,255,255,0.82);
-          border: 1px solid #dbe4ee;
-          font-size: 0.52rem;
-          font-weight: 900;
-          letter-spacing: 0.04em;
-          color: #475569;
-          white-space: nowrap;
-        }
-
-        .ws-sheet-tools {
-          padding: 0.35rem 0.75rem 0;
-          background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-          border-bottom: 1px solid #e2e8f0;
-        }
-        .ws-sheet-tools.is-idle {
-          padding-bottom: 0.1rem;
-        }
-        .ws-formula-bar {
-          display: grid;
-          grid-template-columns: 76px 30px minmax(0, 1fr);
-          align-items: stretch;
-          border: 1px solid #dbe4ee;
-          border-radius: 12px 12px 0 0;
-          background: white;
-          overflow: hidden;
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
-        }
-        .ws-formula-address,
-        .ws-formula-fx {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 0.64rem;
-          font-weight: 900;
-          letter-spacing: 0.05em;
-          color: #334155;
           background: #f8fafc;
-          border-right: 1px solid #e2e8f0;
+          border: 1px solid #e2e8f0;
+          padding: 0.35rem 0.75rem;
+          border-radius: 8px;
         }
-        .ws-formula-fx {
-          color: #2563eb;
-          text-transform: lowercase;
-        }
-        .ws-formula-body {
-          display: flex;
-          flex-direction: column;
-          gap: 0.12rem;
-          padding: 0.42rem 0.6rem;
-          min-width: 0;
-        }
-        .ws-formula-body strong {
-          font-size: 0.56rem;
-          font-weight: 900;
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
-          color: #64748b;
-        }
-        .ws-formula-body span {
-          font-size: 0.74rem;
+        .ws-region-selector svg { color: #64748b; }
+        .ws-region-selector select {
+          background: transparent;
+          border: none;
+          font-size: 0.72rem;
           font-weight: 700;
-          color: #0f172a;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          color: #1e293b;
+          outline: none;
+          cursor: pointer;
         }
-        .ws-formula-body small {
-          font-size: 0.56rem;
-          line-height: 1.35;
-          color: #64748b;
-        }
-        .ws-helper-strip {
+
+        .ws-presence-avatars {
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          gap: 0.6rem;
-          padding: 0.42rem 0.05rem 0.5rem;
+          margin-left: 0.5rem;
         }
-        .ws-helper-strip.is-idle {
-          align-items: center;
-        }
-        .ws-helper-copy {
+        .ws-avatar-circle {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          border: 2px solid #ffffff;
           display: flex;
-          flex-direction: column;
-          gap: 0.12rem;
-          min-width: 0;
-        }
-        .ws-helper-label {
-          font-size: 0.52rem;
-          font-weight: 900;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #64748b;
-        }
-        .ws-helper-copy strong {
-          font-size: 0.74rem;
-          font-weight: 900;
-          color: #0f172a;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .ws-helper-copy small {
-          font-size: 0.61rem;
-          line-height: 1.45;
-          color: #475569;
-        }
-        .ws-helper-strip.is-idle .ws-helper-copy small {
-          display: none;
-        }
-        .ws-helper-actions {
-          display: flex;
-          align-items: center;
-          justify-content: flex-end;
-          gap: 0.36rem;
-          flex-wrap: wrap;
-        }
-        .ws-helper-chip {
-          display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 0.18rem 0.46rem;
-          border-radius: 999px;
-          font-size: 0.5rem;
-          font-weight: 900;
-          letter-spacing: 0.04em;
-          white-space: nowrap;
+          font-size: 0.6rem;
+          font-weight: 800;
+          color: #ffffff;
+          margin-left: -8px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .ws-helper-chip-benchmark { background: #dbeafe; color: #1d4ed8; }
-        .ws-helper-chip-custom { background: #ccfbf1; color: #0f766e; }
-        .ws-helper-chip-calculated { background: #ede9fe; color: #6d28d9; }
-        .ws-helper-chip-manual { background: #e2e8f0; color: #475569; }
-        .ws-helper-chip-warning { background: #ffedd5; color: #c2410c; }
-        .ws-helper-chip-muted { background: #f1f5f9; color: #64748b; }
+        .ws-avatar-circle:first-child { margin-left: 0; }
+        .ws-avatar-more {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: #f1f5f9;
+          border: 2px solid #ffffff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.55rem;
+          font-weight: 800;
+          color: #64748b;
+          margin-left: -8px;
+        }
+
+
         .ws-helper-btn {
           display: inline-flex;
           align-items: center;
@@ -5624,19 +4764,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
         /* ── TABLE ── */
         .ws-table-wrap {
-          flex: 1 1 auto;
+          flex: 1;
           min-width: 0;
-          max-width: 100%;
-          overflow-y: visible;
-          overflow-x: auto;
-          min-height: 340px;
+          overflow: auto;
           background: #ffffff;
-          border: 1px solid #dbe4ee;
-          border-radius: 24px;
-          box-shadow: 0 18px 36px rgba(15, 23, 42, 0.05);
-          padding-bottom: 1.4rem;
           box-sizing: border-box;
+          position: relative;
         }
+
         .ws-table-wrap::-webkit-scrollbar { width: 6px; height: 6px; }
         .ws-table-wrap::-webkit-scrollbar-track { background: #f1f5f9; }
         .ws-table-wrap::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
@@ -5697,111 +4832,68 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           min-width: 1360px;
         }
 
-        .ws-table thead { position: static; top: auto; z-index: auto; }
+        .ws-table thead {
+          position: sticky;
+          top: 0;
+          z-index: 5;
+        }
         .ws-table th {
           background: #f8fafc;
-          padding: 0.62rem 0.7rem;
+          padding: 0.5rem 0.75rem;
           text-align: left;
-          font-size: 0.58rem;
+          font-size: 0.6rem;
           font-weight: 800;
           color: #64748b;
           text-transform: uppercase;
-          letter-spacing: 0.06em;
-          border-bottom: 2px solid #e2e8f0;
+          letter-spacing: 0.08em;
+          border-bottom: 1px solid #e2e8f0;
           border-right: 1px solid #e2e8f0;
           white-space: nowrap;
+          box-shadow: 0 1px 0 #e2e8f0;
         }
-        .ws-table th:last-child,
-        .ws-table td:last-child { border-right: none; }
+        .ws-table th:last-child { border-right: none; }
 
-        .ws-th-num { width: 76px; text-align: center; }
-        .ws-th-desc { width: 40%; }
-        .ws-th-unit { width: 72px; text-align: center; }
-        .ws-th-qty { width: 138px; text-align: center; }
-        .ws-th-sm { width: 80px; text-align: center; }
-        .ws-th-strategy { width: 156px; text-align: center; }
-        .ws-th-rate { width: 160px; text-align: right; }
-        .ws-th-total { width: 160px; text-align: right; }
-        .ws-th-act { width: 72px; }
+        .ws-th-num { width: 50px; text-align: center; }
+        .ws-th-desc { width: auto; }
+        .ws-th-unit { width: 60px; text-align: center; }
+        .ws-th-qty { width: 100px; text-align: right; }
+        .ws-th-rate { width: 140px; text-align: right; }
+        .ws-th-total { width: 140px; text-align: right; }
+        .ws-th-act { width: 40px; }
 
         /* ── SECTION ROW ── */
         .ws-section-row {
           cursor: pointer;
-          background: #f0f4f8;
-          border-top: 2px solid #e2e8f0;
-          transition: background 0.15s;
+          background: #f1f5f9;
+          border-top: 1px solid #cbd5e1;
+          border-bottom: 1px solid #cbd5e1;
         }
-        .ws-section-row:hover { background: #e8eef4; }
-        .ws-section-cell { padding: 0.5rem 0.625rem !important; }
+        .ws-section-row:hover { background: #e2e8f0; }
+        .ws-section-cell { padding: 0.4rem 0.75rem !important; }
         .ws-section-inner {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
+          gap: 0.75rem;
           color: #334155;
         }
         .ws-section-letter {
           display: inline-flex; align-items: center; justify-content: center;
-          width: 22px; height: 22px;
-          background: #1e293b; color: white;
-          font-size: 0.625rem; font-weight: 900;
-          border-radius: 5px; flex-shrink: 0;
+          width: 20px; height: 20px;
+          background: #0f172a; color: white;
+          font-size: 0.6rem; font-weight: 900;
+          border-radius: 4px; flex-shrink: 0;
         }
         .ws-section-title-input {
           background: none; border: none; outline: none;
-          font-size: 0.8125rem; font-weight: 700; color: #1e293b;
-          flex: 1; padding: 2px 4px; border-radius: 3px;
-        }
-        .ws-section-title-input:focus { background: white; box-shadow: 0 0 0 2px rgba(37,99,235,0.15); }
-        .ws-section-refresh-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.28rem;
-          border: 1px solid #bfdbfe;
-          background: #eff6ff;
-          color: #1d4ed8;
-          border-radius: 999px;
-          padding: 0.22rem 0.5rem;
-          font-size: 0.56rem;
-          font-weight: 900;
-          cursor: pointer;
-          transition: all 0.15s ease;
-        }
-        .ws-section-refresh-btn:hover {
-          background: #1d4ed8;
-          color: white;
-          border-color: #1d4ed8;
-        }
-        .ws-section-review-chip {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          border: 1px solid #fdba74;
-          background: #fff7ed;
-          color: #c2410c;
-          border-radius: 999px;
-          padding: 0.22rem 0.5rem;
-          font-size: 0.56rem;
-          font-weight: 900;
-        }
-        .ws-section-badge {
-          font-size: 0.5625rem; font-weight: 800;
-          background: #1e293b; color: white;
-          padding: 1px 7px; border-radius: 100px;
-          flex-shrink: 0;
-        }
-        .ws-section-meta {
-          font-size: 0.625rem;
-          font-weight: 700;
-          color: #475569;
-          background: rgba(148, 163, 184, 0.15);
-          padding: 2px 6px;
-          border-radius: 999px;
+          font-size: 0.75rem; font-weight: 800; color: #0f172a;
+          flex: 1; padding: 2px 4px;
           text-transform: uppercase;
-          letter-spacing: 0.04em;
+          letter-spacing: 0.025em;
         }
+        .ws-section-title-input:focus { background: white; border-radius: 4px; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
         .ws-section-total {
-          font-size: 0.75rem; font-weight: 800; color: #2563eb;
-          margin-left: auto; flex-shrink: 0;
+          font-size: 0.75rem; font-weight: 900; color: #1d4ed8;
+          margin-left: auto;
         }
 
         .ws-subcategory-row {
@@ -5809,7 +4901,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
 
         .ws-subcategory-cell {
-          padding: 0.35rem 0.625rem !important;
+          padding: 0.2rem 0.4rem !important;
           border-top: 1px solid #e2e8f0;
           border-bottom: 1px solid #eef2f7;
         }
@@ -5837,75 +4929,76 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         /* ── ITEM ROW ── */
         .ws-item-row {
           border-bottom: 1px solid #f1f5f9;
-          transition: background 0.15s, box-shadow 0.15s;
+          transition: all 0.1s ease;
+          background: #ffffff;
         }
-        .ws-item-row:nth-of-type(2n) td {
-          background: #fcfdff;
-        }
-        .ws-item-row:hover { background: #f8fafc; }
-        .ws-item-row:hover td { background: #f8fafc; }
+        .ws-item-row:hover { background: #f8fbff; }
+        .ws-item-row:nth-child(even) { background: #fafbfc; }
+
         .ws-item-row-selected {
-          background: #f8fbff !important;
-          width: 100%;
-          max-width: 100%;
-          min-width: 0;
-          overflow: hidden;
-          box-sizing: border-box;
+          background: #eff6ff !important;
+          box-shadow: inset 3px 0 0 #2563eb;
         }
+
         .ws-item-row td {
-          padding: 0.35rem 0.55rem;
-          vertical-align: middle;
-          min-width: 0;
-          border-right: 1px solid #eef2f7;
-          border-bottom: 1px solid #eef2f7;
+          padding: 0.5rem 0.75rem !important;
+          font-size: 0.78rem;
+          color: #334155;
+          border-right: 1px solid #f1f5f9;
+          vertical-align: top;
+          line-height: 1.4;
           background: inherit;
-          box-sizing: border-box;
         }
+        .ws-item-row td:last-child { border-right: none; }
+
         .ws-item-row-selected td {
-          background: linear-gradient(180deg, #f8fbff 0%, #f0f7ff 100%);
           border-bottom-color: #dbeafe;
         }
-        .ws-item-row-selected .ws-row-number,
-        .ws-item-row-selected .ws-line-code {
-          color: #1d4ed8;
-        }
-        .ws-item-row-selected td:first-child {
-          box-shadow: inset 4px 0 0 #2563eb;
-        }
-        .ws-outlier { background: #fffbeb !important; }
-        .ws-item-row-benchmark td:first-child,
-        .ws-item-row-custom td:first-child,
-        .ws-item-incomplete td:first-child {
-          box-shadow: inset 3px 0 0 transparent;
-        }
+
         .ws-item-row-benchmark td:first-child { box-shadow: inset 3px 0 0 #2563eb; }
         .ws-item-row-custom td:first-child { box-shadow: inset 3px 0 0 #0f766e; }
         .ws-item-incomplete { background: #fffaf0 !important; }
         .ws-item-incomplete td:first-child { box-shadow: inset 3px 0 0 #f59e0b; }
+        .ws-outlier { background: #fffbeb !important; }
 
         .ws-num {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 0.12rem;
           text-align: center;
-          font-size: 0.6875rem; font-weight: 700;
-          color: #94a3b8;
-          font-family: 'Inter', system-ui, monospace;
+          font-weight: 700;
+          color: #64748b;
         }
+        .ws-line-code {
+          display: block;
+          font-size: 0.65rem;
+          color: #94a3b8;
+          margin-top: 0.1rem;
+        }
+
         .ws-row-number {
-          font-size: 0.6rem;
+          font-size: 0.52rem;
           font-weight: 800;
           color: #94a3b8;
         }
         .ws-line-code {
-          font-size: 0.76rem;
+          font-size: 0.68rem;
           font-weight: 900;
           color: #334155;
         }
 
         .ws-desc-inner { display: flex; align-items: flex-start; gap: 0.375rem; }
+        .ws-desc-static {
+          padding: 0;
+          cursor: default;
+        }
+        .ws-desc-text {
+          margin: 0;
+          font-size: 0.72rem;
+          font-weight: 550;
+          color: #334155;
+          line-height: 1.35;
+          word-break: break-word;
+          white-space: pre-wrap;
+          user-select: text;
+        }
         .ws-desc,
         .ws-desc-inner,
         .ws-item-heading-row,
@@ -5936,9 +5029,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 0.14rem 0.46rem;
+          padding: 0.08rem 0.3rem;
           border-radius: 999px;
-          font-size: 0.55rem;
+          font-size: 0.46rem;
           font-weight: 900;
           letter-spacing: 0.05em;
           text-transform: uppercase;
@@ -6025,27 +5118,27 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-sm-input { text-align: center; font-weight: 600; width: 100%; }
         .ws-input:disabled { color: #94a3b8; background: #f8fafc; }
         .ws-qty-display {
-          margin-top: 0.26rem;
+          margin-top: 0.1rem;
           display: flex;
           align-items: baseline;
           justify-content: flex-end;
-          gap: 0.26rem;
+          gap: 0.15rem;
         }
         .ws-qty-main {
-          font-size: 0.86rem;
+          font-size: 0.76rem;
           line-height: 1.1;
           font-weight: 900;
           color: #0f172a;
         }
         .ws-qty-unit-text {
-          font-size: 0.62rem;
+          font-size: 0.52rem;
           font-weight: 800;
           text-transform: uppercase;
           letter-spacing: 0.05em;
           color: #64748b;
         }
         .ws-qty-meta {
-          margin-top: 0.12rem;
+          margin-top: 0.05rem;
           display: flex;
           justify-content: flex-end;
         }
@@ -6053,30 +5146,31 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 0.14rem 0.42rem;
+          padding: 0.08rem 0.3rem;
           border-radius: 999px;
-          font-size: 0.55rem;
+          font-size: 0.48rem;
           font-weight: 800;
           background: #eff6ff;
           color: #1d4ed8;
         }
         .ws-field-feedback {
-          margin-top: 0.22rem;
-          font-size: 0.62rem;
-          line-height: 1.35;
+          margin-top: 0.08rem;
+          font-size: 0.55rem;
+          line-height: 1.2;
         }
         .ws-field-feedback-success { color: #15803d; }
         .ws-field-feedback-warning { color: #c2410c; }
         .ws-field-feedback-muted { color: #64748b; }
 
-        .ws-qty-wrap, .ws-rate-wrap { display: flex; align-items: center; gap: 0.25rem; }
+        .ws-qty-wrap, .ws-rate-wrap { display: flex; align-items: center; gap: 0.15rem; }
 
         .ws-geo-btn, .ws-analysis-btn {
           display: flex; align-items: center; justify-content: center;
-          width: 22px; height: 22px;
+          width: 18px; height: 18px;
           border: none; background: #f1f5f9; color: #64748b;
-          border-radius: 4px; cursor: pointer; flex-shrink: 0;
+          border-radius: 3px; cursor: pointer; flex-shrink: 0;
           transition: all 0.15s; opacity: 0;
+          font-size: 0.6rem;
         }
         .ws-item-row:hover .ws-geo-btn,
         .ws-item-row:hover .ws-analysis-btn,
@@ -6115,32 +5209,32 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           text-align: right;
           font-weight: 700;
           color: #1e293b;
-          font-size: 0.8125rem;
+          font-size: 0.72rem;
           white-space: normal;
         }
         .ws-total-main {
           display: block;
-          font-size: 0.84rem;
+          font-size: 0.76rem;
           line-height: 1.15;
           color: #0f172a;
         }
         .ws-total-formula {
           display: block;
-          font-size: 0.6rem;
+          font-size: 0.52rem;
           color: #64748b;
-          line-height: 1.3;
-          margin-top: 0.14rem;
+          line-height: 1.2;
+          margin-top: 0.06rem;
         }
         .ws-total-status {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 0.14rem 0.44rem;
+          padding: 0.08rem 0.3rem;
           border-radius: 999px;
-          font-size: 0.55rem;
+          font-size: 0.48rem;
           font-weight: 900;
           letter-spacing: 0.04em;
-          margin-top: 0.2rem;
+          margin-top: 0.08rem;
         }
         .ws-total-status-success { background: #dcfce7; color: #166534; }
         .ws-total-status-warning { background: #ffedd5; color: #c2410c; }
@@ -6151,16 +5245,16 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           display: flex;
           justify-content: flex-end;
           flex-wrap: wrap;
-          gap: 0.25rem;
-          margin-top: 0.2rem;
+          gap: 0.15rem;
+          margin-top: 0.08rem;
         }
         .ws-rate-chip {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 0.16rem 0.42rem;
+          padding: 0.08rem 0.3rem;
           border-radius: 999px;
-          font-size: 0.58rem;
+          font-size: 0.5rem;
           font-weight: 800;
           letter-spacing: 0.02em;
           white-space: nowrap;
