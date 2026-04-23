@@ -3207,12 +3207,19 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           display: flex;
           flex-direction: column;
           height: 100%;
+          min-height: 0;
           min-width: 0;
           background: #f8fafc;
           border-left: 1px solid #e2e8f0;
           border-right: 1px solid #e2e8f0;
-          overflow: hidden; /* Contain scroll to table wrap */
+          overflow-y: auto;
+          overflow-x: hidden;
+          scrollbar-width: thin;
+          scrollbar-color: #cbd5e1 transparent;
         }
+        .ws-main-pane::-webkit-scrollbar { width: 7px; }
+        .ws-main-pane::-webkit-scrollbar-track { background: transparent; }
+        .ws-main-pane::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
 
         .ws-detail-dock {
           width: 360px;
@@ -3875,16 +3882,16 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-compact-header {
           display: flex;
           flex-direction: column;
-          gap: 0.75rem;
-          padding: 1.25rem 1.5rem;
+          gap: 0.55rem;
+          padding: 0.8rem 1rem 0.7rem;
           background: #ffffff;
           border-bottom: 1px solid #e2e8f0;
         }
         .ws-compact-header-top {
           display: flex;
           justify-content: space-between;
-          align-items: flex-start;
-          gap: 1.5rem;
+          align-items: center;
+          gap: 1rem;
         }
         .ws-compact-header-left {
           display: flex;
@@ -3894,7 +3901,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
         .ws-compact-title {
           margin: 0;
-          font-size: 1.5rem;
+          font-size: 1.22rem;
           font-weight: 900;
           color: #0f172a;
           letter-spacing: -0.02em;
@@ -3927,19 +3934,21 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           align-items: center;
           gap: 0.6rem;
           flex-shrink: 0;
+          flex-wrap: wrap;
+          justify-content: flex-end;
         }
 
         .ws-compact-stats-row {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 1rem;
-          margin-top: 0.25rem;
+          gap: 0.7rem;
+          margin-top: 0;
         }
         .ws-compact-stat {
           display: flex;
           flex-direction: column;
           gap: 0.15rem;
-          padding: 0.75rem 1rem;
+          padding: 0.55rem 0.75rem;
           background: #f8fafc;
           border-radius: 12px;
           border: 1px solid #f1f5f9;
@@ -3958,13 +3967,13 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           color: #94a3b8;
         }
         .ws-compact-stat strong {
-          font-size: 1.1rem;
+          font-size: 0.96rem;
           font-weight: 900;
           color: #1e293b;
           line-height: 1.2;
         }
         .ws-compact-stat small {
-          font-size: 0.68rem;
+          font-size: 0.62rem;
           color: #64748b;
         }
         .ws-compact-stat-total {
@@ -3989,18 +3998,22 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 0.65rem 1.5rem;
+          flex-wrap: wrap;
+          gap: 0.7rem;
+          padding: 0.5rem 1rem;
           background: #ffffff;
           border-bottom: 1px solid #e2e8f0;
-          position: sticky;
-          top: 0;
-          z-index: 10;
+          position: static;
+          top: auto;
+          z-index: auto;
         }
         .ws-toolbar-left {
           display: flex;
           align-items: center;
           gap: 1.25rem;
           flex: 1;
+          min-width: 0;
+          flex-wrap: wrap;
         }
         .ws-search-box {
           position: relative;
@@ -4049,6 +4062,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           display: flex;
           align-items: center;
           gap: 1rem;
+          flex-wrap: wrap;
+          justify-content: flex-end;
         }
         .ws-filter-group {
           display: flex;
@@ -4766,9 +4781,11 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
         /* ── TABLE ── */
         .ws-table-wrap {
-          flex: 1;
+          flex: 0 0 auto;
           min-width: 0;
-          overflow: auto;
+          min-height: 460px;
+          overflow-x: auto;
+          overflow-y: visible;
           background: #ffffff;
           box-sizing: border-box;
           position: relative;
