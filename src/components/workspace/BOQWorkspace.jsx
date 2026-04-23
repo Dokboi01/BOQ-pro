@@ -70,7 +70,9 @@ import {
   RefreshCcw,
   Pencil,
   Info,
-  X
+  X,
+  Globe,
+  MousePointer2
 } from 'lucide-react';
 
 const buildSelectedCatalogItemMap = (sections = []) => (
