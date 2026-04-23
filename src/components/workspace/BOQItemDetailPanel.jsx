@@ -250,6 +250,11 @@ const BOQItemDetailPanel = ({
               <strong>{formatCurrency(lineTotal)}</strong>
             </div>
           </div>
+          <div className="idp-user-guide">
+            <span>1. Confirm the item</span>
+            <span>2. Choose rate source</span>
+            <span>3. Use tools below</span>
+          </div>
         </div>
 
         {/* ── Body ── */}
@@ -257,20 +262,20 @@ const BOQItemDetailPanel = ({
 
           {/* Quick Actions */}
           <div className="idp-actions-bar">
-            {onOpenTakeoff && <QuickAction icon={Calculator} label="Takeoff" onClick={onOpenTakeoff} />}
-            {onOpenRateAnalysis && <QuickAction icon={BarChart2} label="Analysis" onClick={onOpenRateAnalysis} tone="blue" />}
-            {onOpenCustomPricing && <QuickAction icon={SlidersHorizontal} label="Custom Price" onClick={onOpenCustomPricing} tone="teal" />}
-            {hasFormula && onOpenFormulaEditor && <QuickAction icon={Cpu} label="Formula" onClick={onOpenFormulaEditor} tone="indigo" />}
+            {onOpenTakeoff && <QuickAction icon={Calculator} label="Takeoff Calculator" onClick={onOpenTakeoff} />}
+            {onOpenRateAnalysis && <QuickAction icon={BarChart2} label="Rate Analysis" onClick={onOpenRateAnalysis} tone="blue" />}
+            {onOpenCustomPricing && <QuickAction icon={SlidersHorizontal} label="Manual Rate" onClick={onOpenCustomPricing} tone="teal" />}
+            {hasFormula && onOpenFormulaEditor && <QuickAction icon={Cpu} label="Formula Inputs" onClick={onOpenFormulaEditor} tone="indigo" />}
             {onOpenBidManager && <QuickAction icon={Gavel} label={hasBids ? `Bids (${item.bids.length})` : 'Bids'} onClick={onOpenBidManager} tone={hasBids ? 'amber' : 'default'} />}
-            {onRefreshBenchmark && <QuickAction icon={RefreshCcw} label="Refresh BM" onClick={onRefreshBenchmark} />}
+            {onRefreshBenchmark && <QuickAction icon={RefreshCcw} label="Refresh Benchmark" onClick={onRefreshBenchmark} />}
             {onExport && <QuickAction icon={Download} label="Export" onClick={onExport} />}
-            {onDuplicate && <QuickAction icon={Copy} label="Duplicate" onClick={onDuplicate} />}
+            {onDuplicate && <QuickAction icon={Copy} label="Duplicate Row" onClick={onDuplicate} />}
             {onAddBelow && <QuickAction icon={Plus} label="Add Below" onClick={onAddBelow} />}
             {onDelete && <QuickAction icon={Trash2} label="Delete" onClick={onDelete} tone="danger" />}
           </div>
 
           {/* Pricing Strategy */}
-          <Section icon={CreditCard} title="Pricing Strategy" badge={sourceLabels[selectedRateSource]}>
+          <Section icon={CreditCard} title="Choose Rate Source" badge={sourceLabels[selectedRateSource]}>
             <div className="idp-pricing-stack">
               {pricingOptions.map((opt) => {
                 const isActive = selectedRateSource === opt.key;
@@ -335,7 +340,7 @@ const BOQItemDetailPanel = ({
           )}
 
           {/* Description */}
-          <Section icon={PenLine} title="Description">
+          <Section icon={PenLine} title="Item Description">
             <div className="idp-desc-edit">
               <textarea
                 className="idp-desc-ta"
@@ -408,7 +413,7 @@ const BOQItemDetailPanel = ({
           </Section>
 
           {/* Benchmark Intelligence */}
-          <Section icon={TrendingUp} title="Benchmark Intel" defaultOpen={false}>
+          <Section icon={TrendingUp} title="Benchmark / Market Rate" defaultOpen={false}>
              {benchmarkRate > 0 ? (
                <div className="idp-intel-card">
                   <div className="idp-intel-row">
@@ -438,7 +443,7 @@ const BOQItemDetailPanel = ({
           </Section>
 
           {/* Notes */}
-          <Section icon={FileText} title="Notes & Log" defaultOpen={false}>
+          <Section icon={FileText} title="Notes" defaultOpen={false}>
             <div className="idp-notes-block">
               <textarea
                 className="idp-notes-ta"
@@ -525,6 +530,26 @@ const BOQItemDetailPanel = ({
           .idp-stat-accent { background: linear-gradient(135deg,#1e40af,#3b82f6); border-color: transparent; }
           .idp-stat-accent .idp-stat-lbl { color: rgba(255,255,255,0.65); }
           .idp-stat-accent strong { color: #fff; }
+          .idp-user-guide {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.35rem;
+          }
+          .idp-user-guide span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 28px;
+            padding: 0.28rem 0.35rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #475569;
+            font-size: 0.55rem;
+            font-weight: 850;
+            text-align: center;
+            line-height: 1.2;
+          }
 
           /* Body */
           .idp-body { flex: 1; overflow-y: auto; scrollbar-width: thin; background: #fff; }

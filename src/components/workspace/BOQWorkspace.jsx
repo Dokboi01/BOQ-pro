@@ -1588,9 +1588,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const _totalQuantity = workspaceAnalytics.totalQuantity;
 
   const totalItems = workspaceAnalytics.totalItems;
-  const totalColumnCount = viewMode === 'valuation' ? 9 : 7;
-  const sectionHeaderSpan = viewMode === 'valuation' ? 8 : 6;
-  const subtotalLeadingSpan = viewMode === 'valuation' ? 6 : 4;
+  const totalColumnCount = 4;
+  const sectionHeaderSpan = 4;
+  const subtotalLeadingSpan = 2;
   const benchmarkSyncLabel = formatBenchmarkSyncLabel(benchmarkSyncState.checkedAt);
   const _filteredSectionCount = filteredSections.length;
   const filteredItemCount = filteredSections.reduce((sum, section) => sum + ((section.items || []).length), 0);
@@ -1768,30 +1768,13 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             label: benchmarkSyncLabel ? `Benchmark synced ${benchmarkSyncLabel}` : 'Benchmark library current',
             tone: 'success'
           };
-  const spreadsheetColumns = viewMode === 'valuation'
-    ? [
-        { key: 'line', letter: 'A', label: 'Item No' },
-        { key: 'description', letter: 'B', label: 'Description' },
-        { key: 'unit', letter: 'C', label: 'Unit' },
-        { key: 'quantity', letter: 'D', label: 'Quantity' },
-        { key: 'done', letter: 'E', label: 'Done' },
-        { key: 'progress', letter: 'F', label: 'Progress' },
-        { key: 'rate', letter: 'G', label: 'Rate' },
-        { key: 'amount', letter: 'H', label: 'Amount' },
-        { key: 'actions', letter: 'I', label: 'Actions' },
-      ]
-    : [
-        { key: 'line', letter: 'A', label: 'Item No' },
-        { key: 'description', letter: 'B', label: 'Description' },
-        { key: 'unit', letter: 'C', label: 'Unit' },
-        { key: 'quantity', letter: 'D', label: 'Quantity' },
-        { key: 'rate', letter: 'E', label: 'Unit Rate' },
-        { key: 'amount', letter: 'F', label: 'Amount' },
-        { key: 'actions', letter: 'G', label: 'Actions' },
-      ];
-  const spreadsheetColumnTemplate = viewMode === 'valuation'
-    ? '76px minmax(480px, 4.9fr) 92px 138px 96px 104px 150px 160px 72px'
-    : '76px minmax(560px, 5.8fr) 92px 138px 210px 170px 72px';
+  const spreadsheetColumns = [
+    { key: 'description', letter: 'A', label: 'Item Description' },
+    { key: 'quantity', letter: 'B', label: 'Qty' },
+    { key: 'rate', letter: 'C', label: 'Rate' },
+    { key: 'amount', letter: 'D', label: 'Price' },
+  ];
+  const spreadsheetColumnTemplate = 'minmax(360px, 1fr) 150px 160px 170px';
 
   const selectWorkspaceCell = ({ sectionId, itemId, columnKey, itemCode, rowNumber }) => {
     setSelectedCell({
@@ -2197,19 +2180,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         <table className="ws-table">
           <thead>
             <tr>
-              <th className="ws-th-num">Item No</th>
-              <th className="ws-th-desc">Description</th>
-              <th className="ws-th-unit">Unit</th>
-              <th className="ws-th-qty">Quantity</th>
-              {viewMode === 'valuation' ? (
-                <>
-                  <th className="ws-th-sm">DONE</th>
-                  <th className="ws-th-sm">%</th>
-                </>
-              ) : null}
+              <th className="ws-th-desc">Item Description</th>
+              <th className="ws-th-qty">Qty</th>
               <th className="ws-th-rate">Rate (₦)</th>
               <th className="ws-th-total">Amount (₦)</th>
-              <th className="ws-th-act"></th>
             </tr>
           </thead>
           <tbody>
@@ -2261,27 +2235,24 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                         )}
                         <span className="ws-section-meta">QTY {sectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                         <span className="ws-section-badge">{section.items?.length || 0}</span>
+                        <div className="ws-section-actions" onClick={(e) => e.stopPropagation()}>
+                          {getStructureSectionCatalog(projectStructureType, section.billSectionId) && (
+                            <button
+                              className="ws-btn-icon ws-btn-library"
+                              onClick={() => enterSelectionStage(section.id)}
+                              title="Pick BOQ items for this bill"
+                            >
+                              <Plus size={13} />
+                            </button>
+                          )}
+                          <button className="ws-btn-icon ws-btn-danger" onClick={() => onDelete(project.id, section.id)} title="Delete bill">
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                         {!section.expanded && (
                           <span className="ws-section-total">₦{sectionSubtotal.toLocaleString()}</span>
                         )}
                       </div>
-                    </td>
-                    <td className="ws-act-cell">
-                      {getStructureSectionCatalog(projectStructureType, section.billSectionId) && (
-                        <button
-                          className="ws-btn-icon ws-btn-library"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            enterSelectionStage(section.id);
-                          }}
-                          title="Pick BOQ items for this bill"
-                        >
-                          <Plus size={13} />
-                        </button>
-                      )}
-                      <button className="ws-btn-icon ws-btn-danger" onClick={(e) => { e.stopPropagation(); onDelete(project.id, section.id); }}>
-                        <Trash2 size={13} />
-                      </button>
                     </td>
                   </tr>
                   {/* Empty section CTA */}
@@ -2354,49 +2325,18 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                         )}
                         <tr className={`ws-item-row ${outlier ? 'ws-outlier' : ''} ${selectedRateSource === 'benchmark' ? 'ws-item-row-benchmark' : 'ws-item-row-custom'} ${isIncomplete ? 'ws-item-incomplete' : ''} ${selectedCell?.sectionId === section.id && selectedCell?.itemId === item.id ? 'ws-item-row-selected' : ''}`}>
                         <td
-                          className={`ws-num ${isWorkspaceCellSelected(section.id, item.id, 'line') ? 'ws-cell-selected' : ''}`}
-                          onClick={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'line', itemCode, rowNumber: spreadsheetRowNumber })}
-                        >
-                          <span className="ws-row-number">{spreadsheetRowNumber}</span>
-                          <strong className="ws-line-code">{itemCode}</strong>
-                        </td>
-                        <td
                           className={`ws-desc ${isWorkspaceCellSelected(section.id, item.id, 'description') ? 'ws-cell-selected' : ''}`}
                           onClick={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'description', itemCode, rowNumber: spreadsheetRowNumber })}
                         >
-                          <div className="ws-item-heading-row">
-                            <div className="ws-item-heading-copy">
-                              <strong className="ws-item-name">{item.name || item.description || 'Untitled BOQ item'}</strong>
-                              <span className="ws-item-code-pill">{item.code || itemCode}</span>
+                          <div className="ws-simple-desc">
+                            <div className="ws-simple-desc-top">
+                              <span className="ws-simple-item-code">{item.code || itemCode}</span>
+                              <span className="ws-simple-unit-pill">{item.unit || 'unit'}</span>
+                              {item.isVO && <span className="ws-vo">VO</span>}
                             </div>
-                            <div className="ws-item-indicators">
-                              <span className={`ws-state-pill ws-state-pill-${itemStatusMeta.tone}`}>{itemStatusMeta.label}</span>
-                              {hasFormulaOption && <span className="ws-availability-pill ws-availability-pill-formula">Formula</span>}
-                              {hasBenchmarkRate && <span className="ws-availability-pill ws-availability-pill-benchmark">Benchmark</span>}
-                            </div>
-                          </div>
-                          <div className="ws-desc-inner ws-desc-static">
-                            {item.isVO && <span className="ws-vo">VO</span>}
+                            <strong className="ws-item-name">{item.name || item.description || 'Untitled BOQ item'}</strong>
                             <p className="ws-desc-text">{item.description || 'No description provided'}</p>
-                            {outlier && <AlertCircle size={11} className="ws-outlier-icon" title="Rate variance detected" />}
                           </div>
-                          {item.subcategory && (
-                            <div className="ws-item-secondary">
-                              Subcategory: {item.subcategory}
-                            </div>
-                          )}
-                        </td>
-                        <td
-                          className={`ws-unit-cell ${isWorkspaceCellSelected(section.id, item.id, 'unit') ? 'ws-cell-selected' : ''}`}
-                          onClick={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'unit', itemCode, rowNumber: spreadsheetRowNumber })}
-                        >
-                          <input
-                            type="text"
-                            className="ws-input ws-unit-input"
-                            value={item.unit}
-                            onChange={(e) => updateItem(section.id, item.id, 'unit', e.target.value)}
-                            onFocus={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'unit', itemCode, rowNumber: spreadsheetRowNumber })}
-                          />
                         </td>
                         <td
                           className={`ws-qty-cell ${isWorkspaceCellSelected(section.id, item.id, 'quantity') ? 'ws-cell-selected' : ''}`}
@@ -2412,51 +2352,12 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                               onChange={(e) => handleQuantityChange(section.id, item, e.target.value)}
                               onFocus={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'quantity', itemCode, rowNumber: spreadsheetRowNumber })}
                             />
-                            <button
-                              className="ws-geo-btn"
-                              onClick={() => {
-                                selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'quantity', itemCode, rowNumber: spreadsheetRowNumber });
-                                setCalculatingQtyForItem({ sectionId: section.id, item });
-                              }}
-                              title="Geometric Takeoff"
-                            >
-                              <Calculator size={10} />
-                            </button>
                           </div>
                           <div className="ws-qty-display">
                             <strong className="ws-qty-main">{quantityDisplayValue}</strong>
                             <span className="ws-qty-unit-text">{item.unit || 'unit'}</span>
                           </div>
-                          <div className="ws-qty-meta">
-                            <span className="ws-qty-source">{quantitySourceLabel}</span>
-                          </div>
-                          <div className={`ws-field-feedback ws-field-feedback-${quantityFeedbackMeta.tone}`}>
-                            {quantityFeedbackMeta.text}
-                          </div>
                         </td>
-                        {viewMode === 'valuation' ? (
-                          <>
-                            <td
-                              className={isWorkspaceCellSelected(section.id, item.id, 'done') ? 'ws-cell-selected' : ''}
-                              onClick={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'done', itemCode, rowNumber: spreadsheetRowNumber })}
-                            >
-                              <input type="number" className="ws-input ws-sm-input" value={item.qtyCompleted || ''}
-                                min="0"
-                                step="any"
-                                onChange={(e) => handleCompletedQuantityChange(section.id, item, e.target.value)}
-                                onFocus={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'done', itemCode, rowNumber: spreadsheetRowNumber })} />
-                            </td>
-                            <td
-                              className={isWorkspaceCellSelected(section.id, item.id, 'progress') ? 'ws-cell-selected' : ''}
-                              onClick={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'progress', itemCode, rowNumber: spreadsheetRowNumber })}
-                            >
-                              <div className="ws-progress-bar">
-                                <div className="ws-progress-fill" style={{ width: `${Math.min(100, item.progressPercent || 0)}%` }}></div>
-                                <span>{Math.round(item.progressPercent || 0)}%</span>
-                              </div>
-                            </td>
-                          </>
-                        ) : null}
                         <td
                           className={`ws-rate-cell ${isWorkspaceCellSelected(section.id, item.id, 'rate') ? 'ws-cell-selected' : ''}`}
                           onClick={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'rate', itemCode, rowNumber: spreadsheetRowNumber })}
@@ -2982,7 +2883,6 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                         <td colSpan="2" className="ws-subtotal-val">
                           Section Total · Qty {sectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })} · Amount ₦{sectionSubtotal.toLocaleString()}
                         </td>
-                        <td></td>
                       </tr>
                       <tr className="ws-add-row">
                         <td colSpan={totalColumnCount}>
@@ -3006,9 +2906,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           </tbody>
           <tfoot>
             <tr className="ws-grand-total">
-              <td colSpan={viewMode === 'valuation' ? 7 : 6}>CONTRACT SUM</td>
+              <td colSpan={3}>CONTRACT SUM</td>
               <td className="ws-grand-val">₦{calculateGrandTotal.toLocaleString()}</td>
-              <td></td>
             </tr>
           </tfoot>
         </table>
@@ -3020,13 +2919,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
               <>
                 <div className="ws-detail-dock-header">
                   <div className="ws-detail-dock-copy">
-                    <span className="ws-detail-dock-eyebrow">Item Intelligence</span>
+                    <span className="ws-detail-dock-eyebrow">Right Bar Controls</span>
                     <h3 className="ws-detail-dock-title">
                       {selectedItemContext.itemCode} · {selectedItemContext.item.name || selectedItemContext.item.description || 'Untitled BOQ item'}
                     </h3>
                     <div className="ws-detail-dock-meta">
                       <span className="ws-detail-meta-pill">{selectedItemContext.section.title}</span>
                       <span className="ws-detail-meta-pill">Qty: {selectedItemContext.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                      <span className="ws-detail-meta-pill">Rate: N{selectedItemContext.unitRate.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                   <div className="ws-detail-dock-actions">
@@ -3044,6 +2944,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                     >
                       <X size={14} />
                     </button>
+                  </div>
+                  <div className="ws-detail-guide">
+                    <span>Use this panel for rate source, formula, benchmark, takeoff, notes, and item actions.</span>
+                    <strong>Table stays simple: description, qty, rate, price.</strong>
                   </div>
                 </div>
 
@@ -3076,10 +2980,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                   <div className="ws-detail-empty-icon">
                     <MousePointer2 size={32} strokeWidth={1.5} />
                   </div>
-                  <h3>Item Intelligence</h3>
-                  <p>Select any line item in the BOQ to reveal its full pricing DNA, rate analysis, and market benchmarks.</p>
+                  <h3>Right Bar Controls</h3>
+                  <p>Select any BOQ row. The table only shows the estimate sheet, while this panel handles formula, benchmark, takeoff, notes, and item actions.</p>
                   <div className="ws-detail-empty-hint">
-                    <span>Click a row to inspect</span>
+                    <span>Click a row to edit details</span>
                   </div>
                 </div>
               </div>
@@ -3303,6 +3207,26 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           display: flex;
           gap: 0.5rem;
           margin-top: 0.5rem;
+        }
+        .ws-detail-guide {
+          display: flex;
+          flex-direction: column;
+          gap: 0.2rem;
+          padding: 0.72rem 0.8rem;
+          border: 1px solid #dbeafe;
+          border-radius: 14px;
+          background: linear-gradient(180deg, #eff6ff 0%, #f8fbff 100%);
+          color: #1e3a8a;
+          font-size: 0.68rem;
+          line-height: 1.4;
+        }
+        .ws-detail-guide span {
+          color: #475569;
+          font-weight: 650;
+        }
+        .ws-detail-guide strong {
+          color: #1d4ed8;
+          font-weight: 900;
         }
         .ws-helper-btn {
           display: flex;
@@ -4997,7 +4921,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           font-size: 0.82rem;
           background: white;
           table-layout: fixed;
-          min-width: 1360px;
+          min-width: 840px;
         }
 
         .ws-table thead {
@@ -5024,11 +4948,23 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-th-num { width: 50px; text-align: center; }
         .ws-th-desc { width: auto; }
         .ws-th-unit { width: 60px; text-align: center; }
-        .ws-th-qty { width: 100px; text-align: right; }
+        .ws-th-qty { width: 150px; text-align: right; }
         .ws-th-sm { width: 72px; text-align: center; }
-        .ws-th-rate { width: 140px; text-align: right; }
-        .ws-th-total { width: 140px; text-align: right; }
+        .ws-th-rate { width: 160px; text-align: right; }
+        .ws-th-total { width: 170px; text-align: right; }
         .ws-th-act { width: 40px; }
+        .ws-th-rate,
+        .ws-th-total {
+          font-size: 0;
+        }
+        .ws-th-rate::after,
+        .ws-th-total::after {
+          font-size: 0.6rem;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+        }
+        .ws-th-rate::after { content: "Rate"; }
+        .ws-th-total::after { content: "Price"; }
 
         /* ── SECTION ROW ── */
         .ws-section-row {
@@ -5113,6 +5049,12 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           font-size: 0.75rem; font-weight: 900; color: #1d4ed8;
           margin-left: auto;
         }
+        .ws-section-actions {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.25rem;
+          margin-left: auto;
+        }
 
         .ws-subcategory-row {
           background: linear-gradient(90deg, #f8fafc, #eef2ff);
@@ -5159,11 +5101,11 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
 
         .ws-item-row td {
-          padding: 0.5rem 0.75rem !important;
+          padding: 0.62rem 0.8rem !important;
           font-size: 0.78rem;
           color: #334155;
           border-right: 1px solid #f1f5f9;
-          vertical-align: top;
+          vertical-align: middle;
           line-height: 1.4;
           background: inherit;
         }
@@ -5216,6 +5158,41 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           word-break: break-word;
           white-space: pre-wrap;
           user-select: text;
+        }
+        .ws-simple-desc {
+          display: flex;
+          flex-direction: column;
+          gap: 0.22rem;
+          min-width: 0;
+        }
+        .ws-simple-desc-top {
+          display: flex;
+          align-items: center;
+          gap: 0.35rem;
+          flex-wrap: wrap;
+        }
+        .ws-simple-item-code,
+        .ws-simple-unit-pill {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 999px;
+          font-size: 0.54rem;
+          font-weight: 900;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          line-height: 1;
+          padding: 0.18rem 0.44rem;
+        }
+        .ws-simple-item-code {
+          background: #eff6ff;
+          color: #1d4ed8;
+          border: 1px solid #bfdbfe;
+        }
+        .ws-simple-unit-pill {
+          background: #f8fafc;
+          color: #475569;
+          border: 1px solid #e2e8f0;
         }
         .ws-desc,
         .ws-desc-inner,
@@ -5380,7 +5357,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-field-feedback-warning { color: #c2410c; }
         .ws-field-feedback-muted { color: #64748b; }
 
-        .ws-qty-wrap, .ws-rate-wrap { display: flex; align-items: center; gap: 0.15rem; }
+        .ws-qty-wrap, .ws-rate-wrap { display: flex; align-items: center; gap: 0.15rem; justify-content: flex-end; }
 
         .ws-geo-btn, .ws-analysis-btn {
           display: flex; align-items: center; justify-content: center;
@@ -5459,6 +5436,26 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-total-status-custom { background: #ccfbf1; color: #0f766e; }
         .ws-total-status-calculated { background: #ede9fe; color: #6d28d9; }
         .ws-rate-cell { text-align: right; }
+        .ws-rate-cell .ws-compact-source-badge,
+        .ws-rate-cell .ws-analysis-btn,
+        .ws-rate-reference-row,
+        .ws-rate-meta,
+        .ws-benchmark-evidence,
+        .ws-benchmark-refresh,
+        .ws-benchmark-override,
+        .ws-rate-note,
+        .ws-total-formula,
+        .ws-total-status,
+        .ws-act-cell {
+          display: none !important;
+        }
+        .ws-rate-cell .ws-rate-input:disabled {
+          background: #ffffff;
+          border-color: #e2e8f0;
+          color: #0f172a;
+          opacity: 1;
+          cursor: pointer;
+        }
         .ws-rate-meta {
           display: flex;
           justify-content: flex-end;
@@ -5510,12 +5507,12 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-th-desc,
         .ws-desc {
           position: sticky;
-          left: 76px;
+          left: 0;
           z-index: 11;
           background: #ffffff;
-          min-width: 250px;
-          max-width: 340px;
-          width: 340px;
+          min-width: 360px;
+          max-width: none;
+          width: auto;
           overflow: hidden;
           text-overflow: ellipsis;
           box-shadow: 1px 0 0 rgba(148, 163, 184, 0.22);
