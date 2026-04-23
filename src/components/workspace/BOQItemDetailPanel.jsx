@@ -89,17 +89,21 @@ const MetaRow = ({ label, value, mono }) => {
   );
 };
 
-const QuickAction = ({ icon: Icon, label, onClick, tone = 'default', disabled }) => (
-  <button
-    type="button"
-    className={`idp-quick-action idp-quick-action-${tone}`}
-    onClick={onClick}
-    disabled={disabled}
-  >
-    <Icon size={13} />
-    <span>{label}</span>
-  </button>
-);
+const QuickAction = ({ icon, label, onClick, tone = 'default', disabled }) => {
+  const actionIcon = icon ? React.createElement(icon, { size: 13 }) : null;
+
+  return (
+    <button
+      type="button"
+      className={`idp-quick-action idp-quick-action-${tone}`}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      {actionIcon}
+      <span>{label}</span>
+    </button>
+  );
+};
 
 const BOQItemDetailPanel = ({
   item,
@@ -259,6 +263,7 @@ const BOQItemDetailPanel = ({
             {hasFormula && onOpenFormulaEditor && <QuickAction icon={Cpu} label="Formula" onClick={onOpenFormulaEditor} tone="indigo" />}
             {onOpenBidManager && <QuickAction icon={Gavel} label={hasBids ? `Bids (${item.bids.length})` : 'Bids'} onClick={onOpenBidManager} tone={hasBids ? 'amber' : 'default'} />}
             {onRefreshBenchmark && <QuickAction icon={RefreshCcw} label="Refresh BM" onClick={onRefreshBenchmark} />}
+            {onExport && <QuickAction icon={Download} label="Export" onClick={onExport} />}
             {onDuplicate && <QuickAction icon={Copy} label="Duplicate" onClick={onDuplicate} />}
             {onAddBelow && <QuickAction icon={Plus} label="Add Below" onClick={onAddBelow} />}
             {onDelete && <QuickAction icon={Trash2} label="Delete" onClick={onDelete} tone="danger" />}

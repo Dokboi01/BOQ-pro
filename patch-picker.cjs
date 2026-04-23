@@ -3,7 +3,7 @@ const fs = require('fs');
 const file = 'src/components/workspace/BOQItemPickerModal.jsx';
 let content = fs.readFileSync(file, 'utf8');
 
-const originalLayoutStart = \`        <div className="boq-picker-toolbar">
+const originalLayoutStart = `        <div className="boq-picker-toolbar">
           <div className="boq-picker-search">
             <Search size={14} />
             <input
@@ -53,9 +53,9 @@ const originalLayoutStart = \`        <div className="boq-picker-toolbar">
           </div>
         </div>
 
-        <div className="boq-picker-list">\`;
+        <div className="boq-picker-list">`;
 
-const newLayoutStart = \`        <div className="boq-picker-body-split">
+const newLayoutStart = `        <div className="boq-picker-body-split">
           
           <div className="boq-picker-sidebar">
             <div className="boq-picker-search">
@@ -115,20 +115,20 @@ const newLayoutStart = \`        <div className="boq-picker-body-split">
               </div>
             </div>
             
-            <div className="boq-picker-list">\`;
+            <div className="boq-picker-list">`;
 
 content = content.replace(originalLayoutStart, newLayoutStart);
 
 // Close the split layout before footer
-const footerStart = \`        <footer className="boq-picker-footer">\`;
-const footerStartNew = \`          </div>
+const footerStart = `        <footer className="boq-picker-footer">`;
+const footerStartNew = `          </div>
         </div>
-        <footer className="boq-picker-footer">\`;
+        <footer className="boq-picker-footer">`;
 
 content = content.replace(footerStart, footerStartNew);
 
 // Add modern CSS styles
-const additionalCSS = \`
+const additionalCSS = `
         /* --- NEW SPLIT-VIEW STYLES --- */
         .boq-picker-modal {
           width: min(1200px, 95vw) !important;
@@ -251,7 +251,7 @@ const additionalCSS = \`
            padding: 1.25rem !important;
            box-shadow: 0 4px 12px rgba(15,23,42,0.02);
         }
-\`;
+`;
 
 content = content.replace('      <style jsx="true">{`', '      <style jsx="true">{`' + additionalCSS);
 
