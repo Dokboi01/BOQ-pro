@@ -2039,42 +2039,66 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             <div className="ws-compact-header">
               <div className="ws-compact-header-top">
                 <div className="ws-compact-header-left">
-                  <h2 className="ws-compact-title">{project?.name || 'Untitled Project'}</h2>
-                  <div className="ws-compact-meta-tags">
-                    <span className="ws-compact-meta-tag">{activeSheetLabel}</span>
-                    <span className="ws-compact-meta-tag">{marketRegionDisplay}</span>
-                    <span className={`ws-compact-meta-tag ws-compact-health-${benchmarkWorkspaceHealth.tone}`}>{benchmarkWorkspaceHealth.label}</span>
+                  <span className="ws-compact-eyebrow">BOQ-Pro Workbook</span>
+                  <div className="ws-compact-title-row">
+                    <h2 className="ws-compact-title">{project?.name || 'Untitled Project'}</h2>
+                    <span className={`ws-compact-sync-pill ws-compact-health-${benchmarkWorkspaceHealth.tone}`}>
+                      {benchmarkSyncLabel ? `Synced ${benchmarkSyncLabel}` : benchmarkWorkspaceHealth.label}
+                    </span>
+                  </div>
+                  <div className="ws-compact-meta-line">
+                    <span className="ws-compact-bill-pill">{activeProjectSection?.title || 'No active bill'}</span>
+                    <span>{activeSheetLabel}</span>
+                    <span>{projectStructureType || 'General Works'}</span>
+                    <span>{marketRegionDisplay}</span>
+                    <span>
+                      {activeSectionPendingItems > 0
+                        ? `${activeSectionPendingItems} pending review`
+                        : 'Bill currently priced'}
+                    </span>
                   </div>
                 </div>
                 <div className="ws-compact-header-actions">
-                  <div className="ws-sheet-tabbar ws-sheet-tabbar-compact">
-                    <button className={`ws-sheet-tab ${viewMode === 'estimation' ? 'active' : ''}`} onClick={() => setViewMode('estimation')}>Estimate</button>
-                    <button className={`ws-sheet-tab ${viewMode === 'valuation' ? 'active' : ''}`} onClick={() => setViewMode('valuation')}>Valuation</button>
+                  <div className="ws-compact-action-cluster">
+                    <div className="ws-sheet-tabbar ws-sheet-tabbar-compact">
+                      <button className={`ws-sheet-tab ${viewMode === 'estimation' ? 'active' : ''}`} onClick={() => setViewMode('estimation')}>Estimate</button>
+                      <button className={`ws-sheet-tab ${viewMode === 'valuation' ? 'active' : ''}`} onClick={() => setViewMode('valuation')}>Valuation</button>
+                    </div>
                   </div>
-                  <button className="ws-head-action" onClick={() => enterSelectionStage(activeBillSectionId || sections[0]?.id)}>
-                    <Plus size={13} /> Edit Selection
-                  </button>
-                  <button className="ws-head-action" onClick={refreshBenchmarks}>
-                    <RefreshCcw size={13} /> Refresh
-                  </button>
-                  <button className="ws-head-action" onClick={onExport}>
-                    <Download size={13} /> Export
-                  </button>
-                  <button className="ws-head-action" onClick={onAddSection}>
-                    <Plus size={13} /> Section
-                  </button>
+                  <div className="ws-compact-action-cluster ws-compact-action-cluster-tools">
+                    <button className="ws-head-action ws-head-action-primary" onClick={() => enterSelectionStage(activeBillSectionId || sections[0]?.id)}>
+                      <Plus size={13} /> Edit Selection
+                    </button>
+                    <button className="ws-head-action" onClick={refreshBenchmarks}>
+                      <RefreshCcw size={13} /> Refresh
+                    </button>
+                    <button className="ws-head-action" onClick={onExport}>
+                      <Download size={13} /> Export
+                    </button>
+                    <button className="ws-head-action" onClick={onAddSection}>
+                      <Plus size={13} /> Section
+                    </button>
+                  </div>
                 </div>
               </div>
               <div className="ws-compact-stats-row">
                 <div className="ws-compact-stat">
                   <span>Active Bill</span>
                   <strong>{activeProjectSection?.title || '—'}</strong>
-                  <small>{activeSectionLineCount} line{activeSectionLineCount === 1 ? '' : 's'} · {activeSectionPricedItems} priced</small>
+                  <small>
+                    {activeSectionLineCount} line{activeSectionLineCount === 1 ? '' : 's'} · {activeSectionPricedItems} priced · {activeSectionPendingItems} pending
+                  </small>
                 </div>
                 <div className="ws-compact-stat">
                   <span>Coverage</span>
                   <strong>{workspaceAnalytics.pricingCoveragePercent.toFixed(0)}%</strong>
                   <small>{workspaceAnalytics.pricedItems}/{workspaceAnalytics.totalItems} items</small>
+                  <div className="ws-compact-progress-track">
+                    <div
+                      className="ws-compact-progress-fill"
+                      style={{ width: `${workspaceAnalytics.pricingCoveragePercent}%` }}
+                    />
+                  </div>
                 </div>
                 <div className="ws-compact-stat ws-compact-stat-total">
                   <span>Project Total</span>
@@ -3619,6 +3643,21 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             overflow-y: visible;
             overflow-x: visible;
           }
+          .ws-compact-header-top {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .ws-compact-header-actions {
+            max-width: none;
+            width: 100%;
+            justify-content: space-between;
+          }
+          .ws-compact-action-cluster-tools {
+            justify-content: flex-start;
+          }
+          .ws-compact-stats-row {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
           .ws-detail-dock {
             position: static;
             width: 100%;
@@ -3631,6 +3670,26 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           .ws-analytics-inline-card {
             flex-direction: column;
             align-items: stretch;
+          }
+        }
+        @media (max-width: 760px) {
+          .ws-compact-header {
+            padding: 0.8rem 0.8rem 0.75rem;
+          }
+          .ws-compact-title {
+            font-size: 1.08rem;
+          }
+          .ws-compact-meta-line {
+            font-size: 0.62rem;
+          }
+          .ws-compact-stats-row {
+            grid-template-columns: 1fr;
+          }
+          .ws-compact-header-actions,
+          .ws-compact-action-cluster,
+          .ws-compact-action-cluster-tools {
+            width: 100%;
+            justify-content: flex-start;
           }
         }
         @media (max-width: 768px) {
@@ -3882,32 +3941,86 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-compact-header {
           display: flex;
           flex-direction: column;
-          gap: 0.55rem;
-          padding: 0.8rem 1rem 0.7rem;
-          background: #ffffff;
+          gap: 0.7rem;
+          padding: 0.9rem 1rem 0.85rem;
+          background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
           border-bottom: 1px solid #e2e8f0;
         }
         .ws-compact-header-top {
           display: flex;
           justify-content: space-between;
-          align-items: center;
+          align-items: flex-start;
           gap: 1rem;
         }
         .ws-compact-header-left {
           display: flex;
           flex-direction: column;
-          gap: 0.35rem;
+          gap: 0.4rem;
           min-width: 0;
+          flex: 1;
+        }
+        .ws-compact-eyebrow {
+          font-size: 0.58rem;
+          font-weight: 900;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: #94a3b8;
+        }
+        .ws-compact-title-row {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          flex-wrap: wrap;
         }
         .ws-compact-title {
           margin: 0;
-          font-size: 1.22rem;
+          font-size: 1.28rem;
           font-weight: 900;
           color: #0f172a;
           letter-spacing: -0.02em;
+          min-width: 0;
+        }
+        .ws-compact-sync-pill {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.24rem 0.58rem;
+          border-radius: 999px;
+          font-size: 0.58rem;
+          font-weight: 900;
+          letter-spacing: 0.04em;
+          border: 1px solid #e2e8f0;
           white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+        }
+        .ws-compact-meta-line {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+          color: #64748b;
+          font-size: 0.68rem;
+          font-weight: 700;
+        }
+        .ws-compact-meta-line span {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.3rem;
+        }
+        .ws-compact-meta-line span:not(.ws-compact-bill-pill)::before {
+          content: '';
+          width: 4px;
+          height: 4px;
+          border-radius: 999px;
+          background: #cbd5e1;
+        }
+        .ws-compact-bill-pill {
+          padding: 0.24rem 0.58rem;
+          border-radius: 999px;
+          background: #e0f2fe;
+          color: #0369a1;
+          border: 1px solid #bae6fd;
+          font-size: 0.62rem;
+          font-weight: 900;
         }
         .ws-compact-meta-tags {
           display: flex;
@@ -3931,10 +4044,20 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
         .ws-compact-header-actions {
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           gap: 0.6rem;
           flex-shrink: 0;
           flex-wrap: wrap;
+          justify-content: flex-end;
+          max-width: 52%;
+        }
+        .ws-compact-action-cluster {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+        .ws-compact-action-cluster-tools {
           justify-content: flex-end;
         }
 
@@ -3976,9 +4099,24 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           font-size: 0.62rem;
           color: #64748b;
         }
+        .ws-compact-progress-track {
+          position: relative;
+          width: 100%;
+          height: 6px;
+          margin-top: 0.25rem;
+          background: #dbeafe;
+          border-radius: 999px;
+          overflow: hidden;
+        }
+        .ws-compact-progress-fill {
+          height: 100%;
+          border-radius: 999px;
+          background: linear-gradient(90deg, #2563eb 0%, #38bdf8 100%);
+        }
         .ws-compact-stat-total {
           background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
           border-color: #0f172a;
+          box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
         }
         .ws-compact-stat-total span { color: rgba(255,255,255,0.6); }
         .ws-compact-stat-total strong { color: #ffffff; }
@@ -4614,12 +4752,12 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           align-items: center;
           justify-content: center;
           gap: 0.4rem;
-          padding: 0.72rem 0.95rem;
+          padding: 0.58rem 0.8rem;
           border-radius: 14px;
           border: 1px solid #dbe4ee;
           background: rgba(255, 255, 255, 0.94);
           color: #334155;
-          font-size: 0.78rem;
+          font-size: 0.72rem;
           font-weight: 800;
           cursor: pointer;
           transition: all 0.18s ease;
@@ -4628,6 +4766,17 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           border-color: #bfdbfe;
           background: #eff6ff;
           color: #1d4ed8;
+        }
+        .ws-head-action-primary {
+          background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+          border-color: #2563eb;
+          color: #ffffff;
+          box-shadow: 0 10px 22px rgba(37, 99, 235, 0.18);
+        }
+        .ws-head-action-primary:hover {
+          background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
+          border-color: #1d4ed8;
+          color: #ffffff;
         }
         .ws-head-action-strong {
           border-color: #bfdbfe;
