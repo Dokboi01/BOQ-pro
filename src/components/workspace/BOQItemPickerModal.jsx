@@ -4,6 +4,7 @@ import {
   getFormulaDisplayText,
   getWorkedExamplePreview,
 } from '../../utils/boqFormulas';
+import { getBenchmarkCalibrationFactor } from '../../utils/pricing';
 
 const normalizeText = (value) => String(value || '').toLowerCase();
 
@@ -29,6 +30,11 @@ const formatMoney = (value) => (
     maximumFractionDigits: 2,
   })}`
 );
+
+const getDisplayBenchmarkRate = (item) => {
+  const baseRate = Number(item?.benchmarkRate || item?.benchmarkMetadata?.rate || 0);
+  return baseRate * getBenchmarkCalibrationFactor(item);
+};
 
 const FILTER_OPTIONS = [
   { id: 'all', label: 'All Items' },
@@ -240,7 +246,8 @@ const BOQItemPickerModal = ({
                       ? getWorkedExamplePreview(item)
                       : '';
                     const hasFormula = item.defaultFormulaType !== 'manual';
-                    const hasBenchmark = Number(item.benchmarkRate || 0) > 0;
+                    const benchmarkRate = getDisplayBenchmarkRate(item);
+                    const hasBenchmark = benchmarkRate > 0;
 
                     return (
                       <button
@@ -280,7 +287,7 @@ const BOQItemPickerModal = ({
 
                         <div className="boq-picker-card-meta">
                           <span>Unit: {item.unit}</span>
-                          <span>Benchmark: {hasBenchmark ? formatMoney(item.benchmarkRate) : 'Pending'}</span>
+                          <span>Benchmark: {hasBenchmark ? formatMoney(benchmarkRate) : 'Pending'}</span>
                         </div>
 
                         <div className="boq-picker-card-flags">

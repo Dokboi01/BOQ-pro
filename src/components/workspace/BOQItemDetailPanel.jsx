@@ -428,6 +428,12 @@ const BOQItemDetailPanel = ({
                     <MetaRow label="Region" value={benchmarkMeta.region || 'National'} />
                     <MetaRow label="Basis Note" value={benchmarkMeta.sourceNote} />
                     {benchmarkMeta.rate && <MetaRow label="Base Rate" value={formatCurrency(benchmarkMeta.rate)} />}
+                    {benchmarkMeta.calibrationFactor && (
+                      <MetaRow
+                        label="Seed Calibration"
+                        value={`${Math.round(Number(benchmarkMeta.calibrationFactor) * 100)}% planning factor`}
+                      />
+                    )}
                   </div>
                   {onRefreshBenchmark && (
                     <button className="idp-link-btn" onClick={onRefreshBenchmark}>

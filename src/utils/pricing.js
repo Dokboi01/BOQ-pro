@@ -682,6 +682,23 @@ export const getBenchmarkRegionalFactor = (item, region = 'Lagos') => {
   return resolved;
 };
 
+const SEED_BENCHMARK_CONFIDENCE_FACTORS = {
+  low: 0.72,
+  medium: 0.85,
+  high: 1,
+};
+
+export const getBenchmarkCalibrationFactor = (item = {}) => {
+  const metadata = item?.benchmarkMetadata || {};
+  const explicitFactor = clampNumber(metadata.calibrationFactor);
+
+  if (explicitFactor > 0) return explicitFactor;
+  if (metadata.sourceType !== 'seed') return 1;
+
+  const confidenceKey = String(metadata.confidenceLevel || 'low').toLowerCase();
+  return SEED_BENCHMARK_CONFIDENCE_FACTORS[confidenceKey] || SEED_BENCHMARK_CONFIDENCE_FACTORS.low;
+};
+
 export const getEffectiveBenchmarkRate = (item, region = 'Lagos') => {
   const exactRegionalRate = getExactMaterialRegionalBenchmark({
     benchmark: item?.benchmark,
@@ -691,7 +708,7 @@ export const getEffectiveBenchmarkRate = (item, region = 'Lagos') => {
 
   const benchmark = clampNumber(item?.benchmark);
   if (!benchmark) return 0;
-  return benchmark * getBenchmarkRegionalFactor(item, region);
+  return benchmark * getBenchmarkRegionalFactor(item, region) * getBenchmarkCalibrationFactor(item);
 };
 
 /**

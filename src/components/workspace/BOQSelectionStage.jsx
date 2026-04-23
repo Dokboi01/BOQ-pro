@@ -13,6 +13,7 @@ import {
   getFormulaDisplayText,
   getWorkedExamplePreview,
 } from '../../utils/boqFormulas';
+import { getBenchmarkCalibrationFactor } from '../../utils/pricing';
 
 const FILTER_OPTIONS = [
   { id: 'all', label: 'All Items' },
@@ -30,7 +31,10 @@ const SORT_OPTIONS = [
   { id: 'formula', label: 'Formula First' },
 ];
 
-const getBenchmarkValue = (item) => Number(item?.benchmarkRate || item?.benchmarkMetadata?.rate || 0);
+const getBenchmarkValue = (item) => {
+  const baseRate = Number(item?.benchmarkRate || item?.benchmarkMetadata?.rate || 0);
+  return baseRate * getBenchmarkCalibrationFactor(item);
+};
 const hasFormulaSupport = (item) => Boolean(item?.defaultFormulaType && item.defaultFormulaType !== 'manual');
 
 const buildSearchText = (item) => (
