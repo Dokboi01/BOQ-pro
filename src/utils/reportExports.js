@@ -2,6 +2,12 @@ import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
 import { getItemTotal, getItemUnitRate } from './pricing';
+import {
+  formatReportNumber,
+  getReportItemDescription,
+  getReportItemQuantity,
+  getSafeReportFileName
+} from './reportRows';
 
 const NAIRA = '\u20A6';
 
@@ -22,6 +28,18 @@ const formatMoney = (value) => {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   })}`;
+};
+
+const downloadBlob = (blob, fileName) => {
+  const url = window.URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = fileName;
+  anchor.style.display = 'none';
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => window.URL.revokeObjectURL(url), 0);
 };
 
 const buildProjectMeta = (projectInfo, boqData) => {
@@ -97,9 +115,9 @@ export const exportToExcel = async (projectInfo, boqData, isUnpriced) => {
       const total = getItemTotal(item, meta.region);
       const row = worksheet.addRow([
         itemIndex + 1,
-        item.description,
+        getReportItemDescription(item),
         item.unit,
-        item.qty,
+        getReportItemQuantity(item),
         isUnpriced ? '' : rate,
         isUnpriced ? '' : total
       ]);
@@ -145,12 +163,7 @@ export const exportToExcel = async (projectInfo, boqData, isUnpriced) => {
 
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  const url = window.URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = `${meta.title.replace(/\s+/g, '_')}_BEME.xlsx`;
-  anchor.click();
-  window.URL.revokeObjectURL(url);
+  downloadBlob(blob, `${getSafeReportFileName(meta.title)}_BEME.xlsx`);
 };
 
 export const exportToPDF = (projectInfo, boqData, isUnpriced) => {
@@ -249,11 +262,11 @@ export const exportToPDF = (projectInfo, boqData, isUnpriced) => {
       const total = getItemTotal(item, meta.region);
       tableData.push([
         { content: `${sectionCode}.${itemIndex + 1}`, styles: { halign: 'center', fontSize: 7 } },
-        item.description,
+        getReportItemDescription(item),
         item.unit,
-        Number(item.qty || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-        isUnpriced ? '-' : Number(rate || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }),
-        isUnpriced ? '-' : Number(total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })
+        formatReportNumber(getReportItemQuantity(item), { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        isUnpriced ? '-' : formatReportNumber(rate, { minimumFractionDigits: 2 }),
+        isUnpriced ? '-' : formatReportNumber(total, { minimumFractionDigits: 2 })
       ]);
     });
 
@@ -307,7 +320,7 @@ export const exportToPDF = (projectInfo, boqData, isUnpriced) => {
     styles: { cellPadding: 6, fontSize: 9 }
   });
 
-  const sumFinalY = doc.lastAutoTable.finalY + 5;
+  const sumFinalY = (doc.lastAutoTable?.finalY || 40) + 5;
   if (!isUnpriced) {
     doc.setFillColor(15, 23, 42);
     doc.roundedRect(margin, sumFinalY, contentWidth, 18, 2, 2, 'F');
@@ -352,7 +365,7 @@ export const exportToPDF = (projectInfo, boqData, isUnpriced) => {
   doc.text('CHECKED BY', pageWidth - margin - 60, 105);
   doc.setFont('helvetica', 'normal');
   doc.text(meta.checkedBy, pageWidth - margin - 60, 110);
-  doc.save(`${meta.title.replace(/\s+/g, '_')}_BEME.pdf`);
+  doc.save(`${getSafeReportFileName(meta.title)}_BEME.pdf`);
 };
 
 export const exportMaterialsToPDF = (projectInfo, materialData) => {
@@ -392,5 +405,5 @@ export const exportMaterialsToPDF = (projectInfo, materialData) => {
   doc.setFontSize(9);
   doc.setTextColor(255, 255, 255);
   doc.text(`TOTAL UNIQUE MATERIALS: ${(materialData || []).length}`, margin + 8, finalY + 9);
-  doc.save(`${title.replace(/\s+/g, '_')}_Material_Schedule.pdf`);
+  doc.save(`${getSafeReportFileName(title)}_Material_Schedule.pdf`);
 };
