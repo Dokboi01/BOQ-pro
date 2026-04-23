@@ -825,7 +825,13 @@ const getRefreshRateFromAutoResult = (item, autoRated, region) => {
   return getEffectiveBenchmarkRate({
     ...item,
     benchmark: autoRated.benchmark,
-    benchmarkRegionalRates: autoRated.benchmarkRegionalRates || {}
+    benchmarkRegionalRates: autoRated.benchmarkRegionalRates || {},
+    benchmarkMetadata: {
+      ...(item?.benchmarkMetadata || {}),
+      sourceType: 'market-refresh',
+      confidenceLevel: 'medium',
+      calibrationFactor: null,
+    },
   }, region) || clampNumber(autoRated.rate);
 };
 
@@ -962,9 +968,19 @@ export const applyBenchmarkRefreshToItem = (item, insight, region = 'Lagos') => 
   const nextItem = {
     ...item,
     benchmark: insight.autoRated.benchmark,
+    benchmarkRate: insight.autoRated.benchmark,
     benchmarkRegionalRates: insight.autoRated.benchmarkRegionalRates || item.benchmarkRegionalRates || null,
     benchmarkEvidence: insight.autoRated.benchmarkEvidence || item.benchmarkEvidence || null,
     benchmarkMatchSource: insight.autoRated.matchSource || item.benchmarkMatchSource || null,
+    benchmarkMetadata: {
+      ...(item.benchmarkMetadata || {}),
+      rate: insight.autoRated.benchmark,
+      sourceType: 'market-refresh',
+      sourceNote: 'Updated from BOQ-Pro benchmark refresh using the current material/rate reference library.',
+      dateCaptured: new Date().toISOString().slice(0, 10),
+      confidenceLevel: 'medium',
+      calibrationFactor: null,
+    },
   };
 
   const shouldRefreshBreakdown = item.useBenchmark
@@ -975,7 +991,14 @@ export const applyBenchmarkRefreshToItem = (item, insight, region = 'Lagos') => 
     nextItem.breakdown = insight.autoRated.breakdown;
   }
 
-  nextItem.total = getItemTotal(nextItem, region);
+  const nextUnitRate = getItemUnitRate(nextItem, region);
+  const nextTotal = getItemTotal(nextItem, region);
+
+  nextItem.resolvedUnitRate = nextUnitRate;
+  nextItem.unitRate = nextUnitRate;
+  nextItem.rate = nextUnitRate;
+  nextItem.amount = nextTotal;
+  nextItem.total = nextTotal;
   return nextItem;
 };
 
@@ -1045,10 +1068,19 @@ export const getProjectBenchmarkRefreshAnalytics = (
 export const repriceSectionsForRegion = (sections = [], region = 'Lagos') => {
   return sections.map((section) => ({
     ...section,
-    items: (section.items || []).map((item) => ({
-      ...item,
-      total: getItemTotal(item, region)
-    }))
+    items: (section.items || []).map((item) => {
+      const unitRate = getItemUnitRate(item, region);
+      const total = getItemTotal(item, region);
+
+      return {
+        ...item,
+        resolvedUnitRate: unitRate,
+        unitRate,
+        rate: unitRate,
+        amount: total,
+        total,
+      };
+    })
   }));
 };
 
