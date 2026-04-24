@@ -119,6 +119,7 @@ const expressionText = 'Unit rate = Materials + Labour + Plant + Transport + Ove
 const expressionFormula = 'materials + labour + plant + transport + overhead';
 const DEFAULT_RATE_SOURCE_OPTIONS = ['benchmark', 'formula', 'manual'];
 const SEED_BENCHMARK_DATE = '2026-04-18';
+const DEFAULT_CATALOG_BENCHMARK_NOTE = 'Catalog seed benchmark. Replace with verified Nigerian market rate.';
 
 const normalizeKeywords = (keywords = []) => (
   (Array.isArray(keywords) ? keywords : [])
@@ -241,7 +242,13 @@ const baseCatalogItem = ({
     structureType,
     billSection,
     benchmarkRate,
-    benchmarkMetadata: benchmarkMetadata || buildBenchmarkMetadata({ rate: benchmarkRate }),
+    benchmarkMetadata: benchmarkMetadata || buildSeedBenchmarkMetadata({
+      rate: benchmarkRate,
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: DEFAULT_CATALOG_BENCHMARK_NOTE,
+      confidenceLevel: 'low',
+    }),
     defaultFormulaType,
     formulaText,
     formulaBasis: normalizeFormulaBasis(formulaBasis),

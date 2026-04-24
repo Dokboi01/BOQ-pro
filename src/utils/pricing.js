@@ -687,13 +687,16 @@ const SEED_BENCHMARK_CONFIDENCE_FACTORS = {
   medium: 0.85,
   high: 1,
 };
+const LEGACY_CATALOG_BENCHMARK_FACTOR = 0.72;
 
 export const getBenchmarkCalibrationFactor = (item = {}) => {
   const metadata = item?.benchmarkMetadata || {};
   const explicitFactor = clampNumber(metadata.calibrationFactor);
+  const sourceType = String(metadata.sourceType || '').toLowerCase();
 
   if (explicitFactor > 0) return explicitFactor;
-  if (metadata.sourceType !== 'seed') return 1;
+  if (sourceType === 'catalog') return LEGACY_CATALOG_BENCHMARK_FACTOR;
+  if (sourceType !== 'seed' && sourceType !== 'seed-placeholder') return 1;
 
   const confidenceKey = String(metadata.confidenceLevel || 'low').toLowerCase();
   return SEED_BENCHMARK_CONFIDENCE_FACTORS[confidenceKey] || SEED_BENCHMARK_CONFIDENCE_FACTORS.low;
