@@ -3,6 +3,7 @@ import {
   Zap, ChevronRight, Lock, FileText, PieChart, Package, ShieldCheck, AlertTriangle 
 } from 'lucide-react';
 import { getItemTotal, getItemUnitRate } from '../../utils/pricing';
+import { formatReportNumber, getReportItemDescription, getReportItemQuantity } from '../../utils/reportRows';
 
 const ReportViewer = ({ 
   activeReport, 
@@ -56,11 +57,11 @@ const ReportViewer = ({
                 return (
                   <tr key={iidx}>
                     <td>{iidx + 1}</td>
-                    <td className="text-left">{item.description}</td>
+                    <td className="text-left">{getReportItemDescription(item)}</td>
                     <td>{item.unit}</td>
-                    <td>{item.qty.toLocaleString()}</td>
-                    <td>{rate.toLocaleString()}</td>
-                    <td>{total.toLocaleString()}</td>
+                    <td>{formatReportNumber(getReportItemQuantity(item))}</td>
+                    <td>{formatReportNumber(rate)}</td>
+                    <td>{formatReportNumber(total)}</td>
                   </tr>
                 );
               })}
@@ -143,11 +144,11 @@ const ReportViewer = ({
             {voItems.length > 0 ? voItems.map((item, idx) => (
               <tr key={item.id}>
                 <td>{idx + 1}</td>
-                <td className="text-bold">{item.description}</td>
+                <td className="text-bold">{getReportItemDescription(item)}</td>
                 <td>{item.unit}</td>
-                <td>{item.qty.toLocaleString()}</td>
-                <td>{item.rate.toLocaleString()}</td>
-                <td className="text-right">₦{(item.qty * item.rate).toLocaleString()}</td>
+                <td>{formatReportNumber(getReportItemQuantity(item))}</td>
+                <td>{formatReportNumber(item.rate)}</td>
+                <td className="text-right">₦{formatReportNumber(getReportItemQuantity(item) * item.rate)}</td>
               </tr>
             )) : (
               <tr>

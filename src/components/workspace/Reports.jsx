@@ -19,6 +19,8 @@ import { hasFeature } from '../../data/plans';
 import { generateProjectSummary } from '../../utils/aiService';
 import { exportToExcel, exportToPDF, exportMaterialsToPDF } from '../../utils/reportExports';
 import { getItemTotal, getItemUnitRate } from '../../utils/pricing';
+import { getReportItemQuantity } from '../../utils/reportRows';
+import { useToast } from '../ui/useToast';
 import ShareModal from './ShareModal';
 import ReportViewer from './ReportViewer';
 
@@ -29,6 +31,7 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isUnpriced, setIsUnpriced] = useState(false);
+  const toast = useToast();
 
   const activeProject = projects.find(p => p.id === activeProjectId) || projects[0];
 
@@ -154,8 +157,8 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
             if (!agg[key]) {
               agg[key] = { item: mat.name, unit: mat.unit, totalQty: 0, usage: [] };
             }
-            // Quantity in breakdown is per unit of item. So total mat qty = item.qty * mat.qty
-            agg[key].totalQty += (item.qty * mat.qty);
+            // Quantity in breakdown is per unit of BOQ item.
+            agg[key].totalQty += (getReportItemQuantity(item) * (Number(mat.qty) || 0));
             if (!agg[key].usage.includes(section.title)) {
               agg[key].usage.push(section.title);
             }
@@ -189,9 +192,35 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
     }
   }, [activeReport, projectSummary, projectInfo.title, summaryData.total, boqData]);
 
-  const handleExportExcel = () => exportToExcel(projectInfo, boqData, isUnpriced);
-  const handleExportPDF = () => exportToPDF(projectInfo, boqData, isUnpriced);
-  const handleExportMaterialsPDF = () => exportMaterialsToPDF(projectInfo, materialData, boqData);
+  const handleExportExcel = async () => {
+    try {
+      await exportToExcel(projectInfo, boqData, isUnpriced);
+      toast.success('Excel report exported successfully.');
+    } catch (error) {
+      console.error('Excel export failed:', error);
+      toast.error('Excel export failed. Please try again.');
+    }
+  };
+
+  const handleExportPDF = () => {
+    try {
+      exportToPDF(projectInfo, boqData, isUnpriced);
+      toast.success('PDF report exported successfully.');
+    } catch (error) {
+      console.error('PDF export failed:', error);
+      toast.error('PDF export failed. Please try again.');
+    }
+  };
+
+  const handleExportMaterialsPDF = () => {
+    try {
+      exportMaterialsToPDF(projectInfo, materialData);
+      toast.success('Material PDF exported successfully.');
+    } catch (error) {
+      console.error('Material PDF export failed:', error);
+      toast.error('Material PDF export failed. Please try again.');
+    }
+  };
 
 
   const renderSelectionScreen = () => (

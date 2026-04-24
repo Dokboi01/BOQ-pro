@@ -3,6 +3,18 @@ import {
   evaluateBoqFormulaRate,
   normalizeEditableInputs,
 } from '../utils/boqFormulas';
+import { ROAD_DRAINAGE_ITEMS } from './catalog/roadDrainage';
+import { ROAD_EARTHWORK_ITEMS } from './catalog/roadEarthworks';
+import {
+  ROAD_EXTERNAL_FINISHING_ITEMS,
+  ROAD_FURNITURE_ITEMS,
+} from './catalog/roadFurnitureFinishing';
+import {
+  ROAD_BASE_COURSE_ITEMS,
+} from './catalog/roadPavementLayers';
+import { ROAD_SUB_BASE_ITEMS } from './catalog/roadSubBase';
+import { ROAD_SUBGRADE_ITEMS } from './catalog/roadSubgrade';
+import { ROAD_SURFACING_ITEMS } from './catalog/roadSurfacing';
 
 export const STRUCTURE_TYPES = {
   BUILDING: 'Building',
@@ -131,6 +143,7 @@ const buildBenchmarkMetadata = ({
   sourceNote = '',
   dateCaptured = null,
   confidenceLevel = rate > 0 ? 'medium' : 'low',
+  calibrationFactor = null,
 } = {}) => ({
   rate: Number(rate) || 0,
   currency,
@@ -139,6 +152,7 @@ const buildBenchmarkMetadata = ({
   sourceNote,
   dateCaptured,
   confidenceLevel,
+  ...(calibrationFactor ? { calibrationFactor: Number(calibrationFactor) } : {}),
 });
 
 const buildSeedBenchmarkMetadata = ({
@@ -147,13 +161,16 @@ const buildSeedBenchmarkMetadata = ({
   sourceNote = 'Seed benchmark placeholder for BOQ-Pro. Replace with current market data.',
   dateCaptured = SEED_BENCHMARK_DATE,
   confidenceLevel = 'low',
+  calibrationFactor = 0.72,
+  sourceType = 'seed',
 } = {}) => buildBenchmarkMetadata({
   rate,
   region,
-  sourceType: 'seed',
+  sourceType,
   sourceNote,
   dateCaptured,
   confidenceLevel,
+  calibrationFactor,
 });
 
 const buildSectionMeta = (id, title, description, metadata = {}) => {
@@ -206,6 +223,7 @@ const baseCatalogItem = ({
   pickerHint = '',
   isRecommended = false,
   rateSourceOptions = DEFAULT_RATE_SOURCE_OPTIONS,
+  selectedRateSource = null,
 }) => {
   const normalizedEditableInputs = normalizeEditableInputs(editableInputs);
   const normalizedExampleInputs = normalizeEditableInputs(
@@ -241,6 +259,7 @@ const baseCatalogItem = ({
     ]),
     pickerHint,
     isRecommended,
+    selectedRateSource: selectedRateSource || (defaultFormulaType !== 'manual' ? 'formula' : 'manual'),
     rateSourceOptions: Array.isArray(rateSourceOptions) && rateSourceOptions.length > 0
       ? [...rateSourceOptions]
       : [...DEFAULT_RATE_SOURCE_OPTIONS],
@@ -271,6 +290,7 @@ const manualItem = ({
   pickerHint = '',
   isRecommended = false,
   rateSourceOptions = DEFAULT_RATE_SOURCE_OPTIONS,
+  selectedRateSource = null,
 }) => baseCatalogItem({
   id,
   code,
@@ -289,6 +309,7 @@ const manualItem = ({
   pickerHint,
   isRecommended,
   rateSourceOptions,
+  selectedRateSource,
 });
 
 const formulaRateItem = ({
@@ -311,6 +332,7 @@ const formulaRateItem = ({
   pickerHint = '',
   isRecommended = false,
   rateSourceOptions = DEFAULT_RATE_SOURCE_OPTIONS,
+  selectedRateSource = null,
 }) => {
   const computedBenchmarkRate = evaluateBoqFormulaRate({
     defaultFormulaType: 'expression',
@@ -341,6 +363,7 @@ const formulaRateItem = ({
     pickerHint,
     isRecommended,
     rateSourceOptions,
+    selectedRateSource,
   });
 };
 
@@ -419,7 +442,9 @@ const roadFormulaItem = ({
   benchmarkRate,
   benchmarkNote = '',
   benchmarkDateCaptured = SEED_BENCHMARK_DATE,
+  benchmarkSourceType = 'seed',
   notes = '',
+  selectedRateSource = 'formula',
 }) => {
   const inputs = buildComponentInputs(components, 'NGN');
   const resolvedFormulaExpression = formulaExpression || buildSumExpression(components);
@@ -449,6 +474,7 @@ const roadFormulaItem = ({
       sourceNote: benchmarkNote || roadSeedBenchmarkNote(name, billSection),
       dateCaptured: benchmarkDateCaptured,
       confidenceLevel: resolvedBenchmarkRate > 0 ? 'low' : 'low',
+      sourceType: benchmarkSourceType,
     }),
     formulaText: resolvedFormulaText,
     formulaBasis,
@@ -458,6 +484,7 @@ const roadFormulaItem = ({
     pickerHint,
     isRecommended,
     notes,
+    selectedRateSource,
   });
 };
 
@@ -2131,6 +2158,26 @@ const createRoadSiteClearanceDemolitionItems = (structureCode = ROAD_CODE) => {
   ];
 };
 
+const roadMeasuredItem = (structureCode, sectionCode, index, billSection, item) => {
+  const components = item.components || [];
+  const componentBasis = components
+    .map((component) => component.basis || component.label)
+    .filter(Boolean);
+
+  return roadFormulaItem({
+    code: makeItemCode(structureCode, sectionCode, index),
+    billSection,
+    ...item,
+    components,
+    formulaText: item.formulaText || buildSumFormulaText(`Rate/${item.unit || 'unit'}`, components),
+    formulaBasis: item.formulaBasis && item.formulaBasis.length > 0 ? item.formulaBasis : componentBasis,
+  });
+};
+
+const roadMeasuredItems = (structureCode, sectionCode, billSection, entries = []) => (
+  entries.map((entry, index) => roadMeasuredItem(structureCode, sectionCode, index, billSection, entry))
+);
+
 const BUILDING_SECTIONS = [
   catalogSection(
     BUILDING_CODE,
@@ -2201,53 +2248,14 @@ const ROAD_SECTIONS = [
       emptyStateMessage: 'Open the Road site-clearance library and add only the clearing, demolition, disposal, salvage, and environmental items that apply to this corridor.',
     }
   ),
-  catalogSection(ROAD_CODE, 'earthworks', 'Earthworks', 'Formation shaping, excavation, fill, and compaction.', [
-    manualItem({ name: 'Cut to spoil', description: 'Excavate cut sections to line and level.', unit: 'm³', benchmarkRate: 3200 }),
-    manualItem({ name: 'Imported selected fill', description: 'Imported selected fill for embankment and formation.', unit: 'm³', benchmarkRate: 10200 }),
-    manualItem({ name: 'Compaction to specification', description: 'Spread, water, and compact fill to required density.', unit: 'm²', benchmarkRate: 820 }),
-    manualItem({ name: 'Borrow pit haulage', description: 'Haul approved fill material from borrow pit to site.', unit: 'm³', benchmarkRate: 2150 }),
-    manualItem({ name: 'Formation trimming', description: 'Trim road formation and prepare final earthwork profile.', unit: 'm²', benchmarkRate: 620 }),
-  ]),
-  catalogSection(ROAD_CODE, 'subgrade', 'Subgrade', 'Subgrade preparation and stabilization.', [
-    manualItem({ name: 'Proof rolling', description: 'Proof roll prepared formation and treat soft spots.', unit: 'm²', benchmarkRate: 480 }),
-    manualItem({ name: 'Subgrade trimming', description: 'Fine trim and compact subgrade to level and camber.', unit: 'm²', benchmarkRate: 560 }),
-    formulaRateItem({ name: 'Subgrade stabilization', description: 'Imported sand, cement, or selected material stabilization.', unit: 'm³', inputs: buildRateInputs({ materials: 5800, labour: 950, plant: 520, transport: 330, overhead: 400 }) }),
-    manualItem({ name: 'Capping layer', description: 'Capping layer placed and compacted to thickness.', unit: 'm³', benchmarkRate: 14500 }),
-  ]),
-  catalogSection(ROAD_CODE, 'sub_base', 'Sub-base', 'Granular sub-base construction.', [
-    manualItem({ name: 'Granular sub-base material', description: 'Supply, spread, and compact granular sub-base.', unit: 'm³', benchmarkRate: 28800 }),
-    manualItem({ name: 'Sub-base compaction control', description: 'Watering and compaction of sub-base to specification.', unit: 'm²', benchmarkRate: 820 }),
-    manualItem({ name: 'Localized edge support', description: 'Additional sub-base support at widened edges and junctions.', unit: 'm³', benchmarkRate: 30200 }),
-  ]),
-  catalogSection(ROAD_CODE, 'base_course', 'Base course', 'Crushed stone base or treated base course.', [
-    manualItem({ name: 'Crushed stone base', description: 'Supply and compact crushed stone base course.', unit: 'm³', benchmarkRate: 35800 }),
-    manualItem({ name: 'Treated base adjustments', description: 'Localized treated base or dense graded stone at weak areas.', unit: 'm³', benchmarkRate: 38800 }),
-    manualItem({ name: 'Base course compaction', description: 'Final shaping, watering, and compaction of base course.', unit: 'm²', benchmarkRate: 920 }),
-  ]),
-  catalogSection(ROAD_CODE, 'surfacing', 'Surfacing', 'Bituminous prime coat, binder, and wearing course items.', [
-    manualItem({ name: 'Prime coat', description: 'Prime coat application on prepared base.', unit: 'm²', benchmarkRate: 1450 }),
-    manualItem({ name: 'Tack coat', description: 'Tack coat emulsion application on prepared surface.', unit: 'm²', benchmarkRate: 980 }),
-    formulaRateItem({ name: 'Asphalt binder course', description: 'Asphalt binder course laid and compacted.', unit: 'm²', inputs: buildRateInputs({ materials: 12200, labour: 1800, plant: 1350, transport: 620, overhead: 850 }) }),
-    formulaRateItem({ name: 'Asphalt wearing course', description: 'Asphalt wearing course laid and compacted.', unit: 'm²', inputs: buildRateInputs({ materials: 10800, labour: 1700, plant: 1280, transport: 590, overhead: 780 }) }),
-  ]),
-  catalogSection(ROAD_CODE, 'drainage', 'Drainage', 'Roadside drains, culverts, and catchpit works.', [
-    manualItem({ name: 'Concrete side drains', description: 'Concrete or masonry lined roadside drains.', unit: 'm', benchmarkRate: 19200 }),
-    manualItem({ name: 'Pipe culverts', description: 'Pipe culverts complete with bedding and surround.', unit: 'm', benchmarkRate: 65000 }),
-    manualItem({ name: 'Catchpits and gully inlets', description: 'Catchpits, gully inlets, and related drainage structures.', unit: 'Nr', benchmarkRate: 168000 }),
-    manualItem({ name: 'Outfall protection', description: 'Stone pitching and erosion protection at drain outfalls.', unit: 'm²', benchmarkRate: 28500 }),
-  ]),
-  catalogSection(ROAD_CODE, 'road_furniture', 'Road furniture', 'Markings, signage, guardrails, and lighting.', [
-    manualItem({ name: 'Road markings', description: 'Thermoplastic centerline and edge road markings.', unit: 'm', benchmarkRate: 4200 }),
-    manualItem({ name: 'Regulatory signage', description: 'Road signs complete with posts and fittings.', unit: 'Nr', benchmarkRate: 185000 }),
-    manualItem({ name: 'Guardrails', description: 'Steel guardrails with terminals and accessories.', unit: 'm', benchmarkRate: 24500 }),
-    manualItem({ name: 'Street lighting', description: 'Street lighting poles, luminaires, and cabling.', unit: 'Nr', benchmarkRate: 620000 }),
-  ]),
-  catalogSection(ROAD_CODE, 'external_finishing', 'External / finishing items', 'Shoulders, kerbs, medians, and ancillary finishing works.', [
-    manualItem({ name: 'Granular shoulders', description: 'Granular shoulder construction both sides of carriageway.', unit: 'm²', benchmarkRate: 7600 }),
-    manualItem({ name: 'Precast kerbs', description: 'Precast concrete kerbs including bedding and haunching.', unit: 'm', benchmarkRate: 10200 }),
-    manualItem({ name: 'Median barriers', description: 'Median barriers and concrete separator works.', unit: 'm', benchmarkRate: 46800 }),
-    manualItem({ name: 'Verges and cleanup', description: 'Final verges, tidy-up, and completion cleaning.', unit: 'Sum', benchmarkRate: 980000 }),
-  ]),
+  catalogSection(ROAD_CODE, 'earthworks', 'Earthworks', 'Formation shaping, excavation, fill, and compaction.', roadMeasuredItems(ROAD_CODE, 'EWK', 'Earthworks', ROAD_EARTHWORK_ITEMS)),
+  catalogSection(ROAD_CODE, 'subgrade', 'Subgrade', 'Subgrade preparation and stabilization.', roadMeasuredItems(ROAD_CODE, 'SGR', 'Subgrade', ROAD_SUBGRADE_ITEMS)),
+  catalogSection(ROAD_CODE, 'sub_base', 'Sub-base', 'Granular sub-base construction.', roadMeasuredItems(ROAD_CODE, 'SUB', 'Sub-base', ROAD_SUB_BASE_ITEMS)),
+  catalogSection(ROAD_CODE, 'base_course', 'Base course', 'Crushed stone base or treated base course.', roadMeasuredItems(ROAD_CODE, 'BAS', 'Base course', ROAD_BASE_COURSE_ITEMS)),
+  catalogSection(ROAD_CODE, 'surfacing', 'Surfacing', 'Bituminous prime coat, binder, and wearing course items.', roadMeasuredItems(ROAD_CODE, 'SUR', 'Surfacing', ROAD_SURFACING_ITEMS)),
+  catalogSection(ROAD_CODE, 'drainage', 'Drainage', 'Roadside drains, culverts, and catchpit works.', roadMeasuredItems(ROAD_CODE, 'DRN', 'Drainage', ROAD_DRAINAGE_ITEMS)),
+  catalogSection(ROAD_CODE, 'road_furniture', 'Road furniture', 'Markings, signage, guardrails, and lighting.', roadMeasuredItems(ROAD_CODE, 'FUR', 'Road furniture', ROAD_FURNITURE_ITEMS)),
+  catalogSection(ROAD_CODE, 'external_finishing', 'External / finishing items', 'Shoulders, kerbs, medians, and ancillary finishing works.', roadMeasuredItems(ROAD_CODE, 'FIN', 'External / finishing items', ROAD_EXTERNAL_FINISHING_ITEMS)),
 ];
 
 const BRIDGE_SECTIONS = [
@@ -2722,6 +2730,7 @@ export const cloneCatalogItemToProjectItem = (catalogItem, { structureType, bill
       sourceNote: catalogItem.benchmarkMetadata?.sourceNote || 'BOQ-Pro item library benchmark',
       dateCaptured: catalogItem.benchmarkMetadata?.dateCaptured || null,
       confidenceLevel: catalogItem.benchmarkMetadata?.confidenceLevel || (catalogBenchmarkRate > 0 ? 'medium' : 'low'),
+      calibrationFactor: catalogItem.benchmarkMetadata?.calibrationFactor || null,
     }),
     // --- legacy / compat aliases (kept for backward compatibility) ---
     unitRate: resolvedUnitRate,

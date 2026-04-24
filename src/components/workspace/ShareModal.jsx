@@ -5,6 +5,12 @@ import {
 import { useToast } from '../ui/useToast';
 import { sendReportEmail, shareViaWhatsApp, shareViaNative, copyShareTextToClipboard } from '../../utils/emailService';
 import { getItemTotal, getItemUnitRate } from '../../utils/pricing';
+import {
+  formatReportNumber,
+  getReportItemDescription,
+  getReportItemQuantity,
+  getSafeReportFileName
+} from '../../utils/reportRows';
 import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
@@ -74,7 +80,7 @@ const ShareModal = ({ isOpen, onClose, projectInfo, boqData, grandTotal }) => {
     setIsSending(true);
     try {
       const attachments = [];
-      const safeProjectTitle = (projectInfo.title || 'BOQ_Report').replace(/[^\w.-]+/g, '_');
+      const safeProjectTitle = getSafeReportFileName(projectInfo.title);
 
       if (emailConfig.includePDF) {
         const doc = new jsPDF();
@@ -93,11 +99,11 @@ const ShareModal = ({ isOpen, onClose, projectInfo, boqData, grandTotal }) => {
             const total = getItemTotal(item, projectRegion);
             tableData.push([
               idx + 1,
-              item.description,
+              getReportItemDescription(item),
               item.unit,
-              item.qty.toLocaleString(),
-              rate.toLocaleString(),
-              total.toLocaleString()
+              formatReportNumber(getReportItemQuantity(item)),
+              formatReportNumber(rate),
+              formatReportNumber(total)
             ]);
           });
         });
@@ -129,7 +135,13 @@ const ShareModal = ({ isOpen, onClose, projectInfo, boqData, grandTotal }) => {
         worksheet.addRow(['Description', 'Unit', 'Qty', 'Rate', 'Total']).font = { bold: true };
         boqData.forEach(s => {
           worksheet.addRow([s.title]).font = { bold: true };
-          s.items.forEach(i => worksheet.addRow([i.description, i.unit, i.qty, getItemUnitRate(i, projectRegion), getItemTotal(i, projectRegion)]));
+          s.items.forEach(i => worksheet.addRow([
+            getReportItemDescription(i),
+            i.unit,
+            getReportItemQuantity(i),
+            getItemUnitRate(i, projectRegion),
+            getItemTotal(i, projectRegion)
+          ]));
         });
         const buffer = await workbook.xlsx.writeBuffer();
         const excelBase64 = toBase64(buffer);
