@@ -162,10 +162,11 @@ const buildSeedBenchmarkMetadata = ({
   dateCaptured = SEED_BENCHMARK_DATE,
   confidenceLevel = 'low',
   calibrationFactor = 0.72,
+  sourceType = 'seed',
 } = {}) => buildBenchmarkMetadata({
   rate,
   region,
-  sourceType: 'seed',
+  sourceType,
   sourceNote,
   dateCaptured,
   confidenceLevel,
@@ -222,6 +223,7 @@ const baseCatalogItem = ({
   pickerHint = '',
   isRecommended = false,
   rateSourceOptions = DEFAULT_RATE_SOURCE_OPTIONS,
+  selectedRateSource = null,
 }) => {
   const normalizedEditableInputs = normalizeEditableInputs(editableInputs);
   const normalizedExampleInputs = normalizeEditableInputs(
@@ -257,6 +259,7 @@ const baseCatalogItem = ({
     ]),
     pickerHint,
     isRecommended,
+    selectedRateSource: selectedRateSource || (defaultFormulaType !== 'manual' ? 'formula' : 'manual'),
     rateSourceOptions: Array.isArray(rateSourceOptions) && rateSourceOptions.length > 0
       ? [...rateSourceOptions]
       : [...DEFAULT_RATE_SOURCE_OPTIONS],
@@ -287,6 +290,7 @@ const manualItem = ({
   pickerHint = '',
   isRecommended = false,
   rateSourceOptions = DEFAULT_RATE_SOURCE_OPTIONS,
+  selectedRateSource = null,
 }) => baseCatalogItem({
   id,
   code,
@@ -305,6 +309,7 @@ const manualItem = ({
   pickerHint,
   isRecommended,
   rateSourceOptions,
+  selectedRateSource,
 });
 
 const formulaRateItem = ({
@@ -327,6 +332,7 @@ const formulaRateItem = ({
   pickerHint = '',
   isRecommended = false,
   rateSourceOptions = DEFAULT_RATE_SOURCE_OPTIONS,
+  selectedRateSource = null,
 }) => {
   const computedBenchmarkRate = evaluateBoqFormulaRate({
     defaultFormulaType: 'expression',
@@ -357,6 +363,7 @@ const formulaRateItem = ({
     pickerHint,
     isRecommended,
     rateSourceOptions,
+    selectedRateSource,
   });
 };
 
@@ -435,7 +442,9 @@ const roadFormulaItem = ({
   benchmarkRate,
   benchmarkNote = '',
   benchmarkDateCaptured = SEED_BENCHMARK_DATE,
+  benchmarkSourceType = 'seed',
   notes = '',
+  selectedRateSource = 'formula',
 }) => {
   const inputs = buildComponentInputs(components, 'NGN');
   const resolvedFormulaExpression = formulaExpression || buildSumExpression(components);
@@ -465,6 +474,7 @@ const roadFormulaItem = ({
       sourceNote: benchmarkNote || roadSeedBenchmarkNote(name, billSection),
       dateCaptured: benchmarkDateCaptured,
       confidenceLevel: resolvedBenchmarkRate > 0 ? 'low' : 'low',
+      sourceType: benchmarkSourceType,
     }),
     formulaText: resolvedFormulaText,
     formulaBasis,
@@ -474,6 +484,7 @@ const roadFormulaItem = ({
     pickerHint,
     isRecommended,
     notes,
+    selectedRateSource,
   });
 };
 
