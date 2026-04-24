@@ -119,6 +119,7 @@ const expressionText = 'Unit rate = Materials + Labour + Plant + Transport + Ove
 const expressionFormula = 'materials + labour + plant + transport + overhead';
 const DEFAULT_RATE_SOURCE_OPTIONS = ['benchmark', 'formula', 'manual'];
 const SEED_BENCHMARK_DATE = '2026-04-18';
+const DEFAULT_CATALOG_BENCHMARK_NOTE = 'Catalog seed benchmark. Replace with verified Nigerian market rate.';
 
 const normalizeKeywords = (keywords = []) => (
   (Array.isArray(keywords) ? keywords : [])
@@ -241,7 +242,13 @@ const baseCatalogItem = ({
     structureType,
     billSection,
     benchmarkRate,
-    benchmarkMetadata: benchmarkMetadata || buildBenchmarkMetadata({ rate: benchmarkRate }),
+    benchmarkMetadata: benchmarkMetadata || buildSeedBenchmarkMetadata({
+      rate: benchmarkRate,
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: DEFAULT_CATALOG_BENCHMARK_NOTE,
+      confidenceLevel: 'low',
+    }),
     defaultFormulaType,
     formulaText,
     formulaBasis: normalizeFormulaBasis(formulaBasis),
@@ -2715,10 +2722,11 @@ export const cloneCatalogItemToProjectItem = (catalogItem, { structureType, bill
     rateSourceOptions: Array.isArray(catalogItem.rateSourceOptions) && catalogItem.rateSourceOptions.length > 0
       ? [...catalogItem.rateSourceOptions]
       : [...DEFAULT_RATE_SOURCE_OPTIONS],
-    quantity,
-    qty: quantity,
-    // --- new tri-modal rate model ---
-    selectedRateSource: initialSelectedSource,
+      quantity,
+      qty: quantity,
+      takeoffMeta: null,
+      // --- new tri-modal rate model ---
+      selectedRateSource: initialSelectedSource,
     formulaCalculatedRate,
     resolvedUnitRate,
     manualRate: 0,
@@ -2780,8 +2788,9 @@ export const createCustomBoqItem = ({ structureType = '', billSectionId = '', bi
   qty: 0,
   rate: 0,
   total: 0,
-  benchmark: 0,
-  subcategory: billSectionTitle,
+    benchmark: 0,
+    takeoffMeta: null,
+    subcategory: billSectionTitle,
   materials: [],
   // --- new tri-modal rate model ---
   selectedRateSource: 'manual',

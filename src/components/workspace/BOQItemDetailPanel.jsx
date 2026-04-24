@@ -409,6 +409,7 @@ const BOQItemDetailPanel = ({
               {hasCustomPricing && <MetaRow label="Custom Pricing" value="Active" />}
               {hasBids && <MetaRow label="Bids Received" value={`${item.bids.length}`} />}
               <MetaRow label="Qty Source" value={item.qtySource || 'manual'} />
+              <MetaRow label="Takeoff Method" value={item.takeoffMeta?.templateLabel} />
             </div>
           </Section>
 
