@@ -11,8 +11,8 @@ import {
 } from './catalog/roadFurnitureFinishing';
 import {
   ROAD_BASE_COURSE_ITEMS,
-  ROAD_SUB_BASE_ITEMS,
 } from './catalog/roadPavementLayers';
+import { ROAD_SUB_BASE_ITEMS } from './catalog/roadSubBase';
 import { ROAD_SUBGRADE_ITEMS } from './catalog/roadSubgrade';
 import { ROAD_SURFACING_ITEMS } from './catalog/roadSurfacing';
 
