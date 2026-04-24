@@ -1226,9 +1226,10 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     }
 
     if (unitRate > 0) {
+      const takeoffLabel = item?.takeoffMeta?.templateLabel;
       return {
         text: item.qtySource === 'calculated'
-          ? 'Measured from geometric takeoff and priced successfully.'
+          ? `Measured from ${takeoffLabel || 'takeoff calculator'} and priced successfully.`
           : 'Quantity captured and amount updated successfully.',
         tone: 'success'
       };
@@ -1372,7 +1373,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
 
   const getQuantitySourceLabel = (item) => {
     if (item?.qtySource === 'calculated') {
-      return 'Measured from takeoff';
+      return item?.takeoffMeta?.templateLabel
+        ? `Measured from ${item.takeoffMeta.templateLabel}`
+        : 'Measured from takeoff';
     }
 
     return 'Project quantity';
@@ -3022,9 +3025,15 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           key={calculatingQtyForItem.item.id}
           item={calculatingQtyForItem.item}
           onClose={() => setCalculatingQtyForItem(null)}
-          onApply={(newQty) => {
-            const safeQty = sanitizeNonNegativeNumber(newQty);
-            focusSection(calculatingQtyForItem.sectionId);
+          onApply={(takeoffResult) => {
+            const safeQty = sanitizeNonNegativeNumber(
+              typeof takeoffResult === 'number'
+                ? takeoffResult
+                : (takeoffResult?.quantity ?? takeoffResult?.adjustedQuantity)
+            );
+            if (activeBillSectionId !== calculatingQtyForItem.sectionId) {
+              focusSection(calculatingQtyForItem.sectionId, { persist: false });
+            }
             setSelectedCell((prev) => ({
               sectionId: calculatingQtyForItem.sectionId,
               itemId: calculatingQtyForItem.item.id,
@@ -3037,7 +3046,22 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             updateItem(calculatingQtyForItem.sectionId, calculatingQtyForItem.item.id, {
               qty: safeQty,
               quantity: safeQty,
-              qtySource: 'calculated'
+              qtySource: 'calculated',
+              takeoffMeta: typeof takeoffResult === 'object' && takeoffResult
+                ? {
+                  templateId: takeoffResult.templateId || '',
+                  templateLabel: takeoffResult.templateLabel || '',
+                  recommendedTemplateId: takeoffResult.recommendedTemplateId || '',
+                  recommendedReason: takeoffResult.recommendedReason || '',
+                  formula: takeoffResult.formula || '',
+                  params: takeoffResult.params || {},
+                  allowance: takeoffResult.allowance || 0,
+                  netQuantity: sanitizeNonNegativeNumber(takeoffResult.netQuantity),
+                  appliedQuantity: safeQty,
+                  unitFamilies: Array.isArray(takeoffResult.unitFamilies) ? takeoffResult.unitFamilies : [],
+                  measuredAt: takeoffResult.measuredAt || new Date().toISOString(),
+                }
+                : (calculatingQtyForItem.item.takeoffMeta || null)
             });
             setCalculatingQtyForItem(null);
           }}

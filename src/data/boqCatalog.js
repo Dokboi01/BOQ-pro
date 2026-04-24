@@ -2722,10 +2722,11 @@ export const cloneCatalogItemToProjectItem = (catalogItem, { structureType, bill
     rateSourceOptions: Array.isArray(catalogItem.rateSourceOptions) && catalogItem.rateSourceOptions.length > 0
       ? [...catalogItem.rateSourceOptions]
       : [...DEFAULT_RATE_SOURCE_OPTIONS],
-    quantity,
-    qty: quantity,
-    // --- new tri-modal rate model ---
-    selectedRateSource: initialSelectedSource,
+      quantity,
+      qty: quantity,
+      takeoffMeta: null,
+      // --- new tri-modal rate model ---
+      selectedRateSource: initialSelectedSource,
     formulaCalculatedRate,
     resolvedUnitRate,
     manualRate: 0,
@@ -2787,8 +2788,9 @@ export const createCustomBoqItem = ({ structureType = '', billSectionId = '', bi
   qty: 0,
   rate: 0,
   total: 0,
-  benchmark: 0,
-  subcategory: billSectionTitle,
+    benchmark: 0,
+    takeoffMeta: null,
+    subcategory: billSectionTitle,
   materials: [],
   // --- new tri-modal rate model ---
   selectedRateSource: 'manual',
