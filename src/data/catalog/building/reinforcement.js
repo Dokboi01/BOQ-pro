@@ -1,0 +1,2 @@
+export const BUILDING_REINFORCEMENT_ITEMS = [];
+

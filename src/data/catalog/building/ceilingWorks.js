@@ -1,0 +1,2 @@
+export const BUILDING_CEILINGWORKS_ITEMS = [];
+
