@@ -1,4 +1,4 @@
-import { STRUCTURE_TYPES } from '../../boqCatalog';
+const BUILDING_STRUCTURE_TYPE = 'Building';
 import { formulaRateItem, numericInput } from './helpers';
 
 export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
@@ -6,7 +6,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Site clearing (light vegetation)',
     description: 'Clear site of light vegetation, grass, and small shrubs including disposal.',
     unit: 'm²',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('clearing', 'Clearing', 0, '₦/m²'),
@@ -35,7 +35,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Site clearing (heavy vegetation)',
     description: 'Clear site of heavy vegetation, thick bush, and small trees including disposal.',
     unit: 'm²',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('clearing', 'Clearing', 0, '₦/m²'),
@@ -64,7 +64,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Tree felling',
     description: 'Felling of large trees including sectioning and removal of debris.',
     unit: 'No.',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('cutting', 'Cutting', 0, '₦/No'),
@@ -92,7 +92,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Uprooting tree stumps',
     description: 'Excavate and uproot tree stumps including backfilling of holes.',
     unit: 'No.',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('excavation', 'Excavation', 0, '₦/No'),
@@ -120,7 +120,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Topsoil stripping',
     description: 'Strip topsoil and vegetation to approved depth and stockpile.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('stripping', 'Stripping', 0, '₦/m³'),
@@ -147,7 +147,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Topsoil stockpiling',
     description: 'Loading, haulage, and placement of topsoil in stockpiles.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('loading', 'Loading', 0, '₦/m³'),
@@ -174,7 +174,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Demolition of small structures',
     description: 'Breaking and demolition of small outbuildings or minor masonry structures.',
     unit: 'm²',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('breaking', 'Breaking', 0, '₦/m²'),
@@ -202,7 +202,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Demolition of concrete structures',
     description: 'Demolition of mass or unreinforced concrete structures.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('breaking', 'Breaking', 0, '₦/m³'),
@@ -231,7 +231,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Demolition of block/brick walls',
     description: 'Demolition of internal or external masonry walls including debris removal.',
     unit: 'm²',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('breaking', 'Breaking', 0, '₦/m²'),
@@ -258,7 +258,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Demolition of reinforced concrete',
     description: 'Demolition of reinforced concrete beams, columns, or walls including steel cutting.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('breaking', 'Breaking', 0, '₦/m³'),
@@ -286,7 +286,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Removal of existing foundations',
     description: 'Breaking and excavation of existing foundation structures.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('breaking', 'Breaking', 0, '₦/m³'),
@@ -313,7 +313,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Removal of floor slabs',
     description: 'Breaking and removal of existing concrete floor slabs or hardstanding.',
     unit: 'm²',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('breaking', 'Breaking', 0, '₦/m²'),
@@ -341,7 +341,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Removal of roofing materials',
     description: 'Dismantling and removal of existing roofing sheets, trusses, and accessories.',
     unit: 'm²',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('dismantling', 'Dismantling', 0, '₦/m²'),
@@ -368,7 +368,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Removal of doors and windows',
     description: 'Careful dismantling and removal of existing doors, windows, and frames.',
     unit: 'No.',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('dismantling', 'Dismantling', 0, '₦/No'),
@@ -395,7 +395,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Salvaging reusable materials',
     description: 'Careful dismantling and sorting of materials for reuse or resale.',
     unit: 'item',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('careful_dismantling', 'Careful dismantling', 0, '₦/item'),
@@ -422,7 +422,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Loading demolition debris',
     description: 'Loading of demolition waste into trucks for haulage.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('labour', 'Labour', 0, '₦/m³'),
@@ -448,7 +448,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Haulage of debris',
     description: 'Haulage of demolition debris to approved dump site.',
     unit: 'm³-km',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('truck', 'Truck', 0, '₦/m³-km'),
@@ -475,7 +475,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Disposal of debris',
     description: 'Haulage and disposal fees at approved tipping site.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('haulage', 'Haulage', 0, '₦/m³'),
@@ -501,7 +501,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Site levelling after clearing',
     description: 'Final levelling of site after clearing and demolition works.',
     unit: 'm²',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('levelling', 'Levelling', 0, '₦/m²'),
@@ -527,7 +527,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Filling depressions after clearing',
     description: 'Filling of depressions or holes after removal of obstructions.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('fill_material', 'Fill material', 0, '₦/m³'),
@@ -554,7 +554,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Removal of buried obstructions',
     description: 'Excavation and removal of buried concrete, pipes, or other obstructions.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('excavation', 'Excavation', 0, '₦/m³'),
@@ -581,7 +581,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Clearing of rubble',
     description: 'Gathering and removal of rubble and miscellaneous debris.',
     unit: 'm²',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('gathering', 'Gathering', 0, '₦/m²'),
@@ -608,7 +608,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Dust suppression during demolition',
     description: 'Wetting down site and other dust suppression measures.',
     unit: 'day',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('water', 'Water', 0, '₦/day'),
@@ -634,7 +634,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Temporary protection of adjoining property',
     description: 'Protection of neighboring structures or services during works.',
     unit: 'item',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('materials', 'Materials', 0, '₦/item'),
@@ -661,7 +661,7 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     name: 'Final site clearance',
     description: 'Final cleaning and clearing of site prior to handover or construction start.',
     unit: 'm²',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Site Clearance & Demolition',
     inputs: [
       numericInput('cleaning', 'Cleaning', 0, '₦/m²'),
@@ -684,3 +684,4 @@ export const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
     selectedRateSource: 'formula',
   }),
 ];
+

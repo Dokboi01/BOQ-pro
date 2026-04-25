@@ -2226,7 +2226,7 @@ const buildingPreliminariesCatalogItem = (structureCode, index, item) => {
 };
 
 const createBuildingPreliminariesItems = (structureCode = BUILDING_CODE) => (
-  BUILDING_PRELIMINARIES_ITEMS.map((item, index) => buildingPreliminariesCatalogItem(structureCode, index, item))
+  (BuildingCatalog.BUILDING_PRELIMINARIES_ITEMS || []).map((item, index) => buildingPreliminariesCatalogItem(structureCode, index, item))
 );
 
 const BUILDING_LEGACY_SECTIONS = [
@@ -2235,7 +2235,7 @@ const BUILDING_LEGACY_SECTIONS = [
     'preliminaries',
     'Preliminaries',
     'Project preliminaries and startup requirements.',
-    BuildingCatalog.BUILDING_PRELIMINARIES_ITEMS,
+    createBuildingPreliminariesItems(BUILDING_CODE),
     {
       trade: 'Preliminaries',
       pickerPrompt: 'Pick the building preliminaries that the contract genuinely requires, then price each one with the correct duration or lump-sum quantity.',
@@ -2275,7 +2275,7 @@ const BUILDING_SECTIONS = [
     'preliminaries',
     'Preliminaries',
     'General project setup, supervision, temporary works, insurance, HSE, site facilities, and administrative requirements.',
-    BuildingCatalog.BUILDING_PRELIMINARIES_ITEMS,
+    createBuildingPreliminariesItems(BUILDING_CODE),
     {
       trade: 'Preliminaries',
       isPreliminaries: true,

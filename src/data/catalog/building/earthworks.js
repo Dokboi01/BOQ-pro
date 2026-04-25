@@ -1,4 +1,4 @@
-import { STRUCTURE_TYPES } from '../../boqCatalog';
+const BUILDING_STRUCTURE_TYPE = 'Building';
 import { formulaRateItem, manualItem, numericInput } from './helpers';
 
 export const BUILDING_EARTHWORKS_ITEMS = [
@@ -12,7 +12,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Excavation to reduce levels',
     description: 'Excavate to reduce levels over site areas including loading and disposal.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('excavation', 'Excavation', 0, '₦/m³'),
@@ -40,7 +40,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Excavation for strip foundation trenches',
     description: 'Excavate trenches for strip foundations including setting out and trimming.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('setting_out', 'Setting out', 0, '₦/m³'),
@@ -68,7 +68,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Excavation for pad foundations',
     description: 'Excavate for isolated pad foundations including trimming and dewatering.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('excavation', 'Excavation', 0, '₦/m³'),
@@ -96,7 +96,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Excavation for raft foundation',
     description: 'Bulk excavation for raft foundations including loading and disposal.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('bulk_excavation', 'Bulk excavation', 0, '₦/m³'),
@@ -125,7 +125,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Excavation for ground beams',
     description: 'Excavate trenches for ground beams including manual trimming.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('trench_excavation', 'Trench excavation', 0, '₦/m³'),
@@ -153,7 +153,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Excavation in hard material',
     description: 'Breaking and excavation in rock or hard material including disposal.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('breaking', 'Breaking', 0, '₦/m³'),
@@ -182,7 +182,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Excavation in waterlogged ground',
     description: 'Excavation in waterlogged or swampy ground including dewatering.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('excavation', 'Excavation', 0, '₦/m³'),
@@ -211,7 +211,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Backfilling to foundation trenches',
     description: 'Backfill foundation trenches with selected material and compact.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('selected_backfill', 'Selected backfill', 0, '₦/m³'),
@@ -239,7 +239,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Backfilling around foundation walls',
     description: 'Backfill around foundation walls in layers including compaction.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('fill_material', 'Fill material', 0, '₦/m³'),
@@ -267,7 +267,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Filling under ground floor slab',
     description: 'Filling under ground floor slabs including spreading and compaction.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('material', 'Hardcore/fill material', 0, '₦/m³'),
@@ -296,7 +296,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Hardcore filling',
     description: 'Provide and place hardcore material in layers including compaction.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('hardcore_material', 'Hardcore material', 0, '₦/m³'),
@@ -325,7 +325,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Laterite filling',
     description: 'Supply and place selected laterite filling in layers including compaction.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('laterite_supply', 'Laterite supply', 0, '₦/m³'),
@@ -355,7 +355,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Sand filling',
     description: 'Supply and place sharp sand filling including compaction.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('sand_supply', 'Sand supply', 0, '₦/m³'),
@@ -384,7 +384,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Anti-termite soil treatment',
     description: 'Apply approved anti-termite chemical treatment to soil surfaces.',
     unit: 'm²',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('chemical_treatment', 'Chemical treatment', 0, '₦/m²'),
@@ -413,7 +413,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Compaction of filling',
     description: 'Machine compaction of filling materials to required density.',
     unit: 'm²',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('roller_operation', 'Roller/rammer operation', 0, '₦/m²'),
@@ -441,7 +441,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Disposal of surplus excavated material',
     description: 'Loading and haulage of surplus spoil to approved dump site.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('loading', 'Loading', 0, '₦/m³'),
@@ -468,7 +468,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Stockpiling excavated material',
     description: 'Relocation and formation of stockpiles for excavated material.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('loading', 'Loading', 0, '₦/m³'),
@@ -495,7 +495,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Dewatering during excavation',
     description: 'Pumping and removal of water from excavations.',
     unit: 'day',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('pump_hire', 'Pump hire', 0, '₦/day'),
@@ -523,7 +523,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Trimming bottoms of excavation',
     description: 'Manual trimming and levelling of excavation bottoms.',
     unit: 'm²',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('manual_trimming', 'Manual trimming', 0, '₦/m²'),
@@ -550,7 +550,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Earthwork support to sides of excavation',
     description: 'Provide temporary timber or steel support to excavation sides.',
     unit: 'm²',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('support_material', 'Timber/steel support', 0, '₦/m²'),
@@ -578,7 +578,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Formation of ground floor level',
     description: 'Final levelling and compaction of formation level.',
     unit: 'm²',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('levelling', 'Levelling', 0, '₦/m²'),
@@ -606,7 +606,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Filling to make up levels',
     description: 'Place and compact filling to achieve required site levels.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('fill_material', 'Fill material', 0, '₦/m³'),
@@ -635,7 +635,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Removal of unsuitable material',
     description: 'Excavate and dispose of unsuitable material from site.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('excavation', 'Excavation', 0, '₦/m³'),
@@ -663,7 +663,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Replacement of unsuitable material',
     description: 'Place approved fill material to replace unsuitable excavated material.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('approved_fill', 'Approved fill material', 0, '₦/m³'),
@@ -692,7 +692,7 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     name: 'Earthworks testing and compaction control',
     description: 'Field and moisture tests to control compaction quality.',
     unit: 'test',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Earthworks',
     inputs: [
       numericInput('sampling', 'Sampling', 0, '₦/test'),
@@ -717,3 +717,4 @@ export const BUILDING_EARTHWORKS_ITEMS = [
     selectedRateSource: 'formula',
   }),
 ];
+

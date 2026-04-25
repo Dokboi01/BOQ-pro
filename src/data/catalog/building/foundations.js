@@ -1,4 +1,4 @@
-import { STRUCTURE_TYPES } from '../../boqCatalog';
+const BUILDING_STRUCTURE_TYPE = 'Building';
 import { formulaRateItem, manualItem, numericInput, buildRateInputs } from './helpers';
 
 export const BUILDING_FOUNDATIONS_ITEMS = [
@@ -12,7 +12,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Plain concrete blinding',
     description: 'Provide and place plain concrete blinding to required thickness and level.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('cement', 'Cement', 0, '₦/m³'),
@@ -44,7 +44,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Strip foundation concrete',
     description: 'Provide and place concrete to strip foundations including compaction and curing.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('materials', 'Concrete materials', 0, '₦/m³'),
@@ -74,7 +74,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Pad foundation concrete',
     description: 'Provide and place concrete to isolated pad foundations.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('materials', 'Concrete materials', 0, '₦/m³'),
@@ -104,7 +104,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Raft foundation concrete',
     description: 'Provide and place concrete to raft foundations including pumping and finishing.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('materials', 'Concrete materials', 0, '₦/m³'),
@@ -134,7 +134,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Pile cap concrete',
     description: 'Provide and place concrete to pile caps including vibrating and finishing.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('materials', 'Concrete materials', 0, '₦/m³'),
@@ -164,7 +164,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Ground beam concrete',
     description: 'Provide and place concrete to ground beams including vibrating and curing.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('materials', 'Concrete materials', 0, '₦/m³'),
@@ -194,7 +194,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Foundation wall concrete',
     description: 'Provide and place concrete to foundation walls including formwork support.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('materials', 'Concrete materials', 0, '₦/m³'),
@@ -223,7 +223,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Foundation blockwork',
     description: 'Construct foundation walls with sandcrete blocks including mortar.',
     unit: 'm²',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('blocks', 'Blocks', 0, '₦/m²'),
@@ -251,7 +251,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Damp proof membrane',
     description: 'Supply and lay damp proof membrane (DPM) including lapping.',
     unit: 'm²',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('material', 'DPM material', 0, '₦/m²'),
@@ -280,7 +280,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Damp proof course',
     description: 'Supply and lay damp proof course (DPC) to wall bases.',
     unit: 'm',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('material', 'DPC material', 0, '₦/m'),
@@ -308,7 +308,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Hardcore filling under foundation/slab',
     description: 'Provide and place hardcore filling including compaction.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('material', 'Hardcore material', 0, '₦/m³'),
@@ -337,7 +337,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Sand blinding over hardcore',
     description: 'Supply and place sharp sand blinding over hardcore surfaces.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('sand', 'Sand supply', 0, '₦/m³'),
@@ -366,7 +366,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Anti-termite treatment below foundation',
     description: 'Apply anti-termite chemical treatment to foundation surfaces.',
     unit: 'm²',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('chemical', 'Chemical', 0, '₦/m²'),
@@ -395,7 +395,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Reinforcement to strip foundation',
     description: 'Supply and fix reinforcement to strip foundations.',
     unit: 'kg',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('supply', 'Steel supply', 0, '₦/kg'),
@@ -426,7 +426,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Reinforcement to pad foundation',
     description: 'Supply and fix reinforcement to isolated pad foundations.',
     unit: 'kg',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('supply', 'Steel supply', 0, '₦/kg'),
@@ -457,7 +457,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Reinforcement to raft foundation',
     description: 'Supply and fix reinforcement to raft foundations including chairs.',
     unit: 'kg',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('supply', 'Steel supply', 0, '₦/kg'),
@@ -488,7 +488,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Reinforcement to pile caps',
     description: 'Supply and fix reinforcement to pile caps.',
     unit: 'kg',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('supply', 'Steel supply', 0, '₦/kg'),
@@ -519,7 +519,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Reinforcement to ground beams',
     description: 'Supply and fix reinforcement to ground beams.',
     unit: 'kg',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('supply', 'Steel supply', 0, '₦/kg'),
@@ -550,7 +550,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Formwork to foundation sides',
     description: 'Provide and erect formwork to foundation sides including striking.',
     unit: 'm²',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('material', 'Formwork material/hire', 0, '₦/m²'),
@@ -580,7 +580,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Formwork to ground beams',
     description: 'Provide and erect formwork to ground beams.',
     unit: 'm²',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('material', 'Formwork material/hire', 0, '₦/m²'),
@@ -610,7 +610,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Piling works',
     description: 'Comprehensive piling works including mobilization and drilling.',
     unit: 'm',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('mobilization', 'Mobilization of piling rig', 0, '₦/m'),
@@ -639,7 +639,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Pile boring',
     description: 'Boring operations for piles including rig operation and fuel.',
     unit: 'm',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('operation', 'Piling rig operation', 0, '₦/m'),
@@ -668,7 +668,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Pile reinforcement cage',
     description: 'Supply and assembly of reinforcement cages for piles.',
     unit: 'kg',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('supply', 'Steel supply', 0, '₦/kg'),
@@ -698,7 +698,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Pile concrete',
     description: 'Supply and place concrete to piles including pumping.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('supply', 'Concrete supply', 0, '₦/m³'),
@@ -727,7 +727,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Pile testing',
     description: 'Integrity and load testing for piles.',
     unit: 'test',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('equipment', 'Test equipment', 0, '₦/test'),
@@ -756,7 +756,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Foundation waterproofing',
     description: 'Apply waterproofing to foundation surfaces including protection layer.',
     unit: 'm²',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('material', 'Waterproofing material', 0, '₦/m²'),
@@ -785,7 +785,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Substructure drainage layer',
     description: 'Provide and lay drainage layer to substructure surfaces.',
     unit: 'm²',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('material', 'Drainage material', 0, '₦/m²'),
@@ -813,7 +813,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Backfilling around substructure',
     description: 'Backfill around substructure with selected material in layers.',
     unit: 'm³',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('fill', 'Selected fill', 0, '₦/m³'),
@@ -841,7 +841,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Substructure testing and quality control',
     description: 'Concrete cube tests and reinforcement inspections for substructure.',
     unit: 'test',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('sampling', 'Sampling', 0, '₦/test'),
@@ -870,7 +870,7 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     name: 'Foundation setting out and level checks',
     description: 'Detailed setting out for foundations and ongoing level checks.',
     unit: 'item',
-    structureType: STRUCTURE_TYPES.BUILDING,
+    structureType: BUILDING_STRUCTURE_TYPE,
     billSection: 'Substructure / Foundations',
     inputs: [
       numericInput('instruments', 'Survey instruments', 0, '₦/item'),
@@ -894,3 +894,4 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     selectedRateSource: 'formula',
   }),
 ];
+
