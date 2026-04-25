@@ -2185,7 +2185,7 @@ const roadMeasuredItems = (structureCode, sectionCode, billSection, entries = []
   entries.map((entry, index) => roadMeasuredItem(structureCode, sectionCode, index, billSection, entry))
 );
 
-const BUILDING_SECTIONS = [
+const BUILDING_LEGACY_SECTIONS = [
   catalogSection(
     BUILDING_CODE,
     'preliminaries',
@@ -2226,6 +2226,247 @@ const BUILDING_SECTIONS = [
     manualItem({ name: 'Backfilling around foundations', description: 'Backfill around substructure and compact in layers.', unit: 'm³', benchmarkRate: 4200 }),
     manualItem({ name: 'Termite treatment', description: 'Apply anti-termite treatment to hardcore and formation.', unit: 'm²', benchmarkRate: 1350 }),
   ]),
+];
+
+const buildingBillSection = (id, title, description, metadata = {}) => (
+  catalogSection(
+    BUILDING_CODE,
+    id,
+    title,
+    description,
+    [],
+    {
+      trade: metadata.trade || title,
+      pickerPrompt: metadata.pickerPrompt || `Open ${title.toLowerCase()}, review the standard building bill heading, and add only the items that apply to this project before generating BOQ rows.`,
+      emptyStateTitle: metadata.emptyStateTitle || `No ${title.toLowerCase()} items selected yet.`,
+      emptyStateMessage: metadata.emptyStateMessage || `This ${title.toLowerCase()} bill is ready for item selection. Open the library and add only the measured lines that belong in this building BOQ.`,
+      keywords: metadata.keywords || [],
+      ...(metadata.isPreliminaries ? { isPreliminaries: true } : {}),
+    }
+  )
+);
+
+const BUILDING_SECTIONS = [
+  buildingBillSection(
+    'preliminaries',
+    'Preliminaries',
+    'General project setup, supervision, temporary works, insurance, HSE, site facilities, and administrative requirements.',
+    {
+      trade: 'Preliminaries',
+      isPreliminaries: true,
+      pickerPrompt: 'Review the building preliminaries bill and add only the startup, supervision, temporary facilities, welfare, insurance, and HSE items required for this building project.',
+      emptyStateTitle: 'No preliminaries selected yet.',
+      emptyStateMessage: 'This building preliminaries bill is ready for item selection. Add only the preliminaries that genuinely apply to the contract before generating BOQ rows.',
+      keywords: ['building', 'preliminaries', 'temporary works', 'supervision', 'hse', 'site facilities'],
+    }
+  ),
+  buildingBillSection(
+    'site_clearance_demolition',
+    'Site Clearance & Demolition',
+    'Clearing vegetation, removing existing structures, stripping topsoil, and disposing of debris.',
+    {
+      trade: 'Site Preparation',
+      keywords: ['building', 'site clearance', 'demolition', 'topsoil', 'debris disposal'],
+    }
+  ),
+  buildingBillSection(
+    'earthworks',
+    'Earthworks',
+    'Excavation, filling, backfilling, compaction, disposal, and site levelling works.',
+    {
+      trade: 'Earthworks',
+      keywords: ['building', 'earthworks', 'excavation', 'backfilling', 'compaction', 'levelling'],
+    }
+  ),
+  buildingBillSection(
+    'substructure_foundations',
+    'Substructure / Foundations',
+    'Foundation works including blinding, strip footing, pad footing, raft foundation, pile caps, and ground beams.',
+    {
+      trade: 'Substructure',
+      keywords: ['building', 'foundations', 'substructure', 'footing', 'raft foundation', 'pile caps', 'ground beams'],
+    }
+  ),
+  buildingBillSection(
+    'concrete_works',
+    'Concrete Works',
+    'In-situ concrete works for slabs, beams, columns, bases, staircases, lintels, and other concrete elements.',
+    {
+      trade: 'Concrete Works',
+      keywords: ['building', 'concrete', 'slabs', 'beams', 'columns', 'staircases', 'lintels'],
+    }
+  ),
+  buildingBillSection(
+    'reinforcement_works',
+    'Reinforcement Works',
+    'Supply, cutting, bending, fixing, tying, and placing of reinforcement bars and mesh.',
+    {
+      trade: 'Reinforcement',
+      keywords: ['building', 'reinforcement', 'rebar', 'mesh', 'cutting', 'bending', 'fixing'],
+    }
+  ),
+  buildingBillSection(
+    'formwork',
+    'Formwork',
+    'Formwork to foundations, columns, beams, slabs, staircases, walls, and other concrete elements.',
+    {
+      trade: 'Formwork',
+      keywords: ['building', 'formwork', 'shuttering', 'columns', 'beams', 'slabs', 'walls'],
+    }
+  ),
+  buildingBillSection(
+    'blockwork_masonry',
+    'Blockwork / Masonry',
+    'Block walls, brick walls, partitions, mortar works, and related masonry items.',
+    {
+      trade: 'Masonry',
+      keywords: ['building', 'blockwork', 'masonry', 'brickwork', 'partitions', 'mortar'],
+    }
+  ),
+  buildingBillSection(
+    'structural_frame',
+    'Structural Frame',
+    'Main structural frame works including reinforced concrete frame or steel frame elements.',
+    {
+      trade: 'Structural Frame',
+      keywords: ['building', 'structural frame', 'reinforced concrete frame', 'steel frame'],
+    }
+  ),
+  buildingBillSection(
+    'roofing',
+    'Roofing',
+    'Roof trusses, roof covering, flashings, insulation, gutters, fascia, and rainwater goods.',
+    {
+      trade: 'Roofing',
+      keywords: ['building', 'roofing', 'trusses', 'gutters', 'fascia', 'flashings', 'rainwater goods'],
+    }
+  ),
+  buildingBillSection(
+    'doors_windows',
+    'Doors & Windows',
+    'Door frames, door leaves, windows, glazing, ironmongery, and installation accessories.',
+    {
+      trade: 'Openings',
+      keywords: ['building', 'doors', 'windows', 'glazing', 'ironmongery', 'frames'],
+    }
+  ),
+  buildingBillSection(
+    'wall_finishes',
+    'Wall Finishes',
+    'Plastering, rendering, wall tiling, cladding, and other internal/external wall finishes.',
+    {
+      trade: 'Finishes',
+      keywords: ['building', 'wall finishes', 'plastering', 'rendering', 'wall tiling', 'cladding'],
+    }
+  ),
+  buildingBillSection(
+    'floor_finishes',
+    'Floor Finishes',
+    'Screeding, floor tiles, terrazzo, marble, timber flooring, vinyl, and related finishes.',
+    {
+      trade: 'Finishes',
+      keywords: ['building', 'floor finishes', 'screeding', 'tiles', 'terrazzo', 'marble', 'vinyl'],
+    }
+  ),
+  buildingBillSection(
+    'ceiling_works',
+    'Ceiling Works',
+    'POP ceiling, suspended ceiling, PVC ceiling, gypsum board ceiling, and ceiling accessories.',
+    {
+      trade: 'Finishes',
+      keywords: ['building', 'ceiling', 'pop', 'suspended ceiling', 'pvc ceiling', 'gypsum board'],
+    }
+  ),
+  buildingBillSection(
+    'painting_decoration',
+    'Painting & Decoration',
+    'Primer, emulsion paint, gloss paint, textured paint, protective coatings, and decorative finishes.',
+    {
+      trade: 'Finishes',
+      keywords: ['building', 'painting', 'decoration', 'emulsion', 'gloss paint', 'coatings'],
+    }
+  ),
+  buildingBillSection(
+    'plumbing_drainage',
+    'Plumbing & Drainage',
+    'Water supply pipes, waste pipes, sanitary fittings, floor drains, inspection chambers, and internal drainage.',
+    {
+      trade: 'Plumbing',
+      keywords: ['building', 'plumbing', 'drainage', 'sanitary fittings', 'waste pipes', 'floor drains'],
+    }
+  ),
+  buildingBillSection(
+    'electrical_installation',
+    'Electrical Installation',
+    'Conduits, wiring, switches, sockets, lighting points, distribution boards, earthing, and electrical fixtures.',
+    {
+      trade: 'Electrical',
+      keywords: ['building', 'electrical', 'conduits', 'wiring', 'switches', 'sockets', 'earthing'],
+    }
+  ),
+  buildingBillSection(
+    'mechanical_services',
+    'Mechanical Services',
+    'HVAC, ventilation, fire protection, pumps, ducts, and other mechanical installations.',
+    {
+      trade: 'Mechanical',
+      keywords: ['building', 'mechanical', 'hvac', 'ventilation', 'fire protection', 'ducts', 'pumps'],
+    }
+  ),
+  buildingBillSection(
+    'water_supply_storage',
+    'Water Supply & Storage',
+    'Borehole, water tanks, pumps, pipe connections, supports, and water storage systems.',
+    {
+      trade: 'Water Services',
+      keywords: ['building', 'water supply', 'storage', 'borehole', 'water tanks', 'pumps'],
+    }
+  ),
+  buildingBillSection(
+    'sewage_waste_disposal',
+    'Sewage & Waste Disposal',
+    'Septic tanks, soakaway pits, sewer pipes, manholes, and wastewater disposal systems.',
+    {
+      trade: 'Sanitation',
+      keywords: ['building', 'sewage', 'waste disposal', 'septic tank', 'soakaway', 'manholes'],
+    }
+  ),
+  buildingBillSection(
+    'fixtures_fittings',
+    'Fixtures & Fittings',
+    'Kitchen cabinets, wardrobes, counters, shelves, sanitary accessories, and built-in fittings.',
+    {
+      trade: 'Fixtures & Fittings',
+      keywords: ['building', 'fixtures', 'fittings', 'cabinets', 'wardrobes', 'shelves'],
+    }
+  ),
+  buildingBillSection(
+    'external_works',
+    'External Works',
+    'Compound paving, landscaping, drainage, fencing, gates, kerbs, walkways, and external services.',
+    {
+      trade: 'External Works',
+      keywords: ['building', 'external works', 'paving', 'landscaping', 'fencing', 'gates', 'walkways'],
+    }
+  ),
+  buildingBillSection(
+    'testing_commissioning',
+    'Testing & Commissioning',
+    'Electrical testing, plumbing pressure testing, mechanical system checks, and commissioning reports.',
+    {
+      trade: 'Testing & Commissioning',
+      keywords: ['building', 'testing', 'commissioning', 'pressure testing', 'system checks'],
+    }
+  ),
+  buildingBillSection(
+    'final_cleaning_handover',
+    'Final Cleaning & Handover',
+    'Final cleaning, snagging, corrections, documentation, and handover preparation.',
+    {
+      trade: 'Project Closeout',
+      keywords: ['building', 'final cleaning', 'handover', 'snagging', 'documentation', 'closeout'],
+    }
+  ),
 ];
 
 const ROAD_SECTIONS = [
