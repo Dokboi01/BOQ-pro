@@ -16,6 +16,15 @@ import { getProfile, updateProfile } from '../db/database';
 import AuthContext from './auth-context';
 import { useToast } from '../components/ui/useToast';
 import { buildCompanyKey, deriveCompanyName } from '../utils/companyAccess';
+import { PLAN_NAMES } from '../data/plans';
+import {
+    buildSubscriptionProfileUpdate,
+    clearPendingSubscription,
+    getNormalizedPlanName,
+    normalizeUserProfile,
+    readPendingSubscription,
+    savePendingSubscription,
+} from '../utils/subscription';
 
 const PUBLIC_VIEWS = new Set(['landing', 'pricing', 'login', 'signup', 'forgot-password', 'terms', 'privacy']);
 
@@ -24,11 +33,12 @@ export function AuthProvider({ children }) {
 
     // Initialize from cache for instant UI
     const cachedProfile = localStorage.getItem('boq_pro_profile');
+    const pendingSubscription = readPendingSubscription();
     let initialUser = null;
     let initialView = 'loading';
     if (cachedProfile) {
         try {
-            initialUser = JSON.parse(cachedProfile);
+            initialUser = normalizeUserProfile(JSON.parse(cachedProfile));
         } catch { /* ignore */ }
     }
 
@@ -36,7 +46,7 @@ export function AuthProvider({ children }) {
     const [view, setView] = useState(initialView);
     const [authError, setAuthError] = useState(null);
     const [pendingUser, setPendingUser] = useState(null);
-    const [selectedPlan, setSelectedPlan] = useState(null);
+    const [selectedPlan, setSelectedPlan] = useState(pendingSubscription?.plan || null);
     const [verificationEmailStatus, setVerificationEmailStatus] = useState('idle');
     const initializationComplete = useRef(false);
     const userRef = useRef(initialUser);
@@ -62,11 +72,11 @@ export function AuthProvider({ children }) {
         try {
             const profile = await getProfile(firebaseUser.uid);
             if (profile) {
-                let fullUser = {
+                let fullUser = normalizeUserProfile({
                     id: firebaseUser.uid,
                     email: firebaseUser.email,
                     ...profile
-                };
+                });
                 fullUser.company_name = fullUser.company_name || deriveCompanyName({ companyName: fullUser.company_name, email: firebaseUser.email });
                 fullUser.company_key = fullUser.company_key || buildCompanyKey({
                     companyKey: fullUser.company_key,
@@ -82,8 +92,9 @@ export function AuthProvider({ children }) {
                             fullUser = { ...fullUser, is_onboarded: true };
                         }
                     }
-                    localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
-                    return fullUser;
+                    const normalizedUser = normalizeUserProfile(fullUser);
+                    localStorage.setItem('boq_pro_profile', JSON.stringify(normalizedUser));
+                    return normalizedUser;
                 });
             }
         } catch (err) {
@@ -117,9 +128,10 @@ export function AuthProvider({ children }) {
                     try {
                         const cachedUser = JSON.parse(cached);
                         if (cachedUser.id === firebaseUser.uid) {
-                            setUser(cachedUser);
+                            const normalizedCachedUser = normalizeUserProfile(cachedUser);
+                            setUser(normalizedCachedUser);
                             initializationComplete.current = true;
-                            setView(cachedUser?.is_onboarded === false ? 'onboarding' : 'app');
+                            setView(normalizedCachedUser?.is_onboarded === false ? 'onboarding' : 'app');
                             // Silently refresh profile in background
                             hydrateProfile(firebaseUser);
                             return;
@@ -130,11 +142,11 @@ export function AuthProvider({ children }) {
                 // No cache hit — do a blocking fetch (first-time login is handled optimistically in handleLogin)
                 try {
                     const profile = await getProfile(firebaseUser.uid);
-                    const fullUser = {
+                    const fullUser = normalizeUserProfile({
                         id: firebaseUser.uid,
                         email: firebaseUser.email,
                         ...profile
-                    };
+                    });
                     fullUser.company_name = fullUser.company_name || deriveCompanyName({ companyName: fullUser.company_name, email: firebaseUser.email });
                     fullUser.company_key = fullUser.company_key || buildCompanyKey({
                         companyKey: fullUser.company_key,
@@ -158,12 +170,13 @@ export function AuthProvider({ children }) {
                         id: firebaseUser.uid,
                         email: firebaseUser.email,
                         full_name: firebaseUser.displayName || 'Practitioner',
-                        plan: 'Free',
+                        plan: getNormalizedPlanName('Free'),
                         company_name: deriveCompanyName({ email: firebaseUser.email }),
                         company_key: buildCompanyKey({ email: firebaseUser.email })
                     };
-                    setUser(basicUser);
-                    localStorage.setItem('boq_pro_profile', JSON.stringify(basicUser));
+                    const normalizedBasicUser = normalizeUserProfile(basicUser);
+                    setUser(normalizedBasicUser);
+                    localStorage.setItem('boq_pro_profile', JSON.stringify(normalizedBasicUser));
                     initializationComplete.current = true;
 
                     // If we suspect they are already onboarded (or we just don't know), 
@@ -175,6 +188,7 @@ export function AuthProvider({ children }) {
                 localStorage.removeItem('boq_pro_profile');
                 setUser(null);
                 setPendingUser(null);
+                setSelectedPlan(readPendingSubscription()?.plan || null);
                 setVerificationEmailStatus('idle');
                 initializationComplete.current = true;
                 setView(prev => PUBLIC_VIEWS.has(prev) ? prev : 'landing');
@@ -202,14 +216,14 @@ export function AuthProvider({ children }) {
 
         // Guest bypass — skip Firebase Auth entirely
         if (credentials.email === 'guest@boqpro.com') {
-            const guestUser = {
+            const guestUser = normalizeUserProfile({
                 id: 'guest_user',
                 email: 'guest@boqpro.com',
                 full_name: 'Guest Engineer',
                 plan: 'Professional',
                 is_onboarded: true,
                 role: 'Quantity Surveyor'
-            };
+            });
             setUser(guestUser);
             localStorage.setItem('boq_pro_profile', JSON.stringify(guestUser));
             setView('app');
@@ -227,15 +241,15 @@ export function AuthProvider({ children }) {
 
             // ⚡ Optimistic navigation — go to app IMMEDIATELY with basic data
             // Don't wait for Firestore profile fetch
-            const optimisticUser = {
+            const optimisticUser = normalizeUserProfile({
                 id: result.user.uid,
                 email: result.user.email,
                 full_name: result.user.displayName || 'Practitioner',
-                plan: 'Free',
+                plan: PLAN_NAMES.STUDENT,
                 is_onboarded: false,
                 company_name: deriveCompanyName({ email: result.user.email }),
                 company_key: buildCompanyKey({ email: result.user.email })
-            };
+            });
             setUser(optimisticUser);
             localStorage.setItem('boq_pro_profile', JSON.stringify(optimisticUser));
             initializationComplete.current = true; // ⚡ IMPORTANT: Prevents the timeout from kicking us out
@@ -269,6 +283,16 @@ export function AuthProvider({ children }) {
         try {
             const company_name = deriveCompanyName({ companyName: data.companyName, email: data.email });
             const company_key = buildCompanyKey({ companyName: company_name, email: data.email });
+            const pendingSelection = readPendingSubscription();
+            const chosenPlan = getNormalizedPlanName(
+                pendingSelection?.plan || selectedPlan || PLAN_NAMES.STUDENT
+            );
+            const subscriptionUpdate = buildSubscriptionProfileUpdate({
+                planName: chosenPlan,
+                billingCycle: pendingSelection?.billing || 'monthly',
+                paystackData: pendingSelection?.paystackData,
+                existingProfile: { plan: chosenPlan },
+            });
 
             const result = await createUserWithEmailAndPassword(
                 auth,
@@ -288,10 +312,12 @@ export function AuthProvider({ children }) {
                     company_name,
                     company_key,
                     phone_number: data.phoneNumber,
-                    plan: selectedPlan || 'Free',
                     email: data.email,
-                    is_onboarded: false
+                    is_onboarded: false,
+                    ...subscriptionUpdate,
                 });
+                clearPendingSubscription();
+                setSelectedPlan(null);
             } catch (profileErr) {
                 console.warn('⚠️ Firestore profile creation failed (will retry later):', profileErr.message);
             }
@@ -349,19 +375,19 @@ export function AuthProvider({ children }) {
                 is_onboarded: true
             });
             if (updatedProfile) {
-                const updatedUser = { ...user, ...updatedProfile, is_onboarded: true };
+                const updatedUser = normalizeUserProfile({ ...user, ...updatedProfile, is_onboarded: true });
                 setUser(updatedUser);
                 localStorage.setItem('boq_pro_profile', JSON.stringify(updatedUser));
             } else {
                 // Even if Firestore update didn't return data, update local state
-                const updatedUser = { ...user, role: data.userType, is_onboarded: true };
+                const updatedUser = normalizeUserProfile({ ...user, role: data.userType, is_onboarded: true });
                 setUser(updatedUser);
                 localStorage.setItem('boq_pro_profile', JSON.stringify(updatedUser));
             }
         } catch (err) {
             console.error('❌ Onboarding profile update failed:', err);
             // Still update local state so user isn't stuck
-            const updatedUser = { ...user, role: data.userType, is_onboarded: true };
+            const updatedUser = normalizeUserProfile({ ...user, role: data.userType, is_onboarded: true });
             setUser(updatedUser);
             localStorage.setItem('boq_pro_profile', JSON.stringify(updatedUser));
         } finally {
@@ -379,39 +405,53 @@ export function AuthProvider({ children }) {
 
     const handleSelectPlan = async (plan, paystackData) => {
         setAuthError(null);
+        const normalizedPlan = getNormalizedPlanName(plan);
+        const billingCycle = paystackData?.billing || 'monthly';
 
         if (user) {
             try {
-                const profileUpdate = { plan };
-                // Store Paystack transaction reference if a payment was made
-                if (paystackData?.transaction) {
-                    profileUpdate.lastPayment = {
-                        reference: paystackData.transaction.reference || paystackData.transaction.ref,
-                        billing: paystackData.billing || 'monthly',
-                        plan,
-                        date: new Date().toISOString()
-                    };
-                }
+                const profileUpdate = buildSubscriptionProfileUpdate({
+                    planName: normalizedPlan,
+                    billingCycle,
+                    paystackData,
+                    existingProfile: user,
+                });
                 const result = await updateProfile(profileUpdate);
                 if (result) {
-                    setUser(prev => ({ ...prev, ...result }));
-                    localStorage.setItem('boq_pro_profile', JSON.stringify({ ...user, ...result }));
+                    const normalizedUser = normalizeUserProfile({ ...user, ...result });
+                    setUser(normalizedUser);
+                    localStorage.setItem('boq_pro_profile', JSON.stringify(normalizedUser));
                 } else {
-                    setUser(prev => ({ ...prev, plan }));
+                    const normalizedUser = normalizeUserProfile({ ...user, ...profileUpdate });
+                    setUser(normalizedUser);
+                    localStorage.setItem('boq_pro_profile', JSON.stringify(normalizedUser));
                 }
+                clearPendingSubscription();
+                setSelectedPlan(null);
                 setView('app');
             } catch (err) {
                 console.error('❌ Plan selection error:', err);
-                setUser(prev => ({ ...prev, plan }));
+                const normalizedUser = normalizeUserProfile({
+                    ...user,
+                    ...buildSubscriptionProfileUpdate({
+                        planName: normalizedPlan,
+                        billingCycle,
+                        paystackData,
+                        existingProfile: user,
+                    }),
+                });
+                setUser(normalizedUser);
+                localStorage.setItem('boq_pro_profile', JSON.stringify(normalizedUser));
                 setView('app');
             }
         } else {
             // User not logged in — store plan choice and go to signup
-            setSelectedPlan(plan);
-            if (paystackData) {
-                // Save pending transaction for after signup
-                localStorage.setItem('boq_pro_pending_payment', JSON.stringify(paystackData));
-            }
+            setSelectedPlan(normalizedPlan);
+            savePendingSubscription({
+                planName: normalizedPlan,
+                billing: billingCycle,
+                paystackData,
+            });
             setView('signup');
         }
     };

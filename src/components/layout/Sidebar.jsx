@@ -12,9 +12,12 @@ import {
   Gavel,
   BookOpen
 } from 'lucide-react';
+import { getAccessPlanName, isFreeAccessPlan } from '../../utils/subscription';
 
 const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
   const [collapsed, setCollapsed] = React.useState(false);
+  const planName = getAccessPlanName(user);
+  const isFreePlan = isFreeAccessPlan(user);
 
   const menuItems = [
     { id: 'dashboard', label: 'Project Dashboard', icon: LayoutDashboard },
@@ -53,7 +56,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
         ))}
       </nav>
 
-      {!collapsed && user?.plan === 'Free' && (
+      {!collapsed && user && isFreePlan && (
         <div className="upgrade-prompt">
           <h4>Upgrade to Pro</h4>
           <p>Get unlimited projects and AI-powered insights.</p>
@@ -69,7 +72,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
             </div>
             <div className="user-info">
               <span className="user-name">{user.full_name || 'Practitioner'}</span>
-              <span className="user-plan">{user.plan || 'Free'} Plan</span>
+              <span className="user-plan">{planName || 'Student'} Plan</span>
             </div>
           </div>
         )}
