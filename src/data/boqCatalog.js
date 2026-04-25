@@ -12,6 +12,7 @@ import {
 import {
   ROAD_BASE_COURSE_ITEMS,
 } from './catalog/roadPavementLayers';
+import { BUILDING_PRELIMINARIES_ITEMS } from './catalog/buildingPreliminaries';
 import { ROAD_SUB_BASE_ITEMS } from './catalog/roadSubBase';
 import { ROAD_SUBGRADE_ITEMS } from './catalog/roadSubgrade';
 import { ROAD_SURFACING_ITEMS } from './catalog/roadSurfacing';
@@ -2185,6 +2186,49 @@ const roadMeasuredItems = (structureCode, sectionCode, billSection, entries = []
   entries.map((entry, index) => roadMeasuredItem(structureCode, sectionCode, index, billSection, entry))
 );
 
+const buildingPreliminariesCatalogItem = (structureCode, index, item) => {
+  const code = item.code || makeItemCode(structureCode, 'PREL', index);
+  const components = item.components || [];
+  const componentBasis = components
+    .map((component) => component.basis || component.label)
+    .filter(Boolean);
+  const resolvedBenchmarkRate = Number(item.benchmarkRate) || 0;
+
+  return formulaRateItem({
+    id: item.id || code,
+    code,
+    name: item.name,
+    description: item.description,
+    unit: item.unit,
+    structureType: STRUCTURE_TYPES.BUILDING,
+    billSection: 'Preliminaries',
+    inputs: buildComponentInputs(components, 'NGN'),
+    benchmarkRate: resolvedBenchmarkRate,
+    benchmarkMetadata: buildBenchmarkMetadata({
+      rate: resolvedBenchmarkRate,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: item.benchmarkSourceType || 'seed-placeholder',
+      sourceNote: item.benchmarkNote || 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: item.benchmarkDateCaptured || '2026-04',
+      confidenceLevel: 'low',
+    }),
+    formulaText: item.formulaText || buildSumFormulaText(`Rate/${item.unit || 'unit'}`, components),
+    formulaBasis: item.formulaBasis && item.formulaBasis.length > 0 ? item.formulaBasis : componentBasis,
+    formulaExpression: item.formulaExpression || buildSumExpression(components),
+    notes: item.notes || '',
+    category: item.category || 'Preliminaries',
+    keywords: item.keywords || [],
+    pickerHint: item.pickerHint || '',
+    isRecommended: Boolean(item.isRecommended),
+    selectedRateSource: item.selectedRateSource || 'formula',
+  });
+};
+
+const createBuildingPreliminariesItems = (structureCode = BUILDING_CODE) => (
+  BUILDING_PRELIMINARIES_ITEMS.map((item, index) => buildingPreliminariesCatalogItem(structureCode, index, item))
+);
+
 const BUILDING_LEGACY_SECTIONS = [
   catalogSection(
     BUILDING_CODE,
@@ -2931,10 +2975,12 @@ const BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS = [
 ];
 
 const BUILDING_SECTIONS = [
-  buildingBillSection(
+  catalogSection(
+    BUILDING_CODE,
     'preliminaries',
     'Preliminaries',
     'General project setup, supervision, temporary works, insurance, HSE, site facilities, and administrative requirements.',
+    createBuildingPreliminariesItems(BUILDING_CODE),
     {
       trade: 'Preliminaries',
       isPreliminaries: true,
