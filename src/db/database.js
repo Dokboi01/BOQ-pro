@@ -212,6 +212,59 @@ const sanitizeProjectForCloud = (project, user) => {
     };
 };
 
+const getProjectRemoteTimestamp = (project) => (
+    project?.updated_at?.toMillis?.()
+    || (project?.updated_at?.seconds ? project.updated_at.seconds * 1000 : 0)
+    || project?.created_at?.toMillis?.()
+    || (project?.created_at?.seconds ? project.created_at.seconds * 1000 : 0)
+    || 0
+);
+
+const dedupeProjectsByOrigin = (projects = []) => {
+    const byIdentity = new Map();
+
+    for (const project of projects) {
+        if (!project?.id) continue;
+
+        const identity = project.local_origin_id || project.id;
+        const existing = byIdentity.get(identity);
+        if (!existing) {
+            byIdentity.set(identity, project);
+            continue;
+        }
+
+        const existingTs = getProjectRemoteTimestamp(existing);
+        const nextTs = getProjectRemoteTimestamp(project);
+        byIdentity.set(identity, nextTs >= existingTs ? project : existing);
+    }
+
+    return [...byIdentity.values()];
+};
+
+const findExistingCloudProjectByOrigin = async (userId, localOriginId) => {
+    if (!userId || !localOriginId) return null;
+
+    try {
+        const snapshot = await getDocs(query(
+            collection(db, 'projects'),
+            where('local_origin_id', '==', localOriginId)
+        ));
+
+        const matches = snapshot.docs
+            .map((entry) => ({ id: entry.id, ...entry.data() }))
+            .filter((project) => project.user_id === userId);
+
+        if (matches.length === 0) return null;
+
+        return matches.reduce((best, project) => (
+            getProjectRemoteTimestamp(project) >= getProjectRemoteTimestamp(best) ? project : best
+        ));
+    } catch (err) {
+        console.warn('Existing project lookup by local origin failed:', err?.message || err);
+        return null;
+    }
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Projects Management
 // ─────────────────────────────────────────────────────────────────────────────
@@ -230,6 +283,7 @@ export const saveProject = async (project) => {
         }
 
         const projectData = sanitizeProjectForCloud(project, user);
+        const localOriginId = project.local_origin_id || (String(project.id || '').startsWith('local_') ? project.id : null);
 
         if (project.id && !project.id.startsWith('local_')) {
             // Update existing project
@@ -238,6 +292,14 @@ export const saveProject = async (project) => {
             console.log('✅ Project updated, ID:', project.id);
             return project.id;
         } else {
+            const existingProject = await findExistingCloudProjectByOrigin(user.uid, localOriginId);
+            if (existingProject?.id) {
+                const docRef = doc(db, 'projects', existingProject.id);
+                await updateDoc(docRef, projectData);
+                console.log('✅ Project updated via local origin, ID:', existingProject.id);
+                return existingProject.id;
+            }
+
             // Create new project
             projectData.created_at = serverTimestamp();
             const docRef = await addDoc(collection(db, 'projects'), projectData);
@@ -313,7 +375,7 @@ export const getProjects = async () => {
             uniqueProjects.push(project);
         }
 
-        return uniqueProjects;
+        return dedupeProjectsByOrigin(uniqueProjects);
     } catch (err) {
         console.error('Error fetching projects:', err);
         return [];
