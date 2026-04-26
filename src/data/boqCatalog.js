@@ -12,6 +12,7 @@ import {
 import {
   ROAD_BASE_COURSE_ITEMS,
 } from './catalog/roadPavementLayers';
+import * as BuildingCatalog from './catalog/building';
 import { ROAD_SUB_BASE_ITEMS } from './catalog/roadSubBase';
 import { ROAD_SUBGRADE_ITEMS } from './catalog/roadSubgrade';
 import { ROAD_SURFACING_ITEMS } from './catalog/roadSurfacing';
@@ -2185,47 +2186,336 @@ const roadMeasuredItems = (structureCode, sectionCode, billSection, entries = []
   entries.map((entry, index) => roadMeasuredItem(structureCode, sectionCode, index, billSection, entry))
 );
 
-const BUILDING_SECTIONS = [
+const buildingPreliminariesCatalogItem = (structureCode, index, item) => {
+  const code = item.code || makeItemCode(structureCode, 'PREL', index);
+  const components = item.components || [];
+  const componentBasis = components
+    .map((component) => component.basis || component.label)
+    .filter(Boolean);
+  const resolvedBenchmarkRate = Number(item.benchmarkRate) || 0;
+
+  return formulaRateItem({
+    id: item.id || code,
+    code,
+    name: item.name,
+    description: item.description,
+    unit: item.unit,
+    structureType: STRUCTURE_TYPES.BUILDING,
+    billSection: 'Preliminaries',
+    inputs: buildComponentInputs(components, 'NGN'),
+    benchmarkRate: resolvedBenchmarkRate,
+    benchmarkMetadata: buildBenchmarkMetadata({
+      rate: resolvedBenchmarkRate,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: item.benchmarkSourceType || 'seed-placeholder',
+      sourceNote: item.benchmarkNote || 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: item.benchmarkDateCaptured || '2026-04',
+      confidenceLevel: 'low',
+    }),
+    formulaText: item.formulaText || buildSumFormulaText(`Rate/${item.unit || 'unit'}`, components),
+    formulaBasis: item.formulaBasis && item.formulaBasis.length > 0 ? item.formulaBasis : componentBasis,
+    formulaExpression: item.formulaExpression || buildSumExpression(components),
+    notes: item.notes || '',
+    category: item.category || 'Preliminaries',
+    keywords: item.keywords || [],
+    pickerHint: item.pickerHint || '',
+    isRecommended: Boolean(item.isRecommended),
+    selectedRateSource: item.selectedRateSource || 'formula',
+  });
+};
+
+const createBuildingPreliminariesItems = (structureCode = BUILDING_CODE) => (
+  (BuildingCatalog.BUILDING_PRELIMINARIES_ITEMS || []).map((item, index) => buildingPreliminariesCatalogItem(structureCode, index, item))
+);
+
+const BUILDING_LEGACY_SECTIONS = [
   catalogSection(
     BUILDING_CODE,
     'preliminaries',
     'Preliminaries',
     'Project preliminaries and startup requirements.',
-    createPreliminariesItems(BUILDING_CODE),
+    createBuildingPreliminariesItems(BUILDING_CODE),
     {
       trade: 'Preliminaries',
       pickerPrompt: 'Pick the building preliminaries that the contract genuinely requires, then price each one with the correct duration or lump-sum quantity.',
       emptyStateMessage: 'Select the building preliminaries that apply to the job, such as mobilization, temporary office, HSE, supervision, and permit-related costs.',
     }
   ),
-  catalogSection(BUILDING_CODE, 'site_clearance', 'Site clearance', 'Site clearance, setting out, and demolition items.', [
-    manualItem({ name: 'Clear vegetation and debris', description: 'Clear vegetation, shrubs, rubbish, and dispose offsite.', unit: 'm²', benchmarkRate: 650 }),
-    manualItem({ name: 'Strip topsoil', description: 'Strip and stockpile topsoil to approved depth.', unit: 'm³', benchmarkRate: 2800 }),
-    manualItem({ name: 'Setting out to drawings', description: 'Set out building lines, control points, and benchmarks.', unit: 'Sum', benchmarkRate: 350000 }),
-    manualItem({ name: 'Demolish minor obstructions', description: 'Demolish old slabs, kerbs, and minor obstructions.', unit: 'm³', benchmarkRate: 18500 }),
-    manualItem({ name: 'Cart away debris', description: 'Load and cart away demolition waste to approved tip.', unit: 'm³', benchmarkRate: 2600 }),
-  ]),
-  catalogSection(BUILDING_CODE, 'excavation_earthworks', 'Excavation / earthworks', 'Bulk excavation, trenching, and filling items.', [
-    manualItem({ name: 'Excavate foundation trenches', description: 'Excavate trench and pad foundations not exceeding stated depth.', unit: 'm³', benchmarkRate: 4200 }),
-    manualItem({ name: 'Excavate lift pits and sumps', description: 'Excavate lift pits, service pits, and isolated deeper pockets.', unit: 'm³', benchmarkRate: 5200 }),
-    manualItem({ name: 'Imported laterite filling', description: 'Imported selected laterite filling, spread, water, and compact.', unit: 'm³', benchmarkRate: 10800 }),
-    manualItem({ name: 'Sand filling and compaction', description: 'Sharp sand filling in layers with compaction to level.', unit: 'm³', benchmarkRate: 8600 }),
-    manualItem({ name: 'Dispose surplus excavated material', description: 'Load, haul, and dispose surplus spoil to approved dump.', unit: 'm³', benchmarkRate: 2800 }),
-  ]),
-  catalogSection(BUILDING_CODE, 'foundations', 'Foundations', 'Foundation concrete, reinforcement, and associated works.', [
-    formulaRateItem({ name: 'Blinding concrete', description: '50mm blinding concrete below foundations.', unit: 'm³', inputs: buildRateInputs({ materials: 42000, labour: 9500, plant: 6000, transport: 3500, overhead: 4000 }) }),
-    formulaRateItem({ name: 'Reinforcement to footings', description: 'Cut, bend, and fix reinforcement to foundations.', unit: 'kg', inputs: buildRateInputs({ materials: 1020, labour: 180, plant: 40, transport: 30, overhead: 35 }) }),
-    manualItem({ name: 'Formwork to footing sides', description: 'Provide and strike formwork to footing edges and bases.', unit: 'm²', benchmarkRate: 14800 }),
-    formulaRateItem({ name: 'Concrete to footings', description: 'Grade 25 concrete to strip and pad footings.', unit: 'm³', inputs: buildRateInputs({ materials: 78000, labour: 12500, plant: 9800, transport: 4200, overhead: 5500 }) }),
-    manualItem({ name: 'Damp proof course', description: 'Provide and lay damp proof course membrane at wall base.', unit: 'm', benchmarkRate: 2200 }),
-  ]),
-  catalogSection(BUILDING_CODE, 'substructure', 'Substructure', 'Works below ground floor slab level.', [
-    manualItem({ name: 'Foundation blockwork', description: '225mm sandcrete blockwork from footing to DPC level.', unit: 'm²', benchmarkRate: 19800 }),
-    manualItem({ name: 'Hardcore filling', description: 'Hardcore filling in layers and machine compaction.', unit: 'm³', benchmarkRate: 15500 }),
-    formulaRateItem({ name: 'Oversite concrete', description: 'Concrete oversite slab or ground beam blinding works.', unit: 'm³', inputs: buildRateInputs({ materials: 76000, labour: 11000, plant: 9000, transport: 3800, overhead: 5000 }) }),
-    manualItem({ name: 'Backfilling around foundations', description: 'Backfill around substructure and compact in layers.', unit: 'm³', benchmarkRate: 4200 }),
-    manualItem({ name: 'Termite treatment', description: 'Apply anti-termite treatment to hardcore and formation.', unit: 'm²', benchmarkRate: 1350 }),
-  ]),
+  catalogSection(BUILDING_CODE, 'site_clearance', 'Site clearance', 'Site clearance, setting out, and demolition items.', BuildingCatalog.BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS),
+  catalogSection(BUILDING_CODE, 'excavation_earthworks', 'Excavation / earthworks', 'Bulk excavation, trenching, and filling items.', BuildingCatalog.BUILDING_EARTHWORKS_ITEMS),
+  catalogSection(BUILDING_CODE, 'foundations', 'Foundations', 'Foundation concrete, reinforcement, and associated works.', BuildingCatalog.BUILDING_FOUNDATIONS_ITEMS),
+  catalogSection(BUILDING_CODE, 'substructure', 'Substructure', 'Works below ground floor slab level.', BuildingCatalog.BUILDING_SUBSTRUCTURE_ITEMS),
+];
+
+const buildingBillSection = (id, title, description, items = [], metadata = {}) => (
+  catalogSection(
+    BUILDING_CODE,
+    id,
+    title,
+    description,
+    items,
+    {
+      trade: metadata.trade || title,
+      pickerPrompt: metadata.pickerPrompt || `Open ${title.toLowerCase()}, review the standard building bill heading, and add only the items that apply to this project before generating BOQ rows.`,
+      emptyStateTitle: metadata.emptyStateTitle || `No ${title.toLowerCase()} items selected yet.`,
+      emptyStateMessage: metadata.emptyStateMessage || `This ${title.toLowerCase()} bill is ready for item selection. Open the library and add only the measured lines that belong in this building BOQ.`,
+      keywords: metadata.keywords || [],
+      ...(metadata.isPreliminaries ? { isPreliminaries: true } : {}),
+    }
+  )
+);
+
+// Building catalog items are now decentralized in ./catalog/building/
+
+
+const BUILDING_SECTIONS = [
+  catalogSection(
+    BUILDING_CODE,
+    'preliminaries',
+    'Preliminaries',
+    'General project setup, supervision, temporary works, insurance, HSE, site facilities, and administrative requirements.',
+    createBuildingPreliminariesItems(BUILDING_CODE),
+    {
+      trade: 'Preliminaries',
+      isPreliminaries: true,
+      pickerPrompt: 'Review the building preliminaries bill and add only the startup, supervision, temporary facilities, welfare, insurance, and HSE items required for this building project.',
+      emptyStateTitle: 'No preliminaries selected yet.',
+      emptyStateMessage: 'This building preliminaries bill is ready for item selection. Add only the preliminaries that genuinely apply to the contract before generating BOQ rows.',
+      keywords: ['building', 'preliminaries', 'temporary works', 'supervision', 'hse', 'site facilities'],
+    }
+  ),
+  catalogSection(
+    BUILDING_CODE,
+    'site_clearance_demolition',
+    'Site Clearance & Demolition',
+    'Clearing vegetation, removing existing structures, stripping topsoil, and disposing of debris.',
+    BuildingCatalog.BUILDING_SITE_CLEARANCE_DEMOLITION_ITEMS,
+    {
+      trade: 'Site Preparation',
+      keywords: ['building', 'site clearance', 'demolition', 'topsoil', 'debris disposal'],
+    }
+  ),
+  buildingBillSection(
+    'earthworks',
+    'Earthworks',
+    'Excavation, filling, backfilling, compaction, disposal, and site levelling works.',
+    BuildingCatalog.BUILDING_EARTHWORKS_ITEMS,
+    {
+      trade: 'Earthworks',
+      keywords: ['building', 'earthworks', 'excavation', 'backfilling', 'compaction', 'levelling'],
+    }
+  ),
+  buildingBillSection(
+    'substructure_foundations',
+    'Substructure / Foundations',
+    'Foundation works including blinding, strip footing, pad footing, raft foundation, pile caps, and ground beams.',
+    BuildingCatalog.BUILDING_FOUNDATIONS_ITEMS,
+    {
+      trade: 'Substructure',
+      keywords: ['building', 'foundations', 'substructure', 'footing', 'raft foundation', 'pile caps', 'ground beams'],
+    }
+  ),
+  buildingBillSection(
+    'concrete_works',
+    'Concrete Works',
+    'In-situ concrete works for slabs, beams, columns, bases, staircases, lintels, and other concrete elements.',
+    BuildingCatalog.BUILDING_CONCRETEWORKS_ITEMS,
+    {
+      trade: 'Concrete Works',
+      keywords: ['building', 'concrete', 'slabs', 'beams', 'columns', 'staircases', 'lintels'],
+    }
+  ),
+  buildingBillSection(
+    'reinforcement_works',
+    'Reinforcement Works',
+    'Supply, cutting, bending, fixing, tying, and placing of reinforcement bars and mesh.',
+    BuildingCatalog.BUILDING_REINFORCEMENT_ITEMS,
+    {
+      trade: 'Reinforcement',
+      keywords: ['building', 'reinforcement', 'rebar', 'mesh', 'cutting', 'bending', 'fixing'],
+    }
+  ),
+  buildingBillSection(
+    'formwork',
+    'Formwork',
+    'Formwork to foundations, columns, beams, slabs, staircases, walls, and other concrete elements.',
+    BuildingCatalog.BUILDING_FORMWORK_ITEMS,
+    {
+      trade: 'Formwork',
+      keywords: ['building', 'formwork', 'shuttering', 'columns', 'beams', 'slabs', 'walls'],
+    }
+  ),
+  buildingBillSection(
+    'blockwork_masonry',
+    'Blockwork / Masonry',
+    'Block walls, brick walls, partitions, mortar works, and related masonry items.',
+    BuildingCatalog.BUILDING_MASONRY_ITEMS,
+    {
+      trade: 'Masonry',
+      keywords: ['building', 'blockwork', 'masonry', 'brickwork', 'partitions', 'mortar'],
+    }
+  ),
+  buildingBillSection(
+    'structural_frame',
+    'Structural Frame',
+    'Main structural frame works including reinforced concrete frame or steel frame elements.',
+    BuildingCatalog.BUILDING_STRUCTURALFRAME_ITEMS,
+    {
+      trade: 'Structural Frame',
+      keywords: ['building', 'structural frame', 'reinforced concrete frame', 'steel frame'],
+    }
+  ),
+  buildingBillSection(
+    'roofing',
+    'Roofing',
+    'Roof trusses, roof covering, flashings, insulation, gutters, fascia, and rainwater goods.',
+    BuildingCatalog.BUILDING_ROOFING_ITEMS,
+    {
+      trade: 'Roofing',
+      keywords: ['building', 'roofing', 'trusses', 'gutters', 'fascia', 'flashings', 'rainwater goods'],
+    }
+  ),
+  buildingBillSection(
+    'doors_windows',
+    'Doors & Windows',
+    'Door frames, door leaves, windows, glazing, ironmongery, and installation accessories.',
+    BuildingCatalog.BUILDING_OPENINGS_ITEMS,
+    {
+      trade: 'Openings',
+      keywords: ['building', 'doors', 'windows', 'glazing', 'ironmongery', 'frames'],
+    }
+  ),
+  buildingBillSection(
+    'wall_finishes',
+    'Wall Finishes',
+    'Plastering, rendering, wall tiling, cladding, and other internal/external wall finishes.',
+    BuildingCatalog.BUILDING_WALLFINISHES_ITEMS,
+    {
+      trade: 'Finishes',
+      keywords: ['building', 'wall finishes', 'plastering', 'rendering', 'wall tiling', 'cladding'],
+    }
+  ),
+  buildingBillSection(
+    'floor_finishes',
+    'Floor Finishes',
+    'Screeding, floor tiles, terrazzo, marble, timber flooring, vinyl, and related finishes.',
+    BuildingCatalog.BUILDING_FLOORFINISHES_ITEMS,
+    {
+      trade: 'Finishes',
+      keywords: ['building', 'floor finishes', 'screeding', 'tiles', 'terrazzo', 'marble', 'vinyl'],
+    }
+  ),
+  buildingBillSection(
+    'ceiling_works',
+    'Ceiling Works',
+    'POP ceiling, suspended ceiling, PVC ceiling, gypsum board ceiling, and ceiling accessories.',
+    BuildingCatalog.BUILDING_CEILINGWORKS_ITEMS,
+    {
+      trade: 'Finishes',
+      keywords: ['building', 'ceiling', 'pop', 'suspended ceiling', 'pvc ceiling', 'gypsum board'],
+    }
+  ),
+  buildingBillSection(
+    'painting_decoration',
+    'Painting & Decoration',
+    'Primer, emulsion paint, gloss paint, textured paint, protective coatings, and decorative finishes.',
+    BuildingCatalog.BUILDING_PAINTING_ITEMS,
+    {
+      trade: 'Finishes',
+      keywords: ['building', 'painting', 'decoration', 'emulsion', 'gloss paint', 'coatings'],
+    }
+  ),
+  buildingBillSection(
+    'plumbing_drainage',
+    'Plumbing & Drainage',
+    'Water supply pipes, waste pipes, sanitary fittings, floor drains, inspection chambers, and internal drainage.',
+    BuildingCatalog.BUILDING_PLUMBING_ITEMS,
+    {
+      trade: 'Plumbing',
+      keywords: ['building', 'plumbing', 'drainage', 'sanitary fittings', 'waste pipes', 'floor drains'],
+    }
+  ),
+  buildingBillSection(
+    'electrical_installation',
+    'Electrical Installation',
+    'Conduits, wiring, switches, sockets, lighting points, distribution boards, earthing, and electrical fixtures.',
+    BuildingCatalog.BUILDING_ELECTRICAL_ITEMS,
+    {
+      trade: 'Electrical',
+      keywords: ['building', 'electrical', 'conduits', 'wiring', 'switches', 'sockets', 'earthing'],
+    }
+  ),
+  buildingBillSection(
+    'mechanical_services',
+    'Mechanical Services',
+    'HVAC, ventilation, fire protection, pumps, ducts, and other mechanical installations.',
+    BuildingCatalog.BUILDING_MECHANICAL_ITEMS,
+    {
+      trade: 'Mechanical',
+      keywords: ['building', 'mechanical', 'hvac', 'ventilation', 'fire protection', 'ducts', 'pumps'],
+    }
+  ),
+  buildingBillSection(
+    'water_supply_storage',
+    'Water Supply & Storage',
+    'Borehole, water tanks, pumps, pipe connections, supports, and water storage systems.',
+    BuildingCatalog.BUILDING_WATERSERVICES_ITEMS,
+    {
+      trade: 'Water Services',
+      keywords: ['building', 'water supply', 'storage', 'borehole', 'water tanks', 'pumps'],
+    }
+  ),
+  buildingBillSection(
+    'sewage_waste_disposal',
+    'Sewage & Waste Disposal',
+    'Septic tanks, soakaway pits, sewer pipes, manholes, and wastewater disposal systems.',
+    BuildingCatalog.BUILDING_SANITATION_ITEMS,
+    {
+      trade: 'Sanitation',
+      keywords: ['building', 'sewage', 'waste disposal', 'septic tank', 'soakaway', 'manholes'],
+    }
+  ),
+  buildingBillSection(
+    'fixtures_fittings',
+    'Fixtures & Fittings',
+    'Kitchen cabinets, wardrobes, counters, shelves, sanitary accessories, and built-in fittings.',
+    BuildingCatalog.BUILDING_FIXTURES_ITEMS,
+    {
+      trade: 'Fixtures & Fittings',
+      keywords: ['building', 'fixtures', 'fittings', 'cabinets', 'wardrobes', 'shelves'],
+    }
+  ),
+  buildingBillSection(
+    'external_works',
+    'External Works',
+    'Compound paving, landscaping, drainage, fencing, gates, kerbs, walkways, and external services.',
+    BuildingCatalog.BUILDING_EXTERNALWORKS_ITEMS,
+    {
+      trade: 'External Works',
+      keywords: ['building', 'external works', 'paving', 'landscaping', 'fencing', 'gates', 'walkways'],
+    }
+  ),
+  buildingBillSection(
+    'testing_commissioning',
+    'Testing & Commissioning',
+    'Electrical testing, plumbing pressure testing, mechanical system checks, and commissioning reports.',
+    BuildingCatalog.BUILDING_COMMISSIONING_ITEMS,
+    {
+      trade: 'Testing & Commissioning',
+      keywords: ['building', 'testing', 'commissioning', 'pressure testing', 'system checks'],
+    }
+  ),
+  buildingBillSection(
+    'final_cleaning_handover',
+    'Final Cleaning & Handover',
+    'Final cleaning, snagging, corrections, documentation, and handover preparation.',
+    BuildingCatalog.BUILDING_CLOSEOUT_ITEMS,
+    {
+      trade: 'Project Closeout',
+      keywords: ['building', 'final cleaning', 'handover', 'snagging', 'documentation', 'closeout'],
+    }
+  ),
 ];
 
 const ROAD_SECTIONS = [

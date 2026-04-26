@@ -1,132 +1,232 @@
 /**
- * Paystack Inline Checkout Utility
+ * Paystack checkout helper.
  *
- * Loads the Paystack Inline JS SDK and exposes a `checkout()` function
- * that opens the hosted payment popup.
+ * The secure flow is:
+ * 1. Initialize the transaction from our backend `/api/paystack-initialize-subscription`
+ * 2. Open the hosted Paystack checkout URL in a popup
+ * 3. Poll `/api/paystack-verify-subscription` until the payment is confirmed
  *
- * The public key is read from VITE_PAYSTACK_PUBLIC_KEY in .env.
- * Amounts must be in **kobo** (NGN subunit: ₦1 = 100 kobo).
+ * The secret key never enters the client.
  */
 
-const PAYSTACK_SCRIPT_URL = 'https://js.paystack.co/v2/inline.js';
+const PENDING_PAYSTACK_CHECKOUT_KEY = 'boq_pro_pending_paystack_checkout';
+const POLL_INTERVAL_MS = 2500;
+const MAX_POLL_DURATION_MS = 10 * 60 * 1000;
 
-let scriptLoaded = false;
-let scriptLoadPromise = null;
+function getApiBaseUrl() {
+    return (import.meta.env.VITE_PAYSTACK_API_BASE_URL || '').replace(/\/+$/, '');
+}
 
-/**
- * Dynamically load the Paystack Inline script if not already present.
- */
-function loadPaystackScript() {
-    if (scriptLoaded) return Promise.resolve();
-    if (scriptLoadPromise) return scriptLoadPromise;
+function buildApiUrl(path) {
+    const base = getApiBaseUrl();
+    return base ? `${base}${path}` : path;
+}
 
-    scriptLoadPromise = new Promise((resolve, reject) => {
-        // Check if already in the page
-        if (window.PaystackPop) {
-            scriptLoaded = true;
-            resolve();
-            return;
-        }
-
-        const existingScript = document.querySelector(`script[src="${PAYSTACK_SCRIPT_URL}"]`);
-        if (existingScript) {
-            existingScript.addEventListener('load', () => { scriptLoaded = true; resolve(); });
-            existingScript.addEventListener('error', reject);
-            return;
-        }
-
-        const script = document.createElement('script');
-        script.src = PAYSTACK_SCRIPT_URL;
-        script.async = true;
-        script.onload = () => { scriptLoaded = true; resolve(); };
-        script.onerror = () => reject(new Error('Failed to load Paystack script.'));
-        document.head.appendChild(script);
+async function postJson(path, body) {
+    const response = await fetch(buildApiUrl(path), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
     });
 
-    return scriptLoadPromise;
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(payload?.error || 'Paystack request failed.');
+    }
+
+    return payload;
+}
+
+function savePendingCheckoutSession(session) {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(PENDING_PAYSTACK_CHECKOUT_KEY, JSON.stringify(session));
+}
+
+function clearPendingCheckoutSession() {
+    if (typeof window === 'undefined') return;
+    window.localStorage.removeItem(PENDING_PAYSTACK_CHECKOUT_KEY);
+}
+
+export function readPendingCheckoutSession() {
+    if (typeof window === 'undefined') return null;
+
+    try {
+        const raw = window.localStorage.getItem(PENDING_PAYSTACK_CHECKOUT_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+}
+
+export async function verifyPendingPaystackCheckout({ allowPending = false } = {}) {
+    const session = readPendingCheckoutSession();
+    if (!session?.reference) return null;
+
+    const result = await postJson('/api/paystack-verify-subscription', {
+        reference: session.reference,
+    });
+
+    if (result?.verified) {
+        clearPendingCheckoutSession();
+    } else {
+        const status = String(result?.status || '').toLowerCase();
+        if (!allowPending && ['failed', 'abandoned', 'reversed', 'closed'].includes(status)) {
+            clearPendingCheckoutSession();
+        }
+    }
+
+    return {
+        ...result,
+        session,
+    };
+}
+
+function openCenteredPopup(url, title = 'Paystack Checkout') {
+    if (typeof window === 'undefined') {
+        throw new Error('Paystack checkout can only run in the browser.');
+    }
+
+    const width = 520;
+    const height = 760;
+    const dualScreenLeft = window.screenLeft ?? window.screenX ?? 0;
+    const dualScreenTop = window.screenTop ?? window.screenY ?? 0;
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || screen.width;
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || screen.height;
+    const left = Math.max(0, dualScreenLeft + (viewportWidth - width) / 2);
+    const top = Math.max(0, dualScreenTop + (viewportHeight - height) / 2);
+
+    const popup = window.open(
+        url,
+        title,
+        `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+    );
+
+    if (!popup) {
+        window.location.assign(url);
+        return null;
+    }
+
+    popup.focus?.();
+    return popup;
 }
 
 /**
- * Open the Paystack Inline checkout popup.
- *
- * @param {Object} options
- * @param {string} options.email – Customer email (required by Paystack)
- * @param {number} options.amount – Amount in **kobo** (e.g. 1500000 = ₦15,000)
- * @param {string} [options.planName] – Plan name for metadata
- * @param {string} [options.billing] – 'monthly' | 'annual'
- * @param {string} [options.reference] – Custom transaction reference
- * @param {function} options.onSuccess – Called with transaction object on success
- * @param {function} [options.onCancel] – Called when user closes the popup
- * @param {Object} [options.metadata] – Extra metadata to attach to the transaction
- * @returns {Promise<void>}
+ * Starts a verified Paystack checkout for an authenticated user.
  */
 export async function paystackCheckout({
     email,
-    amount,
+    userId,
     planName = '',
     billing = 'monthly',
-    reference,
     onSuccess,
     onCancel,
-    metadata = {}
 }) {
-    const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
-    if (!publicKey) {
-        throw new Error('Paystack public key not configured. Add VITE_PAYSTACK_PUBLIC_KEY to your .env file.');
-    }
-
     if (!email) throw new Error('Customer email is required for Paystack checkout.');
-    if (!amount || amount <= 0) throw new Error('Amount must be greater than zero.');
+    if (!userId) throw new Error('You must be signed in before starting a paid checkout.');
 
-    await loadPaystackScript();
-
-    if (!window.PaystackPop) {
-        throw new Error('Paystack SDK did not load correctly.');
-    }
-
-    const ref = reference || `boqpro_${planName.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-
-    const handler = window.PaystackPop.setup({
-        key: publicKey,
+    const initPayload = await postJson('/api/paystack-initialize-subscription', {
         email,
-        amount,
-        currency: 'NGN',
-        ref,
-        metadata: {
-            plan_name: planName,
-            billing_period: billing,
-            custom_fields: [
-                { display_name: 'Plan', variable_name: 'plan', value: planName },
-                { display_name: 'Billing', variable_name: 'billing', value: billing }
-            ],
-            ...metadata
-        },
-        callback: (transaction) => {
-            // Transaction was successful
-            console.log('✅ Paystack transaction successful:', transaction);
-            if (onSuccess) onSuccess({ ...transaction, planName, billing, reference: ref });
-        },
-        onClose: () => {
-            console.log('🚪 Paystack popup closed');
-            if (onCancel) onCancel();
-        }
+        userId,
+        planName,
+        billingCycle: billing,
+        origin: typeof window !== 'undefined' ? window.location.origin : null,
     });
 
-    handler.openIframe();
+    const session = {
+        planName,
+        billing,
+        email,
+        userId,
+        reference: initPayload.reference,
+        createdAt: new Date().toISOString(),
+    };
+    savePendingCheckoutSession(session);
+
+    const popup = openCenteredPopup(initPayload.authorizationUrl);
+    const startedAt = Date.now();
+
+    return new Promise((resolve, reject) => {
+        let finished = false;
+
+        const finish = (fn) => (payload) => {
+            if (finished) return;
+            finished = true;
+            clearInterval(intervalId);
+            clearPendingCheckoutSession();
+            if (popup && !popup.closed) {
+                popup.close();
+            }
+            fn(payload);
+        };
+
+        const succeed = finish(async (payload) => {
+            if (onSuccess) {
+                await onSuccess(payload);
+            }
+            resolve(payload);
+        });
+
+        const cancel = finish((payload) => {
+            if (onCancel) onCancel(payload);
+            resolve(payload || null);
+        });
+
+        const fail = finish((error) => {
+            reject(error instanceof Error ? error : new Error(String(error)));
+        });
+
+        const checkVerification = async (allowPending = true) => {
+            try {
+                const result = await postJson('/api/paystack-verify-subscription', {
+                    reference: initPayload.reference,
+                });
+
+                if (result?.verified) {
+                    return succeed(result);
+                }
+
+                const status = String(result?.status || '').toLowerCase();
+                if (allowPending && ['pending', 'ongoing', 'processing', 'queued', ''].includes(status)) {
+                    return null;
+                }
+
+                if (status === 'failed' || status === 'abandoned' || status === 'reversed') {
+                    return cancel(result);
+                }
+
+                return null;
+            } catch (error) {
+                const popupClosed = !popup || popup.closed;
+                if (popupClosed) {
+                    fail(error);
+                }
+                return null;
+            }
+        };
+
+        const intervalId = window.setInterval(async () => {
+            if (Date.now() - startedAt > MAX_POLL_DURATION_MS) {
+                return cancel({ status: 'timeout' });
+            }
+
+            await checkVerification(true);
+
+            if (popup && popup.closed) {
+                await checkVerification(false);
+                if (!finished) {
+                    cancel({ status: 'closed' });
+                }
+            }
+        }, POLL_INTERVAL_MS);
+    });
 }
 
-/**
- * Check if Paystack is configured (public key exists).
- */
 export function isPaystackConfigured() {
     return !!import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
 }
 
-/**
- * Format kobo amount to display Naira string.
- * @param {number} kobo
- * @returns {string}
- */
 export function formatNaira(kobo) {
     if (kobo === null || kobo === undefined) return 'Custom';
     if (kobo === 0) return 'Free';

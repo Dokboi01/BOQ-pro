@@ -149,6 +149,53 @@ function resolveProjectId(projectId) {
   return resolvedId;
 }
 
+function getProjectIdentity(project) {
+  return project?.local_origin_id || project?.id || null;
+}
+
+function getProjectActivityTimestamp(project) {
+  return Math.max(
+    Number(project?.updatedAt) || 0,
+    toSaveTimestamp(project?.saveMeta?.lastLocalSaveAt),
+    toSaveTimestamp(project?.saveMeta?.lastCloudSyncAt)
+  );
+}
+
+function dedupeProjectRecords(projects = []) {
+  const byIdentity = new Map();
+
+  for (const project of projects) {
+    if (!project?.id) continue;
+
+    const identity = getProjectIdentity(project) || project.id;
+    const existing = byIdentity.get(identity);
+    if (!existing) {
+      byIdentity.set(identity, project);
+      continue;
+    }
+
+    const existingIsLocal = String(existing.id || '').startsWith('local_');
+    const nextIsLocal = String(project.id || '').startsWith('local_');
+    const existingTs = getProjectActivityTimestamp(existing);
+    const nextTs = getProjectActivityTimestamp(project);
+
+    if ((!nextIsLocal && existingIsLocal) || nextTs > existingTs) {
+      byIdentity.set(identity, {
+        ...existing,
+        ...project,
+      });
+      continue;
+    }
+
+    byIdentity.set(identity, {
+      ...project,
+      ...existing,
+    });
+  }
+
+  return [...byIdentity.values()];
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Backoff helpers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -474,8 +521,8 @@ export async function loadLocal() {
       }
     }
 
-    // Sort by updatedAt descending
-    return projects.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    return dedupeProjectRecords(projects)
+      .sort((a, b) => getProjectActivityTimestamp(b) - getProjectActivityTimestamp(a));
   } catch {
     return [];
   }
@@ -839,7 +886,10 @@ export async function pullFromCloud() {
       }
     }
 
-    // Check for local-only projects that need syncing
+    // Reconcile local records against cloud results.
+    // We allow local-origin cleanup when a promoted cloud copy exists, but we do not
+    // silently delete cloud-linked projects just because they are temporarily missing
+    // from a cloud query result.
     const cloudIds = new Set(cloudProjects.map(p => p.id));
     const cloudOriginIds = new Set(cloudProjects.map(p => p.local_origin_id).filter(Boolean));
     for (const lp of localProjects) {
@@ -862,6 +912,9 @@ export async function pullFromCloud() {
             userId: lp.userId || syncUserId,
             updatedAt: lp.updatedAt || Date.now(),
             metaPatch: {
+              status: lp?.saveMeta?.pendingChanges
+                ? (navigator.onLine ? 'pending' : 'offline')
+                : (lp?.saveMeta?.status || 'synced'),
               cloudMissCount: nextMissCount,
               lastMissingFromCloudAt: Date.now(),
             }
@@ -869,8 +922,18 @@ export async function pullFromCloud() {
           continue;
         }
 
-        // Project has been missing from repeated cloud pulls long enough to treat as deleted
-        await localDB.projects.delete(lp.id);
+        await saveLocal(lp, {
+          userId: lp.userId || syncUserId,
+          updatedAt: lp.updatedAt || Date.now(),
+          metaPatch: {
+            status: 'attention',
+            cloudMissCount: nextMissCount,
+            lastMissingFromCloudAt: Date.now(),
+            lastSyncError: 'Project missing from latest cloud sync results. Local copy preserved until confirmed.',
+            pendingChanges: lp?.saveMeta?.pendingChanges === true,
+            cloudLinked: true,
+          }
+        });
       }
       // local_ projects stay — they'll be synced via queue
     }

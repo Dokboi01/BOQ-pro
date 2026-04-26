@@ -72,6 +72,47 @@ const getWorkspaceTimestamp = (value) => (
     ) || 0
 );
 
+const getProjectIdentity = (project) => (
+    project?.local_origin_id || project?.id || null
+);
+
+const getProjectSortTimestamp = (project) => (
+    Number(project?.updatedAt)
+    || Date.parse(project?.date || '')
+    || Number(project?.saveMeta?.lastLocalSaveAt)
+    || Number(project?.saveMeta?.lastCloudSyncAt)
+    || 0
+);
+
+const dedupeProjectsByIdentity = (projects = []) => {
+    const byIdentity = new Map();
+
+    for (const project of Array.isArray(projects) ? projects : []) {
+        if (!project?.id) continue;
+
+        const identity = getProjectIdentity(project) || project.id;
+        const existing = byIdentity.get(identity);
+        if (!existing) {
+            byIdentity.set(identity, project);
+            continue;
+        }
+
+        const existingIsLocal = String(existing.id || '').startsWith('local_');
+        const nextIsLocal = String(project.id || '').startsWith('local_');
+        const existingTs = getProjectSortTimestamp(existing);
+        const nextTs = getProjectSortTimestamp(project);
+
+        if ((!nextIsLocal && existingIsLocal) || nextTs > existingTs) {
+            byIdentity.set(identity, { ...existing, ...project });
+            continue;
+        }
+
+        byIdentity.set(identity, { ...project, ...existing });
+    }
+
+    return [...byIdentity.values()];
+};
+
 const normalizeWorkspaceSnapshot = (rawState) => {
     if (!rawState || typeof rawState !== 'object') return null;
 
@@ -326,7 +367,7 @@ export function ProjectsProvider({ children }) {
     const filterVisibleProjects = useCallback((incomingProjects = []) => {
         if (!user) return [];
 
-        return incomingProjects.filter((project) => {
+        return dedupeProjectsByIdentity(incomingProjects.filter((project) => {
             if (!project) return false;
 
             if (project.userId === user.id || String(project.id || '').startsWith('local_')) {
@@ -343,7 +384,7 @@ export function ProjectsProvider({ children }) {
             }
 
             return false;
-        });
+        }));
     }, [user]);
 
     const ensureSharedProjectVisible = useCallback(async (incomingProjects = []) => {
@@ -518,9 +559,11 @@ export function ProjectsProvider({ children }) {
     // ── Listen for ID changes (when local_ gets a real cloud ID) ──
     useEffect(() => {
         const unsubscribe = onIdChange((oldId, newId) => {
-            setProjects(prev => prev.map(p =>
-                p.id === oldId ? { ...p, id: newId } : p
-            ));
+            setProjects(prev => dedupeProjectsByIdentity(prev.map(p =>
+                p.id === oldId
+                    ? { ...p, id: newId, local_origin_id: p.local_origin_id || oldId }
+                    : p
+            )));
             if (activeProjectId === oldId) {
                 setActiveProjectId(newId);
             }
