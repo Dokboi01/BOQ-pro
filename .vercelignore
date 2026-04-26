@@ -1,0 +1,23 @@
+node_modules
+release
+dist
+dist-ssr
+tmp
+health app
+.git
+.github
+.vscode
+*.log
+*.local
+build_output*
+devserver.log
+devserver.err
+vite-dev.log
+vite-dev.err.log
+codex-vite.log
+push.ps1
+inspect_layout.py
+patch*.py
+patch*.cjs
+catch-error.js
+detail_panel_styles.css

@@ -224,7 +224,10 @@ export async function paystackCheckout({
 }
 
 export function isPaystackConfigured() {
-    return !!import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
+    // The secure BOQ Pro flow initializes checkout from the backend and opens
+    // the hosted Paystack authorization URL, so a frontend public key is no
+    // longer required just to enable the paid-plan UI.
+    return true;
 }
 
 export function formatNaira(kobo) {
