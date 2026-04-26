@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   BarChart3,
   CheckCircle2,
@@ -21,7 +21,7 @@ import {
   SunMedium
 } from 'lucide-react';
 import { PLANS, PLAN_NAMES, PLAN_TIER_ORDER, FEATURE_COMPARISON, isPaidPlan } from '../../data/plans';
-import { paystackCheckout, isPaystackConfigured } from '../../utils/paystack';
+import { paystackCheckout, isPaystackConfigured, verifyPendingPaystackCheckout } from '../../utils/paystack';
 
 const PLAN_ICONS = {
   [PLAN_NAMES.STUDENT]: GraduationCap,
@@ -66,7 +66,7 @@ const VALUE_CARDS = [
   }
 ];
 
-const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, resolvedTheme, onToggleTheme }) => {
+const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, resolvedTheme, onToggleTheme }) => {
   const [billing, setBilling] = useState('monthly');
   const [loadingPlan, setLoadingPlan] = useState(null);
   const [localError, setLocalError] = useState(null);
@@ -76,6 +76,52 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, resolved
 
   const displayError = error || localError;
   const previewPlans = [PLAN_NAMES.STUDENT, PLAN_NAMES.PROFESSIONAL, PLAN_NAMES.BUSINESS];
+
+  useEffect(() => {
+    if (!userEmail || !userId || typeof window === 'undefined') return undefined;
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('paystack') !== 'return') return undefined;
+
+    let active = true;
+
+    const finalizeReturn = async () => {
+      setLoadingPlan('paystack-return');
+      try {
+        const verification = await verifyPendingPaystackCheckout({ allowPending: false });
+        if (!active) return;
+
+        if (verification?.verified) {
+          await onSelectPlan(verification.context?.planName || verification.session?.planName, {
+            ...verification,
+            transaction: verification.transaction,
+            billing: verification.context?.billingCycle || verification.session?.billing || 'monthly',
+            verified: true,
+            profile: verification.profile || null,
+          });
+        } else {
+          setLocalError('Payment was not completed yet. You can retry the checkout from the pricing cards below.');
+        }
+      } catch (verifyError) {
+        if (active) {
+          setLocalError(verifyError.message || 'We could not confirm the Paystack payment yet.');
+        }
+      } finally {
+        if (active) {
+          setLoadingPlan(null);
+          params.delete('paystack');
+          const nextUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}${window.location.hash}`;
+          window.history.replaceState({}, document.title, nextUrl);
+        }
+      }
+    };
+
+    finalizeReturn();
+
+    return () => {
+      active = false;
+    };
+  }, [onSelectPlan, userEmail, userId]);
 
   const scrollToSection = (ref, revealComparison = false) => {
     if (revealComparison) {
@@ -102,28 +148,36 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, resolved
     // Enterprise — mailto (handled in JSX)
     if (planName === PLAN_NAMES.ENTERPRISE) return;
 
-    // Paid plan — Paystack checkout
-    if (!isPaystackConfigured()) {
-      // If Paystack isn't configured, fall back to direct plan selection
+    // Paid plan — signed-out users first create/login to a real account
+    if (!userEmail || !userId) {
       setLoadingPlan(planName);
-      await onSelectPlan(planName);
+      await onSelectPlan(planName, { billing });
       setLoadingPlan(null);
       return;
     }
 
-    const amount = billing === 'annual' ? plan.priceAnnual : plan.priceMonthly;
-    const email = userEmail || 'customer@boqpro.com';
+    // Paid plan — secure Paystack checkout
+    if (!isPaystackConfigured()) {
+      setLocalError('Paystack is not configured yet. Add the frontend public key and backend Paystack environment variables before starting paid checkout.');
+      return;
+    }
 
     setLoadingPlan(planName);
     try {
       await paystackCheckout({
-        email,
-        amount,
+        email: userEmail,
+        userId,
         planName,
         billing,
-        onSuccess: async (transaction) => {
-          console.log('✅ Payment complete:', transaction);
-          await onSelectPlan(planName, { transaction, billing });
+        onSuccess: async (verification) => {
+          console.log('✅ Payment verified:', verification);
+          await onSelectPlan(planName, {
+            ...verification,
+            transaction: verification.transaction,
+            billing,
+            verified: true,
+            profile: verification.profile || null,
+          });
           setLoadingPlan(null);
         },
         onCancel: () => {
@@ -136,7 +190,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, resolved
       setLocalError(err.message || 'Payment failed. Please try again.');
       setLoadingPlan(null);
     }
-  }, [billing, onSelectPlan, userEmail]);
+  }, [billing, onSelectPlan, userEmail, userId]);
 
   const savingsPercent = 17;
 

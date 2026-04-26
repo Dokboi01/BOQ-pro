@@ -56,6 +56,18 @@ export const getNormalizedBillingCycle = (billingCycle, planName) => {
   return billingCycle === 'annual' ? 'annual' : 'monthly';
 };
 
+export const buildPendingSubscriptionSelection = ({
+  planName,
+  billingCycle = 'monthly',
+  now = new Date(),
+} = {}) => ({
+  plan: getNormalizedPlanName(planName),
+  billingCycle: getNormalizedBillingCycle(billingCycle, planName),
+  status: 'awaiting_payment',
+  provider: 'paystack',
+  updatedAt: toIsoString(now),
+});
+
 const buildFreeSubscription = ({ planName = PLAN_NAMES.STUDENT, existingSubscription = null, now = new Date() } = {}) => {
   const plan = getPlanByName(planName);
   const nowIso = toIsoString(now);

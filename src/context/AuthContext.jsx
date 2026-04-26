@@ -18,6 +18,7 @@ import { useToast } from '../components/ui/useToast';
 import { buildCompanyKey, deriveCompanyName } from '../utils/companyAccess';
 import { PLAN_NAMES } from '../data/plans';
 import {
+    buildPendingSubscriptionSelection,
     buildSubscriptionProfileUpdate,
     clearPendingSubscription,
     getNormalizedPlanName,
@@ -25,6 +26,7 @@ import {
     readPendingSubscription,
     savePendingSubscription,
 } from '../utils/subscription';
+import { isPaidPlan } from '../data/plans';
 
 const PUBLIC_VIEWS = new Set(['landing', 'pricing', 'login', 'signup', 'forgot-password', 'terms', 'privacy']);
 
@@ -213,6 +215,7 @@ export function AuthProvider({ children }) {
     const handleLogin = async (credentials) => {
         setAuthError(null);
         console.log('🚀 Attempting login for:', credentials.email);
+        const pendingSelection = readPendingSubscription();
 
         // Guest bypass — skip Firebase Auth entirely
         if (credentials.email === 'guest@boqpro.com') {
@@ -253,7 +256,7 @@ export function AuthProvider({ children }) {
             setUser(optimisticUser);
             localStorage.setItem('boq_pro_profile', JSON.stringify(optimisticUser));
             initializationComplete.current = true; // ⚡ IMPORTANT: Prevents the timeout from kicking us out
-            setView('app');
+            setView(pendingSelection?.plan && isPaidPlan(pendingSelection.plan) ? 'pricing' : 'app');
 
             // Hydrate full profile in background (non-blocking)
             hydrateProfile(result.user);
@@ -287,12 +290,22 @@ export function AuthProvider({ children }) {
             const chosenPlan = getNormalizedPlanName(
                 pendingSelection?.plan || selectedPlan || PLAN_NAMES.STUDENT
             );
-            const subscriptionUpdate = buildSubscriptionProfileUpdate({
-                planName: chosenPlan,
-                billingCycle: pendingSelection?.billing || 'monthly',
-                paystackData: pendingSelection?.paystackData,
-                existingProfile: { plan: chosenPlan },
-            });
+            const hasVerifiedPendingPayment = pendingSelection?.paystackData?.verified === true;
+            const isPendingPaidPlan = isPaidPlan(chosenPlan) && !hasVerifiedPendingPayment;
+            const subscriptionUpdate = isPendingPaidPlan
+                ? {
+                    plan: PLAN_NAMES.STUDENT,
+                    pendingSubscriptionSelection: buildPendingSubscriptionSelection({
+                        planName: chosenPlan,
+                        billingCycle: pendingSelection?.billing || 'monthly',
+                    }),
+                }
+                : buildSubscriptionProfileUpdate({
+                    planName: chosenPlan,
+                    billingCycle: pendingSelection?.billing || 'monthly',
+                    paystackData: pendingSelection?.paystackData,
+                    existingProfile: { plan: chosenPlan },
+                });
 
             const result = await createUserWithEmailAndPassword(
                 auth,
@@ -316,8 +329,10 @@ export function AuthProvider({ children }) {
                     is_onboarded: false,
                     ...subscriptionUpdate,
                 });
-                clearPendingSubscription();
-                setSelectedPlan(null);
+                if (!isPendingPaidPlan) {
+                    clearPendingSubscription();
+                    setSelectedPlan(null);
+                }
             } catch (profileErr) {
                 console.warn('⚠️ Firestore profile creation failed (will retry later):', profileErr.message);
             }
@@ -407,22 +422,41 @@ export function AuthProvider({ children }) {
         setAuthError(null);
         const normalizedPlan = getNormalizedPlanName(plan);
         const billingCycle = paystackData?.billing || 'monthly';
+        const isVerifiedPayment = paystackData?.verified === true;
 
         if (user) {
-            try {
-                const profileUpdate = buildSubscriptionProfileUpdate({
+            if (isPaidPlan(normalizedPlan) && !isVerifiedPayment) {
+                savePendingSubscription({
                     planName: normalizedPlan,
-                    billingCycle,
-                    paystackData,
-                    existingProfile: user,
+                    billing: billingCycle,
+                    paystackData: null,
                 });
-                const result = await updateProfile(profileUpdate);
-                if (result) {
-                    const normalizedUser = normalizeUserProfile({ ...user, ...result });
+                setSelectedPlan(normalizedPlan);
+                setView('pricing');
+                return;
+            }
+
+            try {
+                if (isVerifiedPayment && paystackData?.profile) {
+                    const normalizedUser = normalizeUserProfile({
+                        ...user,
+                        ...paystackData.profile,
+                        pendingSubscriptionSelection: null,
+                    });
                     setUser(normalizedUser);
                     localStorage.setItem('boq_pro_profile', JSON.stringify(normalizedUser));
                 } else {
-                    const normalizedUser = normalizeUserProfile({ ...user, ...profileUpdate });
+                    const profileUpdate = buildSubscriptionProfileUpdate({
+                        planName: normalizedPlan,
+                        billingCycle,
+                        paystackData,
+                        existingProfile: user,
+                    });
+                    const result = await updateProfile({
+                        ...profileUpdate,
+                        pendingSubscriptionSelection: null,
+                    });
+                    const normalizedUser = normalizeUserProfile({ ...user, ...(result || profileUpdate), pendingSubscriptionSelection: null });
                     setUser(normalizedUser);
                     localStorage.setItem('boq_pro_profile', JSON.stringify(normalizedUser));
                 }
@@ -431,18 +465,25 @@ export function AuthProvider({ children }) {
                 setView('app');
             } catch (err) {
                 console.error('❌ Plan selection error:', err);
-                const normalizedUser = normalizeUserProfile({
-                    ...user,
-                    ...buildSubscriptionProfileUpdate({
-                        planName: normalizedPlan,
-                        billingCycle,
-                        paystackData,
-                        existingProfile: user,
-                    }),
-                });
-                setUser(normalizedUser);
-                localStorage.setItem('boq_pro_profile', JSON.stringify(normalizedUser));
-                setView('app');
+                if (isVerifiedPayment) {
+                    const normalizedUser = normalizeUserProfile({
+                        ...user,
+                        ...buildSubscriptionProfileUpdate({
+                            planName: normalizedPlan,
+                            billingCycle,
+                            paystackData,
+                            existingProfile: user,
+                        }),
+                        pendingSubscriptionSelection: null,
+                    });
+                    setUser(normalizedUser);
+                    localStorage.setItem('boq_pro_profile', JSON.stringify(normalizedUser));
+                    clearPendingSubscription();
+                    setSelectedPlan(null);
+                    setView('app');
+                } else {
+                    setAuthError(err.message || 'Unable to start plan checkout.');
+                }
             }
         } else {
             // User not logged in — store plan choice and go to signup

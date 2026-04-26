@@ -210,6 +210,7 @@ function App() {
   const searchParams = new URLSearchParams(window.location.search);
   const actionMode = searchParams.get('mode');
   const actionCode = searchParams.get('oobCode');
+  const paystackReturn = searchParams.get('paystack');
   const sharedProjectId = searchParams.get('project');
   const requestedTab = searchParams.get('tab') || 'workspace';
   const handledSharedProjectRef = React.useRef(null);
@@ -235,6 +236,11 @@ function App() {
     handledSharedProjectRef.current = sharedProjectId;
     clearSharedProjectParams();
   }, [clearSharedProjectParams, projects, requestedTab, setActiveProjectId, setActiveTab, setFocusMode, sharedProjectId, user]);
+
+  React.useEffect(() => {
+    if (paystackReturn !== 'return' || !user) return;
+    setView('pricing');
+  }, [paystackReturn, setView, user]);
 
   if (actionMode && actionCode) {
     return (
@@ -262,6 +268,7 @@ function App() {
   if (view === 'pricing') return <PricingPage
     error={authError}
     userEmail={user?.email}
+    userId={user?.id}
     onSelectPlan={handleSelectPlan}
     onLogin={() => setView(user ? 'app' : 'login')}
     onBack={() => { setAuthError(null); setView(user ? 'app' : 'landing'); }}
