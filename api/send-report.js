@@ -18,7 +18,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.RESEND_API_KEY;
+  // Support both the proper server-side env and the older frontend-prefixed
+  // variable so production can recover even if only the legacy key exists.
+  const apiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
   if (!apiKey) {
     return res.status(500).json({
       error: 'Email service not configured. Add RESEND_API_KEY to your Vercel environment variables.'

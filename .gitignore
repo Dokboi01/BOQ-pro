@@ -35,3 +35,5 @@ health app/
 
 # Temporary debug and preview artifacts
 tmp/
+
+.vercel

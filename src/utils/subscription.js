@@ -3,7 +3,7 @@ import {
   getPaystackAmount,
   getPlanByName,
   isPaidPlan,
-} from '../data/plans';
+} from '../data/plans.js';
 
 export const PENDING_SUBSCRIPTION_STORAGE_KEY = 'boq_pro_pending_subscription';
 const LEGACY_PENDING_PAYMENT_STORAGE_KEY = 'boq_pro_pending_payment';
