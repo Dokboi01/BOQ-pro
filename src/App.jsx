@@ -7,7 +7,11 @@ import { useProjects } from './context/useProjects';
 import { analytics } from './db/firebase';
 import { logEvent } from 'firebase/analytics';
 import { getSetting, saveSetting } from './db/database';
-import Hero from './components/landing/Hero';
+import LandingLayout from './components/landing/LandingLayout';
+import HomePage from './components/landing/HomePage';
+import FeaturesPage from './components/landing/FeaturesPage';
+import AboutPage from './components/landing/AboutPage';
+import ContactPage from './components/landing/ContactPage';
 import PricingPage from './components/landing/Pricing';
 import LegalPage from './components/landing/LegalPage';
 import Login from './components/auth/Login';
@@ -266,17 +270,60 @@ function App() {
 
   );
 
-  if (view === 'landing') return <Hero onGetStarted={() => setView(user ? 'app' : 'pricing')} onLogin={() => setView(user ? 'app' : 'login')} resolvedTheme={resolvedTheme} onToggleTheme={handleThemeToggle} />;
-  if (view === 'pricing') return <PricingPage
-    error={authError}
-    userEmail={user?.email}
-    userId={user?.id}
-    onSelectPlan={handleSelectPlan}
-    onLogin={() => setView(user ? 'app' : 'login')}
-    onBack={() => { setAuthError(null); setView(user ? 'app' : 'landing'); }}
-    resolvedTheme={resolvedTheme}
-    onToggleTheme={handleThemeToggle}
-  />;
+  // ── Multi-page Landing Router ──
+  const landingViews = ['home', 'features', 'about', 'contact', 'landing'];
+  if (landingViews.includes(view)) {
+    const currentLandingView = view === 'landing' ? 'home' : view;
+    const pageContent = (() => {
+      switch (currentLandingView) {
+        case 'home':
+          return <HomePage onGetStarted={() => setView(user ? 'app' : 'pricing')} onLogin={() => setView(user ? 'app' : 'login')} />;
+        case 'features':
+          return <FeaturesPage onGetStarted={() => setView(user ? 'app' : 'pricing')} />;
+        case 'about':
+          return <AboutPage onGetStarted={() => setView(user ? 'app' : 'pricing')} />;
+        case 'contact':
+          return <ContactPage onGetStarted={() => setView(user ? 'app' : 'pricing')} />;
+        default:
+          return <HomePage onGetStarted={() => setView(user ? 'app' : 'pricing')} onLogin={() => setView(user ? 'app' : 'login')} />;
+      }
+    })();
+
+    return (
+      <LandingLayout
+        currentView={currentLandingView}
+        onNavigate={(target) => setView(target)}
+        onGetStarted={() => setView(user ? 'app' : 'pricing')}
+        onLogin={() => setView(user ? 'app' : 'login')}
+        resolvedTheme={resolvedTheme}
+        onToggleTheme={handleThemeToggle}
+      >
+        {pageContent}
+      </LandingLayout>
+    );
+  }
+
+  if (view === 'pricing') return (
+    <LandingLayout
+      currentView="pricing"
+      onNavigate={(target) => setView(target)}
+      onGetStarted={() => setView(user ? 'app' : 'pricing')}
+      onLogin={() => setView(user ? 'app' : 'login')}
+      resolvedTheme={resolvedTheme}
+      onToggleTheme={handleThemeToggle}
+    >
+      <PricingPage
+        error={authError}
+        userEmail={user?.email}
+        userId={user?.id}
+        onSelectPlan={handleSelectPlan}
+        onLogin={() => setView(user ? 'app' : 'login')}
+        onBack={() => { setAuthError(null); setView(user ? 'app' : 'landing'); }}
+        resolvedTheme={resolvedTheme}
+        onToggleTheme={handleThemeToggle}
+      />
+    </LandingLayout>
+  );
   if (view === 'terms') return <LegalPage mode="terms" onBack={() => setView(user ? 'app' : 'signup')} />;
   if (view === 'privacy') return <LegalPage mode="privacy" onBack={() => setView(user ? 'app' : 'signup')} />;
   if (view === 'login') return <Login
