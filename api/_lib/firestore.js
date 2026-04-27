@@ -190,6 +190,74 @@ function fromFirestoreDocument(document) {
   };
 }
 
+export async function listCollectionDocuments(collectionId, { pageSize = 500 } = {}) {
+  const token = await getFirestoreAccessToken();
+  const config = getServiceAccountConfig();
+  if (!config) {
+    throw new Error('Firestore service account is not configured.');
+  }
+
+  const documents = [];
+  let pageToken = '';
+
+  do {
+    const url = new URL(`https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/(default)/documents/${collectionId}`);
+    url.searchParams.set('pageSize', String(pageSize));
+    if (pageToken) {
+      url.searchParams.set('pageToken', pageToken);
+    }
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload?.error?.message || `Failed to list ${collectionId} documents.`);
+    }
+
+    documents.push(...(payload.documents || []).map((entry) => fromFirestoreDocument(entry)).filter(Boolean));
+    pageToken = payload.nextPageToken || '';
+  } while (pageToken);
+
+  return documents;
+}
+
+export async function patchDocumentByPath(path, updates = {}) {
+  const token = await getFirestoreAccessToken();
+  const serializedUpdates = {
+    ...updates,
+    updated_at: updates.updated_at || new Date().toISOString(),
+  };
+  const updateMaskFields = Object.keys(serializedUpdates);
+  const url = new URL(getFirestoreDocumentUrl(path));
+  updateMaskFields.forEach((fieldPath) => {
+    url.searchParams.append('updateMask.fieldPaths', fieldPath);
+  });
+
+  const response = await fetch(url.toString(), {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      fields: Object.fromEntries(
+        Object.entries(serializedUpdates).map(([key, value]) => [key, toFirestoreValue(value)])
+      ),
+    }),
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload?.error?.message || `Failed to update document at ${path}.`);
+  }
+
+  return fromFirestoreDocument(payload);
+}
+
 export async function getProfileDocument(profileId) {
   const token = await getFirestoreAccessToken();
   const response = await fetch(getFirestoreDocumentUrl(`profiles/${profileId}`), {

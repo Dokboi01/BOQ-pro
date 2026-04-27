@@ -1,5 +1,6 @@
 import { db } from './firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { SEED_MARKET_INDICES, SEED_MATERIAL_MARKET_LIBRARY } from '../data/materialMarketFeed.js';
 import { buildMaterialBenchmarkPayload, normalizeMaterialBenchmarkRecord } from '../utils/materialBenchmarks';
 
 const materialsToSeed = [
@@ -627,11 +628,13 @@ const materialsToSeed = [
     },
 ];
 
-export const getSeedMaterials = () => materialsToSeed.map((material) => normalizeMaterialBenchmarkRecord({
+export const getSeedMaterials = () => SEED_MATERIAL_MARKET_LIBRARY.map((material) => normalizeMaterialBenchmarkRecord({
     ...material,
     history: Array.isArray(material.history) ? [...material.history] : [],
     regions: material.regions ? { ...material.regions } : {},
 }));
+
+export const getSeedMarketIndices = () => SEED_MARKET_INDICES.map((entry) => ({ ...entry }));
 
 const indicesToSeed = [
     { label: 'Overall CMCI', val: 148.3, delta: '+2.1%', trend: 'up' },
@@ -644,11 +647,15 @@ const indicesToSeed = [
     { label: 'Finishes Index', val: 122.9, delta: '+1.9%', trend: 'up' },
 ];
 
+void materialsToSeed;
+void indicesToSeed;
+
 export const seedMarketData = async () => {
     console.log('🚀 Starting Market Data Seed...');
     try {
         // Seed Materials to Firestore
-        for (const mat of materialsToSeed) {
+        const nextMaterials = getSeedMaterials();
+        for (const mat of nextMaterials) {
             const docId = mat.name.replace(/\s+/g, '_').toLowerCase();
             const payload = buildMaterialBenchmarkPayload(mat);
             await setDoc(doc(db, 'materials', docId), {
@@ -657,17 +664,18 @@ export const seedMarketData = async () => {
                 updated_at: serverTimestamp()
             });
         }
-        console.log(`✅ ${materialsToSeed.length} materials seeded successfully.`);
+        console.log(`✅ ${nextMaterials.length} materials seeded successfully.`);
 
         // Seed Indices to Firestore
-        for (const idx of indicesToSeed) {
+        const nextIndices = getSeedMarketIndices();
+        for (const idx of nextIndices) {
             const docId = idx.label.replace(/\s+/g, '_').toLowerCase();
             await setDoc(doc(db, 'market_indices', docId), {
                 ...idx,
                 created_at: serverTimestamp()
             });
         }
-        console.log(`✅ ${indicesToSeed.length} market indices seeded successfully.`);
+        console.log(`✅ ${nextIndices.length} market indices seeded successfully.`);
 
         return true;
     } catch (err) {

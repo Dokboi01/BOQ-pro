@@ -153,6 +153,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     checkedAt: null,
     error: '',
   });
+  const lastAutoBenchmarkSyncRef = React.useRef('');
 
   const toast = useToast();
   const { user } = useAuth();
@@ -858,7 +859,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
     toast.success(`Auto-rated ${updatedCount} item${updatedCount === 1 ? '' : 's'} and benchmarked ${benchmarkedCount} item${benchmarkedCount === 1 ? '' : 's'}.`);
   };
 
-  const buildBenchmarkRefreshResult = (materialIndex, { targetSectionId = null, targetItemId = null } = {}) => {
+  const buildBenchmarkRefreshResult = React.useCallback((materialIndex, { targetSectionId = null, targetItemId = null } = {}) => {
     const region = project?.region || 'Lagos';
     const structureType = project?.structureType || project?.subtype || project?.type;
     let appliedCount = 0;
@@ -925,7 +926,13 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       newBenchmarkLinks,
       reviewCount,
     };
-  };
+  }, [
+    project?.region,
+    project?.structureType,
+    project?.subtype,
+    project?.type,
+    sections,
+  ]);
 
   const applyBenchmarkRefresh = async ({ targetSectionId = null, targetItemId = null, scope = 'project' } = {}) => {
     const materialIndex = await loadMarketBenchmarks();
@@ -977,6 +984,44 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   const refreshSectionBenchmarks = async (sectionId) => {
     await applyBenchmarkRefresh({ targetSectionId: sectionId, scope: 'section' });
   };
+
+  useEffect(() => {
+    if (!benchmarkMaterialIndex || !benchmarkSyncState.checkedAt || !project?.id) return;
+    if (boqBuilder?.stage === 'selection') return;
+
+    const totalItemCount = (sections || []).reduce((sum, section) => sum + ((section.items || []).length), 0);
+    if (totalItemCount <= 0) return;
+
+    const marker = [
+      project.id,
+      project.region || 'Lagos',
+      benchmarkSyncState.checkedAt,
+      totalItemCount,
+    ].join('|');
+
+    if (lastAutoBenchmarkSyncRef.current === marker) {
+      return;
+    }
+
+    lastAutoBenchmarkSyncRef.current = marker;
+
+    const result = buildBenchmarkRefreshResult(benchmarkMaterialIndex);
+    if (!result || result.appliedCount <= 0) {
+      return;
+    }
+
+    setSections(result.updated);
+    onUpdate(project.id, result.updated, project?.region);
+  }, [
+    benchmarkMaterialIndex,
+    benchmarkSyncState.checkedAt,
+    boqBuilder?.stage,
+    buildBenchmarkRefreshResult,
+    onUpdate,
+    project?.id,
+    project?.region,
+    sections,
+  ]);
 
   const refreshItemBenchmark = async (sectionId, itemId) => {
     await applyBenchmarkRefresh({ targetSectionId: sectionId, targetItemId: itemId, scope: 'item' });

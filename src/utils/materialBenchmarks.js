@@ -106,7 +106,8 @@ const normalizeSourceEntry = (source, index, material, context) => {
       region: fallbackRegion,
       rate: benchmarkRate || marketRead || 0,
       capturedAt: fallbackDate,
-      note: ''
+      note: '',
+      url: ''
     };
   }
 
@@ -120,7 +121,8 @@ const normalizeSourceEntry = (source, index, material, context) => {
     region: source.region || fallbackRegion,
     rate: clampNumber(source.rate ?? source.price ?? benchmarkRate ?? marketRead),
     capturedAt: resolveDate(source.capturedAt || source.updatedAt || source.date)?.toISOString() || fallbackDate,
-    note: source.note || ''
+    note: source.note || '',
+    url: source.url || source.href || ''
   };
 };
 
@@ -138,7 +140,8 @@ const buildDefaultSources = (material, context) => {
       region: primaryRegion,
       rate: marketRead || benchmarkRate,
       capturedAt: updatedAt,
-      note: material.delta ? `Current movement ${material.delta}` : ''
+      note: material.delta ? `Current movement ${material.delta}` : '',
+      url: ''
     },
     {
       label: `${primaryRegion} benchmark calibration`,
@@ -146,7 +149,8 @@ const buildDefaultSources = (material, context) => {
       region: primaryRegion,
       rate: benchmarkRate || marketRead,
       capturedAt: updatedAt,
-      note: material.range || material.benchmarkBand || ''
+      note: material.range || material.benchmarkBand || '',
+      url: ''
     }
   ];
 
@@ -160,7 +164,8 @@ const buildDefaultSources = (material, context) => {
         region,
         rate: clampNumber(rate),
         capturedAt: updatedAt,
-        note: ''
+        note: '',
+        url: ''
       });
     });
 

@@ -14,7 +14,7 @@ import {
     serverTimestamp
 } from 'firebase/firestore';
 import { buildCompanyKey, deriveCompanyName } from '../utils/companyAccess';
-import { getSeedMaterials } from './seed_materials';
+import { getSeedMarketIndices, getSeedMaterials } from './seed_materials';
 import { buildMaterialBenchmarkPayload, normalizeMaterialBenchmarkRecord } from '../utils/materialBenchmarks';
 
 /**
@@ -524,10 +524,11 @@ export const deleteMaterial = async (id) => {
 export const getMarketIndices = async () => {
     try {
         const snapshot = await getDocs(collection(db, 'market_indices'));
-        return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        const indices = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        return indices.length > 0 ? indices : getSeedMarketIndices();
     } catch (err) {
         console.error('Error fetching market indices:', err);
-        return [];
+        return getSeedMarketIndices();
     }
 };
 
