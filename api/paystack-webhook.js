@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   if (handleOptions(req, res)) return;
 
   if (req.method !== 'POST') {
-    return sendJson(res, 405, { error: 'Method not allowed.' });
+    return sendJson(req, res, 405, { error: 'Method not allowed.' });
   }
 
   try {
@@ -14,19 +14,19 @@ export default async function handler(req, res) {
     const signature = req.headers['x-paystack-signature'];
 
     if (!verifyPaystackWebhookSignature(rawBody, signature)) {
-      return sendJson(res, 401, { error: 'Invalid webhook signature.' });
+      return sendJson(req, res, 401, { error: 'Invalid webhook signature.' });
     }
 
     const event = JSON.parse(rawBody);
     await syncSubscriptionProfileFromWebhook(event?.event, event?.data);
 
-    return sendJson(res, 200, {
+    return sendJson(req, res, 200, {
       received: true,
       event: event?.event || null,
     });
   } catch (error) {
     console.error('Paystack webhook error:', error);
-    return sendJson(res, 500, {
+    return sendJson(req, res, 500, {
       error: error.message || 'Failed to process Paystack webhook.',
     });
   }

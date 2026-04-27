@@ -31,9 +31,9 @@ This application is set up for GitHub to Vercel deployment. OpenAI is the defaul
 
 ### Vercel Environment Variables
 
-- `VITE_OPENAI_API_KEY` - Required. Primary AI provider for BOQ analysis and drawing workflows.
-- `VITE_OPENAI_MODEL` - Optional. Defaults to `gpt-4o`.
-- `VITE_GEMINI_API_KEY` - Optional. Used only as a fallback if OpenAI is unavailable.
+- `OPENAI_API_KEY` - Required. Primary AI provider for BOQ analysis and drawing workflows.
+- `OPENAI_MODEL` - Optional. Defaults to `gpt-4o`.
+- `GEMINI_API_KEY` - Optional. Used only as a fallback if OpenAI is unavailable.
 - `RESEND_API_KEY` - Required if you want report emails from the `/api/send-report` endpoint.
 - `RESEND_FROM_EMAIL` - Optional sender address for Resend.
 - `VITE_PAYSTACK_PUBLIC_KEY` - Frontend Paystack public key used to enable the checkout flow.
@@ -42,13 +42,14 @@ This application is set up for GitHub to Vercel deployment. OpenAI is the defaul
 - `FIREBASE_PROJECT_ID` - Firebase project id used by the secure subscription API routes.
 - `FIREBASE_SERVICE_ACCOUNT_EMAIL` - Firebase service account email for secure profile updates from API routes.
 - `FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY` - Firebase service account private key for secure profile updates from API routes.
-- `VITE_PAYSTACK_API_BASE_URL` - Optional base URL if the frontend is calling Paystack APIs on another origin.
+- `VITE_PAYSTACK_API_BASE_URL` - Optional base URL if the frontend is calling API routes on another origin.
+- `ALLOWED_ORIGINS` - Optional comma-separated allowlist for cross-origin browser requests to `/api` endpoints.
 
 ### Vercel Setup
 
 1. Import the GitHub repository into Vercel.
 2. Add the environment variables above in the Vercel project settings.
-3. Redeploy the project so the new OpenAI defaults are available in production.
+3. Redeploy the project so the new server-side AI defaults are available in production.
 
 ## Paystack Subscription Flow
 

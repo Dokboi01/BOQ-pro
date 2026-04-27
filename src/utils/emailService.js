@@ -1,3 +1,5 @@
+import { getCurrentIdToken } from './authToken';
+
 /**
  * Email Service — Frontend client for the /api/send-report serverless function
  */
@@ -14,9 +16,17 @@ function getSendReportUrl() {
 
 export async function sendReportEmail(to, projectInfo, attachments = []) {
   try {
+    const token = await getCurrentIdToken();
+    if (!token) {
+      return { success: false, error: 'Please sign in before sending a report email.' };
+    }
+
     const response = await fetch(getSendReportUrl(), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({
         to,
         projectName: projectInfo.name,

@@ -1,4 +1,5 @@
 import { handleOptions, readJsonBody, sendJson } from './_lib/http.js';
+import { requireFirebaseAuth } from './_lib/firebase-auth.js';
 import { verifySubscriptionTransaction } from './_lib/paystack.js';
 import { applyVerifiedSubscriptionCharge } from './_lib/subscriptionSync.js';
 
@@ -6,21 +7,22 @@ export default async function handler(req, res) {
   if (handleOptions(req, res)) return;
 
   if (req.method !== 'POST') {
-    return sendJson(res, 405, { error: 'Method not allowed.' });
+    return sendJson(req, res, 405, { error: 'Method not allowed.' });
   }
 
   try {
+    const authClaims = await requireFirebaseAuth(req);
     const body = await readJsonBody(req);
     const reference = String(body?.reference || '').trim();
     if (!reference) {
-      return sendJson(res, 400, { error: 'Transaction reference is required.' });
+      return sendJson(req, res, 400, { error: 'Transaction reference is required.' });
     }
 
     const { transaction, context, expectedAmount } = await verifySubscriptionTransaction(reference);
     const transactionStatus = String(transaction?.status || '').toLowerCase();
 
     if (expectedAmount && Number(transaction?.amount) !== Number(expectedAmount)) {
-      return sendJson(res, 409, {
+      return sendJson(req, res, 409, {
         success: false,
         verified: false,
         status: 'amount_mismatch',
@@ -28,8 +30,22 @@ export default async function handler(req, res) {
       });
     }
 
+    const authUid = String(authClaims?.user_id || authClaims?.sub || '').trim();
+    const authEmail = String(authClaims?.email || '').trim().toLowerCase();
+    const transactionUid = String(context?.userId || '').trim();
+    const transactionEmail = String(context?.email || '').trim().toLowerCase();
+
+    if ((transactionUid && authUid && transactionUid !== authUid) || (transactionEmail && authEmail && transactionEmail !== authEmail)) {
+      return sendJson(req, res, 403, {
+        success: false,
+        verified: false,
+        status: 'forbidden',
+        error: 'This transaction does not belong to the authenticated user.',
+      });
+    }
+
     if (transactionStatus !== 'success') {
-      return sendJson(res, 200, {
+      return sendJson(req, res, 200, {
         success: false,
         verified: false,
         status: transactionStatus || 'pending',
@@ -49,7 +65,7 @@ export default async function handler(req, res) {
       syncWarning = syncError.message || 'Profile sync failed after verification.';
     }
 
-    return sendJson(res, 200, {
+    return sendJson(req, res, 200, {
       success: true,
       verified: true,
       status: transactionStatus,
@@ -61,7 +77,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('Paystack verify error:', error);
-    return sendJson(res, 500, {
+    return sendJson(req, res, Number(error.status || 500), {
       error: error.message || 'Failed to verify the Paystack transaction.',
     });
   }

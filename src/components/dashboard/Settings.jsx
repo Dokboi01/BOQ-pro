@@ -50,9 +50,8 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingOpenAI, setIsSavingOpenAI] = useState(false);
   const [isSavingTheme, setIsSavingTheme] = useState(false);
-
-  const geminiConnected = !!import.meta.env.VITE_GEMINI_API_KEY;
-  const openaiConnected = !!import.meta.env.VITE_OPENAI_API_KEY;
+  const geminiConnected = false;
+  const openaiConnected = false;
   const subscriptionView = getSubscriptionSnapshot(user);
   const currentPlan = getPlanByName(subscriptionView.planName);
   const currentBillingLabel = subscriptionView.billingCycle === 'annual'
@@ -78,13 +77,9 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
 
   useEffect(() => {
     const loadSettings = async () => {
-      const savedResendKey = await getSetting('resend_api_key');
-      const savedOpenAIKey = await getSetting('openai_api_key');
       const savedModel = await getSetting('openai_model');
       const savedProvider = await getSetting('preferred_ai_provider');
       
-      if (savedResendKey) setApiKey(savedResendKey);
-      if (savedOpenAIKey) setOpenaiKey(savedOpenAIKey);
       if (savedModel) setOpenaiModel(savedModel);
       if (savedProvider) setAiProvider(savedProvider);
       else setAiProvider('openai');
@@ -94,18 +89,16 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
 
   const handleSaveAPI = async () => {
     setIsSaving(true);
-    await saveSetting('resend_api_key', apiKey);
+    toast.info('Set RESEND_API_KEY in the server environment. It is not stored in Firestore.');
     setIsSaving(false);
-    toast.success('Resend API settings saved.');
   };
 
   const handleSaveOpenAI = async () => {
     setIsSavingOpenAI(true);
-    await saveSetting('openai_api_key', openaiKey);
     await saveSetting('openai_model', openaiModel);
     await saveSetting('preferred_ai_provider', aiProvider);
     setIsSavingOpenAI(false);
-    toast.success('AI configuration saved successfully.');
+    toast.success('AI preferences saved.');
   };
 
   const themeOptions = [
@@ -329,7 +322,7 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
           <div className="settings-panel view-fade-in">
             <div className="settings-header">
               <h3>Professional API Integration</h3>
-              <p>Connect third-party services like Resend for automated client emails.</p>
+              <p>Configure server-side services and AI preferences. Secrets stay in deployment env vars, not Firestore.</p>
             </div>
 
             <div className="api-config-section">
@@ -338,11 +331,11 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
                   <div className="icon-box-sm"><Zap size={20} className="text-accent" /></div>
                   <div className="text-box">
                     <h4>Resend Configuration</h4>
-                    <p>Used for sending verification codes and project reports to clients.</p>
+                    <p>Configure `RESEND_API_KEY` on the server for email delivery. Nothing is stored in Firestore.</p>
                   </div>
                 </div>
                 <div className="form-item mt-4">
-                  <label>Resend API Key</label>
+                  <label>Resend API Key (server only)</label>
                   <div className="input-group-pass">
                     <input
                       type="password"
@@ -352,7 +345,7 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
                       className="settings-input"
                     />
                   </div>
-                  <p className="input-hint">Get your key from <a href="https://resend.com/api-keys" target="_blank" rel="noreferrer">resend.com/api-keys</a></p>
+                  <p className="input-hint">Keep the key in deployment environment variables. Do not store it in Firestore.</p>
                 </div>
                 <div className="form-actions mt-4">
                   <button
@@ -360,7 +353,7 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
                     onClick={handleSaveAPI}
                     disabled={isSaving}
                   >
-                    {isSaving ? 'Saving...' : 'Verify & Save'}
+                    {isSaving ? 'Saving...' : 'Server Only'}
                   </button>
                 </div>
               </div>
@@ -372,7 +365,7 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
                   </div>
                   <div className="text-box">
                     <h4>Google Gemini AI</h4>
-                    <p>Fallback engine for AI Rate Analysis, Project Summaries, and Drawing Analysis.</p>
+                    <p>Configure `GEMINI_API_KEY` on the server if you want Gemini fallback support.</p>
                   </div>
                   <div style={{ marginLeft: 'auto' }}>
                     <span style={{
@@ -401,7 +394,7 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
                   </div>
                   <div className="text-box">
                     <h4>OpenAI (Default)</h4>
-                    <p>Primary engine for Professional AI Insights and Vision Analysis in local and Vercel deployments.</p>
+                    <p>Configure `OPENAI_API_KEY` and `OPENAI_MODEL` on the server for the default AI path.</p>
                   </div>
                   <div style={{ marginLeft: 'auto' }}>
                     <span style={{
@@ -423,7 +416,7 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
                 )}
                 
                 <div className="form-item mt-4">
-                  <label>OpenAI API Key</label>
+                  <label>OpenAI API Key (server only)</label>
                   <input
                     type="password"
                     value={openaiKey}
@@ -442,7 +435,7 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
                     placeholder="gpt-4o, gpt-4.1, etc."
                     className="settings-input"
                   />
-                  <p className="input-hint">Specify the OpenAI model version to use by default in local and Vercel environments.</p>
+                  <p className="input-hint">This preference is stored in Firestore. The secret key itself stays in deployment env vars.</p>
                 </div>
 
                 <div className="form-item mt-4">
@@ -463,7 +456,7 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
                     onClick={handleSaveOpenAI}
                     disabled={isSavingOpenAI}
                   >
-                    {isSavingOpenAI ? 'Saving...' : 'Save AI Config'}
+                    {isSavingOpenAI ? 'Saving...' : 'Save AI Preferences'}
                   </button>
                 </div>
               </div>
@@ -477,7 +470,7 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
                   </div>
                 </div>
                 <div className="mt-4" style={{ padding: '0.75rem', background: 'rgba(74, 222, 128, 0.1)', borderRadius: '8px', fontSize: '0.8125rem', color: '#4ade80' }}>
-                  ✅ Connected to Firebase — Project: boq-pro-72332
+                  Connected to Firebase - project data sync is still handled by the app backend.
                 </div>
                 <div className="form-actions mt-4">
                   <button
@@ -485,7 +478,7 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
                     onClick={handleSaveAPI}
                     disabled={isSaving}
                   >
-                    {isSaving ? 'Saving...' : 'Connect Cloud'}
+                    {isSaving ? 'Saving...' : 'Update Cloud Notes'}
                   </button>
                 </div>
               </div>
@@ -516,7 +509,7 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
 
               <div className="enterprise-card api-section mt-6">
                 <div className="icon-box-tip"><Database size={16} /></div>
-                <p>API keys are stored securely in your local database. They are never transmitted to our servers.</p>
+                <p>API keys now belong in deployment environment variables, not in the browser or Firestore.</p>
               </div>
             </div>
           </div>
