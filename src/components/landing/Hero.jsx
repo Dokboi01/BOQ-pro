@@ -178,10 +178,20 @@ const Hero = ({ onGetStarted, onLogin, resolvedTheme, onToggleTheme }) => {
           </div>
 
           <div className="hero-visual">
+            <div className="hero-visual-bg">
+              <img
+                src="https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80"
+                alt="Nigerian construction site"
+                className="hero-bg-img"
+                loading="lazy"
+              />
+              <div className="hero-bg-overlay" />
+            </div>
+
             <div className="workspace-card workspace-main">
               <div className="workspace-header">
                 <div>
-                  <span className="workspace-tag">Live project view</span>
+                  <span className="workspace-tag"><i className="fas fa-hard-hat" style={{marginRight: '0.35rem', fontSize: '0.7rem'}}></i>Live project view</span>
                   <h2>3 Bedroom Duplex, Lekki</h2>
                 </div>
                 <span className="workspace-status">
@@ -213,7 +223,7 @@ const Hero = ({ onGetStarted, onLogin, resolvedTheme, onToggleTheme }) => {
 
               <div className="activity-card">
                 <div className="activity-title">
-                  <MessagesSquare size={15} />
+                  <i className="fas fa-users" style={{fontSize: '0.85rem', color: 'var(--accent-600)'}}></i>
                   Recent team activity
                 </div>
                 {activityFeed.map((item) => (
@@ -226,22 +236,22 @@ const Hero = ({ onGetStarted, onLogin, resolvedTheme, onToggleTheme }) => {
             </div>
 
             <div className="workspace-card workspace-side">
-              <span className="workspace-tag">Custom pricing studio</span>
+              <span className="workspace-tag"><i className="fas fa-calculator" style={{marginRight: '0.35rem', fontSize: '0.7rem'}}></i>Custom pricing studio</span>
               <h3>Rate build-up</h3>
               <div className="side-metric">
-                <span>Direct cost</span>
+                <span><i className="fas fa-naira-sign" style={{marginRight: '0.35rem', fontSize: '0.7rem', color: 'var(--primary-500)'}}></i>Direct cost</span>
                 <strong>NGN 142,000</strong>
               </div>
               <div className="side-metric">
-                <span>Commercial allowances</span>
+                <span><i className="fas fa-percentage" style={{marginRight: '0.35rem', fontSize: '0.7rem', color: 'var(--primary-500)'}}></i>Commercial allowances</span>
                 <strong>18%</strong>
               </div>
               <div className="side-metric">
-                <span>Final custom rate</span>
+                <span><i className="fas fa-check-circle" style={{marginRight: '0.35rem', fontSize: '0.7rem', color: 'var(--accent-600)'}}></i>Final custom rate</span>
                 <strong>NGN 185,000</strong>
               </div>
               <button className="side-action" onClick={onGetStarted}>
-                Try custom pricing flow
+                Try custom pricing flow <i className="fas fa-arrow-right" style={{marginLeft: '0.45rem', fontSize: '0.75rem'}}></i>
               </button>
             </div>
           </div>
@@ -635,7 +645,36 @@ const Hero = ({ onGetStarted, onLogin, resolvedTheme, onToggleTheme }) => {
           min-height: 640px;
         }
 
+        .hero-visual-bg {
+          position: absolute;
+          inset: 0;
+          border-radius: 28px;
+          overflow: hidden;
+          z-index: 0;
+        }
+
+        .hero-bg-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+
+        .hero-bg-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.15) 0%,
+            rgba(255, 255, 255, 0.65) 50%,
+            rgba(255, 255, 255, 0.92) 100%
+          );
+          pointer-events: none;
+        }
+
         .workspace-card {
+          position: relative;
+          z-index: 1;
           border-radius: 28px;
           border: 1px solid var(--border-light);
           background: rgba(255, 255, 255, 0.92);
@@ -1374,6 +1413,19 @@ const Hero = ({ onGetStarted, onLogin, resolvedTheme, onToggleTheme }) => {
             background-image:
               linear-gradient(rgba(51, 65, 85, 0.35) 1px, transparent 1px),
               linear-gradient(90deg, rgba(51, 65, 85, 0.35) 1px, transparent 1px);
+          }
+
+          .hero-visual-bg {
+            border-color: rgba(71, 85, 105, 0.4);
+          }
+
+          .hero-bg-overlay {
+            background: linear-gradient(
+              180deg,
+              rgba(15, 23, 42, 0.25) 0%,
+              rgba(15, 23, 42, 0.55) 50%,
+              rgba(15, 23, 42, 0.88) 100%
+            );
           }
 
           .hero-stat-card,
