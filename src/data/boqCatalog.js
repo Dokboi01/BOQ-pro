@@ -3,6 +3,7 @@ import {
   evaluateBoqFormulaRate,
   normalizeEditableInputs,
 } from '../utils/boqFormulas';
+import { getBreakdownForItem } from './rateBreakdowns';
 import { ROAD_DRAINAGE_ITEMS } from './catalog/roadDrainage';
 import { ROAD_EARTHWORK_ITEMS } from './catalog/roadEarthworks';
 import {
@@ -121,6 +122,10 @@ const expressionFormula = 'materials + labour + plant + transport + overhead';
 const DEFAULT_RATE_SOURCE_OPTIONS = ['benchmark', 'formula', 'manual'];
 const SEED_BENCHMARK_DATE = '2026-04-18';
 const DEFAULT_CATALOG_BENCHMARK_NOTE = 'Catalog seed benchmark. Replace with verified Nigerian market rate.';
+const MARKET_LIBRARY_BENCHMARK_DATE = '2026-04-27';
+const MARKET_LIBRARY_BENCHMARK_NOTE = 'Benchmark derived from the current BOQ Pro market library and rate breakdown reference for Nigeria. Validate with supplier quotes and project-specific logistics before tender use.';
+const MARKET_LIBRARY_BENCHMARK_FACTOR = 0.85;
+const MARKET_LIBRARY_FALLBACK_FACTOR = 0.78;
 
 const normalizeKeywords = (keywords = []) => (
   (Array.isArray(keywords) ? keywords : [])
@@ -174,6 +179,123 @@ const buildSeedBenchmarkMetadata = ({
   confidenceLevel,
   calibrationFactor,
 });
+
+const clampCatalogNumber = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const getCatalogBreakdownLineTotal = (category, row = {}) => {
+  if (category === 'materials') {
+    const wasteFactor = 1 + (clampCatalogNumber(row.waste) / 100);
+    return clampCatalogNumber(row.qty) * clampCatalogNumber(row.rate) * wasteFactor;
+  }
+
+  if (category === 'labor' || category === 'labour' || category === 'plant') {
+    return (clampCatalogNumber(row.qty) * clampCatalogNumber(row.rate))
+      / Math.max(clampCatalogNumber(row.output) || 1, 0.001);
+  }
+
+  return clampCatalogNumber(row.qty) * clampCatalogNumber(row.rate);
+};
+
+const calculateCatalogBreakdownBenchmark = (breakdown = {}) => {
+  const materials = Array.isArray(breakdown.materials) ? breakdown.materials : [];
+  const labourRows = Array.isArray(breakdown.labor)
+    ? breakdown.labor
+    : (Array.isArray(breakdown.labour) ? breakdown.labour : []);
+  const plantRows = Array.isArray(breakdown.plant) ? breakdown.plant : [];
+  const transportRows = Array.isArray(breakdown.transport) ? breakdown.transport : [];
+
+  const materialsTotal = materials.reduce((sum, row) => sum + getCatalogBreakdownLineTotal('materials', row), 0);
+  const labourTotal = labourRows.reduce((sum, row) => sum + getCatalogBreakdownLineTotal('labor', row), 0);
+  const plantTotal = plantRows.reduce((sum, row) => sum + getCatalogBreakdownLineTotal('plant', row), 0);
+  const transportTotal = transportRows.reduce((sum, row) => sum + getCatalogBreakdownLineTotal('transport', row), 0);
+  const primeCost = materialsTotal + labourTotal + plantTotal + transportTotal;
+  const overheadValue = primeCost * (clampCatalogNumber(breakdown.overheads) / 100);
+  const profitValue = (primeCost + overheadValue) * (clampCatalogNumber(breakdown.profit) / 100);
+
+  return primeCost + overheadValue + profitValue;
+};
+
+const getCatalogFormulaBenchmarkRate = (item = {}) => {
+  const editableInputs = Array.isArray(item.editableInputs) && item.editableInputs.length > 0
+    ? item.editableInputs
+    : (Array.isArray(item.exampleInputs) ? item.exampleInputs : []);
+
+  if (!editableInputs.length) return 0;
+  if (!item.defaultFormulaType && !item.formulaExpression) return 0;
+
+  return clampCatalogNumber(evaluateBoqFormulaRate({
+    ...item,
+    editableInputs,
+  }));
+};
+
+const deriveCatalogBenchmark = (item = {}, structureType = '') => {
+  const formulaRate = getCatalogFormulaBenchmarkRate(item);
+  if (formulaRate > 0) {
+    return {
+      rate: formulaRate,
+      sourceType: 'formula-market-derived',
+      sourceNote: 'Benchmark resolved from the catalog formula build-up using current BOQ Pro benchmark inputs.',
+      confidenceLevel: 'medium',
+      calibrationFactor: MARKET_LIBRARY_BENCHMARK_FACTOR,
+    };
+  }
+
+  const breakdown = getBreakdownForItem(item.description || item.name || '', structureType);
+  const breakdownRate = clampCatalogNumber(calculateCatalogBreakdownBenchmark(breakdown));
+  if (breakdownRate > 0) {
+    const matchSource = String(breakdown?.matchSource || '').toLowerCase();
+    const isSpecificMatch = matchSource === 'keyword' || matchSource === 'trade-default';
+
+    return {
+      rate: breakdownRate,
+      sourceType: 'market-library-derived',
+      sourceNote: MARKET_LIBRARY_BENCHMARK_NOTE,
+      confidenceLevel: isSpecificMatch ? 'medium' : 'low',
+      calibrationFactor: isSpecificMatch ? MARKET_LIBRARY_BENCHMARK_FACTOR : MARKET_LIBRARY_FALLBACK_FACTOR,
+    };
+  }
+
+  return null;
+};
+
+const ensureCatalogItemBenchmark = (item = {}, structureType = '') => {
+  const explicitBenchmarkRate = clampCatalogNumber(
+    item.benchmarkRate
+    ?? item.benchmarkMetadata?.rate
+    ?? item.benchmark
+  );
+
+  if (explicitBenchmarkRate > 0) {
+    return {
+      ...item,
+      benchmarkRate: explicitBenchmarkRate,
+      benchmark: explicitBenchmarkRate,
+    };
+  }
+
+  const derivedBenchmark = deriveCatalogBenchmark(item, structureType);
+  if (!derivedBenchmark?.rate) return item;
+
+  return {
+    ...item,
+    benchmarkRate: derivedBenchmark.rate,
+    benchmark: derivedBenchmark.rate,
+    benchmarkMetadata: buildBenchmarkMetadata({
+      rate: derivedBenchmark.rate,
+      currency: item.benchmarkMetadata?.currency || 'NGN',
+      region: item.benchmarkMetadata?.region || 'Nigeria',
+      sourceType: derivedBenchmark.sourceType,
+      sourceNote: derivedBenchmark.sourceNote,
+      dateCaptured: MARKET_LIBRARY_BENCHMARK_DATE,
+      confidenceLevel: derivedBenchmark.confidenceLevel,
+      calibrationFactor: derivedBenchmark.calibrationFactor,
+    }),
+  };
+};
 
 const buildSectionMeta = (id, title, description, metadata = {}) => {
   const isPreliminaries = metadata.isPreliminaries ?? id === 'preliminaries';
@@ -505,15 +627,44 @@ const section = (id, title, description, availableItems, metadata = {}) => ({
   availableItems,
 });
 
+function resolveStructureTypeFromCode(structureCode = '') {
+  switch (structureCode) {
+    case 'BLD':
+      return STRUCTURE_TYPES.BUILDING;
+    case 'ROD':
+      return STRUCTURE_TYPES.ROAD;
+    case 'BRG':
+      return STRUCTURE_TYPES.BRIDGE;
+    case 'DRN':
+      return STRUCTURE_TYPES.DRAINAGE;
+    case 'CUL':
+      return STRUCTURE_TYPES.CULVERT;
+    case 'SEA':
+      return STRUCTURE_TYPES.COASTAL;
+    case 'FDN':
+      return STRUCTURE_TYPES.FOUNDATION;
+    case 'WTR':
+      return STRUCTURE_TYPES.WATER_UTILITY;
+    default:
+      return '';
+  }
+}
+
 const catalogSection = (structureCode, id, title, description, items, metadata = {}) => (
   section(
     id,
     title,
     description,
-    items.map((item, index) => ({
-      ...item,
-      code: item.code || makeItemCode(structureCode, makeSectionCode(id), index),
-    })),
+    items.map((item, index) => {
+      const structureType = item.structureType || resolveStructureTypeFromCode(structureCode);
+
+      return ensureCatalogItemBenchmark({
+        ...item,
+        structureType,
+        billSection: item.billSection || title,
+        code: item.code || makeItemCode(structureCode, makeSectionCode(id), index),
+      }, structureType);
+    }),
     metadata
   )
 );
@@ -2980,11 +3131,19 @@ export const cloneCatalogItemToProjectItem = (catalogItem, { structureType, bill
   });
   const catalogBenchmarkRate = Number(catalogItem.benchmarkRate) || 0;
   const hasFormula = catalogItem.defaultFormulaType && catalogItem.defaultFormulaType !== 'manual';
-  const initialSelectedSource = hasFormula ? 'formula' : 'manual';
   const formulaCalculatedRate = hasFormula ? (formulaRate ?? 0) : 0;
-  const resolvedUnitRate = hasFormula
+  const initialSelectedSource = formulaCalculatedRate > 0
+    ? 'formula'
+    : catalogBenchmarkRate > 0
+      ? 'benchmark'
+      : hasFormula
+        ? 'formula'
+        : 'manual';
+  const resolvedUnitRate = initialSelectedSource === 'formula'
     ? (formulaCalculatedRate || catalogBenchmarkRate)
-    : catalogBenchmarkRate;
+    : initialSelectedSource === 'benchmark'
+      ? catalogBenchmarkRate
+      : 0;
   const quantity = 0;
   const notes = catalogItem.notes || '';
 
