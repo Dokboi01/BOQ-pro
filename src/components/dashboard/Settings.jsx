@@ -42,13 +42,10 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
     { id: 'notifications', label: 'Notifications', icon: Bell },
   ];
 
-  const [apiKey, setApiKey] = useState('');
-  const [openaiKey, setOpenaiKey] = useState('');
-  const [openaiModel, setOpenaiModel] = useState(import.meta.env.VITE_OPENAI_MODEL || 'gpt-4o');
+  const [openaiModel, setOpenaiModel] = useState('gpt-4o');
   const [aiProvider, setAiProvider] = useState('openai');
   const [isSeeding, setIsSeeding] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isSavingOpenAI, setIsSavingOpenAI] = useState(false);
+  const [isSavingPrefs, setIsSavingPrefs] = useState(false);
   const [isSavingTheme, setIsSavingTheme] = useState(false);
   const geminiConnected = false;
   const openaiConnected = false;
@@ -79,7 +76,6 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
     const loadSettings = async () => {
       const savedModel = await getSetting('openai_model');
       const savedProvider = await getSetting('preferred_ai_provider');
-      
       if (savedModel) setOpenaiModel(savedModel);
       if (savedProvider) setAiProvider(savedProvider);
       else setAiProvider('openai');
@@ -87,17 +83,11 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
     loadSettings();
   }, []);
 
-  const handleSaveAPI = async () => {
-    setIsSaving(true);
-    toast.info('Set RESEND_API_KEY in the server environment. It is not stored in Firestore.');
-    setIsSaving(false);
-  };
-
-  const handleSaveOpenAI = async () => {
-    setIsSavingOpenAI(true);
+  const handleSavePreferences = async () => {
+    setIsSavingPrefs(true);
     await saveSetting('openai_model', openaiModel);
     await saveSetting('preferred_ai_provider', aiProvider);
-    setIsSavingOpenAI(false);
+    setIsSavingPrefs(false);
     toast.success('AI preferences saved.');
   };
 
@@ -322,50 +312,39 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
           <div className="settings-panel view-fade-in">
             <div className="settings-header">
               <h3>Professional API Integration</h3>
-              <p>Configure server-side services and AI preferences. Secrets stay in deployment env vars, not Firestore.</p>
+              <p>Manage AI preferences and review server-side service configuration. Secrets are never stored here.</p>
             </div>
 
             <div className="api-config-section">
+
+              {/* ── Resend (email delivery) ── */}
               <div className="api-card enterprise-card">
                 <div className="service-info">
                   <div className="icon-box-sm"><Zap size={20} className="text-accent" /></div>
                   <div className="text-box">
-                    <h4>Resend Configuration</h4>
-                    <p>Configure `RESEND_API_KEY` on the server for email delivery. Nothing is stored in Firestore.</p>
+                    <h4>Resend — Email Delivery</h4>
+                    <p>Report emails are sent via <strong>Resend</strong> using a server-side key. No configuration is needed here.</p>
+                  </div>
+                  <div style={{ marginLeft: 'auto' }}>
+                    <span className="env-badge env-badge--server">Server Only</span>
                   </div>
                 </div>
-                <div className="form-item mt-4">
-                  <label>Resend API Key (server only)</label>
-                  <div className="input-group-pass">
-                    <input
-                      type="password"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      placeholder="re_xxxxxxxxxxxxxxxxxxxx"
-                      className="settings-input"
-                    />
-                  </div>
-                  <p className="input-hint">Keep the key in deployment environment variables. Do not store it in Firestore.</p>
-                </div>
-                <div className="form-actions mt-4">
-                  <button
-                    className="btn-primary"
-                    onClick={handleSaveAPI}
-                    disabled={isSaving}
-                  >
-                    {isSaving ? 'Saving...' : 'Server Only'}
-                  </button>
+                <div className="env-var-info">
+                  <span className="env-var-label">Deployment env var</span>
+                  <code className="env-var-code">RESEND_API_KEY</code>
+                  <span className="env-var-hint">Set this in your Vercel / Railway project settings. It is never stored in Firestore or the browser.</span>
                 </div>
               </div>
 
-              <div className="api-card enterprise-card mt-6" style={{ background: geminiConnected ? 'linear-gradient(135deg, #f0fdf4, #dcfce7)' : undefined, borderColor: geminiConnected ? '#86efac' : undefined }}>
+              {/* ── Google Gemini ── */}
+              <div className="api-card enterprise-card mt-6" style={{ borderColor: geminiConnected ? '#86efac' : undefined }}>
                 <div className="service-info">
                   <div className="icon-box-sm" style={{ background: geminiConnected ? '#bbf7d0' : '#f1f5f9' }}>
                     <Zap size={20} style={{ color: geminiConnected ? '#16a34a' : '#94a3b8' }} />
                   </div>
                   <div className="text-box">
                     <h4>Google Gemini AI</h4>
-                    <p>Configure `GEMINI_API_KEY` on the server if you want Gemini fallback support.</p>
+                    <p>Used as the AI fallback when Gemini is selected as the preferred provider.</p>
                   </div>
                   <div style={{ marginLeft: 'auto' }}>
                     <span style={{
@@ -373,28 +352,29 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
                       borderRadius: '100px',
                       fontSize: '0.75rem',
                       fontWeight: 700,
-                      background: geminiConnected ? '#16a34a' : '#ef4444',
+                      background: geminiConnected ? '#16a34a' : '#94a3b8',
                       color: 'white'
                     }}>
-                      {geminiConnected ? '✓ Connected' : '✗ No Key'}
+                      {geminiConnected ? '✓ Active' : 'Not Configured'}
                     </span>
                   </div>
                 </div>
-                {geminiConnected && (
-                  <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'rgba(22,163,74,0.08)', borderRadius: '8px', fontSize: '0.8125rem', color: '#15803d', fontWeight: 600 }}>
-                    ✓ Gemini API key loaded from environment — no configuration needed.
-                  </div>
-                )}
+                <div className="env-var-info">
+                  <span className="env-var-label">Deployment env var</span>
+                  <code className="env-var-code">GEMINI_API_KEY</code>
+                  <span className="env-var-hint">Set this in your deployment dashboard. The key never touches the browser or Firestore.</span>
+                </div>
               </div>
 
-              <div className="api-card enterprise-card mt-6" style={{ background: openaiKey || openaiConnected ? 'linear-gradient(135deg, #f0f9ff, #e0f2fe)' : undefined, borderColor: openaiKey || openaiConnected ? '#7dd3fc' : undefined }}>
+              {/* ── OpenAI ── */}
+              <div className="api-card enterprise-card mt-6" style={{ borderColor: openaiConnected ? '#7dd3fc' : undefined }}>
                 <div className="service-info">
-                  <div className="icon-box-sm" style={{ background: openaiKey || openaiConnected ? '#bae6fd' : '#f1f5f9' }}>
-                    <Zap size={20} style={{ color: openaiKey || openaiConnected ? '#0284c7' : '#94a3b8' }} />
+                  <div className="icon-box-sm" style={{ background: openaiConnected ? '#bae6fd' : '#f1f5f9' }}>
+                    <Zap size={20} style={{ color: openaiConnected ? '#0284c7' : '#94a3b8' }} />
                   </div>
                   <div className="text-box">
-                    <h4>OpenAI (Default)</h4>
-                    <p>Configure `OPENAI_API_KEY` and `OPENAI_MODEL` on the server for the default AI path.</p>
+                    <h4>OpenAI — Default AI Provider</h4>
+                    <p>Powers rate analysis, drawing interpretation, and structural summaries.</p>
                   </div>
                   <div style={{ marginLeft: 'auto' }}>
                     <span style={{
@@ -402,29 +382,21 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
                       borderRadius: '100px',
                       fontSize: '0.75rem',
                       fontWeight: 700,
-                      background: openaiKey || openaiConnected ? '#0284c7' : '#ef4444',
+                      background: openaiConnected ? '#0284c7' : '#94a3b8',
                       color: 'white'
                     }}>
-                      {openaiKey || openaiConnected ? '✓ Ready' : '✗ No Key'}
+                      {openaiConnected ? '✓ Active' : 'Not Configured'}
                     </span>
                   </div>
                 </div>
-                {openaiConnected && (
-                  <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'rgba(2,132,199,0.08)', borderRadius: '8px', fontSize: '0.8125rem', color: '#0369a1', fontWeight: 600 }}>
-                    ✓ OpenAI API key loaded from environment — global access active.
-                  </div>
-                )}
-                
-                <div className="form-item mt-4">
-                  <label>OpenAI API Key (server only)</label>
-                  <input
-                    type="password"
-                    value={openaiKey}
-                    onChange={(e) => setOpenaiKey(e.target.value)}
-                    placeholder="sk-xxxxxxxxxxxxxxxxxxxx"
-                    className="settings-input"
-                  />
+                <div className="env-var-info">
+                  <span className="env-var-label">Deployment env var</span>
+                  <code className="env-var-code">OPENAI_API_KEY</code>
+                  <span className="env-var-hint">Set this in your deployment dashboard. The key never touches the browser or Firestore.</span>
                 </div>
+
+                {/* Model + provider preferences are safe to store in Firestore */}
+                <div className="prefs-divider">AI Preferences — saved to your account</div>
 
                 <div className="form-item mt-4">
                   <label>OpenAI Model ID</label>
@@ -432,16 +404,16 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
                     type="text"
                     value={openaiModel}
                     onChange={(e) => setOpenaiModel(e.target.value)}
-                    placeholder="gpt-4o, gpt-4.1, etc."
+                    placeholder="gpt-4o, gpt-4.1, o3-mini…"
                     className="settings-input"
                   />
-                  <p className="input-hint">This preference is stored in Firestore. The secret key itself stays in deployment env vars.</p>
+                  <p className="input-hint">This preference (not the key) is stored in your Firestore account and applied on every AI request.</p>
                 </div>
 
                 <div className="form-item mt-4">
                   <label>Default AI Provider</label>
-                  <select 
-                    value={aiProvider} 
+                  <select
+                    value={aiProvider}
                     onChange={(e) => setAiProvider(e.target.value)}
                     className="settings-input"
                   >
@@ -453,36 +425,29 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
                 <div className="form-actions mt-4">
                   <button
                     className="btn-primary"
-                    onClick={handleSaveOpenAI}
-                    disabled={isSavingOpenAI}
+                    onClick={handleSavePreferences}
+                    disabled={isSavingPrefs}
                   >
-                    {isSavingOpenAI ? 'Saving...' : 'Save AI Preferences'}
+                    {isSavingPrefs ? 'Saving…' : 'Save AI Preferences'}
                   </button>
                 </div>
               </div>
 
+              {/* ── Firebase ── */}
               <div className="api-card enterprise-card mt-6">
                 <div className="service-info">
                   <div className="icon-box-sm text-success"><Database size={20} /></div>
                   <div className="text-box">
                     <h4>Firebase Cloud Backend</h4>
-                    <p>Project data is automatically synced to Firebase Firestore across all your devices.</p>
+                    <p>Project data syncs automatically to Firestore across all your devices. No configuration needed.</p>
                   </div>
-                </div>
-                <div className="mt-4" style={{ padding: '0.75rem', background: 'rgba(74, 222, 128, 0.1)', borderRadius: '8px', fontSize: '0.8125rem', color: '#4ade80' }}>
-                  Connected to Firebase - project data sync is still handled by the app backend.
-                </div>
-                <div className="form-actions mt-4">
-                  <button
-                    className="btn-primary"
-                    onClick={handleSaveAPI}
-                    disabled={isSaving}
-                  >
-                    {isSaving ? 'Saving...' : 'Update Cloud Notes'}
-                  </button>
+                  <div style={{ marginLeft: 'auto' }}>
+                    <span className="env-badge env-badge--ok">Connected</span>
+                  </div>
                 </div>
               </div>
 
+              {/* ── Market seeding ── */}
               <div className="enterprise-card api-section mt-6">
                 <div className="api-header">
                   <div>
@@ -507,10 +472,12 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
                 </div>
               </div>
 
+              {/* ── Footer note ── */}
               <div className="enterprise-card api-section mt-6">
-                <div className="icon-box-tip"><Database size={16} /></div>
-                <p>API keys now belong in deployment environment variables, not in the browser or Firestore.</p>
+                <div className="icon-box-tip"><Shield size={16} /></div>
+                <p>All API secrets are managed exclusively in your deployment environment. They are never stored in Firestore or sent to the browser.</p>
               </div>
+
             </div>
           </div>
         );
@@ -798,6 +765,78 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
           color: var(--text-muted);
           text-align: center;
           gap: 1rem;
+        }
+
+        .env-var-info {
+          display: flex;
+          align-items: baseline;
+          flex-wrap: wrap;
+          gap: 0.5rem 0.75rem;
+          margin-top: 1rem;
+          padding: 0.85rem 1rem;
+          background: var(--bg-main);
+          border: 1px solid var(--border-light);
+          border-radius: 10px;
+          font-size: 0.8125rem;
+        }
+
+        .env-var-label {
+          font-weight: 700;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          font-size: 0.7rem;
+          letter-spacing: 0.05em;
+          flex-shrink: 0;
+        }
+
+        .env-var-code {
+          font-family: ui-monospace, SFMono-Regular, monospace;
+          background: rgba(37, 99, 235, 0.1);
+          color: var(--accent-700, #1d4ed8);
+          padding: 0.15rem 0.55rem;
+          border-radius: 6px;
+          font-size: 0.8125rem;
+          font-weight: 600;
+          flex-shrink: 0;
+        }
+
+        .env-var-hint {
+          color: var(--text-muted);
+          font-size: 0.78rem;
+          line-height: 1.5;
+          flex: 1 1 200px;
+        }
+
+        .env-badge {
+          padding: 0.3rem 0.75rem;
+          border-radius: 100px;
+          font-size: 0.72rem;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+        }
+
+        .env-badge--server {
+          background: #f1f5f9;
+          color: #64748b;
+          border: 1px solid #e2e8f0;
+        }
+
+        .env-badge--ok {
+          background: #dcfce7;
+          color: #15803d;
+          border: 1px solid #86efac;
+        }
+
+        .prefs-divider {
+          margin-top: 1.25rem;
+          padding-top: 1.25rem;
+          border-top: 1px dashed var(--border-light);
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
         }
 
         .appearance-hero {
