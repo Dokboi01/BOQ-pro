@@ -16,14 +16,17 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "bcryptjs": "^3.0.3",
     "dexie": "^4.3.0",
     "exceljs": "^4.4.0",
     "firebase": "^12.10.0",
+    "firebase-admin": "^13.8.0",
     "jspdf": "^4.0.0",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.563.0",
     "openai": "^6.31.0",
+    "playwright": "^1.59.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "resend": "^6.9.3"
@@ -61,5 +64,20 @@
       "target": "portable",
       "icon": "public/favicon.ico"
     }
-  }
+  },
+  "description": "[View Live Application](#) *(Link will be available after Vercel deployment)*",
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dokboi01/BOQ-pro.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Dokboi01/BOQ-pro/issues"
+  },
+  "homepage": "https://github.com/Dokboi01/BOQ-pro#readme"
 }

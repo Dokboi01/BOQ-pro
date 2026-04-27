@@ -95,6 +95,10 @@ export function AuthProvider({ children }) {
                         }
                     }
                     const normalizedUser = normalizeUserProfile(fullUser);
+                    // 🛡️ GUARD: Skip update if nothing changed (prevents infinite re-render loops)
+                    if (prev && JSON.stringify(prev) === JSON.stringify(normalizedUser)) {
+                        return prev;
+                    }
                     localStorage.setItem('boq_pro_profile', JSON.stringify(normalizedUser));
                     return normalizedUser;
                 });
@@ -155,8 +159,14 @@ export function AuthProvider({ children }) {
                         companyName: fullUser.company_name,
                         email: firebaseUser.email
                     });
-                    setUser(fullUser);
-                    localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
+                    // 🛡️ GUARD: Skip update if nothing changed (prevents infinite re-render loops)
+                    setUser(prev => {
+                        if (prev && JSON.stringify(prev) === JSON.stringify(fullUser)) {
+                            return prev;
+                        }
+                        localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
+                        return fullUser;
+                    });
                     initializationComplete.current = true;
 
                     if (profile && profile.is_onboarded) {

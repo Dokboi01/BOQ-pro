@@ -385,7 +385,7 @@ export function ProjectsProvider({ children }) {
 
             return false;
         }));
-    }, [user]);
+    }, [user?.id]);
 
     const ensureSharedProjectVisible = useCallback(async (incomingProjects = []) => {
         const sharedProjectId = new URLSearchParams(window.location.search).get('project');
@@ -407,7 +407,7 @@ export function ProjectsProvider({ children }) {
             console.warn('Shared project link recovery failed:', err?.message || err);
             return incomingProjects;
         }
-    }, [user]);
+    }, [user?.id]);
 
     useEffect(() => {
         const currentUserId = user?.id || null;
@@ -499,7 +499,7 @@ export function ProjectsProvider({ children }) {
             cancelled = true;
             stopAutoSync();
         };
-    }, [ensureSharedProjectVisible, filterVisibleProjects, user]);
+    }, [ensureSharedProjectVisible, filterVisibleProjects, user?.id]);
 
     useEffect(() => {
         if (!user?.id) return;
@@ -717,7 +717,7 @@ export function ProjectsProvider({ children }) {
                 setFocusMode(false);
             }
         }
-    }, [activeProjectId, activeTab, cloudWorkspaceState, focusMode, persistWorkspaceState, projects, readSavedWorkspaceState, user]);
+    }, [activeProjectId, activeTab, cloudWorkspaceState, focusMode, persistWorkspaceState, projects, readSavedWorkspaceState, user?.id]);
 
     const calculateTotalValue = useMemo(() => {
         const sumProjectTotal = (project) => {

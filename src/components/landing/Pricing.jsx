@@ -42,27 +42,27 @@ const PLAN_TONES = {
 };
 
 const TRUST_SIGNALS = [
-  'Built for Quantity Surveyors',
-  'Built for Contractors',
-  'Built for Estimating Teams',
+  'Built for Nigerian QS Firms',
+  'Built for Lagos Contractors',
+  'Built for Regional Estimators',
   'Built for Company Rollout'
 ];
 
 const VALUE_CARDS = [
   {
     icon: Layers3,
-    title: 'Same Workspace Story',
-    copy: 'The pricing page now feels closer to the welcome page instead of looking like a detached billing screen.'
+    title: 'Nigerian Construction Workspace',
+    copy: 'Pricing built for Lagos, Abuja, Port Harcourt, Ibadan, and Kano markets — with regional benchmarks and NGN-native billing.'
   },
   {
     icon: Zap,
-    title: 'Benchmark-First Flow',
-    copy: 'Plans are framed around BOQ Pro’s real workflow: benchmark pricing, custom build-up, exports, and review.'
+    title: 'QS-First Workflow',
+    copy: 'Plans are framed around real Nigerian QS workflows: market-rate pricing, custom build-ups, tender-ready exports, and team review.'
   },
   {
     icon: BarChart3,
-    title: 'Built To Scale',
-    copy: 'Start solo, then move into team review, admin controls, and company rollout inside the same product.'
+    title: 'Built For Nigerian Firms',
+    copy: 'Start solo as a student QS, grow into a professional estimator, then scale to a full firm with admin controls and company rollout.'
   }
 ];
 
@@ -230,15 +230,15 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
           <div className="pricing-hero-copy">
             <div className="section-kicker">
               <Sparkles size={14} />
-              Pricing built around real BOQ work
+              Nigerian construction pricing, simplified
             </div>
             <h1>
-              Choose a plan that still feels like
-              <span> the same BOQ Pro product.</span>
+              Plans built for
+              <span> Nigerian QS professionals.</span>
             </h1>
             <p className="pricing-subtitle">
-              The welcome page now has a stronger BOQ-Pro feel, so this page should continue that same
-              atmosphere. The plan story is clearer, but the product tone stays consistent from first visit to signup.
+              From student QS in Lagos to estimating teams in Abuja and full-scale firms across Nigeria —
+              every plan includes the same BOQ engine, regional benchmarks, and NGN-native billing.
             </p>
 
             {displayError && (
@@ -396,9 +396,10 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
         <section className="plans-shell" ref={plansRef}>
           <div className="plans-heading">
             <span className="section-kicker">Plan options</span>
-            <h2>Pick the tier that matches how your team prices today.</h2>
+            <h2>Pick the tier that matches how your firm prices today.</h2>
             <p>
-              The cards keep the current pricing logic intact, but the whole section now sits inside a layout that feels much closer to the welcoming page.
+              From student QS in Lagos to enterprise firms across Nigeria — every plan includes the same BOQ engine,
+              regional benchmarks, and NGN-native billing through Paystack.
             </p>
           </div>
 
@@ -504,9 +505,9 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
           <section className="comparison-section view-fade-in">
             <div className="plans-heading comparison-heading">
               <span className="section-kicker">Comparison table</span>
-              <h2>A clearer view of what expands as you move up.</h2>
+              <h2>See exactly what each Nigerian QS tier includes.</h2>
               <p>
-                The detail is still here, but it now sits inside the same BOQ-Pro visual direction instead of breaking the experience.
+                From student access to enterprise rollout — compare features across all six plans to find the right fit for your firm.
               </p>
             </div>
             <div className="comparison-table-wrapper">
@@ -550,9 +551,10 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
         <section className="closing-cta">
           <div>
             <span className="section-kicker">Ready to move?</span>
-            <h2>Start with the plan that matches your team and grow inside the same BOQ Pro experience.</h2>
+            <h2>Start with the plan that matches your firm and grow inside the same Nigerian construction workspace.</h2>
             <p>
-              No detached billing-page feeling. The welcome screen and pricing screen now feel much closer to one continuous product journey.
+              From student QS in Lagos to enterprise firms across Nigeria — every plan includes the same BOQ engine,
+              regional benchmarks, and NGN-native billing through Paystack.
             </p>
           </div>
           <div className="closing-actions">
@@ -594,9 +596,9 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
           position: relative;
           overflow-x: hidden;
           background:
-            radial-gradient(circle at top left, rgba(37, 99, 235, 0.09), transparent 30%),
-            radial-gradient(circle at 88% 16%, rgba(217, 119, 6, 0.08), transparent 22%),
-            linear-gradient(180deg, #ffffff 0%, #f8fafc 54%, #f1f5f9 100%);
+            radial-gradient(circle at top left, rgba(16, 185, 129, 0.09), transparent 30%),
+            radial-gradient(circle at 88% 16%, rgba(5, 150, 105, 0.08), transparent 22%),
+            linear-gradient(180deg, #ffffff 0%, #f0fdf4 54%, #ecfdf5 100%);
           color: var(--primary-900);
           font-family: var(--font-main);
         }
@@ -605,8 +607,8 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
           position: absolute;
           inset: 0;
           background:
-            radial-gradient(circle at 18% 24%, rgba(96, 165, 250, 0.18), transparent 18%),
-            radial-gradient(circle at 82% 74%, rgba(251, 191, 36, 0.12), transparent 18%);
+            radial-gradient(circle at 18% 24%, rgba(52, 211, 153, 0.18), transparent 18%),
+            radial-gradient(circle at 82% 74%, rgba(16, 185, 129, 0.12), transparent 18%);
           pointer-events: none;
         }
 
@@ -657,7 +659,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
           justify-content: center;
           border-radius: 14px;
           background: linear-gradient(135deg, var(--primary-900), var(--accent-600));
-          box-shadow: 0 18px 35px rgba(37, 99, 235, 0.24);
+          box-shadow: 0 18px 35px rgba(16, 185, 129, 0.24);
           color: white;
         }
 
@@ -754,10 +756,10 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
           text-transform: uppercase;
           letter-spacing: 0.08em;
           padding: 0.55rem 0.9rem;
-          background: rgba(59, 130, 246, 0.08);
-          border: 1px solid rgba(59, 130, 246, 0.16);
+          background: rgba(16, 185, 129, 0.08);
+          border: 1px solid rgba(16, 185, 129, 0.16);
           color: var(--accent-600);
-          box-shadow: 0 8px 18px rgba(59, 130, 246, 0.08);
+          box-shadow: 0 8px 18px rgba(16, 185, 129, 0.08);
         }
 
         .pricing-hero-copy {
@@ -841,7 +843,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
         }
 
         .hero-cta-primary {
-          background: linear-gradient(135deg, var(--primary-900), #1e3a5f);
+          background: linear-gradient(135deg, var(--primary-900), #059669);
           color: white;
           box-shadow: 0 18px 32px rgba(15, 23, 42, 0.18);
         }
@@ -1003,7 +1005,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
           display: flex;
           flex-direction: column;
           gap: 1rem;
-          background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(239, 246, 255, 0.82));
+          background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(236, 253, 245, 0.82));
         }
 
         .preview-card-head {
@@ -1105,7 +1107,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
         }
 
         .preview-pill {
-          background: rgba(37, 99, 235, 0.08);
+          background: rgba(16, 185, 129, 0.08);
           color: var(--accent-600);
         }
 
@@ -1216,7 +1218,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
           align-items: center;
           justify-content: center;
           border-radius: 14px;
-          background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(15, 23, 42, 0.06));
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(15, 23, 42, 0.06));
           color: var(--accent-600);
         }
 
@@ -1278,9 +1280,9 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
         }
 
         .plan-card.popular {
-          border-color: rgba(37, 99, 235, 0.35);
-          box-shadow: 0 18px 44px rgba(37, 99, 235, 0.14);
-          background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(239,246,255,0.6) 100%);
+          border-color: rgba(16, 185, 129, 0.35);
+          box-shadow: 0 18px 44px rgba(16, 185, 129, 0.14);
+          background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(236,253,245,0.6) 100%);
         }
 
         .popular-ribbon {
@@ -1305,7 +1307,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
         /* ── Plan Card Tone Colors ── */
         .tone-student .plan-icon-container { background: rgba(15, 23, 42, 0.06); color: var(--primary-800); }
         .tone-starter .plan-icon-container { background: rgba(16, 185, 129, 0.1); color: #059669; }
-        .tone-professional .plan-icon-container { background: rgba(37, 99, 235, 0.1); color: var(--accent-600); }
+        .tone-professional .plan-icon-container { background: rgba(16, 185, 129, 0.1); color: var(--accent-600); }
         .tone-business .plan-icon-container { background: rgba(124, 58, 237, 0.1); color: #7c3aed; }
         .tone-corporate .plan-icon-container { background: rgba(217, 119, 6, 0.1); color: #b45309; }
         .tone-enterprise .plan-icon-container { background: rgba(15, 23, 42, 0.08); color: var(--primary-700); }
@@ -1440,7 +1442,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
         .plan-cta:hover { transform: translateY(-2px); }
 
         .plan-cta-primary {
-          background: linear-gradient(135deg, var(--primary-900), #1e3a5f);
+          background: linear-gradient(135deg, var(--primary-900), #059669);
           color: white;
           box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
         }
@@ -1597,7 +1599,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
         }
 
         .comparison-table th.highlight-col {
-          background: rgba(37, 99, 235, 0.08);
+          background: rgba(16, 185, 129, 0.08);
           color: var(--accent-600);
         }
 
@@ -1615,11 +1617,11 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
         }
 
         .comparison-table td.highlight-col {
-          background: rgba(37, 99, 235, 0.03);
+          background: rgba(16, 185, 129, 0.03);
         }
 
         .comparison-table tbody tr:hover {
-          background: rgba(37, 99, 235, 0.02);
+          background: rgba(16, 185, 129, 0.02);
         }
 
         .check-cell {
