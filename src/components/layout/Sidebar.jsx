@@ -90,15 +90,15 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
         .sidebar {
           width: 260px;
           height: 100vh;
-          background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+          background: linear-gradient(180deg, #0a0f1a 0%, #111827 100%);
           color: white;
           display: flex;
           flex-direction: column;
           transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-          border-right: 1px solid rgba(255,255,255,0.06);
+          border-right: 1px solid rgba(16, 185, 129, 0.08);
           position: sticky;
           top: 0;
-          box-shadow: 4px 0 25px rgba(0, 0, 0, 0.15);
+          box-shadow: 4px 0 30px rgba(0, 0, 0, 0.2);
         }
 
         .sidebar.collapsed {
@@ -176,16 +176,16 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
         }
 
         .nav-item.active {
-          background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+          background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
           color: white;
-          box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+          box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
           font-weight: 600;
         }
 
         .upgrade-prompt {
           margin: 1rem 0.75rem;
           padding: 1.25rem;
-          background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+          background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
           border-radius: 12px;
           color: white;
           position: relative;
@@ -220,7 +220,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
         .btn-upgrade {
           width: 100%;
           background: white;
-          color: #2563eb;
+          color: #059669;
           border: none;
           padding: 0.625rem;
           border-radius: 8px;
@@ -247,14 +247,14 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
         .user-avatar {
           width: 36px;
           height: 36px;
-          background: linear-gradient(135deg, #3b82f6, #6366f1);
+          background: linear-gradient(135deg, #059669, #0d9488);
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
           font-weight: 700;
           font-size: 0.875rem;
-          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+          box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
           position: relative;
         }
 

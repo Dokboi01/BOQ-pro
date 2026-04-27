@@ -594,9 +594,9 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
           position: relative;
           overflow-x: hidden;
           background:
-            radial-gradient(circle at top left, rgba(37, 99, 235, 0.09), transparent 30%),
-            radial-gradient(circle at 88% 16%, rgba(217, 119, 6, 0.08), transparent 22%),
-            linear-gradient(180deg, #ffffff 0%, #f8fafc 54%, #f1f5f9 100%);
+            radial-gradient(circle at top left, rgba(16, 185, 129, 0.09), transparent 30%),
+            radial-gradient(circle at 88% 16%, rgba(5, 150, 105, 0.08), transparent 22%),
+            linear-gradient(180deg, #ffffff 0%, #f0fdf4 54%, #ecfdf5 100%);
           color: var(--primary-900);
           font-family: var(--font-main);
         }
@@ -605,8 +605,8 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
           position: absolute;
           inset: 0;
           background:
-            radial-gradient(circle at 18% 24%, rgba(96, 165, 250, 0.18), transparent 18%),
-            radial-gradient(circle at 82% 74%, rgba(251, 191, 36, 0.12), transparent 18%);
+            radial-gradient(circle at 18% 24%, rgba(52, 211, 153, 0.18), transparent 18%),
+            radial-gradient(circle at 82% 74%, rgba(16, 185, 129, 0.12), transparent 18%);
           pointer-events: none;
         }
 
@@ -657,7 +657,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
           justify-content: center;
           border-radius: 14px;
           background: linear-gradient(135deg, var(--primary-900), var(--accent-600));
-          box-shadow: 0 18px 35px rgba(37, 99, 235, 0.24);
+          box-shadow: 0 18px 35px rgba(16, 185, 129, 0.24);
           color: white;
         }
 
@@ -754,10 +754,10 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
           text-transform: uppercase;
           letter-spacing: 0.08em;
           padding: 0.55rem 0.9rem;
-          background: rgba(59, 130, 246, 0.08);
-          border: 1px solid rgba(59, 130, 246, 0.16);
+          background: rgba(16, 185, 129, 0.08);
+          border: 1px solid rgba(16, 185, 129, 0.16);
           color: var(--accent-600);
-          box-shadow: 0 8px 18px rgba(59, 130, 246, 0.08);
+          box-shadow: 0 8px 18px rgba(16, 185, 129, 0.08);
         }
 
         .pricing-hero-copy {
@@ -841,7 +841,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
         }
 
         .hero-cta-primary {
-          background: linear-gradient(135deg, var(--primary-900), #1e3a5f);
+          background: linear-gradient(135deg, var(--primary-900), #059669);
           color: white;
           box-shadow: 0 18px 32px rgba(15, 23, 42, 0.18);
         }
@@ -1003,7 +1003,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
           display: flex;
           flex-direction: column;
           gap: 1rem;
-          background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(239, 246, 255, 0.82));
+          background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(236, 253, 245, 0.82));
         }
 
         .preview-card-head {
@@ -1105,7 +1105,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
         }
 
         .preview-pill {
-          background: rgba(37, 99, 235, 0.08);
+          background: rgba(16, 185, 129, 0.08);
           color: var(--accent-600);
         }
 
@@ -1216,7 +1216,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
           align-items: center;
           justify-content: center;
           border-radius: 14px;
-          background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(15, 23, 42, 0.06));
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(15, 23, 42, 0.06));
           color: var(--accent-600);
         }
 
@@ -1278,9 +1278,9 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
         }
 
         .plan-card.popular {
-          border-color: rgba(37, 99, 235, 0.35);
-          box-shadow: 0 18px 44px rgba(37, 99, 235, 0.14);
-          background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(239,246,255,0.6) 100%);
+          border-color: rgba(16, 185, 129, 0.35);
+          box-shadow: 0 18px 44px rgba(16, 185, 129, 0.14);
+          background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(236,253,245,0.6) 100%);
         }
 
         .popular-ribbon {
@@ -1305,7 +1305,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
         /* ── Plan Card Tone Colors ── */
         .tone-student .plan-icon-container { background: rgba(15, 23, 42, 0.06); color: var(--primary-800); }
         .tone-starter .plan-icon-container { background: rgba(16, 185, 129, 0.1); color: #059669; }
-        .tone-professional .plan-icon-container { background: rgba(37, 99, 235, 0.1); color: var(--accent-600); }
+        .tone-professional .plan-icon-container { background: rgba(16, 185, 129, 0.1); color: var(--accent-600); }
         .tone-business .plan-icon-container { background: rgba(124, 58, 237, 0.1); color: #7c3aed; }
         .tone-corporate .plan-icon-container { background: rgba(217, 119, 6, 0.1); color: #b45309; }
         .tone-enterprise .plan-icon-container { background: rgba(15, 23, 42, 0.08); color: var(--primary-700); }
@@ -1440,7 +1440,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
         .plan-cta:hover { transform: translateY(-2px); }
 
         .plan-cta-primary {
-          background: linear-gradient(135deg, var(--primary-900), #1e3a5f);
+          background: linear-gradient(135deg, var(--primary-900), #059669);
           color: white;
           box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
         }
@@ -1597,7 +1597,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
         }
 
         .comparison-table th.highlight-col {
-          background: rgba(37, 99, 235, 0.08);
+          background: rgba(16, 185, 129, 0.08);
           color: var(--accent-600);
         }
 
@@ -1615,11 +1615,11 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
         }
 
         .comparison-table td.highlight-col {
-          background: rgba(37, 99, 235, 0.03);
+          background: rgba(16, 185, 129, 0.03);
         }
 
         .comparison-table tbody tr:hover {
-          background: rgba(37, 99, 235, 0.02);
+          background: rgba(16, 185, 129, 0.02);
         }
 
         .check-cell {

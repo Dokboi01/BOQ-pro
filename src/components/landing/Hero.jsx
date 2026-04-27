@@ -351,9 +351,9 @@ const Hero = ({ onGetStarted, onLogin, resolvedTheme, onToggleTheme }) => {
           position: relative;
           overflow: hidden;
           background:
-            radial-gradient(circle at top left, rgba(37, 99, 235, 0.09), transparent 28%),
-            radial-gradient(circle at 90% 12%, rgba(217, 119, 6, 0.08), transparent 22%),
-            linear-gradient(180deg, #ffffff 0%, #f8fafc 52%, #f1f5f9 100%);
+            radial-gradient(circle at top left, rgba(16, 185, 129, 0.09), transparent 28%),
+            radial-gradient(circle at 90% 12%, rgba(5, 150, 105, 0.08), transparent 22%),
+            linear-gradient(180deg, #ffffff 0%, #f0fdf4 52%, #ecfdf5 100%);
           color: var(--primary-900);
           font-family: var(--font-main);
         }
@@ -362,8 +362,8 @@ const Hero = ({ onGetStarted, onLogin, resolvedTheme, onToggleTheme }) => {
           position: absolute;
           inset: 0;
           background:
-            radial-gradient(circle at 18% 24%, rgba(96, 165, 250, 0.18), transparent 18%),
-            radial-gradient(circle at 82% 74%, rgba(251, 191, 36, 0.12), transparent 18%);
+            radial-gradient(circle at 18% 24%, rgba(52, 211, 153, 0.18), transparent 18%),
+            radial-gradient(circle at 82% 74%, rgba(16, 185, 129, 0.12), transparent 18%);
           pointer-events: none;
         }
 
@@ -413,7 +413,7 @@ const Hero = ({ onGetStarted, onLogin, resolvedTheme, onToggleTheme }) => {
           justify-content: center;
           border-radius: 14px;
           background: linear-gradient(135deg, var(--primary-900), var(--accent-600));
-          box-shadow: 0 18px 35px rgba(37, 99, 235, 0.24);
+          box-shadow: 0 18px 35px rgba(16, 185, 129, 0.24);
         }
 
         .brand-copy {
@@ -508,10 +508,10 @@ const Hero = ({ onGetStarted, onLogin, resolvedTheme, onToggleTheme }) => {
 
         .hero-kicker {
           padding: 0.55rem 0.9rem;
-          background: rgba(59, 130, 246, 0.08);
-          border: 1px solid rgba(59, 130, 246, 0.16);
+          background: rgba(16, 185, 129, 0.08);
+          border: 1px solid rgba(16, 185, 129, 0.16);
           color: var(--accent-600);
-          box-shadow: 0 8px 18px rgba(59, 130, 246, 0.08);
+          box-shadow: 0 8px 18px rgba(16, 185, 129, 0.08);
         }
 
         .hero-copy h1 {
@@ -657,8 +657,8 @@ const Hero = ({ onGetStarted, onLogin, resolvedTheme, onToggleTheme }) => {
 
         .workspace-tag {
           padding: 0.42rem 0.72rem;
-          background: rgba(37, 99, 235, 0.08);
-          border: 1px solid rgba(37, 99, 235, 0.14);
+          background: rgba(16, 185, 129, 0.08);
+          border: 1px solid rgba(16, 185, 129, 0.14);
           color: var(--accent-600);
         }
 
@@ -859,7 +859,7 @@ const Hero = ({ onGetStarted, onLogin, resolvedTheme, onToggleTheme }) => {
           align-items: center;
           justify-content: center;
           border-radius: 14px;
-          background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(15, 23, 42, 0.06));
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(15, 23, 42, 0.06));
           color: var(--accent-600);
         }
 
@@ -994,8 +994,8 @@ const Hero = ({ onGetStarted, onLogin, resolvedTheme, onToggleTheme }) => {
 
         .section-kicker {
           padding: 0.45rem 0.72rem;
-          background: rgba(37, 99, 235, 0.08);
-          border: 1px solid rgba(37, 99, 235, 0.14);
+          background: rgba(16, 185, 129, 0.08);
+          border: 1px solid rgba(16, 185, 129, 0.14);
           color: var(--accent-600);
         }
 
@@ -1057,7 +1057,7 @@ const Hero = ({ onGetStarted, onLogin, resolvedTheme, onToggleTheme }) => {
           margin: 3.6rem 0 1rem;
           padding: 1.6rem;
           border-radius: 30px;
-          background: linear-gradient(135deg, rgba(37, 99, 235, 0.06), rgba(255, 255, 255, 0.95));
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.06), rgba(255, 255, 255, 0.95));
           border: 1px solid var(--border-light);
           box-shadow: var(--shadow-md);
         }

@@ -547,9 +547,9 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
         }
 
         .settings-tab.active {
-          background: linear-gradient(135deg, #eff6ff, #dbeafe);
-          color: #2563eb;
-          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+          background: linear-gradient(135deg, #ecfdf5, #a7f3d0);
+          color: #059669;
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
           font-weight: 700;
         }
 
@@ -587,7 +587,7 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
         .avatar-large {
           width: 80px;
           height: 80px;
-          background: linear-gradient(135deg, #2563eb, #7c3aed);
+          background: linear-gradient(135deg, #059669, #0d9488);
           color: white;
           border-radius: 50%;
           display: flex;
@@ -595,7 +595,7 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
           justify-content: center;
           font-size: 2rem;
           font-weight: 800;
-          box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+          box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
         }
 
         .grid-2 {
@@ -630,7 +630,7 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
         .settings-input:focus {
           outline: none;
           border-color: var(--accent-500);
-          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1), 0 4px 12px rgba(37, 99, 235, 0.08);
+          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1), 0 4px 12px rgba(16, 185, 129, 0.08);
         }
 
         .btn-primary {
@@ -791,8 +791,8 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
 
         .env-var-code {
           font-family: ui-monospace, SFMono-Regular, monospace;
-          background: rgba(37, 99, 235, 0.1);
-          color: var(--accent-700, #1d4ed8);
+          background: rgba(16, 185, 129, 0.1);
+          color: var(--accent-700, #059669);
           padding: 0.15rem 0.55rem;
           border-radius: 6px;
           font-size: 0.8125rem;
@@ -847,7 +847,7 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
           padding: 1.35rem;
           border: 1px solid var(--border-light);
           border-radius: 20px;
-          background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(15, 23, 42, 0.04));
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(15, 23, 42, 0.04));
           margin-bottom: 1.25rem;
         }
 
@@ -862,7 +862,7 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
           letter-spacing: 0.06em;
           text-transform: uppercase;
           color: var(--accent-600);
-          background: rgba(37, 99, 235, 0.12);
+          background: rgba(16, 185, 129, 0.12);
           margin-bottom: 0.8rem;
         }
 
@@ -959,7 +959,7 @@ const Settings = ({ user, onUpgrade, themePreference, resolvedTheme, onThemeChan
 
         .theme-option-card.active {
           border-color: var(--accent-500);
-          background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(59, 130, 246, 0.04));
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.04));
         }
 
         .theme-option-head {

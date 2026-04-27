@@ -290,7 +290,7 @@ function App() {
   if (view === 'signup') return <SignUp error={authError} selectedPlan={selectedPlan} onSignUp={handleSignUp} onSwitchToLogin={(target) => { setAuthError(null); setView(target); }} onViewTerms={() => setView('terms')} onViewPrivacy={() => setView('privacy')} resolvedTheme={resolvedTheme} onToggleTheme={handleThemeToggle} />;
   if (view === 'verification') return (
     <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)', color: 'var(--text-primary)', flexDirection: 'column', gap: '1.5rem', textAlign: 'center', padding: '2rem' }}>
-      <div style={{ borderRadius: '50%', background: 'rgba(37, 99, 235, 0.16)', padding: '20px', marginBottom: '10px' }}>
+      <div style={{ borderRadius: '50%', background: 'rgba(16, 185, 129, 0.16)', padding: '20px', marginBottom: '10px' }}>
         <Mail size={48} className="text-accent" />
       </div>
       <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>
@@ -559,7 +559,7 @@ function App() {
           font-size: 0.875rem;
           cursor: pointer;
           transition: all 0.2s;
-          background: rgba(37, 99, 235, 0.1);
+          background: rgba(16, 185, 129, 0.1);
           border: 1px solid var(--accent-400);
           color: var(--accent-600);
         }
@@ -675,8 +675,8 @@ function App() {
         .sync-synced:hover { background: rgba(74, 222, 128, 0.25); }
 
         .sync-syncing {
-          background: rgba(96, 165, 250, 0.15);
-          color: #60a5fa;
+          background: rgba(16, 185, 129, 0.15);
+          color: #10b981;
         }
 
         .sync-pending {
@@ -760,8 +760,8 @@ function App() {
         }
 
         .save-state-chip.info {
-          background: rgba(37, 99, 235, 0.12);
-          color: #2563eb;
+          background: rgba(16, 185, 129, 0.12);
+          color: #059669;
         }
 
         .save-state-chip.warning {
