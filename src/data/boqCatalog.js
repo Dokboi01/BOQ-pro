@@ -126,6 +126,14 @@ const MARKET_LIBRARY_BENCHMARK_DATE = '2026-04-27';
 const MARKET_LIBRARY_BENCHMARK_NOTE = 'Benchmark derived from the current BOQ Pro market library and rate breakdown reference for Nigeria. Validate with supplier quotes and project-specific logistics before tender use.';
 const MARKET_LIBRARY_BENCHMARK_FACTOR = 0.85;
 const MARKET_LIBRARY_FALLBACK_FACTOR = 0.78;
+const CATALOG_REGIONAL_FACTORS = {
+  Lagos: 1,
+  Abuja: 1.1,
+  'Port Harcourt': 1.08,
+  Ibadan: 0.93,
+  Kano: 0.96,
+  Enugu: 1.02,
+};
 
 const normalizeKeywords = (keywords = []) => (
   (Array.isArray(keywords) ? keywords : [])
@@ -185,6 +193,43 @@ const clampCatalogNumber = (value) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const buildCatalogRegionalBenchmarkRates = (baseRate = 0) => {
+  const benchmark = clampCatalogNumber(baseRate);
+  if (!benchmark) return {};
+
+  return Object.entries(CATALOG_REGIONAL_FACTORS).reduce((acc, [region, factor]) => {
+    acc[region] = Math.round(benchmark * factor);
+    return acc;
+  }, {});
+};
+
+const buildCatalogBenchmarkEvidence = ({
+  structureType = '',
+  item = {},
+  sourceType = '',
+  matchSource = '',
+  benchmarkRate = 0,
+  benchmarkRegionalRates = {},
+}) => {
+  const exactRegions = Object.keys(benchmarkRegionalRates || {});
+  const componentCount = Array.isArray(item.editableInputs)
+    ? item.editableInputs.length
+    : (Array.isArray(item.exampleInputs) ? item.exampleInputs.length : 0);
+
+  const summary = sourceType === 'formula-market-derived'
+    ? `Benchmark built from ${componentCount} formula inputs for ${item.name || item.description || 'this item'}.`
+    : `Benchmark derived from the ${matchSource || 'library'} market reference for ${item.name || item.description || 'this item'}.`;
+
+  return {
+    mode: sourceType === 'formula-market-derived' ? 'formula-derived' : 'catalog-derived',
+    summary,
+    structureType,
+    matchSource: matchSource || (sourceType === 'formula-market-derived' ? 'formula-build' : 'catalog'),
+    exactRegions,
+    benchmarkRate: clampCatalogNumber(benchmarkRate),
+  };
+};
+
 const getCatalogBreakdownLineTotal = (category, row = {}) => {
   if (category === 'materials') {
     const wasteFactor = 1 + (clampCatalogNumber(row.waste) / 100);
@@ -241,6 +286,7 @@ const deriveCatalogBenchmark = (item = {}, structureType = '') => {
       sourceNote: 'Benchmark resolved from the catalog formula build-up using current BOQ Pro benchmark inputs.',
       confidenceLevel: 'medium',
       calibrationFactor: MARKET_LIBRARY_BENCHMARK_FACTOR,
+      matchSource: 'formula-build',
     };
   }
 
@@ -256,6 +302,7 @@ const deriveCatalogBenchmark = (item = {}, structureType = '') => {
       sourceNote: MARKET_LIBRARY_BENCHMARK_NOTE,
       confidenceLevel: isSpecificMatch ? 'medium' : 'low',
       calibrationFactor: isSpecificMatch ? MARKET_LIBRARY_BENCHMARK_FACTOR : MARKET_LIBRARY_FALLBACK_FACTOR,
+      matchSource,
     };
   }
 
@@ -270,20 +317,71 @@ const ensureCatalogItemBenchmark = (item = {}, structureType = '') => {
   );
 
   if (explicitBenchmarkRate > 0) {
+    const hasFormulaBenchmark = getCatalogFormulaBenchmarkRate(item) > 0;
+    const currentMetadata = item.benchmarkMetadata || {};
+    const currentSourceType = String(currentMetadata.sourceType || '').toLowerCase();
+    const useFormulaDerivedMetadata = hasFormulaBenchmark
+      && (!currentSourceType || currentSourceType === 'seed' || currentSourceType === 'seed-placeholder' || currentSourceType === 'catalog');
+    const benchmarkRegionalRates = Object.keys(item.benchmarkRegionalRates || {}).length > 0
+      ? item.benchmarkRegionalRates
+      : buildCatalogRegionalBenchmarkRates(explicitBenchmarkRate);
+    const benchmarkSourceType = useFormulaDerivedMetadata
+      ? 'formula-market-derived'
+      : (currentMetadata.sourceType || 'catalog');
+    const benchmarkMatchSource = item.benchmarkMatchSource
+      || (useFormulaDerivedMetadata ? 'formula-build' : 'catalog');
+
     return {
       ...item,
       benchmarkRate: explicitBenchmarkRate,
       benchmark: explicitBenchmarkRate,
+      benchmarkRegionalRates,
+      benchmarkMatchSource,
+      benchmarkEvidence: item.benchmarkEvidence || buildCatalogBenchmarkEvidence({
+        structureType,
+        item,
+        sourceType: benchmarkSourceType,
+        matchSource: benchmarkMatchSource,
+        benchmarkRate: explicitBenchmarkRate,
+        benchmarkRegionalRates,
+      }),
+      benchmarkMetadata: buildBenchmarkMetadata({
+        rate: explicitBenchmarkRate,
+        currency: currentMetadata.currency || 'NGN',
+        region: currentMetadata.region || 'Nigeria',
+        sourceType: benchmarkSourceType,
+        sourceNote: useFormulaDerivedMetadata
+          ? 'Benchmark resolved from the catalog formula build-up using current BOQ Pro benchmark inputs.'
+          : (currentMetadata.sourceNote || DEFAULT_CATALOG_BENCHMARK_NOTE),
+        dateCaptured: currentMetadata.dateCaptured || MARKET_LIBRARY_BENCHMARK_DATE,
+        confidenceLevel: useFormulaDerivedMetadata
+          ? 'medium'
+          : (currentMetadata.confidenceLevel || 'medium'),
+        calibrationFactor: useFormulaDerivedMetadata
+          ? MARKET_LIBRARY_BENCHMARK_FACTOR
+          : (currentMetadata.calibrationFactor || null),
+      }),
     };
   }
 
   const derivedBenchmark = deriveCatalogBenchmark(item, structureType);
   if (!derivedBenchmark?.rate) return item;
+  const benchmarkRegionalRates = buildCatalogRegionalBenchmarkRates(derivedBenchmark.rate);
 
   return {
     ...item,
     benchmarkRate: derivedBenchmark.rate,
     benchmark: derivedBenchmark.rate,
+    benchmarkRegionalRates,
+    benchmarkMatchSource: derivedBenchmark.matchSource,
+    benchmarkEvidence: buildCatalogBenchmarkEvidence({
+      structureType,
+      item,
+      sourceType: derivedBenchmark.sourceType,
+      matchSource: derivedBenchmark.matchSource,
+      benchmarkRate: derivedBenchmark.rate,
+      benchmarkRegionalRates,
+    }),
     benchmarkMetadata: buildBenchmarkMetadata({
       rate: derivedBenchmark.rate,
       currency: item.benchmarkMetadata?.currency || 'NGN',
@@ -3171,14 +3269,17 @@ export const cloneCatalogItemToProjectItem = (catalogItem, { structureType, bill
     rateSourceOptions: Array.isArray(catalogItem.rateSourceOptions) && catalogItem.rateSourceOptions.length > 0
       ? [...catalogItem.rateSourceOptions]
       : [...DEFAULT_RATE_SOURCE_OPTIONS],
-      quantity,
-      qty: quantity,
-      takeoffMeta: null,
-      // --- new tri-modal rate model ---
-      selectedRateSource: initialSelectedSource,
+    quantity,
+    qty: quantity,
+    takeoffMeta: null,
+    // --- new tri-modal rate model ---
+    selectedRateSource: initialSelectedSource,
     formulaCalculatedRate,
     resolvedUnitRate,
     manualRate: 0,
+    benchmarkRegionalRates: catalogItem.benchmarkRegionalRates || null,
+    benchmarkEvidence: catalogItem.benchmarkEvidence || null,
+    benchmarkMatchSource: catalogItem.benchmarkMatchSource || null,
     benchmarkMetadata: buildBenchmarkMetadata({
       rate: Number(catalogItem.benchmarkMetadata?.rate ?? catalogBenchmarkRate) || 0,
       currency: catalogItem.benchmarkMetadata?.currency || 'NGN',
@@ -3199,7 +3300,7 @@ export const cloneCatalogItemToProjectItem = (catalogItem, { structureType, bill
     notes,
     subcategory: billSectionTitle || '',
     materials: [],
-    useBenchmark: false,
+    useBenchmark: initialSelectedSource === 'benchmark',
     rateSource: initialSelectedSource,
     qtySource: 'manual',
     customPricing: null,

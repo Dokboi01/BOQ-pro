@@ -135,6 +135,9 @@ const BOQItemDetailPanel = ({
   const hasFormula = isFormulaDrivenItem(item);
   const editableInputs = normalizeEditableInputs(item.editableInputs);
   const benchmarkMeta = item.benchmarkMetadata || {};
+  const benchmarkEvidence = item.benchmarkEvidence || {};
+  const benchmarkRegionCoverage = Object.keys(item.benchmarkRegionalRates || {}).length;
+  const benchmarkTrace = item.benchmarkMatchSource || benchmarkEvidence.matchSource || 'catalog';
   const quantity = Number(item.qty || 0);
   const lineTotal = quantity * resolvedUnitRate;
   const hasBids = item.bids?.length > 0;
@@ -410,6 +413,8 @@ const BOQItemDetailPanel = ({
               {hasBids && <MetaRow label="Bids Received" value={`${item.bids.length}`} />}
               <MetaRow label="Qty Source" value={item.qtySource || 'manual'} />
               <MetaRow label="Takeoff Method" value={item.takeoffMeta?.templateLabel} />
+              {hasBenchmarkAvailable && <MetaRow label="Benchmark Match" value={benchmarkTrace} />}
+              {hasBenchmarkAvailable && <MetaRow label="Regional Coverage" value={benchmarkRegionCoverage > 0 ? `${benchmarkRegionCoverage} regions` : 'Base benchmark only'} />}
             </div>
           </Section>
 
@@ -428,6 +433,9 @@ const BOQItemDetailPanel = ({
                     <MetaRow label="Last Updated" value={benchmarkMeta.dateCaptured || 'Real-time'} />
                     <MetaRow label="Region" value={benchmarkMeta.region || 'National'} />
                     <MetaRow label="Basis Note" value={benchmarkMeta.sourceNote} />
+                    {benchmarkEvidence.summary && <MetaRow label="Source Trace" value={benchmarkEvidence.summary} />}
+                    {item.benchmarkMatchSource && <MetaRow label="Catalog Match" value={item.benchmarkMatchSource} />}
+                    {benchmarkRegionCoverage > 0 && <MetaRow label="Regional Matrix" value={`${benchmarkRegionCoverage} benchmark regions available`} />}
                     {benchmarkMeta.rate && <MetaRow label="Base Rate" value={formatCurrency(benchmarkMeta.rate)} />}
                     {benchmarkMeta.calibrationFactor && (
                       <MetaRow
