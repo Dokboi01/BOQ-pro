@@ -10,7 +10,10 @@ import {
   LogOut,
   Building2,
   Gavel,
-  BookOpen
+  BookOpen,
+  HardHat,
+  MapPin,
+  Shield
 } from 'lucide-react';
 import { getAccessPlanName, isFreeAccessPlan } from '../../utils/subscription';
 
@@ -31,8 +34,13 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-header">
         <div className="logo-container">
-          <Building2 size={24} className="logo-icon" />
-          {!collapsed && <span className="logo-text">BOQ Pro</span>}
+          <Shield size={24} className="logo-icon" />
+          {!collapsed && (
+            <div className="logo-text-group">
+              <span className="logo-text">BOQ Pro</span>
+              <span className="logo-sub">Nigerian Construction Workspace</span>
+            </div>
+          )}
         </div>
         <button
           className="collapse-btn"
@@ -58,8 +66,8 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
 
       {!collapsed && user && isFreePlan && (
         <div className="upgrade-prompt">
-          <h4>Upgrade to Pro</h4>
-          <p>Get unlimited projects and AI-powered insights.</p>
+          <h4><HardHat size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} /> Upgrade to Pro</h4>
+          <p>Unlimited projects, regional benchmarks, and team collaboration for your firm.</p>
           <button className="btn-upgrade" onClick={onViewPlans}>View Plans</button>
         </div>
       )}
@@ -120,11 +128,31 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
           color: var(--accent-400);
         }
 
+        .logo-icon {
+          color: var(--emerald-400);
+          filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.3));
+        }
+
+        .logo-text-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.05rem;
+        }
+
         .logo-text {
           font-weight: 800;
           font-size: 1.125rem;
           letter-spacing: -0.5px;
           color: white;
+        }
+
+        .logo-sub {
+          font-size: 0.6rem;
+          color: var(--emerald-400);
+          letter-spacing: 0.04em;
+          font-weight: 600;
+          text-transform: uppercase;
+          opacity: 0.8;
         }
 
         .collapse-btn {

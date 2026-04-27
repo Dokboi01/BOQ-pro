@@ -258,10 +258,12 @@ function App() {
 
   // ── Early returns for auth views ──
   if (view === 'loading') return (
-    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
+    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)', color: 'var(--text-primary)', flexDirection: 'column', gap: '0.75rem' }}>
       <div className="loading-spinner"></div>
-      <div style={{ marginLeft: '10px' }}>Loading BOQ Pro...</div>
+      <div style={{ marginLeft: '10px', fontWeight: 700 }}>BOQ Pro — Loading workspace...</div>
+      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Nigerian Construction Commercial Workspace</div>
     </div>
+
   );
 
   if (view === 'landing') return <Hero onGetStarted={() => setView(user ? 'app' : 'pricing')} onLogin={() => setView(user ? 'app' : 'login')} resolvedTheme={resolvedTheme} onToggleTheme={handleThemeToggle} />;
@@ -461,7 +463,8 @@ function App() {
             ) : (
               <>
                 <h1>Welcome, {user?.full_name || 'Practitioner'}</h1>
-                <p className="subtitle">Ready to start your next professional BOQ?</p>
+                <p className="subtitle">Ready to price your next Nigerian construction project?</p>
+
               </>
             )}
           </div>

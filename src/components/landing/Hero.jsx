@@ -16,7 +16,16 @@ import {
   FileText,
   TrendingUp,
   Moon,
-  SunMedium
+  SunMedium,
+  Award,
+  Landmark,
+  Ruler,
+  Compass,
+  PenTool,
+  DraftingCompass,
+  Construction,
+  Wrench,
+  Cpu
 } from 'lucide-react';
 
 const Hero = ({ onGetStarted, onLogin, resolvedTheme, onToggleTheme }) => {
@@ -1080,13 +1089,7 @@ const Hero = ({ onGetStarted, onLogin, resolvedTheme, onToggleTheme }) => {
             grid-template-columns: 1fr;
           }
 
-          .hero-panel {
-            display: flex;
-            flex-direction: column;
-          }
-
           .hero-visual {
-            width: 100%;
             min-height: auto;
           }
 
@@ -1096,236 +1099,352 @@ const Hero = ({ onGetStarted, onLogin, resolvedTheme, onToggleTheme }) => {
             margin-top: 1rem;
           }
 
-          .capabilities-band,
-          .operating-system-grid,
-          .workflow-grid {
-            display: grid;
-          }
-
-          .closing-cta {
-            display: grid;
-          }
-        }
-
-        @media (max-width: 820px) {
-          .landing-nav {
-            gap: 1rem;
-            align-items: flex-start;
-            flex-direction: column;
-          }
-
-          .hero-copy h1 {
-            font-size: clamp(2.7rem, 13vw, 4.1rem);
-          }
-
           .hero-stats {
-            grid-template-columns: 1fr;
-          }
-
-          .capabilities-band,
-          .operating-system-grid,
-          .outcome-strip,
-          .workflow-grid {
             grid-template-columns: 1fr;
           }
 
           .workflow-card {
             min-height: auto;
           }
-        }
 
-        @media (max-width: 640px) {
-          .landing-nav,
-          .landing-main {
-            width: min(1220px, calc(100% - 1.25rem));
-          }
-
-          .landing-nav {
-            position: sticky;
-            top: 0;
-            z-index: 20;
-            padding: 0.9rem 0 0.8rem;
-            background: rgba(248, 250, 252, 0.92);
-            backdrop-filter: blur(14px);
-            border-bottom: 1px solid rgba(203, 213, 225, 0.7);
-          }
-
-          .landing-main {
-            padding-top: 1rem;
-            padding-bottom: 7rem;
-          }
-
-          .brand-copy small {
-            display: none;
-          }
-
-          .nav-actions {
-            display: none;
-          }
-
-          .hero-actions,
-          .closing-actions {
-            width: 100%;
-          }
-
-          .hero-panel {
-            gap: 1.25rem;
-          }
-
-          .hero-copy {
-            padding: 0.5rem 0 0;
-          }
-
-          .hero-kicker {
-            width: 100%;
-            justify-content: center;
+          .closing-cta {
+            flex-direction: column;
             text-align: center;
           }
 
-          .hero-primary,
-          .hero-secondary,
-          .side-action {
-            width: 100%;
+          .closing-actions {
             justify-content: center;
+          }
+        }
+
+        @media (max-width: 820px) {
+          .landing-nav {
+            flex-wrap: wrap;
+            gap: 0.75rem;
+          }
+
+          .nav-actions {
+            width: 100%;
+            justify-content: flex-end;
           }
 
           .hero-copy h1 {
-            font-size: clamp(2.35rem, 12vw, 3rem);
-            line-height: 1.02;
+            font-size: clamp(2.2rem, 6vw, 3.2rem);
           }
 
           .hero-subtitle {
             font-size: 0.95rem;
-            line-height: 1.7;
           }
 
-          .hero-stats,
-          .trust-strip,
-          .workspace-badges,
-          .outcome-strip {
-            display: flex;
-            overflow-x: auto;
-            gap: 0.75rem;
-            padding-bottom: 0.2rem;
-            scroll-snap-type: x proximity;
-          }
-
-          .hero-stat-card,
-          .trust-strip span,
-          .workspace-badges span,
-          .outcome-card {
-            flex: 0 0 auto;
-            scroll-snap-align: start;
-          }
-
-          .hero-stat-card {
-            min-width: 210px;
-          }
-
-          .trust-strip span {
-            white-space: nowrap;
-          }
-
-          .workspace-main,
-          .workspace-side,
-          .capability-card,
-          .operating-card,
-          .closing-cta {
-            padding-left: 1rem;
-            padding-right: 1rem;
-          }
-
-          .workspace-main {
-            padding-top: 1rem;
-            padding-bottom: 1rem;
-          }
-
-          .workspace-side {
-            margin-top: 0.75rem;
-            border-radius: 22px;
-          }
-
-          .workspace-header,
-          .snapshot-row,
-          .closing-cta {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-
-          .snapshot-row:nth-child(n + 3) {
-            display: none;
-          }
-
-          .snapshot-meta {
-            width: 100%;
-            text-align: left;
-          }
-
-          .activity-card {
-            display: none;
-          }
-
-          .capabilities-band,
-          .workflow-grid {
-            gap: 0.85rem;
-          }
-
-          .capability-card,
-          .operating-card,
-          .workflow-card {
-            border-radius: 20px;
+          .capability-card {
+            padding: 1rem;
           }
 
           .operating-card-head {
             grid-template-columns: 1fr;
           }
 
+          .operating-icon {
+            width: 40px;
+            height: 40px;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .landing-nav,
+          .landing-main {
+            width: calc(100% - 1.25rem);
+          }
+
+          .landing-nav {
+            padding: 1rem 0 0.5rem;
+          }
+
+          .brand-copy small {
+            display: none;
+          }
+
+          .nav-actions .nav-link,
+          .nav-actions .theme-toggle-btn {
+            display: none;
+          }
+
+          .nav-cta {
+            padding: 0.65rem 1rem;
+            font-size: 0.82rem;
+          }
+
+          .hero-panel {
+            gap: 1rem;
+          }
+
+          .hero-copy {
+            padding: 1rem 0;
+          }
+
+          .hero-copy h1 {
+            font-size: clamp(1.8rem, 8vw, 2.6rem);
+            letter-spacing: -0.03em;
+          }
+
+          .hero-subtitle {
+            font-size: 0.88rem;
+            line-height: 1.6;
+          }
+
+          .hero-actions {
+            flex-direction: column;
+          }
+
+          .hero-primary,
+          .hero-secondary {
+            width: 100%;
+            justify-content: center;
+          }
+
+          .hero-stats {
+            gap: 0.65rem;
+          }
+
+          .hero-stat-card {
+            padding: 0.85rem;
+          }
+
+          .trust-strip {
+            gap: 0.45rem;
+          }
+
+          .trust-strip span {
+            font-size: 0.68rem;
+            padding: 0.35rem 0.55rem;
+          }
+
+          .workspace-main {
+            padding: 1rem;
+          }
+
+          .workspace-header {
+            flex-direction: column;
+            gap: 0.5rem;
+          }
+
+          .workspace-header h2 {
+            font-size: 1rem;
+          }
+
+          .workspace-badges {
+            gap: 0.45rem;
+          }
+
+          .workspace-badges span {
+            font-size: 0.68rem;
+            padding: 0.4rem 0.55rem;
+          }
+
+          .snapshot-row {
+            padding: 0.75rem;
+          }
+
+          .capabilities-band {
+            gap: 0.75rem;
+          }
+
+          .capability-card {
+            padding: 0.9rem;
+          }
+
+          .capability-card h3 {
+            font-size: 0.9rem;
+          }
+
+          .capability-card p {
+            font-size: 0.78rem;
+          }
+
+          .operating-system-grid {
+            gap: 0.75rem;
+          }
+
+          .operating-card {
+            padding: 1rem;
+          }
+
+          .outcome-strip {
+            gap: 0.65rem;
+          }
+
           .outcome-card {
-            min-width: 230px;
+            padding: 0.85rem;
+          }
+
+          .workflow-grid {
+            gap: 0.65rem;
           }
 
           .workflow-card {
             padding: 1rem;
           }
 
+          .workflow-index {
+            font-size: 1.3rem;
+            margin-bottom: 0.8rem;
+          }
+
+          .workflow-card p {
+            font-size: 0.85rem;
+          }
+
           .closing-cta {
-            margin-bottom: 0;
+            margin: 2rem 0 0.5rem;
+            padding: 1.2rem;
+          }
+
+          .closing-cta h2 {
+            font-size: clamp(1.4rem, 5vw, 1.8rem);
+          }
+
+          .closing-actions {
+            flex-direction: column;
+            width: 100%;
+          }
+
+          .closing-login {
+            width: 100%;
           }
 
           .mobile-cta-dock {
+            display: flex;
             position: fixed;
+            bottom: 0;
             left: 0;
             right: 0;
-            bottom: 0;
-            z-index: 30;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.75rem;
-            padding: 0.8rem 0.9rem calc(0.8rem + env(safe-area-inset-bottom, 0px));
-            background: rgba(248, 250, 252, 0.96);
+            z-index: 100;
+            padding: 0.65rem 0.75rem;
+            gap: 0.65rem;
+            background: rgba(255, 255, 255, 0.96);
             backdrop-filter: blur(16px);
-            border-top: 1px solid rgba(203, 213, 225, 0.8);
-            box-shadow: 0 -10px 24px rgba(15, 23, 42, 0.08);
+            border-top: 1px solid var(--border-light);
+            box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.06);
           }
 
           .mobile-dock-btn {
-            min-height: 48px;
+            flex: 1;
+            padding: 0.85rem;
             border-radius: 14px;
-            font-size: 0.9rem;
+            border: none;
+            font-size: 0.85rem;
             font-weight: 800;
-            border: 1px solid transparent;
+            cursor: pointer;
+            font-family: inherit;
+            transition: transform 0.2s ease;
+          }
+
+          .mobile-dock-btn:active {
+            transform: scale(0.97);
           }
 
           .mobile-dock-btn-secondary {
             background: white;
+            border: 1px solid var(--border-medium);
             color: var(--primary-700);
-            border-color: var(--border-medium);
           }
 
           .mobile-dock-btn-primary {
             background: var(--primary-900);
             color: white;
-            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14);
+          }
+
+          .landing-main {
+            padding: 1rem 0 5rem;
+          }
+        }
+
+        /* ── Dark Mode Overrides ── */
+        @media (prefers-color-scheme: dark) {
+          .landing-shell {
+            background:
+              radial-gradient(circle at top left, rgba(16, 185, 129, 0.12), transparent 28%),
+              radial-gradient(circle at 90% 12%, rgba(5, 150, 105, 0.1), transparent 22%),
+              linear-gradient(180deg, #0a0f1a 0%, #111827 52%, #0f172a 100%);
+            color: #e2e8f0;
+          }
+
+          .landing-grid {
+            background-image:
+              linear-gradient(rgba(51, 65, 85, 0.35) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(51, 65, 85, 0.35) 1px, transparent 1px);
+          }
+
+          .hero-stat-card,
+          .capability-card,
+          .outcome-card,
+          .workflow-card,
+          .workspace-card {
+            background: rgba(30, 41, 59, 0.85);
+            border-color: rgba(71, 85, 105, 0.4);
+          }
+
+          .hero-secondary {
+            background: rgba(30, 41, 59, 0.8);
+            border-color: rgba(71, 85, 105, 0.4);
+            color: #e2e8f0;
+          }
+
+          .hero-secondary:hover {
+            background: rgba(51, 65, 85, 0.8);
+            border-color: var(--emerald-500);
+          }
+
+          .snapshot-row {
+            background: rgba(15, 23, 42, 0.6);
+            border-color: rgba(71, 85, 105, 0.3);
+          }
+
+          .activity-card {
+            background: rgba(15, 23, 42, 0.5);
+            border-color: rgba(71, 85, 105, 0.3);
+          }
+
+          .operating-card {
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.85));
+            border-color: rgba(71, 85, 105, 0.3);
+          }
+
+          .operating-point {
+            background: rgba(15, 23, 42, 0.5);
+            border-color: rgba(71, 85, 105, 0.25);
+          }
+
+          .trust-strip span {
+            background: rgba(30, 41, 59, 0.7);
+            border-color: rgba(71, 85, 105, 0.3);
+            color: #cbd5e1;
+          }
+
+          .closing-cta {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(30, 41, 59, 0.9));
+            border-color: rgba(71, 85, 105, 0.3);
+          }
+
+          .workspace-side {
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.9));
+          }
+
+          .mobile-cta-dock {
+            background: rgba(15, 23, 42, 0.96);
+            border-top-color: rgba(71, 85, 105, 0.3);
+          }
+
+          .mobile-dock-btn-secondary {
+            background: rgba(30, 41, 59, 0.8);
+            border-color: rgba(71, 85, 105, 0.4);
+            color: #cbd5e1;
+          }
+
+          .mobile-dock-btn-primary {
+            background: var(--emerald-600);
+            box-shadow: 0 8px 20px rgba(5, 150, 105, 0.2);
           }
         }
       `}</style>
@@ -1334,14 +1453,9 @@ const Hero = ({ onGetStarted, onLogin, resolvedTheme, onToggleTheme }) => {
 };
 
 const ChevronDivider = () => (
-  <div
-    style={{
-      width: '100%',
-      height: '1px',
-      marginTop: '1.4rem',
-      background: 'linear-gradient(90deg, rgba(148,163,184,0.24), rgba(148,163,184,0.04))'
-    }}
-  />
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--accent-500)', flexShrink: 0 }}>
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
 );
 
 export default Hero;

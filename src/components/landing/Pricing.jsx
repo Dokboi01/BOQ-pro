@@ -42,27 +42,27 @@ const PLAN_TONES = {
 };
 
 const TRUST_SIGNALS = [
-  'Built for Quantity Surveyors',
-  'Built for Contractors',
-  'Built for Estimating Teams',
+  'Built for Nigerian QS Firms',
+  'Built for Lagos Contractors',
+  'Built for Regional Estimators',
   'Built for Company Rollout'
 ];
 
 const VALUE_CARDS = [
   {
     icon: Layers3,
-    title: 'Same Workspace Story',
-    copy: 'The pricing page now feels closer to the welcome page instead of looking like a detached billing screen.'
+    title: 'Nigerian Construction Workspace',
+    copy: 'Pricing built for Lagos, Abuja, Port Harcourt, Ibadan, and Kano markets — with regional benchmarks and NGN-native billing.'
   },
   {
     icon: Zap,
-    title: 'Benchmark-First Flow',
-    copy: 'Plans are framed around BOQ Pro’s real workflow: benchmark pricing, custom build-up, exports, and review.'
+    title: 'QS-First Workflow',
+    copy: 'Plans are framed around real Nigerian QS workflows: market-rate pricing, custom build-ups, tender-ready exports, and team review.'
   },
   {
     icon: BarChart3,
-    title: 'Built To Scale',
-    copy: 'Start solo, then move into team review, admin controls, and company rollout inside the same product.'
+    title: 'Built For Nigerian Firms',
+    copy: 'Start solo as a student QS, grow into a professional estimator, then scale to a full firm with admin controls and company rollout.'
   }
 ];
 
@@ -230,15 +230,15 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
           <div className="pricing-hero-copy">
             <div className="section-kicker">
               <Sparkles size={14} />
-              Pricing built around real BOQ work
+              Nigerian construction pricing, simplified
             </div>
             <h1>
-              Choose a plan that still feels like
-              <span> the same BOQ Pro product.</span>
+              Plans built for
+              <span> Nigerian QS professionals.</span>
             </h1>
             <p className="pricing-subtitle">
-              The welcome page now has a stronger BOQ-Pro feel, so this page should continue that same
-              atmosphere. The plan story is clearer, but the product tone stays consistent from first visit to signup.
+              From student QS in Lagos to estimating teams in Abuja and full-scale firms across Nigeria —
+              every plan includes the same BOQ engine, regional benchmarks, and NGN-native billing.
             </p>
 
             {displayError && (
@@ -396,9 +396,10 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
         <section className="plans-shell" ref={plansRef}>
           <div className="plans-heading">
             <span className="section-kicker">Plan options</span>
-            <h2>Pick the tier that matches how your team prices today.</h2>
+            <h2>Pick the tier that matches how your firm prices today.</h2>
             <p>
-              The cards keep the current pricing logic intact, but the whole section now sits inside a layout that feels much closer to the welcoming page.
+              From student QS in Lagos to enterprise firms across Nigeria — every plan includes the same BOQ engine,
+              regional benchmarks, and NGN-native billing through Paystack.
             </p>
           </div>
 
@@ -504,9 +505,9 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
           <section className="comparison-section view-fade-in">
             <div className="plans-heading comparison-heading">
               <span className="section-kicker">Comparison table</span>
-              <h2>A clearer view of what expands as you move up.</h2>
+              <h2>See exactly what each Nigerian QS tier includes.</h2>
               <p>
-                The detail is still here, but it now sits inside the same BOQ-Pro visual direction instead of breaking the experience.
+                From student access to enterprise rollout — compare features across all six plans to find the right fit for your firm.
               </p>
             </div>
             <div className="comparison-table-wrapper">
@@ -550,9 +551,10 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
         <section className="closing-cta">
           <div>
             <span className="section-kicker">Ready to move?</span>
-            <h2>Start with the plan that matches your team and grow inside the same BOQ Pro experience.</h2>
+            <h2>Start with the plan that matches your firm and grow inside the same Nigerian construction workspace.</h2>
             <p>
-              No detached billing-page feeling. The welcome screen and pricing screen now feel much closer to one continuous product journey.
+              From student QS in Lagos to enterprise firms across Nigeria — every plan includes the same BOQ engine,
+              regional benchmarks, and NGN-native billing through Paystack.
             </p>
           </div>
           <div className="closing-actions">
