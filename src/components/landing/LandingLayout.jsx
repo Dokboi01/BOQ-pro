@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Shield, Moon, SunMedium, ArrowRight, Mail, Phone, MapPin,
+  Shield, ArrowRight, Mail, Phone, MapPin,
   Linkedin, Twitter, Instagram, ChevronRight
 } from 'lucide-react';
 
@@ -18,8 +18,6 @@ const LandingLayout = ({
   onNavigate,
   onGetStarted,
   onLogin,
-  resolvedTheme,
-  onToggleTheme,
 }) => {
   const isActive = (key) => currentView === key;
 
@@ -54,9 +52,6 @@ const LandingLayout = ({
           </div>
 
           <div className="landing-nav-actions">
-            <button className="theme-toggle-btn-v2" onClick={onToggleTheme} title="Toggle theme">
-              {resolvedTheme === 'dark' ? <SunMedium size={16} /> : <Moon size={16} />}
-            </button>
             <button className="nav-link-v2" onClick={onLogin}>Log in</button>
             <button className="nav-cta-v2" onClick={onGetStarted}>
               Start free
@@ -267,25 +262,6 @@ const LandingLayout = ({
           align-items: center;
           gap: 0.6rem;
           flex-shrink: 0;
-        }
-
-        .theme-toggle-btn-v2 {
-          width: 36px;
-          height: 36px;
-          border-radius: 10px;
-          border: 1px solid var(--border-light);
-          background: rgba(255, 255, 255, 0.6);
-          color: var(--primary-600);
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .theme-toggle-btn-v2:hover {
-          background: var(--primary-50);
-          color: var(--primary-900);
         }
 
         .nav-link-v2 {

@@ -31,7 +31,7 @@ const milestones = [
   { year: '2023', title: 'Idea Born', desc: 'Frustrated with spreadsheet chaos on live Lagos projects.' },
   { year: '2024', title: 'First Workspace', desc: 'Built the core BOQ engine with custom rate build-up.' },
   { year: '2024', title: 'Team Pricing', desc: 'Added real-time collaboration and project sharing.' },
-  { year: '2025', title: 'AI Integration', desc: 'Smart suggestions and drawing analysis launched.' },
+  { year: '2025', title: 'Drawing Tools', desc: 'Drawing analysis and annotation features launched.' },
   { year: '2026', title: 'Nationwide', desc: 'Regional benchmarks for 5 Nigerian cities, 46+ materials.' },
 ];
 

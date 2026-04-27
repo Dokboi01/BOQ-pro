@@ -31,13 +31,13 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
   ];
 
   return (
-    <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+    <aside className={`sidebar glass-panel ${collapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-header">
         <div className="logo-container">
           <Shield size={24} className="logo-icon" />
           {!collapsed && (
             <div className="logo-text-group">
-              <span className="logo-text">BOQ Pro</span>
+              <span className="logo-text emerald-text-gradient">BOQ Pro</span>
               <span className="logo-sub">Nigerian Construction Workspace</span>
             </div>
           )}
@@ -65,10 +65,10 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
       </nav>
 
       {!collapsed && user && isFreePlan && (
-        <div className="upgrade-prompt">
+        <div className="upgrade-prompt emerald-button">
           <h4><HardHat size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} /> Upgrade to Pro</h4>
           <p>Unlimited projects, regional benchmarks, and team collaboration for your firm.</p>
-          <button className="btn-upgrade" onClick={onViewPlans}>View Plans</button>
+          <button className="btn-upgrade obsidian-surface" onClick={onViewPlans}>View Plans</button>
         </div>
       )}
 

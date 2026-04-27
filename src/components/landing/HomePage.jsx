@@ -13,7 +13,7 @@ const IMAGES = {
   skyline: 'https://images.unsplash.com/photo-1618828665011-0abd973f7bb8?w=1200&q=80',
   site: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=1200&q=80',
   workers: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=1200&q=80',
-  concrete: 'https://images.unsplash.com/photo-1590644365607-1c5de5fd0?w=1200&q=80',
+  concrete: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=1200&q=80',
 };
 
 const headlineStats = [
@@ -358,7 +358,7 @@ const HomePage = ({ onGetStarted, onLogin }) => {
           min-height: 92vh;
           display: flex;
           align-items: center;
-          border-radius: 32px;
+          width: 100%;
           overflow: hidden;
           margin-bottom: 4rem;
         }
@@ -367,6 +367,10 @@ const HomePage = ({ onGetStarted, onLogin }) => {
           position: absolute;
           inset: 0;
           z-index: 0;
+          width: 100%;
+          height: 100%;
+          margin: 0;
+          padding: 0;
         }
 
         .hp-hero-img {
@@ -374,6 +378,8 @@ const HomePage = ({ onGetStarted, onLogin }) => {
           height: 100%;
           object-fit: cover;
           display: block;
+          margin: 0;
+          padding: 0;
         }
 
         .hp-hero-overlay {
@@ -394,7 +400,7 @@ const HomePage = ({ onGetStarted, onLogin }) => {
           display: grid;
           grid-template-columns: minmax(0, 1.1fr) minmax(340px, 0.9fr);
           gap: 3rem;
-          padding: 4rem 3rem;
+          padding: 4rem 1.5rem;
           align-items: center;
         }
 
@@ -1038,7 +1044,7 @@ const HomePage = ({ onGetStarted, onLogin }) => {
 
         /* ── Responsive ── */
         @media (max-width: 1024px) {
-          .hp-hero-content { grid-template-columns: 1fr; padding: 3rem 1.5rem; }
+          .hp-hero-content { grid-template-columns: 1fr; padding: 3rem 1rem; }
           .hp-hero-cards { display: none; }
           .hp-regions-grid { grid-template-columns: repeat(3, 1fr); }
           .hp-capabilities { grid-template-columns: repeat(2, 1fr); }

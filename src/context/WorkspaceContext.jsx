@@ -1,20 +1,20 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useToast } from '../components/ui/useToast';
-import { useAuth } from '../../context/useAuth';
-import { getMaterials } from '../../db/database';
+import { useAuth } from './useAuth';
+import { getMaterials } from '../db/database';
 import {
   cloneCatalogItemToProjectItem,
   createCustomBoqItem,
   getStructureSectionCatalog,
-} from '../../data/boqCatalog';
-import { buildCompanyKey, deriveCompanyName } from '../../utils/companyAccess';
-import { buildCustomPricingFromRateAnalysis, WORK_TYPE_LABELS } from '../../utils/customPricing';
+} from '../data/boqCatalog';
+import { buildCompanyKey, deriveCompanyName } from '../utils/companyAccess';
+import { buildCustomPricingFromRateAnalysis, WORK_TYPE_LABELS } from '../utils/customPricing';
 import {
   evaluateBoqFormulaRate,
   isFormulaDrivenItem,
   normalizeEditableInputs,
-} from '../../utils/boqFormulas';
+} from '../utils/boqFormulas';
 import {
   applyBenchmarkRefreshToItem,
   buildAutoRateResult,
@@ -25,13 +25,13 @@ import {
   getItemTotal,
   repriceSectionsForRegion,
   resolveItemRateSource,
-} from '../../utils/pricing';
+} from '../utils/pricing';
 import {
   startPresence,
   stopPresence,
   subscribeToPresence,
   subscribeToActivity,
-} from '../../db/collaborationService';
+} from '../db/collaborationService';
 
 // ==========================================
 // EXPORTED HELPERS
@@ -1095,6 +1095,470 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
     setFormulaItemContext(null);
   };
 
+  const isSelectionStage = !isCustomWorkspace && boqBuilder?.stage === 'selection';
+  const hasGeneratedBoq = (sections || []).some((section) => (section.items || []).length > 0);
+  
+  const workspaceVisibleSections = React.useMemo(() => {
+    if (workspaceFilter === 'all') return sections || [];
+    return (sections || []).filter((section) => {
+      const hasMatch = (section.items || []).some((item) => {
+        const query = searchQuery.toLowerCase();
+        if (workspaceFilter === 'incomplete') return (item.qty || 0) <= 0 || (item.unitRate || 0) <= 0;
+        if (workspaceFilter === 'outliers') return isBenchmarkOutlier(item, project?.region || 'Lagos');
+        return (item.description || '').toLowerCase().includes(query) || (item.itemCode || '').toLowerCase().includes(query);
+      });
+      return hasMatch;
+    });
+  }, [sections, workspaceFilter, searchQuery, project?.region]);
+
+  const selectionCountsBySection = React.useMemo(() => {
+    const counts = {};
+    Object.entries(boqBuilder?.selectedCatalogItemIdsBySection || {}).forEach(([sid, list]) => {
+      counts[sid] = (list || []).length;
+    });
+    return counts;
+  }, [boqBuilder?.selectedCatalogItemIdsBySection]);
+
+  const sectionTotalsBySection = React.useMemo(() => {
+    const totals = {};
+    (sections || []).forEach((section) => {
+      totals[section.id] = (section.items || []).reduce((sum, item) => sum + (getItemTotal(item, project?.region || 'Lagos') || 0), 0);
+    });
+    return totals;
+  }, [sections, project?.region]);
+
+  const calculateGrandTotal = React.useMemo(() => {
+    return Object.values(sectionTotalsBySection).reduce((sum, val) => sum + val, 0);
+  }, [sectionTotalsBySection]);
+
+  const workspaceAnalytics = React.useMemo(() => {
+    const allItems = (sections || []).flatMap((s) => s.items || []);
+    const pricedItems = allItems.filter((i) => (getItemUnitRate(i, project?.region || 'Lagos') || 0) > 0);
+    const totalItems = allItems.length;
+    return {
+      totalItems,
+      pricedItems: pricedItems.length,
+      pricingCoveragePercent: totalItems > 0 ? (pricedItems.length / totalItems) * 100 : 0,
+      benchmarkItems: allItems.filter((i) => resolveItemRateSource(i) === 'benchmark').length,
+      customItems: allItems.filter((i) => resolveItemRateSource(i) === 'manual').length,
+    };
+  }, [sections, project?.region]);
+
+  const activeProjectSection = (sections || []).find((s) => s.id === activeBillSectionId);
+  const activeSectionLineCount = (activeProjectSection?.items || []).length;
+  const activeSectionPricedItems = (activeProjectSection?.items || []).filter((i) => (getItemUnitRate(i, project?.region || 'Lagos') || 0) > 0).length;
+  const activeSectionPendingItems = activeSectionLineCount - activeSectionPricedItems;
+  const totalSelectedCatalogItems = Object.values(selectionCountsBySection).reduce((sum, val) => sum + val, 0);
+
+  const getInitials = (name) => {
+    if (!name) return '?';
+    return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const AVATAR_COLORS = ['#2563eb', '#7c3aed', '#db2777', '#ea580c', '#16a34a', '#0891b2'];
+
+  const getAmountFormula = (item, unitRate) => {
+    const qty = sanitizeNonNegativeNumber(item.qty);
+    if (qty <= 0 || unitRate <= 0) return '';
+    return `${qty.toLocaleString()} × N${unitRate.toLocaleString()}`;
+  };
+
+  const workspaceFilterOptions = [
+    { id: 'all', label: 'All Items' },
+    { id: 'active-bill', label: 'Active Bill' },
+    { id: 'needs-pricing', label: 'Needs Review' },
+    { id: 'formula', label: 'Formula Items' },
+    { id: 'preliminaries', label: 'Preliminaries' },
+  ];
+
+  const getSectionUiMeta = (section) => {
+    const catalogSection = getStructureSectionCatalog(projectStructureType, section?.billSectionId || section?.id);
+    const keywords = [
+      ...(Array.isArray(section?.keywords) ? section.keywords : []),
+      ...(Array.isArray(catalogSection?.keywords) ? catalogSection.keywords : []),
+    ].filter(Boolean);
+    const isPreliminaries = section?.isPreliminaries === true
+      || catalogSection?.isPreliminaries === true
+      || section?.billSectionId === 'preliminaries';
+
+    return {
+      catalogSection,
+      isPreliminaries,
+      trade: section?.trade || catalogSection?.trade || section?.title || '',
+      description: section?.description || catalogSection?.description || '',
+      pickerPrompt: section?.pickerPrompt || catalogSection?.pickerPrompt || '',
+      emptyStateTitle: section?.emptyStateTitle || catalogSection?.emptyStateTitle || `No items selected for ${section?.title || 'this bill'}.`,
+      emptyStateMessage: section?.emptyStateMessage || catalogSection?.emptyStateMessage || 'Use the item library to add standard BOQ lines, or add a custom line when needed.',
+      keywords,
+      libraryCount: catalogSection?.availableItems?.length || 0,
+    };
+  };
+
+  const getBenchmarkDeltaMeta = (item) => {
+    if (resolveItemRateSource(item) === 'benchmark') return null;
+
+    const benchmarkRate = getEffectiveBenchmarkRate(item, project?.region || 'Lagos');
+    const customRate = getItemUnitRate(item, project?.region || 'Lagos');
+    if (!benchmarkRate || !customRate) return null;
+
+    const delta = ((customRate - benchmarkRate) / benchmarkRate) * 100;
+    const absDelta = Math.abs(delta);
+
+    if (absDelta < 0.5) {
+      return { text: 'At market benchmark', tone: 'aligned' };
+    }
+
+    return {
+      text: `${delta > 0 ? '+' : ''}${delta.toFixed(1)}% vs benchmark`,
+      tone: delta > 0 ? 'high' : 'low'
+    };
+  };
+
+  const formatEvidenceUpdatedLabel = (value) => {
+    if (!value) return '';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return '';
+    return parsed.toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  const getBenchmarkEvidenceMeta = (item) => {
+    const evidence = getItemBenchmarkEvidence(item, project?.region || 'Lagos');
+    const benchmarkRate = getEffectiveBenchmarkRate(item, project?.region || 'Lagos');
+    if (!evidence || (!benchmarkRate && !item?.benchmark)) return null;
+
+    let title = `${marketRegionDisplay} benchmark generated`;
+    let chip = `${marketRegionDisplay} benchmark`;
+    let tone = 'benchmark';
+
+    if (evidence.mode === 'manual-override') {
+      title = `${marketRegionDisplay} benchmark override active`;
+      chip = 'Benchmark override';
+      tone = 'custom';
+    } else if (evidence.mode === 'exact-region') {
+      title = `Exact ${marketRegionDisplay} benchmark used`;
+      chip = `Exact ${marketRegionDisplay}`;
+    } else if (evidence.mode === 'lagos-exact') {
+      title = 'Exact Lagos benchmark used';
+      chip = 'Exact Lagos';
+    } else if (evidence.mode === 'regional-adjusted') {
+      title = `${marketRegionDisplay} benchmark calibrated from market factors`;
+      chip = `${marketRegionDisplay} calibrated`;
+      tone = 'muted';
+    } else if (evidence.mode === 'fallback') {
+      title = 'Modeled benchmark estimate';
+      chip = 'Modeled benchmark';
+      tone = 'warning';
+    }
+
+    const detailParts = [];
+    if (evidence.sourceCount > 0) {
+      detailParts.push(`${evidence.sourceCount} market source${evidence.sourceCount === 1 ? '' : 's'}`);
+    } else if (evidence.matchedMaterialCount > 0) {
+      detailParts.push(`${evidence.matchedMaterialCount} material benchmark match${evidence.matchedMaterialCount === 1 ? '' : 'es'}`);
+    }
+    if (evidence.verifiedBy) detailParts.push(`Verified by ${evidence.verifiedBy}`);
+    if (evidence.updatedAt) detailParts.push(`Updated ${formatEvidenceUpdatedLabel(evidence.updatedAt)}`);
+    if (evidence.benchmarkBand) detailParts.push(`Band ${evidence.benchmarkBand}`);
+
+    return {
+      ...evidence,
+      title,
+      referenceTitle: `Benchmark reference: ${chip} available`,
+      chip,
+      tone,
+      detail: detailParts.join(' | '),
+      rateLabel: `Using ${marketRegionDisplay} benchmark of N${Math.round(benchmarkRate).toLocaleString()} per ${item?.unit || 'unit'}`,
+      referenceRateLabel: `Current ${marketRegionDisplay} benchmark: N${Math.round(benchmarkRate).toLocaleString()} per ${item?.unit || 'unit'}`
+    };
+  };
+
+  const getQuantityFeedbackMeta = (item, benchmarkRate, unitRate) => {
+    const quantity = sanitizeNonNegativeNumber(item?.qty);
+    const selectedRateSource = resolveItemRateSource(item);
+
+    if (quantity <= 0) {
+      return {
+        text: 'Enter quantity, area, length, volume, or meter value to generate the amount.',
+        tone: 'warning'
+      };
+    }
+
+    if (selectedRateSource === 'benchmark' && benchmarkRate > 0) {
+      return { text: 'Price generated automatically.', tone: 'success' };
+    }
+
+    if (selectedRateSource === 'benchmark' && benchmarkRate <= 0) {
+      return { text: 'No benchmark rate available — switch to custom pricing.', tone: 'warning' };
+    }
+
+    if (selectedRateSource === 'formula' && unitRate > 0) {
+      return { text: 'Formula inputs are active and the amount is updating from the calculated rate.', tone: 'success' };
+    }
+
+    if (unitRate > 0) {
+      const takeoffLabel = item?.takeoffMeta?.templateLabel;
+      return {
+        text: item.qtySource === 'calculated'
+          ? `Measured from ${takeoffLabel || 'takeoff calculator'} and priced successfully.`
+          : 'Quantity captured and amount updated successfully.',
+        tone: 'success'
+      };
+    }
+
+    return { text: 'Quantity saved. Complete pricing to unlock the amount.', tone: 'muted' };
+  };
+
+  const getCustomPricingSummary = (item) => {
+    if (!item?.customPricing) return '';
+    const segments = [];
+    const workTypeLabel = WORK_TYPE_LABELS[item.customPricing.workType];
+    if (workTypeLabel) segments.push(workTypeLabel);
+    if (item.customPricing.pricingReference) segments.push(item.customPricing.pricingReference);
+    if (item.customPricing.supplierQuote) segments.push(item.customPricing.supplierQuote);
+    return segments.join(' • ');
+  };
+
+  const getAutomationMeta = (item, benchmarkRate, unitRate) => {
+    const quantity = sanitizeNonNegativeNumber(item?.qty);
+    const selectedRateSource = resolveItemRateSource(item);
+
+    if (quantity <= 0) {
+      return {
+        title: 'Waiting for project quantity',
+        detail: 'Amount will calculate as soon as quantity is entered.',
+        tone: 'warning'
+      };
+    }
+
+    if (selectedRateSource === 'benchmark') {
+      if (benchmarkRate <= 0) {
+        return {
+          title: 'No benchmark rate available — switch to custom pricing',
+          detail: `This item is not yet covered by the ${marketRegionLabel} market benchmark.`,
+          tone: 'warning'
+        };
+      }
+
+      return {
+        title: 'Auto-priced using current market benchmark',
+        detail: `Amount = Quantity × ${marketRegionLabel} market benchmark.`,
+        tone: 'success'
+      };
+    }
+
+    if (selectedRateSource === 'formula') {
+      if (unitRate <= 0) {
+        return {
+          title: 'Formula inputs still need review',
+          detail: 'Update the formula inputs or switch rate source to complete this item.',
+          tone: 'warning'
+        };
+      }
+
+      return {
+        title: 'Formula rate active',
+        detail: 'Amount is being generated from the saved engineering formula inputs.',
+        tone: 'calculated'
+      };
+    }
+
+    if (unitRate <= 0) {
+      return {
+        title: 'Manual rate still needed',
+        detail: 'Enter a unit rate, open the pricing studio, or switch to a benchmark or formula source.',
+        tone: 'warning'
+      };
+    }
+
+    if (item.customPricing) {
+      return {
+        title: 'Custom rate override active',
+        detail: getCustomPricingSummary(item) || 'Custom pricing allowances and basis have been saved for this item.',
+        tone: 'custom'
+      };
+    }
+
+    if (item.rateSource === 'calculated') {
+      return {
+        title: 'Rate analysis applied',
+        detail: 'This amount is being driven by an analysis-backed unit rate.',
+        tone: 'calculated'
+      };
+    }
+
+    return {
+      title: 'Custom pricing active',
+      detail: 'Amount is being generated from the current custom unit rate.',
+      tone: 'custom'
+    };
+  };
+
+  const getItemStatusMeta = (item, benchmarkRate, unitRate) => {
+    const quantity = sanitizeNonNegativeNumber(item?.qty);
+    const selectedRateSource = resolveItemRateSource(item);
+
+    if (quantity <= 0) return { label: 'Quantity Needed', tone: 'warning' };
+    if (selectedRateSource === 'benchmark' && benchmarkRate <= 0) return { label: 'Benchmark Missing', tone: 'warning' };
+    if (selectedRateSource === 'benchmark') return { label: 'Benchmark Priced', tone: 'benchmark' };
+    if (selectedRateSource === 'formula') return { label: 'Formula Ready', tone: 'calculated' };
+    if (item.customPricing) return { label: 'Manual Override', tone: 'custom' };
+    if (item.rateSource === 'calculated') return { label: 'Rate Analysed', tone: 'calculated' };
+    if (unitRate > 0) return { label: 'Custom Priced', tone: 'manual' };
+    return { label: 'Rate Required', tone: 'warning' };
+  };
+
+
+  const getQuantityDisplayValue = (item) => {
+    const quantity = sanitizeNonNegativeNumber(item?.qty);
+    if (quantity <= 0) return '0.00';
+    return quantity.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  };
+
+  const getQuantitySourceLabel = (item) => {
+    if (item?.qtySource === 'calculated') {
+      return item?.takeoffMeta?.templateLabel
+        ? `Measured from ${item.takeoffMeta.templateLabel}`
+        : 'Measured from takeoff';
+    }
+    return 'Project quantity';
+  };
+
+  const benchmarkSyncLabel = formatBenchmarkSyncLabel(benchmarkSyncState.checkedAt);
+
+  const activeSheetLabel = viewMode === 'valuation' ? 'Valuation Sheet' : 'Estimate Sheet';
+
+  const matchesWorkspaceFilter = (section, item, sectionMeta) => {
+    switch (workspaceFilter) {
+      case 'active-bill':
+        return section.id === activeBillSectionId;
+      case 'needs-pricing': {
+        const quantity = sanitizeNonNegativeNumber(item?.qty);
+        const benchmarkRate = getEffectiveBenchmarkRate(item, project?.region || 'Lagos');
+        const unitRate = getItemUnitRate(item, project?.region || 'Lagos');
+        return quantity <= 0 || (resolveItemRateSource(item) === 'benchmark' ? benchmarkRate <= 0 : unitRate <= 0);
+      }
+      case 'formula':
+        return isFormulaDrivenItem(item);
+      case 'preliminaries':
+        return sectionMeta?.isPreliminaries === true;
+      default:
+        return true;
+    }
+  };
+
+  const matchesWorkspaceSearch = (section, item, sectionMeta, normalizedQuery) => {
+    const haystack = [
+      section?.title,
+      section?.description,
+      section?.code,
+      sectionMeta?.trade,
+      item?.code,
+      item?.name,
+      item?.description,
+      item?.unit,
+      item?.subcategory,
+      item?.category,
+      item?.pickerHint,
+      item?.formulaText,
+      item?.notes,
+      ...(Array.isArray(item?.keywords) ? item.keywords : []),
+      ...(Array.isArray(item?.materials) ? item.materials : []),
+      ...(Array.isArray(sectionMeta?.keywords) ? sectionMeta.keywords : []),
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+
+    return haystack.includes(normalizedQuery);
+  };
+
+  const filteredSections = React.useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const workspaceSections = activeBillSectionId
+      ? workspaceVisibleSections.filter((section) => section.id === activeBillSectionId)
+      : workspaceVisibleSections;
+
+    return (workspaceSections || []).map((section) => {
+      const sectionMeta = getSectionUiMeta(section);
+      const baseItems = (section.items || []).filter((item) => matchesWorkspaceFilter(section, item, sectionMeta));
+      const sectionSearchText = [
+        section.title,
+        section.description,
+        section.code,
+        sectionMeta.trade,
+        ...(sectionMeta.keywords || []),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      const sectionMatchesQuery = normalizedQuery ? sectionSearchText.includes(normalizedQuery) : false;
+      const nextItems = !normalizedQuery
+        ? baseItems
+        : (sectionMatchesQuery
+          ? baseItems
+          : baseItems.filter((item) => matchesWorkspaceSearch(section, item, sectionMeta, normalizedQuery)));
+      const includeSection = nextItems.length > 0
+        || sectionMatchesQuery
+        || (workspaceFilter === 'active-bill' && section.id === activeBillSectionId && !normalizedQuery);
+
+      if (!includeSection) return null;
+
+      return {
+        ...section,
+        ...sectionMeta,
+        items: nextItems,
+        expanded: normalizedQuery || workspaceFilter === 'active-bill' ? true : section.expanded,
+      };
+    }).filter(Boolean);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeBillSectionId, project?.region, projectStructureType, searchQuery, workspaceFilter, workspaceVisibleSections]);
+
+  const benchmarkRefreshAnalytics = React.useMemo(() => {
+    if (!Array.isArray(benchmarkMaterialIndex)) {
+      return {
+        itemMap: {},
+        sectionMap: {},
+        actionableItems: 0,
+        refreshableItems: 0,
+        reviewItems: 0,
+        benchmarkRateUpdates: 0,
+        referenceOnlyUpdates: 0,
+        newBenchmarkLinks: 0,
+        highPriorityItems: 0,
+      };
+    }
+
+    return getProjectBenchmarkRefreshAnalytics({ ...project, sections }, {
+      structureType: project?.structureType || project?.subtype || project?.type,
+      region: project?.region || 'Lagos',
+      materialIndex: benchmarkMaterialIndex,
+    });
+  }, [benchmarkMaterialIndex, project, sections]);
+
+  const sectionLibraryCounts = React.useMemo(() => (
+    Object.fromEntries(
+      (sections || []).map((section) => ([
+        section.id,
+        getStructureSectionCatalog(projectStructureType, section.billSectionId)?.availableItems?.length || 0,
+      ]))
+    )
+  ), [projectStructureType, sections]);
+
+  const activeCatalogSection = activeProjectSection
+    ? getStructureSectionCatalog(projectStructureType, activeProjectSection.billSectionId)
+    : null;
+
+  const activeSectionMeta = activeProjectSection ? getSectionUiMeta(activeProjectSection) : null;
+
+  const selectedCatalogItemIdsBySection = boqBuilder?.selectedCatalogItemIdsBySection || {};
+
+  const isFilteredView = Boolean(searchQuery?.trim()) || workspaceFilter !== 'all';
+  const totalItems = workspaceAnalytics.totalItems;
+
+  const totalColumnCount = 4;
+  const sectionHeaderSpan = 4;
+  const subtotalLeadingSpan = 2;
+
   const value = {
     // State
     sections, setSections,
@@ -1123,8 +1587,36 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
     projectStructureType,
     marketRegionLabel,
     marketRegionDisplay,
+    isSelectionStage,
+    hasGeneratedBoq,
+    workspaceVisibleSections,
+    selectionCountsBySection,
+    sectionTotalsBySection,
+    calculateGrandTotal,
+    workspaceAnalytics,
+    activeProjectSection,
+    activeSectionLineCount,
+    activeSectionPricedItems,
+    activeSectionPendingItems,
+    totalSelectedCatalogItems,
+    AVATAR_COLORS,
+    benchmarkSyncLabel,
+    activeSheetLabel,
+    filteredSections,
+    filteredItemCount,
+    isFilteredView,
+    totalItems,
+    workspaceFilterOptions,
+    totalColumnCount,
+    sectionHeaderSpan,
+    subtotalLeadingSpan,
+    benchmarkRefreshAnalytics,
+    sectionLibraryCounts,
+    activeSectionMeta,
+    activeCatalogSection,
+    selectedCatalogItemIdsBySection,
     
-    // Handlers
+    // Handlers & Helpers
     loadMarketBenchmarks,
     toggleSection,
     updateSectionTitle,
@@ -1163,11 +1655,30 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
     scrollToSection,
     openFormulaEditor,
     handleFormulaInputsSave,
+    getInitials,
+    getAmountFormula,
+    getRateSourceMeta,
+    getBenchmarkDeltaMeta,
+    getBenchmarkEvidenceMeta,
+    getQuantityFeedbackMeta,
+    getAutomationMeta,
+    getItemStatusMeta,
+    getQuantityDisplayValue,
+    getQuantitySourceLabel,
+    getSectionUiMeta,
+    getRateOptionAvailability,
+    isOutlier,
+    getManualRateValue,
+    sanitizeNonNegativeNumber,
     onUpdate,
     onAddSection,
     onExport,
     onDelete,
+    toast,
+    user,
   };
+
+
 
   return (
     <WorkspaceContext.Provider value={value}>
