@@ -1,25 +1,61 @@
-/* global Buffer */
+/* global Buffer, process */
 
-export const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
+function getRequestOrigin(req) {
+  const forwardedProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+  const protocol = forwardedProto || 'https';
+  const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
 
-export function applyCors(res) {
-  Object.entries(CORS_HEADERS).forEach(([key, value]) => {
-    res.setHeader(key, value);
-  });
+  if (!host) return null;
+  return `${protocol}://${host}`;
 }
 
-export function sendJson(res, statusCode, payload) {
-  applyCors(res);
+function getAllowedOrigins() {
+  return [
+    process.env.ALLOWED_ORIGINS,
+    process.env.APP_ORIGIN,
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+  ]
+    .filter(Boolean)
+    .flatMap((value) => String(value).split(','))
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function isAllowedOrigin(req, origin) {
+  if (!origin) return true;
+
+  const requestOrigin = getRequestOrigin(req);
+  if (requestOrigin && origin === requestOrigin) {
+    return true;
+  }
+
+  return getAllowedOrigins().includes(origin);
+}
+
+export function applyCors(req, res) {
+  const origin = req.headers.origin;
+  if (!origin || !isAllowedOrigin(req, origin)) {
+    return false;
+  }
+
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Vary', 'Origin');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  return true;
+}
+
+export function sendJson(req, res, statusCode, payload) {
+  applyCors(req, res);
   res.status(statusCode).json(payload);
 }
 
 export function handleOptions(req, res) {
   if (req.method !== 'OPTIONS') return false;
-  applyCors(res);
+  if (!applyCors(req, res)) {
+    res.status(403).end();
+    return true;
+  }
   res.status(200).end();
   return true;
 }

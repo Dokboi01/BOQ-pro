@@ -1,3 +1,5 @@
+import { getCurrentIdToken } from './authToken';
+
 /**
  * Paystack checkout helper.
  *
@@ -23,10 +25,12 @@ function buildApiUrl(path) {
 }
 
 async function postJson(path, body) {
+    const token = await getCurrentIdToken();
     const response = await fetch(buildApiUrl(path), {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
         body: JSON.stringify(body)
     });
@@ -123,6 +127,8 @@ export async function paystackCheckout({
     onSuccess,
     onCancel,
 }) {
+    const token = await getCurrentIdToken();
+    if (!token) throw new Error('You must be signed in before starting a paid checkout.');
     if (!email) throw new Error('Customer email is required for Paystack checkout.');
     if (!userId) throw new Error('You must be signed in before starting a paid checkout.');
 

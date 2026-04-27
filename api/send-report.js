@@ -1,5 +1,10 @@
 /* global process */
 import { Resend } from 'resend';
+import { requireFirebaseAuth } from './_lib/firebase-auth.js';
+
+const REPORT_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+const REPORT_LIMIT_MAX_REQUESTS = 5;
+const reportRateLimitMap = new Map();
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -10,6 +15,38 @@ function escapeHtml(value = '') {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function getClientIp(req) {
+  return String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '')
+    .split(',')[0]
+    .trim();
+}
+
+function checkReportRateLimit(identity) {
+  const now = Date.now();
+  const entry = reportRateLimitMap.get(identity);
+
+  if (entry && now - entry.windowStart < REPORT_LIMIT_WINDOW_MS) {
+    if (entry.count >= REPORT_LIMIT_MAX_REQUESTS) {
+      return { allowed: false, retryAfterMs: REPORT_LIMIT_WINDOW_MS - (now - entry.windowStart) };
+    }
+
+    entry.count += 1;
+    return { allowed: true };
+  }
+
+  reportRateLimitMap.set(identity, { windowStart: now, count: 1 });
+
+  if (reportRateLimitMap.size > 1000) {
+    for (const [key, value] of reportRateLimitMap) {
+      if (now - value.windowStart > REPORT_LIMIT_WINDOW_MS) {
+        reportRateLimitMap.delete(key);
+      }
+    }
+  }
+
+  return { allowed: true };
 }
 
 export default async function handler(req, res) {
@@ -30,7 +67,21 @@ export default async function handler(req, res) {
   const resend = new Resend(apiKey);
 
   try {
+    const authClaims = await requireFirebaseAuth(req);
     const { to, projectName, totalValue, attachments } = req.body;
+    const uid = String(authClaims?.user_id || authClaims?.sub || '').trim();
+    const email = String(authClaims?.email || '').trim().toLowerCase();
+    const ip = getClientIp(req);
+    const identity = `${uid || email || ip || 'authenticated'}:send-report`;
+    const limit = checkReportRateLimit(identity);
+
+    if (!limit.allowed) {
+      return res.status(429).json({
+        error: 'You are sending reports too quickly. Please wait a moment before trying again.',
+        retryAfterMs: limit.retryAfterMs,
+      });
+    }
+
     const normalizedRecipient = String(to || '').trim().toLowerCase();
     const safeProjectName = String(projectName || '').trim();
 
@@ -42,8 +93,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Please provide a valid recipient email address.' });
     }
 
+    if (!email) {
+      return res.status(401).json({ error: 'Authentication required.' });
+    }
+
     if (attachments && !Array.isArray(attachments)) {
       return res.status(400).json({ error: 'Attachments must be provided as an array.' });
+    }
+
+    if ((attachments || []).length > 5) {
+      return res.status(400).json({ error: 'A maximum of 5 attachments is allowed.' });
     }
 
     // Build attachment objects for Resend
@@ -53,6 +112,10 @@ export default async function handler(req, res) {
 
       if (!filename || !content) {
         throw new Error(`Attachment ${index + 1} is missing a filename or file content.`);
+      }
+
+      if (content.length > 5_000_000) {
+        throw new Error(`Attachment ${index + 1} is too large.`);
       }
 
       return {
@@ -144,6 +207,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ success: true, id: data?.id });
   } catch (err) {
     console.error('Send report error:', err);
-    return res.status(500).json({ error: err.message || 'Internal server error' });
+    return res.status(Number(err.status || 500)).json({ error: err.message || 'Internal server error' });
   }
 }
