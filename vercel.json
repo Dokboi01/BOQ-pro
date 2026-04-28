@@ -1,4 +1,10 @@
 {
+    "crons": [
+        {
+            "path": "/api/cron-material-market-sync",
+            "schedule": "0 5 * * *"
+        }
+    ],
     "rewrites": [
         {
             "source": "/((?!api/).*)",

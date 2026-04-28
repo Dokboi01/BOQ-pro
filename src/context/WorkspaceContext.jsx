@@ -20,9 +20,13 @@ import {
   buildAutoRateResult,
   buildMaterialRateIndex,
   getItemBenchmarkRefreshInsight,
+  getItemBenchmarkEvidence,
   getBenchmarkRegionalFactor,
   getEffectiveBenchmarkRate,
+  getItemUnitRate,
   getItemTotal,
+  getProjectBenchmarkRefreshAnalytics,
+  isBenchmarkOutlier,
   repriceSectionsForRegion,
   resolveItemRateSource,
 } from '../utils/pricing';
@@ -1104,7 +1108,11 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
       const hasMatch = (section.items || []).some((item) => {
         const query = searchQuery.toLowerCase();
         if (workspaceFilter === 'incomplete') return (item.qty || 0) <= 0 || (item.unitRate || 0) <= 0;
-        if (workspaceFilter === 'outliers') return isBenchmarkOutlier(item, project?.region || 'Lagos');
+        if (workspaceFilter === 'outliers') {
+          const benchmarkRate = getEffectiveBenchmarkRate(item, project?.region || 'Lagos');
+          const unitRate = getItemUnitRate(item, project?.region || 'Lagos');
+          return isBenchmarkOutlier(unitRate, benchmarkRate);
+        }
         return (item.description || '').toLowerCase().includes(query) || (item.itemCode || '').toLowerCase().includes(query);
       });
       return hasMatch;
@@ -1192,6 +1200,19 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
       keywords,
       libraryCount: catalogSection?.availableItems?.length || 0,
     };
+  };
+
+  const isOutlier = (rate, benchmark) => (
+    isBenchmarkOutlier(rate, benchmark)
+  );
+
+  const getRateSourceMeta = (item) => {
+    const src = resolveItemRateSource(item);
+    if (src === 'benchmark') return { label: `${marketRegionLabel} Market Benchmark`, tone: 'benchmark' };
+    if (src === 'formula') return { label: 'Formula-Driven Rate', tone: 'calculated' };
+    if (item.customPricing) return { label: 'Manual Override from Pricing Studio', tone: 'custom' };
+    if (item.rateSource === 'calculated') return { label: 'Manual Build-Up Rate', tone: 'calculated' };
+    return { label: 'Manual Rate Entry', tone: 'manual' };
   };
 
   const getBenchmarkDeltaMeta = (item) => {
@@ -1423,6 +1444,20 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
     return 'Project quantity';
   };
 
+  const formatBenchmarkSyncLabel = (value) => {
+    if (!value) return '';
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return '';
+
+    return parsed.toLocaleString('en-NG', {
+      day: 'numeric',
+      month: 'short',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+  };
+
   const benchmarkSyncLabel = formatBenchmarkSyncLabel(benchmarkSyncState.checkedAt);
 
   const activeSheetLabel = viewMode === 'valuation' ? 'Valuation Sheet' : 'Estimate Sheet';
@@ -1512,6 +1547,11 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
     }).filter(Boolean);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeBillSectionId, project?.region, projectStructureType, searchQuery, workspaceFilter, workspaceVisibleSections]);
+
+  const filteredItemCount = filteredSections.reduce(
+    (sum, section) => sum + ((section.items || []).length),
+    0
+  );
 
   const benchmarkRefreshAnalytics = React.useMemo(() => {
     if (!Array.isArray(benchmarkMaterialIndex)) {

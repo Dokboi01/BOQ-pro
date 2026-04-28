@@ -877,4 +877,36 @@ export const BUILDING_EXTERNALWORKS_ITEMS = [
     },
     selectedRateSource: 'formula',
   }),
+
+  formulaRateItem({
+    id: 'building-concrete-driveway',
+    name: 'Concrete driveway',
+    description: 'Provide and construct reinforced or plain concrete driveway pavement for vehicular access.',
+    unit: 'm²',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'External Works',
+    inputs: [
+      numericInput('preparation', 'Excavation/preparation', 0, 'NGN/m²'),
+      numericInput('subbase', 'Sub-base', 0, 'NGN/m²'),
+      numericInput('reinforcement', 'Reinforcement/mesh', 0, 'NGN/m²'),
+      numericInput('concrete', 'Concrete', 0, 'NGN/m²'),
+      numericInput('jointing', 'Jointing and finishing', 0, 'NGN/m²'),
+      numericInput('curing', 'Curing', 0, 'NGN/m²'),
+      numericInput('ohp', 'OHP', 0, 'NGN/m²'),
+    ],
+    formulaText: 'Rate/m² = Excavation/preparation + Sub-base + Reinforcement/mesh + Concrete + Jointing and finishing + Curing + OHP',
+    formulaExpression: 'preparation + subbase + reinforcement + concrete + jointing + curing + ohp',
+    formulaBasis: ['Excavation/preparation', 'Sub-base', 'Reinforcement/mesh', 'Concrete', 'Jointing and finishing', 'Curing', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+    notes: 'Use for rigid concrete vehicular paving where the driveway is measured separately from general external concrete paving.',
+  }),
 ];

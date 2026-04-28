@@ -875,4 +875,35 @@ export const BUILDING_ROOFING_ITEMS = [
     },
     selectedRateSource: 'formula',
   }),
+
+  formulaRateItem({
+    id: 'building-roof-accessories',
+    name: 'Roof accessories',
+    description: 'Provide and fix ridge caps, flashings, valleys, barge trims, closures, and associated roof accessory pieces.',
+    unit: 'm',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Roofing',
+    inputs: [
+      numericInput('accessories', 'Accessory materials', 0, 'NGN/m'),
+      numericInput('fixings', 'Fixings and sealants', 0, 'NGN/m'),
+      numericInput('cutting', 'Cutting and fitting', 0, 'NGN/m'),
+      numericInput('installation', 'Installation', 0, 'NGN/m'),
+      numericInput('labour', 'Labour', 0, 'NGN/m'),
+      numericInput('ohp', 'OHP', 0, 'NGN/m'),
+    ],
+    formulaText: 'Rate/m = Accessory materials + Fixings and sealants + Cutting and fitting + Installation + Labour + OHP',
+    formulaExpression: 'accessories + fixings + cutting + installation + labour + ohp',
+    formulaBasis: ['Accessory materials', 'Fixings and sealants', 'Cutting and fitting', 'Installation', 'Labour', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+    notes: 'Measure along the actual linear runs of ridges, hips, valleys, eaves, or other scheduled roof accessory lines.',
+  }),
 ];

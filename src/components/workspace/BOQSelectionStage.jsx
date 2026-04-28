@@ -36,6 +36,8 @@ const getBenchmarkValue = (item) => {
   return baseRate * getBenchmarkCalibrationFactor(item);
 };
 const hasFormulaSupport = (item) => Boolean(item?.defaultFormulaType && item.defaultFormulaType !== 'manual');
+const normalizeSearchValue = (value) => String(value || '').trim().toLowerCase();
+const buildItemNameText = (item) => normalizeSearchValue(item?.name);
 
 const buildSearchText = (item) => (
   [
@@ -53,6 +55,13 @@ const buildSearchText = (item) => (
     .join(' ')
     .toLowerCase()
 );
+
+const matchesItemSearch = (searchName, searchLibrary, normalizedQuery, queryTerms) => {
+  if (!normalizedQuery) return true;
+  if (searchName.includes(normalizedQuery)) return true;
+  if (queryTerms.length > 1 && queryTerms.every((term) => searchName.includes(term))) return true;
+  return searchLibrary.includes(normalizedQuery);
+};
 
 const BOQSelectionStage = ({
   projectName,
@@ -85,6 +94,13 @@ const BOQSelectionStage = ({
   const [activeSort, setActiveSort] = React.useState('recommended');
 
   const selectedCodeSet = React.useMemo(() => new Set(selectedCodes), [selectedCodes]);
+  const searchableItems = React.useMemo(() => (
+    (catalogItems || []).map((item) => ({
+      item,
+      searchName: buildItemNameText(item),
+      searchLibrary: buildSearchText(item),
+    }))
+  ), [catalogItems]);
 
   const categories = React.useMemo(() => (
     ['all', ...Array.from(new Set(
@@ -95,15 +111,16 @@ const BOQSelectionStage = ({
   ), [catalogItems]);
 
   const filteredItems = React.useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+    const normalizedQuery = normalizeSearchValue(query);
+    const queryTerms = normalizedQuery.split(/\s+/).filter(Boolean);
 
-    const filtered = (catalogItems || []).filter((item) => {
+    const filtered = searchableItems.filter(({ item, searchName, searchLibrary }) => {
       const itemCategory = item.category || 'General';
       const hasFormula = hasFormulaSupport(item);
       const hasBenchmark = getBenchmarkValue(item) > 0;
       const isSelected = selectedCodeSet.has(item.code);
 
-      const matchesQuery = !normalizedQuery || buildSearchText(item).includes(normalizedQuery);
+      const matchesQuery = matchesItemSearch(searchName, searchLibrary, normalizedQuery, queryTerms);
       const matchesCategory = activeCategory === 'all' || itemCategory === activeCategory;
       const matchesFilter = (() => {
         switch (activeFilter) {
@@ -123,7 +140,7 @@ const BOQSelectionStage = ({
       return matchesQuery && matchesCategory && matchesFilter;
     });
 
-    return filtered.sort((leftItem, rightItem) => {
+    return filtered.map(({ item }) => item).sort((leftItem, rightItem) => {
       const leftSelected = selectedCodeSet.has(leftItem.code);
       const rightSelected = selectedCodeSet.has(rightItem.code);
       const leftRecommended = leftItem.isRecommended === true;
@@ -170,7 +187,7 @@ const BOQSelectionStage = ({
 
       return leftName.localeCompare(rightName);
     });
-  }, [activeCategory, activeFilter, activeSort, catalogItems, query, selectedCodeSet]);
+  }, [activeCategory, activeFilter, activeSort, query, searchableItems, selectedCodeSet]);
 
   const metrics = React.useMemo(() => ({
     recommended: (catalogItems || []).filter((item) => item.isRecommended === true).length,
@@ -215,6 +232,21 @@ const BOQSelectionStage = ({
           <span className="boq-selection-eyebrow emerald-text-gradient">BOQ Bills</span>
           <strong>Bill Navigator</strong>
           <small>{sections.length} active bill{sections.length === 1 ? '' : 's'} in this structure.</small>
+        </div>
+
+        <div className="boq-selection-sidebar-search-wrap">
+          <span className="boq-selection-sidebar-search-label">Search Items</span>
+          <div className="boq-selection-search glass-input boq-selection-search-sidebar">
+            <Search size={15} />
+            <input
+              type="text"
+              placeholder="Search items..."
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              autoComplete="off"
+              aria-label="Search items"
+            />
+          </div>
         </div>
 
         <div className="boq-selection-sidebar glass-panel-list">
@@ -316,13 +348,15 @@ const BOQSelectionStage = ({
               <Search size={15} />
               <input
                 type="text"
-                placeholder="Search by code, item, description, formula, or keyword"
+                placeholder="Search items..."
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
+                autoComplete="off"
+                aria-label="Search items"
               />
             </div>
             <small className="boq-selection-panel-help">
-              Search by code, item name, formula basis, benchmark hints, or keywords.
+              Search instantly by item name, with support for partial words and quick keyword fallback.
             </small>
 
             <div className="boq-selection-filter-section">
@@ -497,7 +531,8 @@ const BOQSelectionStage = ({
                   <button
                     key={item.code}
                     type="button"
-                    className={`boq-selection-card glass-card ${isSelected ? 'selected' : ''}`}
+                    className={`boq-selection-card glass-card boq-item ${isSelected ? 'selected' : ''}`}
+                    data-item-name={item.name || ''}
                     onClick={() => onToggleItem?.(item.code)}
                   >
                     <div className="boq-selection-card glass-card-kicker">
@@ -647,6 +682,23 @@ const BOQSelectionStage = ({
           font-size: 0.85rem;
           color: #64748b;
           font-weight: 500;
+        }
+
+        .boq-selection-sidebar-search-wrap {
+          padding: 1rem 1rem 0.9rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.55rem;
+          border-top: 1px solid #eef2f7;
+          background: rgba(248, 250, 252, 0.86);
+        }
+
+        .boq-selection-sidebar-search-label {
+          font-size: 0.72rem;
+          font-weight: 800;
+          color: #64748b;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
         }
 
         .boq-selection-sidebar.glass-panel-list {
@@ -1153,6 +1205,17 @@ const BOQSelectionStage = ({
           background: transparent;
           font-size: 0.92rem;
           color: #0f172a;
+          min-width: 0;
+        }
+
+        .boq-selection-search input::placeholder {
+          color: #94a3b8;
+        }
+
+        .boq-selection-search-sidebar {
+          border-radius: 14px;
+          padding: 0.74rem 0.85rem;
+          background: #ffffff;
         }
 
         .boq-selection-panel-help {

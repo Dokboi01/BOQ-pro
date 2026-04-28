@@ -1,3 +1,4 @@
+/* global Buffer */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import initHandler from '../../api/paystack-initialize-subscription.js';
 import verifyHandler from '../../api/paystack-verify-subscription.js';
