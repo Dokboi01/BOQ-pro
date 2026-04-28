@@ -877,4 +877,37 @@ export const BUILDING_WALLFINISHES_ITEMS = [
     },
     selectedRateSource: 'formula',
   }),
+
+  formulaRateItem({
+    id: 'building-external-rendering',
+    name: 'External rendering',
+    description: 'Apply external cement-sand rendering to wall faces including access, levelling, and finish coat.',
+    unit: 'm²',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Wall Finishes',
+    inputs: [
+      numericInput('cement', 'Cement', 0, 'NGN/m²'),
+      numericInput('sand', 'Sand', 0, 'NGN/m²'),
+      numericInput('mixing', 'Mixing', 0, 'NGN/m²'),
+      numericInput('scaffolding', 'Scaffolding/access', 0, 'NGN/m²'),
+      numericInput('application', 'Application', 0, 'NGN/m²'),
+      numericInput('finishing', 'Finishing', 0, 'NGN/m²'),
+      numericInput('labour', 'Labour', 0, 'NGN/m²'),
+      numericInput('ohp', 'OHP', 0, 'NGN/m²'),
+    ],
+    formulaText: 'Rate/m² = Cement + Sand + Mixing + Scaffolding/access + Application + Finishing + Labour + OHP',
+    formulaExpression: 'cement + sand + mixing + scaffolding + application + finishing + labour + ohp',
+    formulaBasis: ['Cement', 'Sand', 'Mixing', 'Scaffolding/access', 'Application', 'Finishing', 'Labour', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+    notes: 'Use as the generic external render line where the specification does not split roughcast, smooth render, or plaster into separate measured finishes.',
+  }),
 ];

@@ -888,4 +888,36 @@ export const BUILDING_CONCRETEWORKS_ITEMS = [
     },
     selectedRateSource: 'formula',
   }),
+
+  formulaRateItem({
+    id: 'building-concrete-footing',
+    name: 'Concrete footing',
+    description: 'Provide and place concrete to strip, pad, or combined footings including compaction and curing.',
+    unit: 'm³',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Concrete Works',
+    inputs: [
+      numericInput('materials', 'Concrete materials', 0, 'NGN/m³'),
+      numericInput('mixing', 'Mixing/ready-mix', 0, 'NGN/m³'),
+      numericInput('transport', 'Transport', 0, 'NGN/m³'),
+      numericInput('placing', 'Placing', 0, 'NGN/m³'),
+      numericInput('vibrating', 'Vibrating', 0, 'NGN/m³'),
+      numericInput('curing', 'Curing', 0, 'NGN/m³'),
+      numericInput('ohp', 'OHP', 0, 'NGN/m³'),
+    ],
+    formulaText: 'Rate/m³ = Concrete materials + Mixing/ready-mix + Transport + Placing + Vibrating + Curing + OHP',
+    formulaExpression: 'materials + mixing + transport + placing + vibrating + curing + ohp',
+    formulaBasis: ['Concrete materials', 'Mixing/ready-mix', 'Transport', 'Placing', 'Vibrating', 'Curing', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+    notes: 'Use as a generic footing concrete line where the bill is measured as a consolidated concrete item instead of separate strip and pad footing lines.',
+  }),
 ];

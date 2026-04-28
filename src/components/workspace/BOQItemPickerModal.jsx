@@ -7,6 +7,7 @@ import {
 import { getBenchmarkCalibrationFactor } from '../../utils/pricing';
 
 const normalizeText = (value) => String(value || '').toLowerCase();
+const buildItemNameText = (item) => normalizeText(item?.name);
 
 const buildSearchText = (item) => (
   [
@@ -24,6 +25,13 @@ const buildSearchText = (item) => (
     .join(' ')
     .toLowerCase()
 );
+
+const matchesItemSearch = (searchName, searchLibrary, normalizedQuery, queryTerms) => {
+  if (!normalizedQuery) return true;
+  if (searchName.includes(normalizedQuery)) return true;
+  if (queryTerms.length > 1 && queryTerms.every((term) => searchName.includes(term))) return true;
+  return searchLibrary.includes(normalizedQuery);
+};
 
 const formatMoney = (value) => (
   `N${Number(value || 0).toLocaleString(undefined, {
@@ -55,6 +63,13 @@ const BOQItemPickerModal = ({
   const [selectedCodes, setSelectedCodes] = React.useState([]);
   const [activeCategory, setActiveCategory] = React.useState('all');
   const [activeFilter, setActiveFilter] = React.useState('all');
+  const searchableItems = React.useMemo(() => (
+    (catalogItems || []).map((item) => ({
+      item,
+      searchName: buildItemNameText(item),
+      searchLibrary: buildSearchText(item),
+    }))
+  ), [catalogItems]);
 
   const existingCatalogIds = React.useMemo(
     () => new Set((existingItems || []).map((item) => item.catalogItemId).filter(Boolean)),
@@ -72,12 +87,14 @@ const BOQItemPickerModal = ({
 
   const filteredItems = React.useMemo(() => {
     const normalizedQuery = normalizeText(query.trim());
+    const queryTerms = normalizedQuery.split(/\s+/).filter(Boolean);
 
-    return (catalogItems || []).filter((item) => {
+    return searchableItems
+      .filter(({ item, searchName, searchLibrary }) => {
       const category = item.category || 'General';
       const isAdded = existingCatalogIds.has(item.code);
       const matchesCategory = activeCategory === 'all' || category === activeCategory;
-      const matchesQuery = !normalizedQuery || buildSearchText(item).includes(normalizedQuery);
+      const matchesQuery = matchesItemSearch(searchName, searchLibrary, normalizedQuery, queryTerms);
       const matchesFilter = (() => {
         switch (activeFilter) {
           case 'remaining':
@@ -92,8 +109,9 @@ const BOQItemPickerModal = ({
       })();
 
       return matchesCategory && matchesQuery && matchesFilter;
-    });
-  }, [activeCategory, activeFilter, catalogItems, existingCatalogIds, query]);
+    })
+      .map(({ item }) => item);
+  }, [activeCategory, activeFilter, existingCatalogIds, query, searchableItems]);
 
   const groupedItems = React.useMemo(() => (
     filteredItems.reduce((acc, item) => {
@@ -171,6 +189,8 @@ const BOQItemPickerModal = ({
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 autoFocus
+                autoComplete="off"
+                aria-label="Search items"
               />
             </div>
             
@@ -253,7 +273,8 @@ const BOQItemPickerModal = ({
                       <button
                         key={item.code}
                         type="button"
-                        className={`boq-picker-card ${isSelected ? 'selected' : ''} ${isAdded ? 'added' : ''}`}
+                        className={`boq-picker-card boq-item ${isSelected ? 'selected' : ''} ${isAdded ? 'added' : ''}`}
+                        data-item-name={item.name || ''}
                         onClick={() => !isAdded && toggleSelection(item.code)}
                         disabled={isAdded}
                       >

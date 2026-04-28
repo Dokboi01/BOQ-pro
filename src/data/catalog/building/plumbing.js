@@ -875,4 +875,35 @@ export const BUILDING_PLUMBING_ITEMS = [
     },
     selectedRateSource: 'formula',
   }),
+
+  formulaRateItem({
+    id: 'building-manhole-cover',
+    name: 'Manhole cover',
+    description: 'Provide and install manhole cover and frame set to finished ground or floor level.',
+    unit: 'No.',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Plumbing & Drainage',
+    inputs: [
+      numericInput('cover', 'Cover and frame supply', 0, 'NGN/No.'),
+      numericInput('bedding', 'Bedding/fixing mortar', 0, 'NGN/No.'),
+      numericInput('setting', 'Setting to level', 0, 'NGN/No.'),
+      numericInput('installation', 'Installation', 0, 'NGN/No.'),
+      numericInput('labour', 'Labour', 0, 'NGN/No.'),
+      numericInput('ohp', 'OHP', 0, 'NGN/No.'),
+    ],
+    formulaText: 'Rate/No. = Cover and frame supply + Bedding/fixing mortar + Setting to level + Installation + Labour + OHP',
+    formulaExpression: 'cover + bedding + setting + installation + labour + ohp',
+    formulaBasis: ['Cover and frame supply', 'Bedding/fixing mortar', 'Setting to level', 'Installation', 'Labour', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+    notes: 'Use where the chamber construction is measured separately and the cover assembly is billed as its own plumbing or drainage line.',
+  }),
 ];
