@@ -234,6 +234,21 @@ const BOQSelectionStage = ({
           <small>{sections.length} active bill{sections.length === 1 ? '' : 's'} in this structure.</small>
         </div>
 
+        <div className="boq-selection-sidebar-search-wrap">
+          <span className="boq-selection-sidebar-search-label">Search Items</span>
+          <div className="boq-selection-search boq-selection-search-sidebar">
+            <Search size={15} />
+            <input
+              type="text"
+              placeholder="Search items..."
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              autoComplete="off"
+              aria-label="Search items"
+            />
+          </div>
+        </div>
+
         <div className="boq-selection-sidebar-list">
           {(sections || []).map((entry, index) => {
             const isActive = activeBillSectionId === entry.id;
@@ -667,6 +682,23 @@ const BOQSelectionStage = ({
           font-size: 0.85rem;
           color: #64748b;
           font-weight: 500;
+        }
+
+        .boq-selection-sidebar-search-wrap {
+          padding: 0 1rem 1rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.45rem;
+          background: #f8fafc;
+        }
+
+        .boq-selection-sidebar-search-label {
+          font-size: 0.72rem;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #64748b;
+          padding: 0 0.2rem;
         }
 
         .boq-selection-sidebar-list {
@@ -1173,6 +1205,17 @@ const BOQSelectionStage = ({
           background: transparent;
           font-size: 0.92rem;
           color: #0f172a;
+          min-width: 0;
+        }
+
+        .boq-selection-search input::placeholder {
+          color: #94a3b8;
+        }
+
+        .boq-selection-search-sidebar {
+          border-radius: 14px;
+          padding: 0.74rem 0.85rem;
+          background: #ffffff;
         }
 
         .boq-selection-panel-help {
