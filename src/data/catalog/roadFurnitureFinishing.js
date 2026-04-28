@@ -1117,4 +1117,28 @@ export const ROAD_EXTERNAL_FINISHING_ITEMS = [
     ],
     notes: 'Use for the final closeout effort covering snag support, as-built paperwork, and readiness for formal handover.',
   }),
+  roadExternalFinishingItem({
+    name: 'Berm construction',
+    description: 'Berm construction',
+    unit: 'm',
+    category: 'Finishing',
+    formulaText: 'Rate/m = Soil shaping + Compaction + Finishing + OHP',
+    formulaExpression: 'soil_shaping + compaction + finishing + ohp',
+    components: [
+      { id: 'soil_shaping', label: 'Soil shaping', defaultValue: 0, unit: 'NGN/m' },
+      { id: 'compaction', label: 'Compaction', defaultValue: 0, unit: 'NGN/m' },
+      { id: 'finishing', label: 'Finishing', defaultValue: 0, unit: 'NGN/m' },
+      { id: 'ohp', label: 'OHP', defaultValue: 0, unit: 'NGN/m' },
+    ],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Replace with real Nigerian rates',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
 ];

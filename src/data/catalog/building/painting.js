@@ -868,4 +868,82 @@ export const BUILDING_PAINTING_ITEMS = [
     },
     selectedRateSource: 'formula',
   }),
+  formulaRateItem({
+    name: 'Textcoat paint',
+    description: 'Textcoat paint',
+    unit: 'm²',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Finishes',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m²'),
+      numericInput('labour', 'Labour', 0, '₦/m²'),
+      numericInput('equipment', 'Equipment', 0, '₦/m²'),
+      numericInput('ohp', 'OHP', 0, '₦/m²')
+    ],
+    formulaText: 'Rate/m² = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Emulsion paint',
+    description: 'Emulsion paint',
+    unit: 'm²',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Finishes',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m²'),
+      numericInput('labour', 'Labour', 0, '₦/m²'),
+      numericInput('equipment', 'Equipment', 0, '₦/m²'),
+      numericInput('ohp', 'OHP', 0, '₦/m²')
+    ],
+    formulaText: 'Rate/m² = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Gloss paint',
+    description: 'Gloss paint',
+    unit: 'm²',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Finishes',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m²'),
+      numericInput('labour', 'Labour', 0, '₦/m²'),
+      numericInput('equipment', 'Equipment', 0, '₦/m²'),
+      numericInput('ohp', 'OHP', 0, '₦/m²')
+    ],
+    formulaText: 'Rate/m² = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
 ];

@@ -909,4 +909,134 @@ export const BUILDING_EXTERNALWORKS_ITEMS = [
     selectedRateSource: 'formula',
     notes: 'Use for rigid concrete vehicular paving where the driveway is measured separately from general external concrete paving.',
   }),
+  formulaRateItem({
+    name: 'Driveway paving',
+    description: 'Driveway paving',
+    unit: 'm²',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'External Works',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m²'),
+      numericInput('labour', 'Labour', 0, '₦/m²'),
+      numericInput('equipment', 'Equipment', 0, '₦/m²'),
+      numericInput('ohp', 'OHP', 0, '₦/m²')
+    ],
+    formulaText: 'Rate/m² = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Walkway paving',
+    description: 'Walkway paving',
+    unit: 'm²',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'External Works',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m²'),
+      numericInput('labour', 'Labour', 0, '₦/m²'),
+      numericInput('equipment', 'Equipment', 0, '₦/m²'),
+      numericInput('ohp', 'OHP', 0, '₦/m²')
+    ],
+    formulaText: 'Rate/m² = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Site levelling',
+    description: 'Site levelling',
+    unit: 'm²',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'External Works',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m²'),
+      numericInput('labour', 'Labour', 0, '₦/m²'),
+      numericInput('equipment', 'Equipment', 0, '₦/m²'),
+      numericInput('ohp', 'OHP', 0, '₦/m²')
+    ],
+    formulaText: 'Rate/m² = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Parking area',
+    description: 'Parking area',
+    unit: 'm²',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'External Works',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m²'),
+      numericInput('labour', 'Labour', 0, '₦/m²'),
+      numericInput('equipment', 'Equipment', 0, '₦/m²'),
+      numericInput('ohp', 'OHP', 0, '₦/m²')
+    ],
+    formulaText: 'Rate/m² = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'External drainage',
+    description: 'External drainage',
+    unit: 'm',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'External Works',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m'),
+      numericInput('labour', 'Labour', 0, '₦/m'),
+      numericInput('equipment', 'Equipment', 0, '₦/m'),
+      numericInput('ohp', 'OHP', 0, '₦/m')
+    ],
+    formulaText: 'Rate/m = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
 ];

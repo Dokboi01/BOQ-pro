@@ -920,4 +920,134 @@ export const BUILDING_CONCRETEWORKS_ITEMS = [
     selectedRateSource: 'formula',
     notes: 'Use as a generic footing concrete line where the bill is measured as a consolidated concrete item instead of separate strip and pad footing lines.',
   }),
+  formulaRateItem({
+    name: 'Concrete footing / foundation concrete',
+    description: 'Concrete footing / foundation concrete',
+    unit: 'm³',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Concrete Works',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m³'),
+      numericInput('labour', 'Labour', 0, '₦/m³'),
+      numericInput('equipment', 'Equipment', 0, '₦/m³'),
+      numericInput('ohp', 'OHP', 0, '₦/m³')
+    ],
+    formulaText: 'Rate/m³ = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Concrete lintel / beam over openings',
+    description: 'Concrete lintel / beam over openings',
+    unit: 'm³',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Concrete Works',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m³'),
+      numericInput('labour', 'Labour', 0, '₦/m³'),
+      numericInput('equipment', 'Equipment', 0, '₦/m³'),
+      numericInput('ohp', 'OHP', 0, '₦/m³')
+    ],
+    formulaText: 'Rate/m³ = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Staircase concrete',
+    description: 'Staircase concrete',
+    unit: 'm³',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Concrete Works',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m³'),
+      numericInput('labour', 'Labour', 0, '₦/m³'),
+      numericInput('equipment', 'Equipment', 0, '₦/m³'),
+      numericInput('ohp', 'OHP', 0, '₦/m³')
+    ],
+    formulaText: 'Rate/m³ = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Concrete oversite, 150mm',
+    description: 'Concrete oversite, 150mm',
+    unit: 'm³',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Concrete Works',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m³'),
+      numericInput('labour', 'Labour', 0, '₦/m³'),
+      numericInput('equipment', 'Equipment', 0, '₦/m³'),
+      numericInput('ohp', 'OHP', 0, '₦/m³')
+    ],
+    formulaText: 'Rate/m³ = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Concrete floor slab',
+    description: 'Concrete floor slab',
+    unit: 'm³',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Concrete Works',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m³'),
+      numericInput('labour', 'Labour', 0, '₦/m³'),
+      numericInput('equipment', 'Equipment', 0, '₦/m³'),
+      numericInput('ohp', 'OHP', 0, '₦/m³')
+    ],
+    formulaText: 'Rate/m³ = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
 ];

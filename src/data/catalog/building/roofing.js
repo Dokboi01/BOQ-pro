@@ -906,4 +906,186 @@ export const BUILDING_ROOFING_ITEMS = [
     selectedRateSource: 'formula',
     notes: 'Measure along the actual linear runs of ridges, hips, valleys, eaves, or other scheduled roof accessory lines.',
   }),
+  formulaRateItem({
+    name: '0.45mm Gerard roofing sheet',
+    description: '0.45mm Gerard roofing sheet',
+    unit: 'm²',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Roofing',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m²'),
+      numericInput('labour', 'Labour', 0, '₦/m²'),
+      numericInput('equipment', 'Equipment', 0, '₦/m²'),
+      numericInput('ohp', 'OHP', 0, '₦/m²')
+    ],
+    formulaText: 'Rate/m² = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: '50×50mm hardwood purlins',
+    description: '50×50mm hardwood purlins',
+    unit: 'm',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Roofing',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m'),
+      numericInput('labour', 'Labour', 0, '₦/m'),
+      numericInput('equipment', 'Equipment', 0, '₦/m'),
+      numericInput('ohp', 'OHP', 0, '₦/m')
+    ],
+    formulaText: 'Rate/m = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: '50×150mm hardwood rafters',
+    description: '50×150mm hardwood rafters',
+    unit: 'm',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Roofing',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m'),
+      numericInput('labour', 'Labour', 0, '₦/m'),
+      numericInput('equipment', 'Equipment', 0, '₦/m'),
+      numericInput('ohp', 'OHP', 0, '₦/m')
+    ],
+    formulaText: 'Rate/m = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: '50×150mm hardwood king post',
+    description: '50×150mm hardwood king post',
+    unit: 'm',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Roofing',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m'),
+      numericInput('labour', 'Labour', 0, '₦/m'),
+      numericInput('equipment', 'Equipment', 0, '₦/m'),
+      numericInput('ohp', 'OHP', 0, '₦/m')
+    ],
+    formulaText: 'Rate/m = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: '50×100mm hardwood struts',
+    description: '50×100mm hardwood struts',
+    unit: 'm',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Roofing',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m'),
+      numericInput('labour', 'Labour', 0, '₦/m'),
+      numericInput('equipment', 'Equipment', 0, '₦/m'),
+      numericInput('ohp', 'OHP', 0, '₦/m')
+    ],
+    formulaText: 'Rate/m = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: '75×100mm hardwood wall plate',
+    description: '75×100mm hardwood wall plate',
+    unit: 'm',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Roofing',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m'),
+      numericInput('labour', 'Labour', 0, '₦/m'),
+      numericInput('equipment', 'Equipment', 0, '₦/m'),
+      numericInput('ohp', 'OHP', 0, '₦/m')
+    ],
+    formulaText: 'Rate/m = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Roof accessories / nails',
+    description: 'Roof accessories / nails',
+    unit: 'Sum',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Roofing',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/Sum'),
+      numericInput('labour', 'Labour', 0, '₦/Sum'),
+      numericInput('equipment', 'Equipment', 0, '₦/Sum'),
+      numericInput('ohp', 'OHP', 0, '₦/Sum')
+    ],
+    formulaText: 'Rate/Sum = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
 ];

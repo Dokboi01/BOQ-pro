@@ -892,4 +892,82 @@ export const BUILDING_FLOORFINISHES_ITEMS = [
     },
     selectedRateSource: 'formula',
   }),
+  formulaRateItem({
+    name: '25mm floor screed',
+    description: '25mm floor screed',
+    unit: 'm²',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Finishes',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m²'),
+      numericInput('labour', 'Labour', 0, '₦/m²'),
+      numericInput('equipment', 'Equipment', 0, '₦/m²'),
+      numericInput('ohp', 'OHP', 0, '₦/m²')
+    ],
+    formulaText: 'Rate/m² = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Floor skirting',
+    description: 'Floor skirting',
+    unit: 'm',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Finishes',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m'),
+      numericInput('labour', 'Labour', 0, '₦/m'),
+      numericInput('equipment', 'Equipment', 0, '₦/m'),
+      numericInput('ohp', 'OHP', 0, '₦/m')
+    ],
+    formulaText: 'Rate/m = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Vitrified floor tiles',
+    description: 'Vitrified floor tiles',
+    unit: 'm²',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Finishes',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m²'),
+      numericInput('labour', 'Labour', 0, '₦/m²'),
+      numericInput('equipment', 'Equipment', 0, '₦/m²'),
+      numericInput('ohp', 'OHP', 0, '₦/m²')
+    ],
+    formulaText: 'Rate/m² = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
 ];

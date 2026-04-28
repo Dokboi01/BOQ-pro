@@ -893,5 +893,135 @@ export const BUILDING_FOUNDATIONS_ITEMS = [
     },
     selectedRateSource: 'formula',
   }),
+  formulaRateItem({
+    name: 'Damp Proof Course (DPC)',
+    description: 'Damp Proof Course (DPC)',
+    unit: 'm',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Substructure / Foundations',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m'),
+      numericInput('labour', 'Labour', 0, '₦/m'),
+      numericInput('equipment', 'Equipment', 0, '₦/m'),
+      numericInput('ohp', 'OHP', 0, '₦/m')
+    ],
+    formulaText: 'Rate/m = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Damp Proof Membrane (DPM)',
+    description: 'Damp Proof Membrane (DPM)',
+    unit: 'm²',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Substructure / Foundations',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m²'),
+      numericInput('labour', 'Labour', 0, '₦/m²'),
+      numericInput('equipment', 'Equipment', 0, '₦/m²'),
+      numericInput('ohp', 'OHP', 0, '₦/m²')
+    ],
+    formulaText: 'Rate/m² = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Anti-termite treatment',
+    description: 'Anti-termite treatment',
+    unit: 'm²',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Substructure / Foundations',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m²'),
+      numericInput('labour', 'Labour', 0, '₦/m²'),
+      numericInput('equipment', 'Equipment', 0, '₦/m²'),
+      numericInput('ohp', 'OHP', 0, '₦/m²')
+    ],
+    formulaText: 'Rate/m² = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Foundation trench excavation',
+    description: 'Foundation trench excavation',
+    unit: 'm³',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Substructure / Foundations',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m³'),
+      numericInput('labour', 'Labour', 0, '₦/m³'),
+      numericInput('equipment', 'Equipment', 0, '₦/m³'),
+      numericInput('ohp', 'OHP', 0, '₦/m³')
+    ],
+    formulaText: 'Rate/m³ = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Foundation backfilling',
+    description: 'Foundation backfilling',
+    unit: 'm³',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Substructure / Foundations',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m³'),
+      numericInput('labour', 'Labour', 0, '₦/m³'),
+      numericInput('equipment', 'Equipment', 0, '₦/m³'),
+      numericInput('ohp', 'OHP', 0, '₦/m³')
+    ],
+    formulaText: 'Rate/m³ = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
 ];
 

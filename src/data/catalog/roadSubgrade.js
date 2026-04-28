@@ -385,4 +385,53 @@ export const ROAD_SUBGRADE_ITEMS = [
     ],
     notes: 'Use for sand replacement, nuclear, or other field density tests where each test is billed individually.',
   }),
+  subgradeItem({
+    name: 'Shoulder construction',
+    description: 'Shoulder construction',
+    unit: 'm2',
+    category: 'Road support',
+    formulaText: 'Rate/m2 = Material + Spreading + Compaction + Finishing + OHP',
+    formulaExpression: 'material + spreading + compaction + finishing + ohp',
+    components: [
+      { id: 'material', label: 'Material', defaultValue: 0, unit: 'NGN/m2' },
+      { id: 'spreading', label: 'Spreading', defaultValue: 0, unit: 'NGN/m2' },
+      { id: 'compaction', label: 'Compaction', defaultValue: 0, unit: 'NGN/m2' },
+      { id: 'finishing', label: 'Finishing', defaultValue: 0, unit: 'NGN/m2' },
+      { id: 'ohp', label: 'OHP', defaultValue: 0, unit: 'NGN/m2' },
+    ],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Replace with real Nigerian rates',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  subgradeItem({
+    name: 'Roadbed preparation',
+    description: 'Roadbed preparation',
+    unit: 'm2',
+    category: 'Road support',
+    formulaText: 'Rate/m2 = Grading + Leveling + Compaction + OHP',
+    formulaExpression: 'grading + leveling + compaction + ohp',
+    components: [
+      { id: 'grading', label: 'Grading', defaultValue: 0, unit: 'NGN/m2' },
+      { id: 'leveling', label: 'Leveling', defaultValue: 0, unit: 'NGN/m2' },
+      { id: 'compaction', label: 'Compaction', defaultValue: 0, unit: 'NGN/m2' },
+      { id: 'ohp', label: 'OHP', defaultValue: 0, unit: 'NGN/m2' },
+    ],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Replace with real Nigerian rates',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
 ];

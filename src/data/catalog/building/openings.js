@@ -1018,4 +1018,238 @@ export const BUILDING_OPENINGS_ITEMS = [
     },
     selectedRateSource: 'formula',
   }),
+  formulaRateItem({
+    name: 'Door type D1',
+    description: 'Door type D1',
+    unit: 'Nr',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Doors & Windows',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/Nr'),
+      numericInput('labour', 'Labour', 0, '₦/Nr'),
+      numericInput('equipment', 'Equipment', 0, '₦/Nr'),
+      numericInput('ohp', 'OHP', 0, '₦/Nr')
+    ],
+    formulaText: 'Rate/Nr = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Door type D2',
+    description: 'Door type D2',
+    unit: 'Nr',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Doors & Windows',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/Nr'),
+      numericInput('labour', 'Labour', 0, '₦/Nr'),
+      numericInput('equipment', 'Equipment', 0, '₦/Nr'),
+      numericInput('ohp', 'OHP', 0, '₦/Nr')
+    ],
+    formulaText: 'Rate/Nr = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Door type D3',
+    description: 'Door type D3',
+    unit: 'Nr',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Doors & Windows',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/Nr'),
+      numericInput('labour', 'Labour', 0, '₦/Nr'),
+      numericInput('equipment', 'Equipment', 0, '₦/Nr'),
+      numericInput('ohp', 'OHP', 0, '₦/Nr')
+    ],
+    formulaText: 'Rate/Nr = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Window type W1',
+    description: 'Window type W1',
+    unit: 'Nr',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Doors & Windows',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/Nr'),
+      numericInput('labour', 'Labour', 0, '₦/Nr'),
+      numericInput('equipment', 'Equipment', 0, '₦/Nr'),
+      numericInput('ohp', 'OHP', 0, '₦/Nr')
+    ],
+    formulaText: 'Rate/Nr = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Window type W2',
+    description: 'Window type W2',
+    unit: 'Nr',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Doors & Windows',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/Nr'),
+      numericInput('labour', 'Labour', 0, '₦/Nr'),
+      numericInput('equipment', 'Equipment', 0, '₦/Nr'),
+      numericInput('ohp', 'OHP', 0, '₦/Nr')
+    ],
+    formulaText: 'Rate/Nr = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Window type W3',
+    description: 'Window type W3',
+    unit: 'Nr',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Doors & Windows',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/Nr'),
+      numericInput('labour', 'Labour', 0, '₦/Nr'),
+      numericInput('equipment', 'Equipment', 0, '₦/Nr'),
+      numericInput('ohp', 'OHP', 0, '₦/Nr')
+    ],
+    formulaText: 'Rate/Nr = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Window type W4',
+    description: 'Window type W4',
+    unit: 'Nr',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Doors & Windows',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/Nr'),
+      numericInput('labour', 'Labour', 0, '₦/Nr'),
+      numericInput('equipment', 'Equipment', 0, '₦/Nr'),
+      numericInput('ohp', 'OHP', 0, '₦/Nr')
+    ],
+    formulaText: 'Rate/Nr = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Window type W5',
+    description: 'Window type W5',
+    unit: 'Nr',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Doors & Windows',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/Nr'),
+      numericInput('labour', 'Labour', 0, '₦/Nr'),
+      numericInput('equipment', 'Equipment', 0, '₦/Nr'),
+      numericInput('ohp', 'OHP', 0, '₦/Nr')
+    ],
+    formulaText: 'Rate/Nr = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Window type W6',
+    description: 'Window type W6',
+    unit: 'Nr',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Doors & Windows',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/Nr'),
+      numericInput('labour', 'Labour', 0, '₦/Nr'),
+      numericInput('equipment', 'Equipment', 0, '₦/Nr'),
+      numericInput('ohp', 'OHP', 0, '₦/Nr')
+    ],
+    formulaText: 'Rate/Nr = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
 ];

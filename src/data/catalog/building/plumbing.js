@@ -906,4 +906,160 @@ export const BUILDING_PLUMBING_ITEMS = [
     selectedRateSource: 'formula',
     notes: 'Use where the chamber construction is measured separately and the cover assembly is billed as its own plumbing or drainage line.',
   }),
+  formulaRateItem({
+    name: '100mm soil pipe',
+    description: '100mm soil pipe',
+    unit: 'm',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Plumbing & Drainage',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m'),
+      numericInput('labour', 'Labour', 0, '₦/m'),
+      numericInput('equipment', 'Equipment', 0, '₦/m'),
+      numericInput('ohp', 'OHP', 0, '₦/m')
+    ],
+    formulaText: 'Rate/m = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: '100mm vent pipe',
+    description: '100mm vent pipe',
+    unit: 'm',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Plumbing & Drainage',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m'),
+      numericInput('labour', 'Labour', 0, '₦/m'),
+      numericInput('equipment', 'Equipment', 0, '₦/m'),
+      numericInput('ohp', 'OHP', 0, '₦/m')
+    ],
+    formulaText: 'Rate/m = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Precast concrete cover slab',
+    description: 'Precast concrete cover slab',
+    unit: 'Nr',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Plumbing & Drainage',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/Nr'),
+      numericInput('labour', 'Labour', 0, '₦/Nr'),
+      numericInput('equipment', 'Equipment', 0, '₦/Nr'),
+      numericInput('ohp', 'OHP', 0, '₦/Nr')
+    ],
+    formulaText: 'Rate/Nr = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'WC suite',
+    description: 'WC suite',
+    unit: 'Nr',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Plumbing & Drainage',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/Nr'),
+      numericInput('labour', 'Labour', 0, '₦/Nr'),
+      numericInput('equipment', 'Equipment', 0, '₦/Nr'),
+      numericInput('ohp', 'OHP', 0, '₦/Nr')
+    ],
+    formulaText: 'Rate/Nr = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Waste pipe',
+    description: 'Waste pipe',
+    unit: 'm',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Plumbing & Drainage',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/m'),
+      numericInput('labour', 'Labour', 0, '₦/m'),
+      numericInput('equipment', 'Equipment', 0, '₦/m'),
+      numericInput('ohp', 'OHP', 0, '₦/m')
+    ],
+    formulaText: 'Rate/m = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
+  formulaRateItem({
+    name: 'Floor drain / gully trap',
+    description: 'Floor drain / gully trap',
+    unit: 'Nr',
+    structureType: BUILDING_STRUCTURE_TYPE,
+    billSection: 'Plumbing & Drainage',
+    inputs: [
+      numericInput('material', 'Material', 0, '₦/Nr'),
+      numericInput('labour', 'Labour', 0, '₦/Nr'),
+      numericInput('equipment', 'Equipment', 0, '₦/Nr'),
+      numericInput('ohp', 'OHP', 0, '₦/Nr')
+    ],
+    formulaText: 'Rate/Nr = Material + Labour + Equipment + OHP',
+    formulaExpression: 'material + labour + equipment + ohp',
+    formulaBasis: ['Material', 'Labour', 'Equipment', 'OHP'],
+    benchmarkMetadata: {
+      rate: 0,
+      currency: 'NGN',
+      region: 'Nigeria',
+      sourceType: 'seed-placeholder',
+      sourceNote: 'Placeholder benchmark. Replace with verified Nigerian market rate.',
+      dateCaptured: '2026-04',
+      confidenceLevel: 'low'
+    },
+    selectedRateSource: 'formula',
+  }),
 ];
