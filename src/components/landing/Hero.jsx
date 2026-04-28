@@ -15,8 +15,6 @@ import {
   ClipboardCheck,
   FileText,
   TrendingUp,
-  Moon,
-  SunMedium,
   Award,
   Landmark,
   Ruler,
@@ -28,7 +26,7 @@ import {
   Cpu
 } from 'lucide-react';
 
-const Hero = ({ onGetStarted, onLogin, resolvedTheme, onToggleTheme }) => {
+const Hero = ({ onGetStarted, onLogin }) => {
   const headlineStats = [
     { value: '24 hrs', label: 'Typical tender turnaround' },
     { value: '1 workspace', label: 'Pricing, notes, reports, and handoff' },
@@ -123,10 +121,6 @@ const Hero = ({ onGetStarted, onLogin, resolvedTheme, onToggleTheme }) => {
         </button>
 
         <div className="nav-actions">
-          <button className="theme-toggle-btn" onClick={onToggleTheme}>
-            {resolvedTheme === 'dark' ? <SunMedium size={16} /> : <Moon size={16} />}
-            {resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}
-          </button>
           <button className="nav-link" onClick={onLogin}>Log in</button>
           <button className="nav-cta" onClick={onGetStarted}>Start free</button>
         </div>
@@ -1203,8 +1197,7 @@ const Hero = ({ onGetStarted, onLogin, resolvedTheme, onToggleTheme }) => {
             display: none;
           }
 
-          .nav-actions .nav-link,
-          .nav-actions .theme-toggle-btn {
+          .nav-actions .nav-link {
             display: none;
           }
 

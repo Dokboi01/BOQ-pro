@@ -209,15 +209,15 @@ const BOQSelectionStage = ({
   };
 
   return (
-    <div className="boq-selection-shell">
-      <aside className="boq-selection-sidebar">
-        <div className="boq-selection-sidebar-head">
-          <span className="boq-selection-eyebrow">BOQ Bills</span>
+    <div className="boq-selection-shell obsidian-surface">
+      <aside className="boq-selection-sidebar glass-panel">
+        <div className="boq-selection-sidebar glass-panel-head">
+          <span className="boq-selection-eyebrow emerald-text-gradient">BOQ Bills</span>
           <strong>Bill Navigator</strong>
           <small>{sections.length} active bill{sections.length === 1 ? '' : 's'} in this structure.</small>
         </div>
 
-        <div className="boq-selection-sidebar-list">
+        <div className="boq-selection-sidebar glass-panel-list">
           {(sections || []).map((entry, index) => {
             const isActive = activeBillSectionId === entry.id;
             const selectedCount = selectionCountsBySection?.[entry.id] || 0;
@@ -227,7 +227,7 @@ const BOQSelectionStage = ({
               <button
                 key={entry.id}
                 type="button"
-                className={`boq-selection-sidebar-item ${isActive ? 'active' : ''}`}
+                className={`boq-selection-sidebar glass-panel-item ${isActive ? 'active' : ''}`}
                 onClick={() => onSelectBill?.(entry.id)}
               >
                 <span className="boq-selection-index">{String(index + 1).padStart(2, '0')}</span>
@@ -246,14 +246,14 @@ const BOQSelectionStage = ({
           })}
         </div>
 
-        <div className="boq-selection-sidebar-footer">
-          <div className="boq-selection-sidebar-summary">
+        <div className="boq-selection-sidebar glass-panel-footer">
+          <div className="boq-selection-sidebar glass-panel-summary">
             <span>Total Selected</span>
             <strong>{totalSelectedCount} items</strong>
           </div>
           <button
             type="button"
-            className="boq-selection-generate-btn"
+            className="boq-selection-generate-btn emerald-button"
             onClick={onGenerate}
             disabled={totalSelectedCount === 0}
           >
@@ -267,10 +267,10 @@ const BOQSelectionStage = ({
         </div>
       </aside>
 
-      <div className="boq-selection-content">
+      <div className="boq-selection-content staggered-fade-in">
         <section className="boq-selection-page-header">
           <div className="boq-selection-overview-copy">
-            <span className="boq-selection-eyebrow">{structureType || 'Item Selection Stage'}</span>
+            <span className="boq-selection-eyebrow emerald-text-gradient">{structureType || 'Item Selection Stage'}</span>
             <h2>{section?.title || 'Choose a bill section'}</h2>
             <p>{section?.description || sectionMeta?.description || 'Pick only the items you want to measure in this bill before generating the BOQ sheet.'}</p>
             <div className="boq-selection-overview-tags">
@@ -290,7 +290,7 @@ const BOQSelectionStage = ({
 
         <section className="boq-selection-page-header-secondary">
           <div className="boq-selection-header-copy">
-            <span className="boq-selection-eyebrow">Item Selection Stage</span>
+            <span className="boq-selection-eyebrow emerald-text-gradient">Item Selection Stage</span>
             <h2>{projectName || 'Project Workbook'}</h2>
             <p>{structureType || 'Bill of Quantities'} | {marketRegion} market benchmark | Estimate Sheet</p>
           </div>
@@ -310,9 +310,9 @@ const BOQSelectionStage = ({
         </section>
 
         <section className="boq-selection-tools">
-          <div className="boq-selection-panel-card boq-selection-panel-card-wide">
+          <div className="boq-selection-panel-card glass-card boq-selection-panel-card glass-card-wide">
             <span className="boq-selection-panel-label">Search Library</span>
-            <div className="boq-selection-search">
+            <div className="boq-selection-search glass-input">
               <Search size={15} />
               <input
                 type="text"
@@ -329,12 +329,12 @@ const BOQSelectionStage = ({
               <span className="boq-selection-panel-label">
                 <ListFilter size={14} /> Quick Filters
               </span>
-              <div className="boq-selection-chip-grid">
+              <div className="boq-selection-chip glass-card-grid">
                 {FILTER_OPTIONS.map((filter) => (
                   <button
                     key={filter.id}
                     type="button"
-                    className={`boq-selection-chip ${activeFilter === filter.id ? 'active' : ''}`}
+                    className={`boq-selection-chip glass-card ${activeFilter === filter.id ? 'active' : ''}`}
                     onClick={() => setActiveFilter(filter.id)}
                   >
                     {filter.label}
@@ -353,14 +353,14 @@ const BOQSelectionStage = ({
                 </select>
               </label>
 
-              <div className="boq-selection-category-wrap">
+              <div className="boq-selection-category glass-card-wrap">
                 <span className="boq-selection-panel-label">Categories</span>
-                <div className="boq-selection-category-list">
+                <div className="boq-selection-category glass-card-list">
                   {categories.map((category) => (
                     <button
                       key={category}
                       type="button"
-                      className={`boq-selection-category ${activeCategory === category ? 'active' : ''}`}
+                      className={`boq-selection-category glass-card ${activeCategory === category ? 'active' : ''}`}
                       onClick={() => setActiveCategory(category)}
                     >
                       {category === 'all' ? 'All Categories' : category}
@@ -371,7 +371,7 @@ const BOQSelectionStage = ({
             </div>
           </div>
 
-          <div className="boq-selection-panel-card boq-selection-panel-card-summary">
+          <div className="boq-selection-panel-card glass-card boq-selection-panel-card glass-card-summary">
             <span className="boq-selection-panel-label">
               <Sparkles size={14} /> Selection Summary
             </span>
@@ -497,18 +497,18 @@ const BOQSelectionStage = ({
                   <button
                     key={item.code}
                     type="button"
-                    className={`boq-selection-card ${isSelected ? 'selected' : ''}`}
+                    className={`boq-selection-card glass-card ${isSelected ? 'selected' : ''}`}
                     onClick={() => onToggleItem?.(item.code)}
                   >
-                    <div className="boq-selection-card-kicker">
+                    <div className="boq-selection-card glass-card-kicker">
                       <span className="boq-selection-code">{item.code}</span>
-                      <div className="boq-selection-card-tags">
+                      <div className="boq-selection-card glass-card-tags">
                         <span>{item.category || 'General'}</span>
                         <span>{item.unit || 'Nr'}</span>
                       </div>
                     </div>
-                    <div className="boq-selection-card-top">
-                      <div className="boq-selection-card-heading">
+                    <div className="boq-selection-card glass-card-top">
+                      <div className="boq-selection-card glass-card-heading">
                         <strong>{item.name}</strong>
                       </div>
                       <span className={`boq-selection-state ${isSelected ? 'selected' : ''}`}>
@@ -519,7 +519,7 @@ const BOQSelectionStage = ({
 
                     <p>{item.description || item.name}</p>
 
-                    <div className="boq-selection-card-flags">
+                    <div className="boq-selection-card glass-card-flags">
                       <span className={`boq-selection-flag ${hasFormula ? 'ready' : 'pending'}`}>
                         {hasFormula ? 'Formula ready' : 'Manual only'}
                       </span>
@@ -531,7 +531,7 @@ const BOQSelectionStage = ({
                       )}
                     </div>
 
-                    <div className="boq-selection-card-meta">
+                    <div className="boq-selection-card glass-card-meta">
                       <span>Unit: {item.unit || 'Nr'}</span>
                       {hasBenchmark && (
                         <span>{benchmarkCurrency} {benchmarkValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
@@ -544,7 +544,7 @@ const BOQSelectionStage = ({
                     )}
 
                     {formulaBasisPreview && (
-                      <div className="boq-selection-card-basis">
+                      <div className="boq-selection-card glass-card-basis">
                         <strong>Pricing basis</strong>
                         <span>{formulaBasisPreview}</span>
                       </div>
@@ -558,7 +558,7 @@ const BOQSelectionStage = ({
                       </div>
                     )}
 
-                    <div className="boq-selection-card-footer">
+                    <div className="boq-selection-card glass-card-footer">
                       <span>{isSelected ? 'Included in BOQ generation' : 'Tap to include in BOQ generation'}</span>
                       <strong>{isSelected ? 'Remove item' : 'Add item'}</strong>
                     </div>
@@ -600,7 +600,7 @@ const BOQSelectionStage = ({
         </footer>
       </div>
       <style jsx="true">{`
-        .boq-selection-shell {
+        .boq-selection-shell.obsidian-surface {
           height: 100vh;
           max-height: 100vh;
           display: grid;
@@ -610,7 +610,7 @@ const BOQSelectionStage = ({
         }
 
         /* --- SIDEBAR --- */
-        .boq-selection-sidebar {
+        .boq-selection-sidebar.glass-panel {
           background: #f8fafc;
           border-right: 1px solid #e2e8f0;
           display: flex;
@@ -620,7 +620,7 @@ const BOQSelectionStage = ({
           z-index: 10;
         }
 
-        .boq-selection-sidebar-head {
+        .boq-selection-sidebar.glass-panel-head {
           padding: 2rem 1.5rem;
           display: flex;
           flex-direction: column;
@@ -628,7 +628,7 @@ const BOQSelectionStage = ({
           background: #f8fafc;
         }
 
-        .boq-selection-eyebrow {
+        .boq-selection-eyebrow.emerald-text-gradient {
           font-size: 0.7rem;
           font-weight: 800;
           letter-spacing: 0.15em;
@@ -636,20 +636,20 @@ const BOQSelectionStage = ({
           color: #64748b;
         }
 
-        .boq-selection-sidebar-head strong {
+        .boq-selection-sidebar.glass-panel-head strong {
           font-size: 1.35rem;
           color: #0f172a;
           line-height: 1.2;
           font-weight: 900;
         }
 
-        .boq-selection-sidebar-head small {
+        .boq-selection-sidebar.glass-panel-head small {
           font-size: 0.85rem;
           color: #64748b;
           font-weight: 500;
         }
 
-        .boq-selection-sidebar-list {
+        .boq-selection-sidebar.glass-panel-list {
           flex: 1;
           overflow-y: auto;
           padding: 0 1rem 1rem;
@@ -659,10 +659,10 @@ const BOQSelectionStage = ({
           scrollbar-width: thin;
         }
 
-        .boq-selection-sidebar-list::-webkit-scrollbar { width: 4px; }
-        .boq-selection-sidebar-list::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 2px; }
+        .boq-selection-sidebar.glass-panel-list::-webkit-scrollbar { width: 4px; }
+        .boq-selection-sidebar.glass-panel-list::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 2px; }
 
-        .boq-selection-sidebar-item {
+        .boq-selection-sidebar.glass-panel-item {
           display: grid;
           grid-template-columns: 44px 1fr;
           align-items: center;
@@ -676,13 +676,13 @@ const BOQSelectionStage = ({
           transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .boq-selection-sidebar-item:hover {
+        .boq-selection-sidebar.glass-panel-item:hover {
           transform: translateY(-2px);
           border-color: #cbd5e1;
           box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
         }
 
-        .boq-selection-sidebar-item.active {
+        .boq-selection-sidebar.glass-panel-item.active {
           border-color: #2563eb;
           background: #ffffff;
           box-shadow: 0 12px 32px rgba(37, 99, 235, 0.1);
@@ -770,7 +770,7 @@ const BOQSelectionStage = ({
           font-size: 1.2rem;
         }
 
-        .boq-selection-sidebar-footer {
+        .boq-selection-sidebar.glass-panel-footer {
           padding: 1.75rem;
           border-top: 1px solid #e2e8f0;
           background: #ffffff;
@@ -780,25 +780,25 @@ const BOQSelectionStage = ({
           box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.02);
         }
 
-        .boq-selection-sidebar-summary {
+        .boq-selection-sidebar.glass-panel-summary {
           display: flex;
           justify-content: space-between;
           align-items: center;
         }
 
-        .boq-selection-sidebar-summary span {
+        .boq-selection-sidebar.glass-panel-summary span {
           font-size: 0.8rem;
           font-weight: 700;
           color: #64748b;
         }
 
-        .boq-selection-sidebar-summary strong {
+        .boq-selection-sidebar.glass-panel-summary strong {
           font-size: 1.05rem;
           color: #0f172a;
           font-weight: 900;
         }
 
-        .boq-selection-generate-btn {
+        .boq-selection-generate-btn.emerald-button {
           width: 100%;
           padding: 1.1rem;
           background: #0f172a;
@@ -816,17 +816,17 @@ const BOQSelectionStage = ({
           box-shadow: 0 10px 25px rgba(15, 23, 42, 0.2);
         }
 
-        .boq-selection-generate-btn:hover:not(:disabled) {
+        .boq-selection-generate-btn.emerald-button:hover:not(:disabled) {
           background: #1e293b;
           transform: translateY(-3px);
           box-shadow: 0 15px 35px rgba(15, 23, 42, 0.25);
         }
 
-        .boq-selection-generate-btn:active:not(:disabled) {
+        .boq-selection-generate-btn.emerald-button:active:not(:disabled) {
           transform: translateY(-1px);
         }
 
-        .boq-selection-generate-btn:disabled {
+        .boq-selection-generate-btn.emerald-button:disabled {
           opacity: 0.35;
           cursor: not-allowed;
           box-shadow: none;
@@ -847,7 +847,7 @@ const BOQSelectionStage = ({
         .boq-selection-return-link:hover { color: #0f172a; }
 
         /* --- CONTENT AREA --- */
-        .boq-selection-content {
+        .boq-selection-content.staggered-fade-in {
           flex: 1;
           height: 100%;
           overflow-y: auto;
@@ -859,8 +859,8 @@ const BOQSelectionStage = ({
           scrollbar-width: thin;
         }
 
-        .boq-selection-content::-webkit-scrollbar { width: 8px; }
-        .boq-selection-content::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+        .boq-selection-content.staggered-fade-in::-webkit-scrollbar { width: 8px; }
+        .boq-selection-content.staggered-fade-in::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
 
         .boq-selection-page-header {
           display: flex;
@@ -969,7 +969,7 @@ const BOQSelectionStage = ({
           gap: 1.5rem;
         }
 
-        .boq-selection-card {
+        .boq-selection-card.glass-card {
           background: white;
           border: 1.5px solid #f1f5f9;
           border-radius: 24px;
@@ -984,26 +984,26 @@ const BOQSelectionStage = ({
           overflow: hidden;
         }
 
-        .boq-selection-card:hover {
+        .boq-selection-card.glass-card:hover {
           border-color: #cbd5e1;
           transform: translateY(-4px);
           box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
         }
 
-        .boq-selection-card.selected {
+        .boq-selection-card.glass-card.selected {
           border-color: #2563eb;
           background: #f9fbff;
           box-shadow: 0 12px 40px rgba(37, 99, 235, 0.1);
         }
 
-        .boq-selection-card-top {
+        .boq-selection-card.glass-card-top {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
           gap: 1rem;
         }
 
-        .boq-selection-card-heading strong {
+        .boq-selection-card.glass-card-heading strong {
           font-size: 1.15rem;
           color: #0f172a;
           line-height: 1.35;
@@ -1031,7 +1031,7 @@ const BOQSelectionStage = ({
           box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
         }
 
-        .boq-selection-card p {
+        .boq-selection-card.glass-card p {
           font-size: 0.95rem;
           line-height: 1.6;
           color: #475569;
@@ -1042,7 +1042,7 @@ const BOQSelectionStage = ({
           overflow: hidden;
         }
 
-        .boq-selection-card-footer {
+        .boq-selection-card.glass-card-footer {
           margin-top: auto;
           display: flex;
           justify-content: space-between;
@@ -1051,13 +1051,13 @@ const BOQSelectionStage = ({
           border-top: 1px solid #f1f5f9;
         }
 
-        .boq-selection-card-footer span {
+        .boq-selection-card.glass-card-footer span {
           font-size: 0.75rem;
           color: #94a3b8;
           font-weight: 600;
         }
 
-        .boq-selection-card-footer strong {
+        .boq-selection-card.glass-card-footer strong {
           font-size: 0.8rem;
           color: #0f172a;
           font-weight: 800;
@@ -1065,7 +1065,7 @@ const BOQSelectionStage = ({
           letter-spacing: 0.05em;
         }
 
-        .selected .boq-selection-card-footer strong { color: #2563eb; }
+        .selected .boq-selection-card.glass-card-footer strong { color: #2563eb; }
 
         .boq-selection-empty {
           display: flex;
@@ -1089,7 +1089,7 @@ const BOQSelectionStage = ({
           min-height: 0;
         }
 
-        .boq-selection-panel-card {
+        .boq-selection-panel-card.glass-card {
           border-radius: 24px;
           border: 1px solid rgba(148, 163, 184, 0.16);
           background: rgba(255, 255, 255, 0.92);
@@ -1102,7 +1102,7 @@ const BOQSelectionStage = ({
           min-width: 0;
         }
 
-        .boq-selection-panel-card-wide {
+        .boq-selection-panel-card.glass-card-wide {
           gap: 0.95rem;
         }
 
@@ -1119,7 +1119,7 @@ const BOQSelectionStage = ({
           align-items: start;
         }
 
-        .boq-selection-category-wrap {
+        .boq-selection-category.glass-card-wrap {
           display: flex;
           flex-direction: column;
           gap: 0.55rem;
@@ -1136,7 +1136,7 @@ const BOQSelectionStage = ({
           letter-spacing: 0.06em;
         }
 
-        .boq-selection-search {
+        .boq-selection-search.glass-input {
           display: flex;
           align-items: center;
           gap: 0.7rem;
@@ -1146,7 +1146,7 @@ const BOQSelectionStage = ({
           background: #f8fafc;
         }
 
-        .boq-selection-search input {
+        .boq-selection-search.glass-input input {
           flex: 1;
           border: none;
           outline: none;
@@ -1162,14 +1162,14 @@ const BOQSelectionStage = ({
           line-height: 1.55;
         }
 
-        .boq-selection-chip-grid {
+        .boq-selection-chip.glass-card-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
           gap: 0.45rem;
         }
 
-        .boq-selection-chip,
-        .boq-selection-category {
+        .boq-selection-chip.glass-card,
+        .boq-selection-category.glass-card {
           border: 1px solid #dbe3ef;
           background: #f8fafc;
           color: #334155;
@@ -1182,14 +1182,14 @@ const BOQSelectionStage = ({
           transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
         }
 
-        .boq-selection-chip.active,
-        .boq-selection-category.active {
+        .boq-selection-chip.glass-card.active,
+        .boq-selection-category.glass-card.active {
           background: #0f172a;
           border-color: #0f172a;
           color: white;
         }
 
-        .boq-selection-category-list {
+        .boq-selection-category.glass-card-list {
           display: flex;
           flex-wrap: wrap;
           gap: 0.45rem;
@@ -1394,7 +1394,7 @@ const BOQSelectionStage = ({
           gap: 1rem;
         }
 
-        .boq-selection-card {
+        .boq-selection-card.glass-card {
           border: 1px solid #dbe3ef;
           border-radius: 22px;
           background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
@@ -1407,19 +1407,19 @@ const BOQSelectionStage = ({
           transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
         }
 
-        .boq-selection-card:hover {
+        .boq-selection-card.glass-card:hover {
           transform: translateY(-2px);
           border-color: #60a5fa;
           box-shadow: 0 18px 36px rgba(37, 99, 235, 0.08);
         }
 
-        .boq-selection-card.selected {
+        .boq-selection-card.glass-card.selected {
           border-color: #2563eb;
           background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
           box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
         }
 
-        .boq-selection-card-kicker {
+        .boq-selection-card.glass-card-kicker {
           display: flex;
           justify-content: space-between;
           gap: 0.75rem;
@@ -1427,14 +1427,14 @@ const BOQSelectionStage = ({
           flex-wrap: wrap;
         }
 
-        .boq-selection-card-top {
+        .boq-selection-card.glass-card-top {
           display: flex;
           justify-content: space-between;
           gap: 0.75rem;
           align-items: flex-start;
         }
 
-        .boq-selection-card-heading {
+        .boq-selection-card.glass-card-heading {
           min-width: 0;
         }
 
@@ -1450,13 +1450,13 @@ const BOQSelectionStage = ({
           color: #2563eb;
         }
 
-        .boq-selection-card-tags {
+        .boq-selection-card.glass-card-tags {
           display: flex;
           flex-wrap: wrap;
           gap: 0.35rem;
         }
 
-        .boq-selection-card-tags span {
+        .boq-selection-card.glass-card-tags span {
           display: inline-flex;
           align-items: center;
           border-radius: 999px;
@@ -1468,13 +1468,13 @@ const BOQSelectionStage = ({
           font-weight: 700;
         }
 
-        .boq-selection-card strong {
+        .boq-selection-card.glass-card strong {
           color: #0f172a;
           font-size: 1rem;
           line-height: 1.35;
         }
 
-        .boq-selection-card p {
+        .boq-selection-card.glass-card p {
           margin: 0;
           font-size: 0.84rem;
           line-height: 1.6;
@@ -1499,14 +1499,14 @@ const BOQSelectionStage = ({
           color: white;
         }
 
-        .boq-selection-card-meta,
-        .boq-selection-card-flags {
+        .boq-selection-card.glass-card-meta,
+        .boq-selection-card.glass-card-flags {
           display: flex;
           flex-wrap: wrap;
           gap: 0.45rem;
         }
 
-        .boq-selection-card-meta span {
+        .boq-selection-card.glass-card-meta span {
           font-size: 0.74rem;
           color: #475569;
         }
@@ -1545,7 +1545,7 @@ const BOQSelectionStage = ({
           line-height: 1.55;
         }
 
-        .boq-selection-card-basis {
+        .boq-selection-card.glass-card-basis {
           border-radius: 14px;
           border: 1px solid #e2e8f0;
           background: #ffffff;
@@ -1555,14 +1555,14 @@ const BOQSelectionStage = ({
           gap: 0.2rem;
         }
 
-        .boq-selection-card-basis strong {
+        .boq-selection-card.glass-card-basis strong {
           font-size: 0.68rem;
           text-transform: uppercase;
           letter-spacing: 0.06em;
           color: #64748b;
         }
 
-        .boq-selection-card-basis span {
+        .boq-selection-card.glass-card-basis span {
           font-size: 0.77rem;
           color: #334155;
           line-height: 1.5;
@@ -1592,7 +1592,7 @@ const BOQSelectionStage = ({
           line-height: 1.5;
         }
 
-        .boq-selection-card-footer {
+        .boq-selection-card.glass-card-footer {
           margin-top: auto;
           padding-top: 0.15rem;
           display: flex;
@@ -1603,7 +1603,7 @@ const BOQSelectionStage = ({
           font-size: 0.75rem;
         }
 
-        .boq-selection-card-footer strong {
+        .boq-selection-card.glass-card-footer strong {
           color: #0f172a;
           font-size: 0.76rem;
           white-space: nowrap;
@@ -1712,14 +1712,14 @@ const BOQSelectionStage = ({
         }
 
         @media (max-width: 1080px) {
-          .boq-selection-shell {
+          .boq-selection-shell.obsidian-surface {
             grid-template-columns: 1fr;
             height: auto;
             overflow: visible;
             padding: 0.9rem;
           }
 
-          .boq-selection-content {
+          .boq-selection-content.staggered-fade-in {
             overflow: visible;
             padding-right: 0;
           }
@@ -1767,7 +1767,7 @@ const BOQSelectionStage = ({
             height: 36px;
           }
 
-          .boq-selection-chip-grid {
+          .boq-selection-chip.glass-card-grid {
             grid-template-columns: 1fr;
           }
 

@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useToast } from '../ui/useToast';
-import { useAuth } from '../../context/useAuth';
+import React from 'react';
+import { useWorkspace } from '../../context/WorkspaceContext';
 import RateAnalysisModal from './RateAnalysisModal';
 import CustomPricingModal from './CustomPricingModal';
 import GeometricCalculator from './GeometricCalculator';
@@ -12,44 +11,21 @@ import BOQFormulaModal from './BOQFormulaModal';
 import BOQItemDetailPanel from './BOQItemDetailPanel';
 import BOQSelectionStage from './BOQSelectionStage';
 import BOQBillPanel from './BOQBillPanel';
-import { getMaterials } from '../../db/database';
+import { getStructureSectionCatalog } from '../../data/boqCatalog';
+import { WORK_TYPE_LABELS } from '../../utils/customPricing';
 import {
-  cloneCatalogItemToProjectItem,
-  createCustomBoqItem,
-  getStructureSectionCatalog,
-} from '../../data/boqCatalog';
-import { buildCompanyKey, deriveCompanyName } from '../../utils/companyAccess';
-import { buildCustomPricingFromRateAnalysis, WORK_TYPE_LABELS } from '../../utils/customPricing';
-import {
-  evaluateBoqFormulaRate,
   getFormulaDisplayText,
   getWorkedExamplePreview,
   isFormulaDrivenItem,
-  normalizeEditableInputs,
 } from '../../utils/boqFormulas';
 import {
-  applyBenchmarkRefreshToItem,
-  buildAutoRateResult,
-  buildMaterialRateIndex,
-  getItemBenchmarkRefreshInsight,
   getBenchmarkConfidenceLabel,
-  getItemBenchmarkEvidence,
   getBenchmarkRegionalFactor,
   getEffectiveBenchmarkRate,
   getItemTotal,
   getItemUnitRate,
-  getProjectBenchmarkRefreshAnalytics,
-  getProjectPricingAnalytics,
-  isBenchmarkOutlier,
-  repriceSectionsForRegion,
   resolveItemRateSource,
 } from '../../utils/pricing';
-import {
-  startPresence,
-  stopPresence,
-  subscribeToPresence,
-  subscribeToActivity,
-} from '../../db/collaborationService';
 import {
   Plus,
   Trash2,
@@ -75,1690 +51,57 @@ import {
   MousePointer2
 } from 'lucide-react';
 
-const buildSelectedCatalogItemMap = (sections = []) => (
-  Object.fromEntries(
-    (sections || []).map((section) => ([
-      section.id,
-      Array.from(new Set(
-        (section.items || [])
-          .map((item) => item.catalogItemId)
-          .filter(Boolean)
-      )),
-    ]))
-  )
-);
-
-const buildBoqBuilderState = (project, sections = []) => {
-  const inferredSelections = buildSelectedCatalogItemMap(sections);
-  const persistedSelections = project?.boqBuilder?.selectedCatalogItemIdsBySection || {};
-  const selectedCatalogItemIdsBySection = Object.fromEntries(
-    (sections || []).map((section) => {
-      const hasPersistedValue = Object.prototype.hasOwnProperty.call(persistedSelections, section.id);
-      const nextCodes = hasPersistedValue
-        ? persistedSelections[section.id]
-        : inferredSelections[section.id];
-
-      return [
-        section.id,
-        Array.from(new Set(
-          (Array.isArray(nextCodes) ? nextCodes : [])
-            .filter(Boolean)
-        )),
-      ];
-    })
-  );
-
-  const hasGeneratedRows = (sections || []).some((section) => (section.items || []).length > 0);
-  const persistedStage = project?.boqBuilder?.stage;
-  const stage = persistedStage === 'selection' || persistedStage === 'workspace'
-    ? persistedStage
-    : (project?.projectMode === 'structure-based' && !hasGeneratedRows ? 'selection' : 'workspace');
-  const activeBillSectionId = (sections || []).some((section) => section.id === project?.boqBuilder?.activeBillSectionId)
-    ? project.boqBuilder.activeBillSectionId
-    : sections[0]?.id || null;
-
-  return {
-    stage,
-    activeBillSectionId,
-    selectedCatalogItemIdsBySection,
-    generatedAt: project?.boqBuilder?.generatedAt || (hasGeneratedRows ? 'legacy-generated' : null),
-  };
-};
-
-const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, onAddSection, onExport, onDelete }) => {
-  const [sections, setSections] = useState(project?.sections || []);
-  const [boqBuilder, setBoqBuilder] = useState(() => buildBoqBuilderState(project, project?.sections || []));
-  const [analyzingItem, setAnalyzingItem] = useState(null);
-  const [customPricingItem, setCustomPricingItem] = useState(null);
-  const [calculatingQtyForItem, setCalculatingQtyForItem] = useState(null);
-  const [biddingItem, setBiddingItem] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [workspaceFilter, setWorkspaceFilter] = useState('all');
-  const [viewMode, setViewMode] = useState('estimation');
-  const [showStructuralAnalyzer, setShowStructuralAnalyzer] = useState(false);
-  const [selectedCell, setSelectedCell] = useState(null);
-  const [formulaItemContext, setFormulaItemContext] = useState(null);
-  const [itemDetailPanelContext, setItemDetailPanelContext] = useState(null);
-  const [activeBillSectionId, setActiveBillSectionId] = useState(() => buildBoqBuilderState(project, project?.sections || []).activeBillSectionId);
-  const sectionRowRefs = React.useRef({});
-  const [_showAnalytics, _setShowAnalytics] = useState(false);
-
-  // Collaboration state
-  const [showTeamHub, setShowTeamHub] = useState(false);
-  const [presenceUsers, setPresenceUsers] = useState([]);
-  const [activityLog, setActivityLog] = useState([]);
-  const [benchmarkMaterialIndex, setBenchmarkMaterialIndex] = useState(null);
-  const [benchmarkSyncState, setBenchmarkSyncState] = useState({
-    status: 'idle',
-    checkedAt: null,
-    error: '',
-  });
-
-  const toast = useToast();
-  const { user } = useAuth();
-  const isCustomWorkspace = project?.projectMode === 'custom';
-  const projectStructureType = project?.structureType || project?.type || '';
-  const marketRegionLabel = project?.region || 'Lagos';
-  const marketRegionDisplay = marketRegionLabel.replace(/_/g, ' ');
-
-  const loadMarketBenchmarks = async ({ silent = false } = {}) => {
-    try {
-      setBenchmarkSyncState((prev) => ({
-        ...prev,
-        status: 'loading',
-        error: '',
-      }));
-
-      const dbMaterials = await getMaterials();
-      const nextMaterialIndex = buildMaterialRateIndex(dbMaterials);
-
-      setBenchmarkMaterialIndex(nextMaterialIndex);
-      setBenchmarkSyncState({
-        status: 'ready',
-        checkedAt: new Date().toISOString(),
-        error: '',
-      });
-
-      return nextMaterialIndex;
-    } catch (error) {
-      setBenchmarkSyncState({
-        status: 'error',
-        checkedAt: null,
-        error: error?.message || 'Unable to load market benchmark data.',
-      });
-
-      if (!silent) {
-        toast.error('We could not load the latest benchmark library just now.');
-      }
-
-      return null;
-    }
-  };
-
-  React.useEffect(() => {
-    if (project?.sections) {
-      setSections(project.sections);
-    }
-  }, [project]);
-
-  React.useEffect(() => {
-    const nextBuilderState = buildBoqBuilderState(project, project?.sections || []);
-    setBoqBuilder(nextBuilderState);
-  }, [project]);
-
-  React.useEffect(() => {
-    if (boqBuilder?.activeBillSectionId) {
-      setActiveBillSectionId((current) => (
-        current === boqBuilder.activeBillSectionId ? current : boqBuilder.activeBillSectionId
-      ));
-    }
-  }, [boqBuilder?.activeBillSectionId]);
-
-  React.useEffect(() => {
-    if (!sections.length) {
-      setActiveBillSectionId(null);
-      return;
-    }
-
-    const activeSectionExists = sections.some((section) => section.id === activeBillSectionId);
-    if (!activeSectionExists) {
-      setActiveBillSectionId(sections[0].id);
-    }
-  }, [activeBillSectionId, sections]);
-
-  useEffect(() => {
-    if (!selectedCell) return;
-
-    const stillExists = (sections || []).some((section) =>
-      section.id === selectedCell.sectionId
-      && (section.items || []).some((item) => item.id === selectedCell.itemId)
-    );
-
-    if (!stillExists) {
-      setSelectedCell(null);
-    }
-  }, [sections, selectedCell]);
-
-  useEffect(() => {
-    let active = true;
-
-    const hydrateBenchmarks = async () => {
-      try {
-        setBenchmarkSyncState((prev) => ({
-          ...prev,
-          status: 'loading',
-          error: '',
-        }));
-
-        const dbMaterials = await getMaterials();
-        const nextMaterialIndex = buildMaterialRateIndex(dbMaterials);
-        if (!active) return;
-
-        setBenchmarkMaterialIndex(nextMaterialIndex);
-        setBenchmarkSyncState({
-          status: 'ready',
-          checkedAt: new Date().toISOString(),
-          error: '',
-        });
-      } catch (error) {
-        if (!active) return;
-        setBenchmarkSyncState({
-          status: 'error',
-          checkedAt: null,
-          error: error?.message || 'Unable to load market benchmark data.',
-        });
-      }
-    };
-
-    hydrateBenchmarks();
-
-    return () => {
-      active = false;
-    };
-  }, [project?.id, project?.region, project?.subtype, project?.type]);
-
-  useEffect(() => {
-    if (!project?.id || !isCustomWorkspace || !user?.email) return;
-
-    const company_name = project.company_name || deriveCompanyName({
-      companyName: user.company_name,
-      email: user.email
-    });
-    const company_key = project.company_key || buildCompanyKey({
-      companyKey: user.company_key,
-      companyName: company_name,
-      email: user.email
-    });
-
-    const metadataUpdates = {};
-    if (project.access_mode !== 'company') metadataUpdates.access_mode = 'company';
-    if (project.company_name !== company_name) metadataUpdates.company_name = company_name;
-    if (project.company_key !== company_key) metadataUpdates.company_key = company_key;
-    if (!project.share_enabled) metadataUpdates.share_enabled = true;
-    if (!project.collaboration_enabled) metadataUpdates.collaboration_enabled = true;
-
-    if (Object.keys(metadataUpdates).length > 0) {
-      onUpdate(project.id, sections, project.region, metadataUpdates);
-    }
-  }, [
-    isCustomWorkspace,
-    onUpdate,
-    project,
+const BOQWorkspace = () => {
+  const {
     sections,
-    user?.company_key,
-    user?.company_name,
-    user?.email
-  ]);
+    analyzingItem, setAnalyzingItem,
+    customPricingItem, setCustomPricingItem,
+    calculatingQtyForItem, setCalculatingQtyForItem,
+    biddingItem, setBiddingItem,
+    searchQuery, setSearchQuery,
+    workspaceFilter, setWorkspaceFilter,
+    viewMode, setViewMode,
+    showStructuralAnalyzer, setShowStructuralAnalyzer,
+    selectedCell, setSelectedCell,
+    formulaItemContext, setFormulaItemContext,
+    itemDetailPanelContext, setItemDetailPanelContext,
+    activeBillSectionId,
+    _showAnalytics, _setShowAnalytics,
+    showTeamHub, setShowTeamHub,
+    presenceUsers, activityLog,
+    benchmarkSyncState,
+    sectionRowRefs,
+    project, isCustomWorkspace, projectStructureType,
+    marketRegionLabel, marketRegionDisplay,
+    isSelectionStage, hasGeneratedBoq, workspaceVisibleSections,
+    selectionCountsBySection, sectionTotalsBySection, calculateGrandTotal,
+    workspaceAnalytics, activeProjectSection, activeSectionLineCount,
+    activeSectionPricedItems, activeSectionPendingItems, totalSelectedCatalogItems,
+    AVATAR_COLORS, benchmarkSyncLabel, activeSheetLabel,
+    filteredSections, filteredItemCount, isFilteredView,
+    totalItems, workspaceFilterOptions, totalColumnCount,
+    sectionHeaderSpan, subtotalLeadingSpan,
+    benchmarkRefreshAnalytics, sectionLibraryCounts, activeSectionMeta,
+    activeCatalogSection, selectedCatalogItemIdsBySection,
+    toggleSection, updateSectionTitle,
+    updateItem, handleQuantityChange,
+    handleCompletedQuantityChange, handleRateApply, handleCustomPricingSave,
+    handleManualRateChange, handleRateSourceChange, openItemDetailPanel,
+    openDetailedAnalysis, openCustomPricingStudio, activateCustomPricing,
+    handleStructuralImport, handleRegionChange,
+    _autoRateProject, refreshBenchmarks,
+    refreshSectionBenchmarks, refreshItemBenchmark, toggleVO,
+    addItemToSection, duplicateItem, addItemBelow, focusSection,
+    handleToggleCatalogSelection, handleSelectVisibleCatalogItems,
+    handleClearCatalogSelection, enterSelectionStage, handleGenerateBoq,
+    returnToWorkspace, scrollToSection, openFormulaEditor, handleFormulaInputsSave,
+    getInitials, getAmountFormula, getRateSourceMeta, getBenchmarkDeltaMeta,
+    getBenchmarkEvidenceMeta, getQuantityFeedbackMeta, getAutomationMeta,
+    getItemStatusMeta, getQuantityDisplayValue, getQuantitySourceLabel,
+    getSectionUiMeta, getRateOptionAvailability, isOutlier, getManualRateValue,
+    sanitizeNonNegativeNumber, onAddSection, onExport, onDelete,
+  } = useWorkspace();
 
-  // Presence subscription
-  useEffect(() => {
-    if (!project?.id || !isCustomWorkspace) return;
-    startPresence(project.id);
-    const unsubPresence = subscribeToPresence(project.id, setPresenceUsers);
-    return () => {
-      stopPresence(project.id);
-      unsubPresence();
-    };
-  }, [isCustomWorkspace, project?.id]);
-
-  // Activity log subscription
-  useEffect(() => {
-    if (!project?.id || !isCustomWorkspace) return;
-    const unsubActivity = subscribeToActivity(project.id, setActivityLog);
-    return () => unsubActivity();
-  }, [isCustomWorkspace, project?.id]);
-
-  useEffect(() => {
-    if (!launchIntent || launchIntent.type !== 'custom-pricing-test') return;
-    if (launchIntent.projectId !== project?.id) return;
-
-    const availableItems = (sections || []).flatMap((section) =>
-      (section.items || []).map((item) => ({ sectionId: section.id, item }))
-    );
-    const target = launchIntent.itemId
-      ? availableItems.find(({ item }) => item.id === launchIntent.itemId)
-      : availableItems[0];
-
-    const frameId = window.requestAnimationFrame(() => {
-      if (target) {
-        setCustomPricingItem(target);
-      } else {
-        toast.info('No item is available for the custom pricing test yet.');
-      }
-
-      onLaunchIntentHandled?.();
-    });
-
-    return () => window.cancelAnimationFrame(frameId);
-  }, [launchIntent, onLaunchIntentHandled, project?.id, sections, toast]);
-
-  const getInitials = (name) => {
-    if (!name) return '?';
-    return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-  };
-
-  const AVATAR_COLORS = ['#2563eb', '#7c3aed', '#db2777', '#ea580c', '#16a34a', '#0891b2'];
-
-  const cloneBreakdown = (breakdown) => {
-    if (!breakdown) return null;
-
-    return {
-      ...breakdown,
-      materials: Array.isArray(breakdown.materials) ? breakdown.materials.map((row) => ({ ...row })) : [],
-      labor: Array.isArray(breakdown.labor) ? breakdown.labor.map((row) => ({ ...row })) : [],
-      plant: Array.isArray(breakdown.plant) ? breakdown.plant.map((row) => ({ ...row })) : [],
-      transport: Array.isArray(breakdown.transport) ? breakdown.transport.map((row) => ({ ...row })) : []
-    };
-  };
-
-  const toggleSection = (sectionId) => {
-    setSections(prev => prev.map(s =>
-      s.id === sectionId ? { ...s, expanded: !s.expanded } : s
-    ));
-  };
-
-  const updateSectionTitle = (sectionId, newTitle) => {
-    const updated = sections.map(s =>
-      s.id === sectionId ? { ...s, title: newTitle } : s
-    );
-    setSections(updated);
-    onUpdate(project.id, updated);
-  };
-
-  const syncBoqItemSnapshot = (item, section = null) => {
-    const normalizedEditableInputs = normalizeEditableInputs(item.editableInputs).map((input) => ({
-      ...input,
-      value: input.value ?? input.defaultValue
-    }));
-    const itemWithInputs = { ...item, editableInputs: normalizedEditableInputs };
-    // Compute fresh formula rate
-    const formulaRate = evaluateBoqFormulaRate(itemWithInputs);
-    const formulaCalculatedRate = sanitizeNonNegativeNumber(formulaRate);
-    const quantity = sanitizeNonNegativeNumber(item.quantity ?? item.qty);
-    const benchmarkRate = sanitizeNonNegativeNumber(item.benchmarkRate ?? item.benchmark);
-    // Backward-compat shim: derive selectedRateSource from legacy flags if missing
-    const selectedRateSource = resolveItemRateSource(item);
-    // Manual rate — prefer explicit manualRate field
-    const manualRate = sanitizeNonNegativeNumber(item.manualRate ?? (selectedRateSource === 'manual' ? (item.unitRate ?? item.rate) : 0));
-    // Resolve the active unit rate from the tri-modal source
-    const resolvedUnitRate = selectedRateSource === 'benchmark'
-      ? getEffectiveBenchmarkRate(itemWithInputs, project?.region || 'Lagos')
-      : selectedRateSource === 'formula'
-        ? (formulaCalculatedRate || benchmarkRate)
-        : manualRate;
-    const legacyRateSource = selectedRateSource === 'manual'
-      && item.rateSource
-      && !['manual', 'benchmark', 'formula'].includes(item.rateSource)
-      ? item.rateSource
-      : selectedRateSource;
-
-    const nextItem = {
-      ...item,
-      editableInputs: normalizedEditableInputs,
-      quantity,
-      qty: quantity,
-      // --- new tri-modal fields ---
-      selectedRateSource,
-      formulaCalculatedRate,
-      resolvedUnitRate,
-      manualRate,
-      // --- legacy aliases kept in sync ---
-      unitRate: resolvedUnitRate,
-      rate: resolvedUnitRate,
-      benchmarkRate,
-      benchmark: benchmarkRate,
-      benchmarkMetadata: {
-        rate: sanitizeNonNegativeNumber(item.benchmarkMetadata?.rate ?? benchmarkRate),
-        currency: item.benchmarkMetadata?.currency || 'NGN',
-        region: item.benchmarkMetadata?.region || project?.region || 'Lagos',
-        sourceType: item.benchmarkMetadata?.sourceType || (benchmarkRate > 0 ? 'catalog' : 'manual'),
-        sourceNote: item.benchmarkMetadata?.sourceNote || '',
-        dateCaptured: item.benchmarkMetadata?.dateCaptured || null,
-        confidenceLevel: item.benchmarkMetadata?.confidenceLevel || (benchmarkRate > 0 ? 'medium' : 'low'),
-        calibrationFactor: item.benchmarkMetadata?.calibrationFactor || null,
-      },
-      useBenchmark: selectedRateSource === 'benchmark',
-      rateSource: legacyRateSource,
-      billSectionTitle: item.billSectionTitle || section?.title || '',
-      billSection: item.billSection || section?.billSectionId || section?.id || '',
-      structureType: item.structureType || section?.structureType || project?.structureType || project?.type || '',
-      name: item.name || item.description || 'Untitled BOQ Item',
-    };
-    nextItem.amount = quantity * resolvedUnitRate;
-    nextItem.total = nextItem.amount;
-    if (nextItem.qtyCompleted !== undefined) {
-      nextItem.progressPercent = nextItem.qty > 0 ? (nextItem.qtyCompleted / nextItem.qty) * 100 : 0;
-    }
-    return nextItem;
-  };
-
-  const persistBoqBuilderState = React.useCallback((nextBuilder, nextSections = sections, region = project?.region, extraUpdates = {}) => {
-    setBoqBuilder(nextBuilder);
-    if (nextBuilder?.activeBillSectionId) {
-      setActiveBillSectionId(nextBuilder.activeBillSectionId);
-    }
-    onUpdate(project.id, nextSections, region, {
-      ...extraUpdates,
-      boqBuilder: nextBuilder,
-    });
-  }, [onUpdate, project?.id, project?.region, sections]);
-
-  const buildSectionsFromSelection = React.useCallback((sourceSections, builderState) => (
-    (sourceSections || []).map((section) => {
-      const catalogSection = getStructureSectionCatalog(projectStructureType, section.billSectionId);
-      const catalogItems = catalogSection?.availableItems || [];
-      const catalogItemsByCode = new Map(catalogItems.map((item) => [item.code, item]));
-      const existingCatalogRows = new Map(
-        (section.items || [])
-          .filter((item) => item.catalogItemId)
-          .map((item) => [item.catalogItemId, item])
-      );
-      const preservedCustomRows = (section.items || []).filter((item) => !item.catalogItemId);
-      const selectedCodes = Array.isArray(builderState?.selectedCatalogItemIdsBySection?.[section.id])
-        ? builderState.selectedCatalogItemIdsBySection[section.id]
-        : [];
-
-      const generatedRows = selectedCodes
-        .map((code) => {
-          const existingRow = existingCatalogRows.get(code);
-          if (existingRow) {
-            return syncBoqItemSnapshot(existingRow, section);
-          }
-
-          const catalogItem = catalogItemsByCode.get(code);
-          if (!catalogItem) return null;
-
-          return syncBoqItemSnapshot(
-            cloneCatalogItemToProjectItem(catalogItem, {
-              structureType: projectStructureType,
-              billSectionId: section.billSectionId || section.id,
-              billSectionTitle: section.title,
-            }),
-            section
-          );
-        })
-        .filter(Boolean);
-
-      return {
-        ...section,
-        expanded: true,
-        items: [...generatedRows, ...preservedCustomRows],
-      };
-    })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  ), [projectStructureType]);
-
-  const updateItem = (sectionId, itemId, fieldOrUpdates, valueOrBreakdown = null, breakdown = null) => {
-    const updated = sections.map((section) => {
-      if (section.id !== sectionId) return section;
-      return {
-        ...section,
-        items: section.items.map(item => {
-          if (item.id !== itemId) return item;
-          let updatedItem;
-          if (typeof fieldOrUpdates === 'object') {
-            updatedItem = { ...item, ...fieldOrUpdates };
-          } else {
-            updatedItem = { ...item, [fieldOrUpdates]: valueOrBreakdown };
-            if (breakdown) updatedItem.breakdown = breakdown;
-          }
-          return syncBoqItemSnapshot(updatedItem, section);
-        })
-      };
-    });
-    setSections(updated);
-    onUpdate(project.id, updated);
-  };
-
-  const sanitizeNonNegativeNumber = (value) => {
-    if (value === '' || value === null || typeof value === 'undefined') {
-      return 0;
-    }
-
-    const parsed = Number(value);
-    if (!Number.isFinite(parsed) || parsed < 0) {
-      return 0;
-    }
-
-    return parsed;
-  };
-
-  const getSelectedRateSource = (item) => resolveItemRateSource(item);
-
-  const getManualRateValue = (item) => sanitizeNonNegativeNumber(
-    item?.manualRate ?? (
-      getSelectedRateSource(item) === 'manual'
-        ? (item?.unitRate ?? item?.rate)
-        : 0
-    )
-  );
-
-  const getFormulaRateValue = (item) => sanitizeNonNegativeNumber(
-    item?.formulaCalculatedRate ?? evaluateBoqFormulaRate({
-      ...item,
-      editableInputs: normalizeEditableInputs(item?.editableInputs),
-    })
-  );
-
-  const getBenchmarkRateValue = (item) => sanitizeNonNegativeNumber(
-    getEffectiveBenchmarkRate(item, project?.region || 'Lagos')
-  );
-
-  const getRateOptionAvailability = (item) => {
-    const benchmarkRate = getBenchmarkRateValue(item);
-    const hasFormulaRate = isFormulaDrivenItem(item);
-    const manualRate = getManualRateValue(item);
-    const formulaRate = getFormulaRateValue(item);
-    const benchmarkReference = sanitizeNonNegativeNumber(
-      item?.benchmarkMetadata?.rate ?? item?.benchmarkRate ?? item?.benchmark
-    );
-
-    return {
-      benchmarkRate,
-      formulaRate,
-      manualRate,
-      hasBenchmarkRate: benchmarkRate > 0 || benchmarkReference > 0,
-      hasFormulaRate,
-    };
-  };
-
-  const handleQuantityChange = (sectionId, item, rawValue) => {
-    const safeQty = sanitizeNonNegativeNumber(rawValue);
-    updateItem(sectionId, item.id, {
-      qty: safeQty,
-      quantity: safeQty,
-      qtySource: 'manual'
-    });
-  };
-
-  const handleCompletedQuantityChange = (sectionId, item, rawValue) => {
-    const safeCompletedQty = sanitizeNonNegativeNumber(rawValue);
-    const safeProjectQty = sanitizeNonNegativeNumber(item.qty);
-
-    updateItem(sectionId, item.id, 'qtyCompleted', safeProjectQty > 0
-      ? Math.min(safeCompletedQty, safeProjectQty)
-      : safeCompletedQty);
-  };
-
-  const handleRateApply = (rate, breakdown) => {
-    if (!analyzingItem) return;
-    const shouldPreserveCustomPricing = analyzingItem.preserveCustomPricing || Boolean(analyzingItem.item?.customPricing);
-    const nextCustomPricing = shouldPreserveCustomPricing
-      ? {
-          ...buildCustomPricingFromRateAnalysis(
-            analyzingItem.item,
-            breakdown,
-            analyzingItem.item?.customPricing
-          ),
-          savedAt: new Date().toISOString()
-        }
-      : null;
-    const nextBreakdown = shouldPreserveCustomPricing
-      ? {
-          ...breakdown,
-          analysisMode: 'custom-pricing-linked',
-          linkedCustomPricing: nextCustomPricing
-        }
-      : breakdown;
-
-    updateItem(analyzingItem.sectionId, analyzingItem.item.id, {
-      selectedRateSource: 'manual',
-      manualRate: sanitizeNonNegativeNumber(rate),
-      rate: rate,
-      rateSource: shouldPreserveCustomPricing ? 'custom' : 'calculated',
-      useBenchmark: false,
-      breakdown: nextBreakdown,
-      customPricing: nextCustomPricing
-    });
-    setAnalyzingItem(null);
-  };
-
-  const handleCustomPricingSave = (rate, customPricing) => {
-    if (!customPricingItem) return;
-
-    updateItem(customPricingItem.sectionId, customPricingItem.item.id, {
-      selectedRateSource: 'manual',
-      manualRate: sanitizeNonNegativeNumber(rate),
-      rate,
-      rateSource: 'custom',
-      useBenchmark: false,
-      customPricing: {
-        ...customPricing,
-        savedAt: new Date().toISOString()
-      }
-    });
-    setCustomPricingItem(null);
-  };
-
-  const handleManualRateChange = (sectionId, item, nextRate) => {
-    const safeRate = sanitizeNonNegativeNumber(nextRate);
-    updateItem(sectionId, item.id, {
-      manualRate: safeRate,
-      rate: safeRate,
-      unitRate: safeRate,
-      selectedRateSource: 'manual',
-      rateSource: 'manual',
-      useBenchmark: false,
-      customPricing: null,
-    });
-  };
-
-  const handleRateSourceChange = (sectionId, item, nextSource) => {
-    const availability = getRateOptionAvailability(item);
-    if (nextSource === 'benchmark' && !availability.hasBenchmarkRate) {
-      toast.info('No benchmark rate is available for this item yet.');
-      return;
-    }
-    if (nextSource === 'formula' && !availability.hasFormulaRate) {
-      toast.info('This item does not have a saved formula yet.');
-      return;
-    }
-
-    const nextRateSource = nextSource === 'manual'
-      ? (
-          item.customPricing
-            ? 'custom'
-            : item.rateSource === 'calculated'
-              ? 'calculated'
-              : 'manual'
-        )
-      : nextSource;
-
-    updateItem(sectionId, item.id, {
-      selectedRateSource: nextSource,
-      useBenchmark: nextSource === 'benchmark',
-      rateSource: nextRateSource,
-    });
-  };
-
-  const openItemDetailPanel = (sectionId, item) => {
-    setItemDetailPanelContext({ sectionId, item });
-  };
-
-  const openDetailedAnalysis = (sectionId, item, draftCustomPricing = null) => {
-    setCustomPricingItem(null);
-    setAnalyzingItem({
-      sectionId,
-      preserveCustomPricing: Boolean(draftCustomPricing || item?.customPricing),
-      item: {
-        ...item,
-        customPricing: draftCustomPricing || item?.customPricing || null
-      }
-    });
-  };
-
-  const openCustomPricingStudio = (sectionId, item) => {
-    setCustomPricingItem({
-      sectionId,
-      item: {
-        ...item,
-        useBenchmark: false
-      }
-    });
-  };
-
-  const activateCustomPricing = (sectionId, item) => {
-    const nextRateSource = item.customPricing
-      ? 'custom'
-      : item.breakdown && !isFormulaDrivenItem(item)
-        ? 'calculated'
-        : 'manual';
-
-    updateItem(sectionId, item.id, {
-      selectedRateSource: 'manual',
-      useBenchmark: false,
-      rateSource: nextRateSource
-    });
-
-    if (!item.customPricing && !isFormulaDrivenItem(item)) {
-      openCustomPricingStudio(sectionId, {
-        ...item,
-        rateSource: nextRateSource
-      });
-    }
-  };
-
-  // eslint-disable-next-line no-unused-vars
-  const activateBenchmarkPricing = (sectionId, item) => {
-    const regionalFactor = getBenchmarkRegionalFactor(item, project?.region || 'Lagos');
-
-    // Derive benchmark: stored > auto-rate > rate/factor fallback
-    let derivedBenchmark = Number(item.benchmark) > 0 ? item.benchmark : 0;
-    let matchSource = item.benchmarkMatchSource || null;
-    let benchmarkRegionalRates = item.benchmarkRegionalRates || null;
-    let benchmarkEvidence = item.benchmarkEvidence || null;
-
-    if (!derivedBenchmark) {
-      const fallbackAutoRate = buildAutoRateResult(item, {
-        structureType: project?.structureType || project?.subtype || project?.type,
-        region: project?.region || 'Lagos',
-        materialIndex: benchmarkMaterialIndex || []
-      });
-      derivedBenchmark = Number(fallbackAutoRate?.benchmark) || 0;
-      matchSource = fallbackAutoRate?.matchSource || matchSource;
-      benchmarkRegionalRates = fallbackAutoRate?.benchmarkRegionalRates || benchmarkRegionalRates;
-      benchmarkEvidence = fallbackAutoRate?.benchmarkEvidence || benchmarkEvidence;
-
-      // Last resort: derive from current rate
-      if (!derivedBenchmark && Number(item.rate) > 0) {
-        derivedBenchmark = Number(item.rate) / Math.max(regionalFactor, 0.001);
-      }
-    }
-
-    updateItem(sectionId, item.id, {
-      selectedRateSource: 'benchmark',
-      useBenchmark: true,
-      rateSource: 'benchmark',
-      benchmark: derivedBenchmark || 0,
-      benchmarkRegionalRates,
-      benchmarkEvidence,
-      benchmarkMatchSource: matchSource,
-      breakdown: item.breakdown || null,
-    });
-  };
-
-  const handleStructuralImport = (importedSections) => {
-    // Append the new sections to the existing ones
-    // We clean the sections to ensure IDs don't collide if they were generated statically
-    const newSections = importedSections.map(section => ({
-      ...section,
-      id: section.id || `ext-${Date.now()}-${Math.random()}`,
-      items: section.items.map(item => ({
-        ...item,
-        id: item.id || Date.now() + Math.random(),
-        subcategory: item.subcategory || '',
-        materials: Array.isArray(item.materials) ? item.materials : [],
-        rate: 0,
-        total: 0,
-        benchmark: 0,
-        useBenchmark: false,
-        rateSource: 'manual',
-        customPricing: null
-      }))
-    }));
-
-    const updated = [...sections, ...newSections];
-    setSections(updated);
-    onUpdate(project.id, updated);
-    setShowStructuralAnalyzer(false);
-  };
-
-  const handleRegionChange = (nextRegion) => {
-    const repriced = repriceSectionsForRegion(sections, nextRegion);
-    setSections(repriced);
-    onUpdate(project.id, repriced, nextRegion);
-    toast.success(`Workspace repriced for ${nextRegion.replace('_', ' ')} market conditions.`);
-  };
-
-  const _autoRateProject = async () => {
-    const materialIndex = await loadMarketBenchmarks({ silent: true }) || benchmarkMaterialIndex || [];
-    let updatedCount = 0;
-    let benchmarkedCount = 0;
-
-    const updated = sections.map((section) => ({
-      ...section,
-      items: (section.items || []).map((item) => {
-        const selectedRateSource = resolveItemRateSource(item);
-        const shouldPreserveManualRate = selectedRateSource === 'manual' && getManualRateValue(item) > 0 && item.rateSource === 'manual';
-        const autoRated = buildAutoRateResult(item, {
-          structureType: project?.structureType || project?.subtype || project?.type,
-          region: project?.region || 'Lagos',
-          materialIndex
-        });
-
-        const nextItem = {
-          ...item,
-          benchmark: Number(item.benchmark) > 0 ? item.benchmark : autoRated.benchmark,
-          benchmarkRegionalRates: item.benchmarkRegionalRates || autoRated.benchmarkRegionalRates || null,
-          benchmarkEvidence: item.benchmarkEvidence || autoRated.benchmarkEvidence || null,
-          breakdown: item.breakdown || autoRated.breakdown,
-          benchmarkMatchSource: item.benchmarkMatchSource || autoRated.matchSource,
-        };
-
-        if (!shouldPreserveManualRate && selectedRateSource === 'manual' && getManualRateValue(item) <= 0) {
-          nextItem.manualRate = sanitizeNonNegativeNumber(autoRated.rate);
-          nextItem.rate = autoRated.rate;
-          nextItem.unitRate = autoRated.rate;
-          nextItem.selectedRateSource = 'manual';
-          nextItem.rateSource = item.customPricing ? 'custom' : 'calculated';
-          updatedCount += 1;
-        }
-
-        if (nextItem.benchmark > 0 && Number(item.benchmark) <= 0) {
-          benchmarkedCount += 1;
-        }
-
-        nextItem.total = getItemTotal(nextItem, project?.region || 'Lagos');
-        return nextItem;
-      })
-    }));
-
-    setSections(updated);
-    onUpdate(project.id, updated, project?.region);
-    toast.success(`Auto-rated ${updatedCount} item${updatedCount === 1 ? '' : 's'} and benchmarked ${benchmarkedCount} item${benchmarkedCount === 1 ? '' : 's'}.`);
-  };
-
-  const buildBenchmarkRefreshResult = (materialIndex, { targetSectionId = null, targetItemId = null } = {}) => {
-    const region = project?.region || 'Lagos';
-    const structureType = project?.structureType || project?.subtype || project?.type;
-    let appliedCount = 0;
-    let benchmarkRateUpdates = 0;
-    let referenceOnlyUpdates = 0;
-    let newBenchmarkLinks = 0;
-    let reviewCount = 0;
-
-    const updated = sections.map((section) => {
-      if (targetSectionId && section.id !== targetSectionId) {
-        return section;
-      }
-
-      let sectionChanged = false;
-      const nextItems = (section.items || []).map((item) => {
-        if (targetItemId && item.id !== targetItemId) {
-          return item;
-        }
-
-        const insight = getItemBenchmarkRefreshInsight(item, {
-          structureType,
-          region,
-          materialIndex,
-        });
-
-        if (!insight?.actionable) {
-          return item;
-        }
-
-        if (insight.needsReviewOnly) {
-          reviewCount += 1;
-          return item;
-        }
-
-        const nextItem = applyBenchmarkRefreshToItem(item, insight, region);
-        if (nextItem === item) {
-          return item;
-        }
-
-        sectionChanged = true;
-        appliedCount += 1;
-
-        if (insight.pricingMode === 'benchmark') {
-          benchmarkRateUpdates += 1;
-        }
-        if (insight.preservesRate) {
-          referenceOnlyUpdates += 1;
-        }
-        if (insight.benchmarkNowAvailable) {
-          newBenchmarkLinks += 1;
-        }
-
-        return nextItem;
-      });
-
-      return sectionChanged ? { ...section, items: nextItems } : section;
-    });
-
-    return {
-      updated,
-      appliedCount,
-      benchmarkRateUpdates,
-      referenceOnlyUpdates,
-      newBenchmarkLinks,
-      reviewCount,
-    };
-  };
-
-  const applyBenchmarkRefresh = async ({ targetSectionId = null, targetItemId = null, scope = 'project' } = {}) => {
-    const materialIndex = await loadMarketBenchmarks();
-    if (!materialIndex) return;
-
-    const {
-      updated,
-      appliedCount,
-      benchmarkRateUpdates,
-      referenceOnlyUpdates,
-      newBenchmarkLinks,
-      reviewCount,
-    } = buildBenchmarkRefreshResult(materialIndex, { targetSectionId, targetItemId });
-
-    if (appliedCount <= 0) {
-      if (reviewCount > 0) {
-        toast.warning(`${reviewCount} item${reviewCount === 1 ? '' : 's'} still need benchmark review before we refresh anything.`);
-      } else if (scope === 'item') {
-        toast.info('This item already matches the latest market benchmark.');
-      } else if (scope === 'section') {
-        toast.info('This section is already aligned with the latest benchmark library.');
-      } else {
-        toast.info('Project benchmarks already match the latest market library.');
-      }
-      return;
-    }
-
-    setSections(updated);
-    onUpdate(project.id, updated, project?.region);
-
-    const summary = [
-      `${appliedCount} benchmark reference${appliedCount === 1 ? '' : 's'} refreshed`,
-      benchmarkRateUpdates > 0 ? `${benchmarkRateUpdates} live benchmark amount${benchmarkRateUpdates === 1 ? '' : 's'} updated` : '',
-      referenceOnlyUpdates > 0 ? `${referenceOnlyUpdates} custom/manual item${referenceOnlyUpdates === 1 ? '' : 's'} kept their saved rate` : '',
-      newBenchmarkLinks > 0 ? `${newBenchmarkLinks} item${newBenchmarkLinks === 1 ? '' : 's'} gained a fresh benchmark link` : '',
-    ].filter(Boolean).join(' · ');
-
-    toast.success(summary);
-
-    if (reviewCount > 0) {
-      toast.warning(`${reviewCount} item${reviewCount === 1 ? '' : 's'} still need benchmark review because no live market rebuild was found.`);
-    }
-  };
-
-  const refreshBenchmarks = async () => {
-    await applyBenchmarkRefresh({ scope: 'project' });
-  };
-
-  const refreshSectionBenchmarks = async (sectionId) => {
-    await applyBenchmarkRefresh({ targetSectionId: sectionId, scope: 'section' });
-  };
-
-  const refreshItemBenchmark = async (sectionId, itemId) => {
-    await applyBenchmarkRefresh({ targetSectionId: sectionId, targetItemId: itemId, scope: 'item' });
-  };
-
-  const toggleVO = (sectionId, itemId) => {
-    updateItem(sectionId, itemId, 'isVO', !sections.find(s => s.id === sectionId)?.items.find(i => i.id === itemId)?.isVO);
-  };
-
-  const addItemToSection = (sectionId) => {
-    const updated = sections.map((section) => {
-      if (section.id !== sectionId) return section;
-      const nextItem = syncBoqItemSnapshot(createCustomBoqItem({
-        structureType: project?.structureType || project?.type || '',
-        billSectionId: section.billSectionId || section.id,
-        billSectionTitle: section.title,
-      }), section);
-      return {
-        ...section,
-        items: [...section.items, nextItem]
-      };
-    });
-    setSections(updated);
-    onUpdate(project.id, updated);
-  };
-
-  const duplicateItem = (sectionId, itemId) => {
-    const updated = sections.map((section) => {
-      if (section.id !== sectionId) return section;
-      const index = (section.items || []).findIndex((itm) => itm.id === itemId);
-      if (index < 0) return section;
-
-      const sourceItem = section.items[index];
-      const duplicate = syncBoqItemSnapshot({
-        ...sourceItem,
-        id: Date.now() + Math.random(),
-        description: `${sourceItem.description} (Copy)`,
-        materials: Array.isArray(sourceItem.materials) ? [...sourceItem.materials] : [],
-        breakdown: cloneBreakdown(sourceItem.breakdown),
-        customPricing: sourceItem.customPricing ? { ...sourceItem.customPricing } : null,
-        editableInputs: normalizeEditableInputs(sourceItem.editableInputs),
-        exampleInputs: normalizeEditableInputs(sourceItem.exampleInputs),
-      }, section);
-
-      const nextItems = [...section.items];
-      nextItems.splice(index + 1, 0, duplicate);
-      return { ...section, items: nextItems };
-    });
-
-    setSections(updated);
-    onUpdate(project.id, updated);
-  };
-
-  const addItemBelow = (sectionId, itemId) => {
-    const updated = sections.map((section) => {
-      if (section.id !== sectionId) return section;
-
-      const index = (section.items || []).findIndex((itm) => itm.id === itemId);
-      if (index < 0) return section;
-
-      const sourceItem = section.items[index];
-      const nextItem = syncBoqItemSnapshot({
-        ...createCustomBoqItem({
-          structureType: sourceItem?.structureType || project?.structureType || project?.type || '',
-          billSectionId: section.billSectionId || section.id,
-          billSectionTitle: section.title,
-        }),
-        id: Date.now() + Math.random(),
-        unit: sourceItem?.unit || 'Nr',
-        subcategory: sourceItem?.subcategory || section.title,
-      }, section);
-
-      const nextItems = [...(section.items || [])];
-      nextItems.splice(index + 1, 0, nextItem);
-      return { ...section, items: nextItems };
-    });
-
-    setSections(updated);
-    onUpdate(project.id, updated);
-  };
-
-  const isOutlier = (rate, benchmark) => {
-    return isBenchmarkOutlier(rate, benchmark);
-  };
-
-  const getRateSourceMeta = (item) => {
-    const src = resolveItemRateSource(item);
-    if (src === 'benchmark') return { label: `${marketRegionLabel} Market Benchmark`, tone: 'benchmark' };
-    if (src === 'formula') return { label: 'Formula-Driven Rate', tone: 'calculated' };
-    if (item.customPricing) return { label: 'Manual Override from Pricing Studio', tone: 'custom' };
-    if (item.rateSource === 'calculated') return { label: 'Manual Build-Up Rate', tone: 'calculated' };
-    return { label: 'Manual Rate Entry', tone: 'manual' };
-  };
-
-  const getBenchmarkDeltaMeta = (item) => {
-    if (resolveItemRateSource(item) === 'benchmark') return null;
-
-    const benchmarkRate = getEffectiveBenchmarkRate(item, project?.region || 'Lagos');
-    const customRate = getItemUnitRate(item, project?.region || 'Lagos');
-    if (!benchmarkRate || !customRate) return null;
-
-    const delta = ((customRate - benchmarkRate) / benchmarkRate) * 100;
-    const absDelta = Math.abs(delta);
-
-    if (absDelta < 0.5) {
-      return { text: 'At market benchmark', tone: 'aligned' };
-    }
-
-    return {
-      text: `${delta > 0 ? '+' : ''}${delta.toFixed(1)}% vs benchmark`,
-      tone: delta > 0 ? 'high' : 'low'
-    };
-  };
-
-  const getCustomPricingSummary = (item) => {
-    if (!item?.customPricing) return '';
-
-    const segments = [];
-    const workTypeLabel = WORK_TYPE_LABELS[item.customPricing.workType];
-    if (workTypeLabel) {
-      segments.push(workTypeLabel);
-    }
-    if (item.customPricing.pricingReference) {
-      segments.push(item.customPricing.pricingReference);
-    }
-    if (item.customPricing.supplierQuote) {
-      segments.push(item.customPricing.supplierQuote);
-    }
-
-    return segments.join(' • ');
-  };
-
-  const formatEvidenceUpdatedLabel = (value) => {
-    if (!value) return '';
-
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return '';
-
-    return parsed.toLocaleDateString('en-NG', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
-
-  const formatBenchmarkSyncLabel = (value) => {
-    if (!value) return '';
-
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return '';
-
-    return parsed.toLocaleString('en-NG', {
-      day: 'numeric',
-      month: 'short',
-      hour: 'numeric',
-      minute: '2-digit'
-    });
-  };
-
-  const getBenchmarkEvidenceMeta = (item) => {
-    const evidence = getItemBenchmarkEvidence(item, project?.region || 'Lagos');
-    const benchmarkRate = getEffectiveBenchmarkRate(item, project?.region || 'Lagos');
-    if (!evidence || (!benchmarkRate && !item?.benchmark)) return null;
-
-    let title = `${marketRegionDisplay} benchmark generated`;
-    let chip = `${marketRegionDisplay} benchmark`;
-    let tone = 'benchmark';
-
-    if (evidence.mode === 'manual-override') {
-      title = `${marketRegionDisplay} benchmark override active`;
-      chip = 'Benchmark override';
-      tone = 'custom';
-    } else if (evidence.mode === 'exact-region') {
-      title = `Exact ${marketRegionDisplay} benchmark used`;
-      chip = `Exact ${marketRegionDisplay}`;
-    } else if (evidence.mode === 'lagos-exact') {
-      title = 'Exact Lagos benchmark used';
-      chip = 'Exact Lagos';
-    } else if (evidence.mode === 'regional-adjusted') {
-      title = `${marketRegionDisplay} benchmark calibrated from market factors`;
-      chip = `${marketRegionDisplay} calibrated`;
-      tone = 'muted';
-    } else if (evidence.mode === 'fallback') {
-      title = 'Modeled benchmark estimate';
-      chip = 'Modeled benchmark';
-      tone = 'warning';
-    }
-
-    const detailParts = [];
-    if (evidence.sourceCount > 0) {
-      detailParts.push(`${evidence.sourceCount} market source${evidence.sourceCount === 1 ? '' : 's'}`);
-    } else if (evidence.matchedMaterialCount > 0) {
-      detailParts.push(`${evidence.matchedMaterialCount} material benchmark match${evidence.matchedMaterialCount === 1 ? '' : 'es'}`);
-    }
-    if (evidence.verifiedBy) {
-      detailParts.push(`Verified by ${evidence.verifiedBy}`);
-    }
-    if (evidence.updatedAt) {
-      detailParts.push(`Updated ${formatEvidenceUpdatedLabel(evidence.updatedAt)}`);
-    }
-    if (evidence.benchmarkBand) {
-      detailParts.push(`Band ${evidence.benchmarkBand}`);
-    }
-
-    return {
-      ...evidence,
-      title,
-      referenceTitle: `Benchmark reference: ${chip} available`,
-      chip,
-      tone,
-      detail: detailParts.join(' | '),
-      rateLabel: `Using ${marketRegionDisplay} benchmark of N${Math.round(benchmarkRate).toLocaleString()} per ${item?.unit || 'unit'}`,
-      referenceRateLabel: `Current ${marketRegionDisplay} benchmark: N${Math.round(benchmarkRate).toLocaleString()} per ${item?.unit || 'unit'}`
-    };
-  };
-
-  const getQuantityFeedbackMeta = (item, benchmarkRate, unitRate) => {
-    const quantity = sanitizeNonNegativeNumber(item?.qty);
-    const selectedRateSource = resolveItemRateSource(item);
-
-    if (quantity <= 0) {
-      return {
-        text: 'Enter quantity, area, length, volume, or meter value to generate the amount.',
-        tone: 'warning'
-      };
-    }
-
-    if (selectedRateSource === 'benchmark' && benchmarkRate > 0) {
-      return {
-        text: 'Price generated automatically.',
-        tone: 'success'
-      };
-    }
-
-    if (selectedRateSource === 'benchmark' && benchmarkRate <= 0) {
-      return {
-        text: 'No benchmark rate available — switch to custom pricing.',
-        tone: 'warning'
-      };
-    }
-
-    if (selectedRateSource === 'formula' && unitRate > 0) {
-      return {
-        text: 'Formula inputs are active and the amount is updating from the calculated rate.',
-        tone: 'success'
-      };
-    }
-
-    if (unitRate > 0) {
-      const takeoffLabel = item?.takeoffMeta?.templateLabel;
-      return {
-        text: item.qtySource === 'calculated'
-          ? `Measured from ${takeoffLabel || 'takeoff calculator'} and priced successfully.`
-          : 'Quantity captured and amount updated successfully.',
-        tone: 'success'
-      };
-    }
-
-    return {
-      text: 'Quantity saved. Complete pricing to unlock the amount.',
-      tone: 'muted'
-    };
-  };
-
-  const getAutomationMeta = (item, benchmarkRate, unitRate) => {
-    const quantity = sanitizeNonNegativeNumber(item?.qty);
-    const selectedRateSource = resolveItemRateSource(item);
-
-    if (quantity <= 0) {
-      return {
-        title: 'Waiting for project quantity',
-        detail: 'Amount will calculate as soon as quantity is entered.',
-        tone: 'warning'
-      };
-    }
-
-    if (selectedRateSource === 'benchmark') {
-      if (benchmarkRate <= 0) {
-        return {
-          title: 'No benchmark rate available — switch to custom pricing',
-          detail: `This item is not yet covered by the ${marketRegionLabel} market benchmark.`,
-          tone: 'warning'
-        };
-      }
-
-      return {
-        title: 'Auto-priced using current market benchmark',
-        detail: `Amount = Quantity × ${marketRegionLabel} market benchmark.`,
-        tone: 'success'
-      };
-    }
-
-    if (selectedRateSource === 'formula') {
-      if (unitRate <= 0) {
-        return {
-          title: 'Formula inputs still need review',
-          detail: 'Update the formula inputs or switch rate source to complete this item.',
-          tone: 'warning'
-        };
-      }
-
-      return {
-        title: 'Formula rate active',
-        detail: 'Amount is being generated from the saved engineering formula inputs.',
-        tone: 'calculated'
-      };
-    }
-
-    if (unitRate <= 0) {
-      return {
-        title: 'Manual rate still needed',
-        detail: 'Enter a unit rate, open the pricing studio, or switch to a benchmark or formula source.',
-        tone: 'warning'
-      };
-    }
-
-    if (item.customPricing) {
-      return {
-        title: 'Custom rate override active',
-        detail: getCustomPricingSummary(item) || 'Custom pricing allowances and basis have been saved for this item.',
-        tone: 'custom'
-      };
-    }
-
-    if (item.rateSource === 'calculated') {
-      return {
-        title: 'Rate analysis applied',
-        detail: 'This amount is being driven by an analysis-backed unit rate.',
-        tone: 'calculated'
-      };
-    }
-
-    return {
-      title: 'Custom pricing active',
-      detail: 'Amount is being generated from the current custom unit rate.',
-      tone: 'custom'
-    };
-  };
-
-  const getItemStatusMeta = (item, benchmarkRate, unitRate) => {
-    const quantity = sanitizeNonNegativeNumber(item?.qty);
-    const selectedRateSource = resolveItemRateSource(item);
-
-    if (quantity <= 0) {
-      return { label: 'Quantity Needed', tone: 'warning' };
-    }
-
-    if (selectedRateSource === 'benchmark' && benchmarkRate <= 0) {
-      return { label: 'Benchmark Missing', tone: 'warning' };
-    }
-
-    if (selectedRateSource === 'benchmark') {
-      return { label: 'Benchmark Priced', tone: 'benchmark' };
-    }
-
-    if (selectedRateSource === 'formula') {
-      return { label: 'Formula Ready', tone: 'calculated' };
-    }
-
-    if (item.customPricing) {
-      return { label: 'Manual Override', tone: 'custom' };
-    }
-
-    if (item.rateSource === 'calculated') {
-      return { label: 'Rate Analysed', tone: 'calculated' };
-    }
-
-    if (unitRate > 0) {
-      return { label: 'Custom Priced', tone: 'manual' };
-    }
-
-    return { label: 'Rate Required', tone: 'warning' };
-  };
-
-  const getAmountFormula = (item, unitRate) => {
-    const quantity = sanitizeNonNegativeNumber(item?.qty);
-    const rate = sanitizeNonNegativeNumber(unitRate);
-
-    if (quantity <= 0 || rate <= 0) {
-      return null;
-    }
-
-    return `Amount = ${quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} × ₦${rate.toLocaleString()}`;
-  };
-
-  const getQuantityDisplayValue = (item) => {
-    const quantity = sanitizeNonNegativeNumber(item?.qty);
-    if (quantity <= 0) {
-      return '0.00';
-    }
-
-    return quantity.toLocaleString(undefined, { maximumFractionDigits: 2 });
-  };
-
-  const getQuantitySourceLabel = (item) => {
-    if (item?.qtySource === 'calculated') {
-      return item?.takeoffMeta?.templateLabel
-        ? `Measured from ${item.takeoffMeta.templateLabel}`
-        : 'Measured from takeoff';
-    }
-
-    return 'Project quantity';
-  };
-
-  const getSectionUiMeta = (section) => {
-    const catalogSection = getStructureSectionCatalog(projectStructureType, section?.billSectionId || section?.id);
-    const keywords = [
-      ...(Array.isArray(section?.keywords) ? section.keywords : []),
-      ...(Array.isArray(catalogSection?.keywords) ? catalogSection.keywords : []),
-    ].filter(Boolean);
-    const isPreliminaries = section?.isPreliminaries === true
-      || catalogSection?.isPreliminaries === true
-      || section?.billSectionId === 'preliminaries';
-
-    return {
-      catalogSection,
-      isPreliminaries,
-      trade: section?.trade || catalogSection?.trade || section?.title || '',
-      description: section?.description || catalogSection?.description || '',
-      pickerPrompt: section?.pickerPrompt || catalogSection?.pickerPrompt || '',
-      emptyStateTitle: section?.emptyStateTitle || catalogSection?.emptyStateTitle || `No items selected for ${section?.title || 'this bill'}.`,
-      emptyStateMessage: section?.emptyStateMessage || catalogSection?.emptyStateMessage || 'Use the item library to add standard BOQ lines, or add a custom line when needed.',
-      keywords,
-      libraryCount: catalogSection?.availableItems?.length || 0,
-    };
-  };
-
-  const selectedCatalogItemIdsBySection = boqBuilder?.selectedCatalogItemIdsBySection || buildSelectedCatalogItemMap(sections);
-  const selectionCountsBySection = React.useMemo(() => (
-    Object.fromEntries(
-      (sections || []).map((section) => ([
-        section.id,
-        Array.isArray(selectedCatalogItemIdsBySection?.[section.id])
-          ? selectedCatalogItemIdsBySection[section.id].length
-          : 0,
-      ]))
-    )
-  ), [sections, selectedCatalogItemIdsBySection]);
-  const sectionLibraryCounts = React.useMemo(() => (
-    Object.fromEntries(
-      (sections || []).map((section) => ([
-        section.id,
-        getStructureSectionCatalog(projectStructureType, section.billSectionId)?.availableItems?.length || 0,
-      ]))
-    )
-  ), [projectStructureType, sections]);
-  const sectionTotalsBySection = React.useMemo(() => (
-    Object.fromEntries(
-      (sections || []).map((section) => ([
-        section.id,
-        (section.items || []).reduce((sum, item) => sum + getItemTotal(item, project?.region || 'Lagos'), 0),
-      ]))
-    )
-  ), [project?.region, sections]);
-  const totalSelectedCatalogItems = React.useMemo(() => (
-    Object.values(selectionCountsBySection).reduce((sum, count) => sum + count, 0)
-  ), [selectionCountsBySection]);
-  const hasGeneratedBoq = React.useMemo(() => (
-    (sections || []).some((section) => (section.items || []).length > 0)
-  ), [sections]);
-  const isSelectionStage = !isCustomWorkspace && boqBuilder?.stage === 'selection';
-  const workspaceVisibleSections = React.useMemo(() => {
-    if (isSelectionStage) {
-      return sections || [];
-    }
-
-    const visibleSections = (sections || []).filter((section) => {
-      const hasItems = (section.items || []).length > 0;
-      const hasCatalogDefinition = Boolean(getStructureSectionCatalog(projectStructureType, section.billSectionId));
-
-      return hasItems || !hasCatalogDefinition;
-    });
-
-    return visibleSections.length > 0 ? visibleSections : (sections || []);
-  }, [isSelectionStage, projectStructureType, sections]);
-  const activeProjectSection = workspaceVisibleSections.find((section) => section.id === activeBillSectionId) || workspaceVisibleSections[0] || null;
-  const activeSectionMeta = activeProjectSection ? getSectionUiMeta(activeProjectSection) : null;
-  const activeCatalogSection = activeProjectSection
-    ? getStructureSectionCatalog(projectStructureType, activeProjectSection.billSectionId)
-    : null;
-  const workspaceSections = activeBillSectionId
-    ? workspaceVisibleSections.filter((section) => section.id === activeBillSectionId)
-    : workspaceVisibleSections;
-
-  React.useEffect(() => {
-    if (isSelectionStage || !workspaceVisibleSections.length) {
-      return;
-    }
-
-    const activeSectionStillVisible = workspaceVisibleSections.some((section) => section.id === activeBillSectionId);
-    if (!activeSectionStillVisible) {
-      const fallbackSectionId = workspaceVisibleSections[0].id;
-      setActiveBillSectionId(fallbackSectionId);
-      setBoqBuilder((prev) => (
-        prev
-          ? { ...prev, activeBillSectionId: fallbackSectionId }
-          : prev
-      ));
-    }
-  }, [activeBillSectionId, isSelectionStage, workspaceVisibleSections]);
-
-  const matchesWorkspaceSearch = (section, item, sectionMeta, normalizedQuery) => {
-    const haystack = [
-      section?.title,
-      section?.description,
-      section?.code,
-      sectionMeta?.trade,
-      item?.code,
-      item?.name,
-      item?.description,
-      item?.unit,
-      item?.subcategory,
-      item?.category,
-      item?.pickerHint,
-      item?.formulaText,
-      item?.notes,
-      ...(Array.isArray(item?.keywords) ? item.keywords : []),
-      ...(Array.isArray(item?.materials) ? item.materials : []),
-      ...(Array.isArray(sectionMeta?.keywords) ? sectionMeta.keywords : []),
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase();
-
-    return haystack.includes(normalizedQuery);
-  };
-
-  const matchesWorkspaceFilter = (section, item, sectionMeta) => {
-    switch (workspaceFilter) {
-      case 'active-bill':
-        return section.id === activeBillSectionId;
-      case 'needs-pricing': {
-        const quantity = sanitizeNonNegativeNumber(item?.qty);
-        const benchmarkRate = getEffectiveBenchmarkRate(item, project?.region || 'Lagos');
-        const unitRate = getItemUnitRate(item, project?.region || 'Lagos');
-        return quantity <= 0 || (resolveItemRateSource(item) === 'benchmark' ? benchmarkRate <= 0 : unitRate <= 0);
-      }
-      case 'formula':
-        return isFormulaDrivenItem(item);
-      case 'preliminaries':
-        return sectionMeta?.isPreliminaries === true;
-      default:
-        return true;
-    }
-  };
-
-  const filteredSections = React.useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase();
-
-    return (workspaceSections || []).map((section) => {
-      const sectionMeta = getSectionUiMeta(section);
-      const baseItems = (section.items || []).filter((item) => matchesWorkspaceFilter(section, item, sectionMeta));
-      const sectionSearchText = [
-        section.title,
-        section.description,
-        section.code,
-        sectionMeta.trade,
-        ...(sectionMeta.keywords || []),
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      const sectionMatchesQuery = normalizedQuery ? sectionSearchText.includes(normalizedQuery) : false;
-      const nextItems = !normalizedQuery
-        ? baseItems
-        : (sectionMatchesQuery
-          ? baseItems
-          : baseItems.filter((item) => matchesWorkspaceSearch(section, item, sectionMeta, normalizedQuery)));
-      const includeSection = nextItems.length > 0
-        || sectionMatchesQuery
-        || (workspaceFilter === 'active-bill' && section.id === activeBillSectionId && !normalizedQuery);
-
-      if (!includeSection) {
-        return null;
-      }
-
-      return {
-        ...section,
-        ...sectionMeta,
-        items: nextItems,
-        expanded: normalizedQuery || workspaceFilter === 'active-bill' ? true : section.expanded,
-      };
-    }).filter(Boolean);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeBillSectionId, project?.region, projectStructureType, searchQuery, workspaceFilter, workspaceSections]);
-
-  const workspaceAnalytics = React.useMemo(() => (
-    getProjectPricingAnalytics({ ...project, sections })
-  ), [project, sections]);
-  const benchmarkRefreshAnalytics = React.useMemo(() => {
-    if (!Array.isArray(benchmarkMaterialIndex)) {
-      return {
-        itemMap: {},
-        sectionMap: {},
-        actionableItems: 0,
-        refreshableItems: 0,
-        reviewItems: 0,
-        benchmarkRateUpdates: 0,
-        referenceOnlyUpdates: 0,
-        newBenchmarkLinks: 0,
-        highPriorityItems: 0,
-      };
-    }
-
-    return getProjectBenchmarkRefreshAnalytics({ ...project, sections }, {
-      structureType: project?.structureType || project?.subtype || project?.type,
-      region: project?.region || 'Lagos',
-      materialIndex: benchmarkMaterialIndex,
-    });
-  }, [benchmarkMaterialIndex, project, sections]);
-
-  const calculateGrandTotal = workspaceAnalytics.totalValue;
-  const _totalQuantity = workspaceAnalytics.totalQuantity;
-
-  const totalItems = workspaceAnalytics.totalItems;
-  const totalColumnCount = 4;
-  const sectionHeaderSpan = 4;
-  const subtotalLeadingSpan = 2;
-  const benchmarkSyncLabel = formatBenchmarkSyncLabel(benchmarkSyncState.checkedAt);
-  const _filteredSectionCount = filteredSections.length;
-  const filteredItemCount = filteredSections.reduce((sum, section) => sum + ((section.items || []).length), 0);
-  const _visibleGrandTotal = filteredSections.reduce((sum, section) => (
-    sum + (section.items || []).reduce((itemSum, item) => itemSum + getItemTotal(item, project?.region || 'Lagos'), 0)
-  ), 0);
-  const isFilteredView = Boolean(searchQuery?.trim()) || workspaceFilter !== 'all';
-  const _activeSectionSubtotal = activeProjectSection
-    ? (activeProjectSection.items || []).reduce((sum, item) => sum + getItemTotal(item, project?.region || 'Lagos'), 0)
-    : 0;
-  const _activeSectionQty = activeProjectSection
-    ? (activeProjectSection.items || []).reduce((sum, item) => sum + sanitizeNonNegativeNumber(item.qty), 0)
-    : 0;
-  const activeSectionPendingItems = activeProjectSection
-    ? (activeProjectSection.items || []).filter((item) => matchesWorkspaceFilter(activeProjectSection, item, activeSectionMeta || {})).filter((item) => {
-      const quantity = sanitizeNonNegativeNumber(item.qty);
-      const benchmarkRate = getEffectiveBenchmarkRate(item, project?.region || 'Lagos');
-      const unitRate = getItemUnitRate(item, project?.region || 'Lagos');
-        return quantity <= 0 || (resolveItemRateSource(item) === 'benchmark' ? benchmarkRate <= 0 : unitRate <= 0);
-    }).length
-    : 0;
-  const activeSectionLineCount = activeProjectSection ? (activeProjectSection.items || []).length : 0;
-  const activeSectionPricedItems = Math.max(activeSectionLineCount - activeSectionPendingItems, 0);
-  const _activeCatalogSelectionCount = selectionCountsBySection?.[activeBillSectionId] || 0;
-  const workspaceFilterOptions = [
-    { id: 'all', label: 'All Items' },
-    { id: 'active-bill', label: 'Active Bill' },
-    { id: 'needs-pricing', label: 'Needs Review' },
-    { id: 'formula', label: 'Formula Items' },
-    { id: 'preliminaries', label: 'Preliminaries' },
-  ];
-  const _activeWorkspaceFilterLabel = workspaceFilterOptions.find((entry) => entry.id === workspaceFilter)?.label || 'All Items';
-  const activeSheetLabel = viewMode === 'valuation' ? 'Valuation Sheet' : 'Estimate Sheet';
-  const _workbookSubtitle = [projectStructureType, project?.subtype].filter(Boolean).join(' / ') || 'Construction pricing workbook';
-
-  const focusSection = (sectionId, { persist = true } = {}) => {
-    if (!sectionId) return;
-
-    const nextSections = (sections || []).map((section) => (
-      section.id === sectionId ? { ...section, expanded: true } : section
-    ));
-    const nextBuilder = {
-      ...(boqBuilder || buildBoqBuilderState(project, sections)),
-      activeBillSectionId: sectionId,
-    };
-
-    setSections(nextSections);
-    if (persist) {
-      persistBoqBuilderState(nextBuilder, nextSections);
-      return;
-    }
-
-    setActiveBillSectionId(sectionId);
-    setBoqBuilder(nextBuilder);
-  };
-
-  const updateSelectionForSection = (sectionId, nextCodes) => {
-    const normalizedCodes = Array.from(new Set((nextCodes || []).filter(Boolean)));
-    const nextBuilder = {
-      ...(boqBuilder || buildBoqBuilderState(project, sections)),
-      stage: 'selection',
-      activeBillSectionId: sectionId,
-      selectedCatalogItemIdsBySection: {
-        ...selectedCatalogItemIdsBySection,
-        [sectionId]: normalizedCodes,
-      },
-    };
-
-    setActiveBillSectionId(sectionId);
-    persistBoqBuilderState(nextBuilder, sections);
-  };
-
-  const handleToggleCatalogSelection = (sectionId, code) => {
-    const existingCodes = Array.isArray(selectedCatalogItemIdsBySection?.[sectionId])
-      ? selectedCatalogItemIdsBySection[sectionId]
-      : [];
-    const nextCodes = existingCodes.includes(code)
-      ? existingCodes.filter((entry) => entry !== code)
-      : [...existingCodes, code];
-
-    updateSelectionForSection(sectionId, nextCodes);
-  };
-
-  const handleSelectVisibleCatalogItems = (sectionId, codes) => {
-    const existingCodes = Array.isArray(selectedCatalogItemIdsBySection?.[sectionId])
-      ? selectedCatalogItemIdsBySection[sectionId]
-      : [];
-    updateSelectionForSection(sectionId, [...existingCodes, ...(codes || [])]);
-  };
-
-  const handleClearCatalogSelection = (sectionId) => {
-    updateSelectionForSection(sectionId, []);
-  };
-
-  const enterSelectionStage = (sectionId = activeBillSectionId || sections[0]?.id || null) => {
-    if (!sectionId) return;
-
-    const nextBuilder = {
-      ...(boqBuilder || buildBoqBuilderState(project, sections)),
-      stage: 'selection',
-      activeBillSectionId: sectionId,
-      selectedCatalogItemIdsBySection,
-    };
-
-    focusSection(sectionId, { persist: false });
-    persistBoqBuilderState(nextBuilder, sections);
-  };
-
-  const handleGenerateBoq = () => {
-    if (totalSelectedCatalogItems <= 0) {
-      toast.info('Pick at least one BOQ item before generating the sheet.');
-      return;
-    }
-
-    const generatedBuilder = {
-      ...(boqBuilder || buildBoqBuilderState(project, sections)),
-      stage: 'workspace',
-      activeBillSectionId: activeBillSectionId || sections[0]?.id || null,
-      selectedCatalogItemIdsBySection,
-      generatedAt: new Date().toISOString(),
-    };
-    const nextSections = buildSectionsFromSelection(sections, generatedBuilder);
-
-    setSections(nextSections);
-    persistBoqBuilderState(generatedBuilder, nextSections);
-    toast.success(hasGeneratedBoq ? 'BOQ sheet updated from your selected items.' : 'BOQ sheet generated from the selected items.');
-  };
-
-  const returnToWorkspace = () => {
-    if (!hasGeneratedBoq) return;
-
-    const nextBuilder = {
-      ...(boqBuilder || buildBoqBuilderState(project, sections)),
-      stage: 'workspace',
-      activeBillSectionId: activeBillSectionId || sections[0]?.id || null,
-      selectedCatalogItemIdsBySection,
-      generatedAt: boqBuilder?.generatedAt || new Date().toISOString(),
-    };
-
-    persistBoqBuilderState(nextBuilder, sections);
-  };
-
-  const scrollToSection = (sectionId) => {
-    focusSection(sectionId);
-    if (isSelectionStage) return;
-    window.requestAnimationFrame(() => {
-      sectionRowRefs.current[sectionId]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-  };
-
-  const openFormulaEditor = (sectionId, item) => {
-    setFormulaItemContext({ sectionId, item });
-  };
-
-  const handleFormulaInputsSave = (nextInputs) => {
-    if (!formulaItemContext) return;
-    updateItem(formulaItemContext.sectionId, formulaItemContext.item.id, {
-      editableInputs: nextInputs,
-      selectedRateSource: 'formula',
-      rateSource: 'formula',
-      useBenchmark: false,
-    });
-    setFormulaItemContext(null);
-  };
   const benchmarkWorkspaceHealth = benchmarkSyncState.status === 'error'
     ? { label: 'Benchmark library offline', tone: 'warning' }
     : benchmarkSyncState.status === 'loading'
@@ -1951,7 +294,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           const itemCount = (section.items || []).length;
           const meta = mode === 'selection'
             ? `${selectionCount} selected`
-            : `${itemCount} line${itemCount === 1 ? '' : 's'}${sectionTotal > 0 ? ` · N${sectionTotal.toLocaleString()}` : ''}`;
+            : `${itemCount} line${itemCount === 1 ? '' : 's'}${sectionTotal > 0 ? ` Â· N${sectionTotal.toLocaleString()}` : ''}`;
 
           return (
             <button
@@ -2011,9 +354,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
   }
 
   return (
-    <div className="ws-container">
-      <div className="ws-workspace-body">
-        <div className="ws-workspace-shell">
+    <div className="ws-container obsidian-surface">
+      <div className="ws-workspace-body staggered-fade-in">
+        <div className="ws-workspace-shell glass-panel">
           <BOQBillPanel
             sections={workspaceVisibleSections}
             activeSectionId={activeBillSectionId}
@@ -2022,11 +365,11 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             onSelectBill={scrollToSection}
           />
           <div className="ws-main-pane">
-            {/* ── Compact Workspace Header ── */}
-            <div className="ws-compact-header">
-              <div className="ws-compact-header-top">
+            {/* â”€â”€ Compact Workspace Header â”€â”€ */}
+            <div className="ws-compact-header glass-card">
+              <div className="ws-compact-header-top staggered-fade-in">
                 <div className="ws-compact-header-left">
-                  <span className="ws-compact-eyebrow">BOQ-Pro Workbook</span>
+                  <span className="ws-compact-eyebrow emerald-text-gradient">BOQ-Pro Workbook</span>
                   <div className="ws-compact-title-row">
                     <h2 className="ws-compact-title">{project?.name || 'Untitled Project'}</h2>
                     <span className={`ws-compact-sync-pill ws-compact-health-${benchmarkWorkspaceHealth.tone}`}>
@@ -2053,7 +396,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                     </div>
                   </div>
                   <div className="ws-compact-action-cluster ws-compact-action-cluster-tools">
-                    <button className="ws-head-action ws-head-action-primary" onClick={() => enterSelectionStage(activeBillSectionId || sections[0]?.id)}>
+                    <button className="ws-head-action ws-head-action-primary emerald-button" onClick={() => enterSelectionStage(activeBillSectionId || sections[0]?.id)}>
                       <Plus size={13} /> Edit Selection
                     </button>
                     <button className="ws-head-action" onClick={refreshBenchmarks}>
@@ -2068,15 +411,15 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                   </div>
                 </div>
               </div>
-              <div className="ws-compact-stats-row">
-                <div className="ws-compact-stat">
+              <div className="ws-compact-stat glass-cards-row">
+                <div className="ws-compact-stat glass-card">
                   <span>Active Bill</span>
-                  <strong>{activeProjectSection?.title || '—'}</strong>
+                  <strong>{activeProjectSection?.title || 'â€”'}</strong>
                   <small>
-                    {activeSectionLineCount} line{activeSectionLineCount === 1 ? '' : 's'} · {activeSectionPricedItems} priced · {activeSectionPendingItems} pending
+                    {activeSectionLineCount} line{activeSectionLineCount === 1 ? '' : 's'} Â· {activeSectionPricedItems} priced Â· {activeSectionPendingItems} pending
                   </small>
                 </div>
-                <div className="ws-compact-stat">
+                <div className="ws-compact-stat glass-card">
                   <span>Coverage</span>
                   <strong>{workspaceAnalytics.pricingCoveragePercent.toFixed(0)}%</strong>
                   <small>{workspaceAnalytics.pricedItems}/{workspaceAnalytics.totalItems} items</small>
@@ -2087,17 +430,17 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                     />
                   </div>
                 </div>
-                <div className="ws-compact-stat ws-compact-stat-total">
+                <div className="ws-compact-stat glass-card ws-compact-stat glass-card-total">
                   <span>Project Total</span>
                   <strong>N{calculateGrandTotal.toLocaleString()}</strong>
-                  <small>{workspaceAnalytics.benchmarkItems} benchmark · {workspaceAnalytics.customItems} custom</small>
+                  <small>{workspaceAnalytics.benchmarkItems} benchmark Â· {workspaceAnalytics.customItems} custom</small>
                 </div>
               </div>
             </div>
-      {/* ── Search & Filter Toolbar ── */}
-      <div className="ws-toolbar-clean">
+      {/* â”€â”€ Search & Filter Toolbar â”€â”€ */}
+      <div className="ws-toolbar-clean glass-panel">
         <div className="ws-toolbar-left">
-          <div className="ws-search-box">
+          <div className="ws-search-box glass-input">
             <Search size={16} />
             <input
               type="text"
@@ -2165,7 +508,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
       </div>
 
       {/* Table */}
-      <div className="ws-table-wrap">
+      <div className="ws-table-wrap glass-panel">
         <div
           className="ws-column-letters"
           style={{ gridTemplateColumns: spreadsheetColumnTemplate }}
@@ -2186,8 +529,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             <tr>
               <th className="ws-th-desc">Item Description</th>
               <th className="ws-th-qty">Qty</th>
-              <th className="ws-th-rate">Rate (₦)</th>
-              <th className="ws-th-total">Amount (₦)</th>
+              <th className="ws-th-rate">Rate (â‚¦)</th>
+              <th className="ws-th-total">Amount (â‚¦)</th>
             </tr>
           </thead>
           <tbody>
@@ -2209,7 +552,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                     }}
                   >
                     <td colSpan={sectionHeaderSpan} className="ws-section-cell">
-                      <div className="ws-section-inner">
+                      <div className="ws-section-inner glass-card">
                         {section.expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                         <span className="ws-section-letter">{String.fromCharCode(65 + sIdx)}</span>
                         <input
@@ -2254,7 +597,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                           </button>
                         </div>
                         {!section.expanded && (
-                          <span className="ws-section-total">₦{sectionSubtotal.toLocaleString()}</span>
+                          <span className="ws-section-total">â‚¦{sectionSubtotal.toLocaleString()}</span>
                         )}
                       </div>
                     </td>
@@ -2269,7 +612,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                           <p className="ws-empty-section-msg">{sectionMeta.emptyStateMessage || "Add items from the library or create a custom line."}</p>
                           <div className="ws-empty-section-actions">
                             {sectionMeta.catalogSection && (
-                              <button className="ws-btn ws-btn-primary" onClick={() => enterSelectionStage(section.id)}>
+                              <button className="ws-btn ws-btn-primary emerald-button" onClick={() => enterSelectionStage(section.id)}>
                                 <Plus size={14} /> Choose Items for Bill
                               </button>
                             )}
@@ -2319,7 +662,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                       <React.Fragment key={item.id}>
                         {showSubcategoryHeader && (
                           <tr className="ws-subcategory-row">
-                            <td colSpan={totalColumnCount} className="ws-subcategory-cell">
+                            <td colSpan={totalColumnCount} className="ws-subcategory-cell glass-card">
                               <div className="ws-subcategory-inner">
                                 <span className="ws-subcategory-label">Subcategory</span>
                                 <span className="ws-subcategory-title">{currentSubcategory}</span>
@@ -2472,7 +815,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                             )}
                             {hasBenchmarkRate && selectedRateSource !== 'benchmark' && (
                               <span className="ws-rate-chip ws-rate-chip-bm-ref" title="Current market benchmark for this item">
-                                Benchmark: ₦{Math.round(benchmarkRate).toLocaleString()}
+                                Benchmark: â‚¦{Math.round(benchmarkRate).toLocaleString()}
                               </span>
                             )}
                             {benchmarkRefreshMeta?.canApplyRefresh && (
@@ -2512,7 +855,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                           {selectedRateSource === 'benchmark' && (
                             <div className="ws-benchmark-override">
                               <Pencil size={10} className="ws-benchmark-override-icon" />
-                              <span className="ws-benchmark-override-label">Benchmark (₦):</span>
+                              <span className="ws-benchmark-override-label">Benchmark (â‚¦):</span>
                               <input
                                 type="number"
                                 className="ws-input ws-benchmark-override-input"
@@ -2554,7 +897,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                           className={`ws-total-cell ${isWorkspaceCellSelected(section.id, item.id, 'amount') ? 'ws-cell-selected' : ''}`}
                           onClick={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'amount', itemCode, rowNumber: spreadsheetRowNumber })}
                         >
-                          <strong className="ws-total-main">₦{itemTotal.toLocaleString()}</strong>
+                          <strong className="ws-total-main">â‚¦{itemTotal.toLocaleString()}</strong>
                           {amountFormula && <span className="ws-total-formula">{amountFormula}</span>}
                           <span className={`ws-total-status ws-total-status-${automationMeta.tone}`}>{automationMeta.title}</span>
                         </td>
@@ -2594,7 +937,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                               </div>
                               <div className="ws-mobile-card-total">
                                 <span>Amount</span>
-                                <strong>₦{itemTotal.toLocaleString()}</strong>
+                                <strong>â‚¦{itemTotal.toLocaleString()}</strong>
                                 {amountFormula && <small>{amountFormula}</small>}
                               </div>
                             </div>
@@ -2885,7 +1228,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                       <tr className="ws-subtotal-row">
                         <td colSpan={subtotalLeadingSpan}></td>
                         <td colSpan="2" className="ws-subtotal-val">
-                          Section Total · Qty {sectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })} · Amount ₦{sectionSubtotal.toLocaleString()}
+                          Section Total Â· Qty {sectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })} Â· Amount â‚¦{sectionSubtotal.toLocaleString()}
                         </td>
                       </tr>
                       <tr className="ws-add-row">
@@ -2911,7 +1254,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           <tfoot>
             <tr className="ws-grand-total">
               <td colSpan={3}>CONTRACT SUM</td>
-              <td className="ws-grand-val">₦{calculateGrandTotal.toLocaleString()}</td>
+              <td className="ws-grand-val">â‚¦{calculateGrandTotal.toLocaleString()}</td>
             </tr>
           </tfoot>
         </table>
@@ -2925,7 +1268,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
                   <div className="ws-detail-dock-copy">
                     <span className="ws-detail-dock-eyebrow">Right Bar Controls</span>
                     <h3 className="ws-detail-dock-title">
-                      {selectedItemContext.itemCode} · {selectedItemContext.item.name || selectedItemContext.item.description || 'Untitled BOQ item'}
+                      {selectedItemContext.itemCode} Â· {selectedItemContext.item.name || selectedItemContext.item.description || 'Untitled BOQ item'}
                     </h3>
                     <div className="ws-detail-dock-meta">
                       <span className="ws-detail-meta-pill">{selectedItemContext.section.title}</span>
@@ -3592,7 +1935,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             overflow-y: visible;
             overflow-x: visible;
           }
-          .ws-compact-header-top {
+          .ws-compact-header-top.staggered-fade-in {
             flex-direction: column;
             align-items: stretch;
           }
@@ -3604,7 +1947,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           .ws-compact-action-cluster-tools {
             justify-content: flex-start;
           }
-          .ws-compact-stats-row {
+          .ws-compact-stat.glass-cards-row {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
           .ws-detail-dock {
@@ -3631,7 +1974,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           .ws-compact-meta-line {
             font-size: 0.62rem;
           }
-          .ws-compact-stats-row {
+          .ws-compact-stat.glass-cards-row {
             grid-template-columns: 1fr;
           }
           .ws-compact-header-actions,
@@ -3895,7 +2238,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
           border-bottom: 1px solid #e2e8f0;
         }
-        .ws-compact-header-top {
+        .ws-compact-header-top.staggered-fade-in {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
@@ -4010,13 +2353,13 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           justify-content: flex-end;
         }
 
-        .ws-compact-stats-row {
+        .ws-compact-stat.glass-cards-row {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
           gap: 0.7rem;
           margin-top: 0;
         }
-        .ws-compact-stat {
+        .ws-compact-stat.glass-card {
           display: flex;
           flex-direction: column;
           gap: 0.15rem;
@@ -4026,25 +2369,25 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           border: 1px solid #f1f5f9;
           transition: all 0.2s;
         }
-        .ws-compact-stat:hover {
+        .ws-compact-stat.glass-card:hover {
           background: #ffffff;
           border-color: #e2e8f0;
           box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
         }
-        .ws-compact-stat span {
+        .ws-compact-stat.glass-card span {
           font-size: 0.6rem;
           font-weight: 800;
           text-transform: uppercase;
           letter-spacing: 0.08em;
           color: #94a3b8;
         }
-        .ws-compact-stat strong {
+        .ws-compact-stat.glass-card strong {
           font-size: 0.96rem;
           font-weight: 900;
           color: #1e293b;
           line-height: 1.2;
         }
-        .ws-compact-stat small {
+        .ws-compact-stat.glass-card small {
           font-size: 0.62rem;
           color: #64748b;
         }
@@ -4062,14 +2405,14 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           border-radius: 999px;
           background: linear-gradient(90deg, #2563eb 0%, #38bdf8 100%);
         }
-        .ws-compact-stat-total {
+        .ws-compact-stat.glass-card-total {
           background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
           border-color: #0f172a;
           box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
         }
-        .ws-compact-stat-total span { color: rgba(255,255,255,0.6); }
-        .ws-compact-stat-total strong { color: #ffffff; }
-        .ws-compact-stat-total small { color: rgba(255,255,255,0.5); }
+        .ws-compact-stat.glass-card-total span { color: rgba(255,255,255,0.6); }
+        .ws-compact-stat.glass-card-total strong { color: #ffffff; }
+        .ws-compact-stat.glass-card-total small { color: rgba(255,255,255,0.5); }
 
         .ws-container {
           display: flex;
@@ -4081,7 +2424,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
 
         /* --- CLEAN TOOLBAR --- */
-        .ws-toolbar-clean {
+        .ws-toolbar-clean.glass-panel {
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -4102,7 +2445,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           min-width: 0;
           flex-wrap: wrap;
         }
-        .ws-search-box {
+        .ws-search-box.glass-input {
           position: relative;
           display: flex;
           align-items: center;
@@ -4113,13 +2456,13 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           padding: 0 0.75rem;
           transition: all 0.2s;
         }
-        .ws-search-box:focus-within {
+        .ws-search-box.glass-input:focus-within {
           background: #ffffff;
           border-color: #3b82f6;
           box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
-        .ws-search-box svg { color: #94a3b8; }
-        .ws-search-box input {
+        .ws-search-box.glass-input svg { color: #94a3b8; }
+        .ws-search-box.glass-input input {
           width: 100%;
           border: none;
           background: transparent;
@@ -4461,7 +2804,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           border-color: #fca5a5;
         }
 
-        /* ── TOOLBAR ── */
+        /* â”€â”€ TOOLBAR â”€â”€ */
         .ws-toolbar {
           display: flex;
           align-items: center;
@@ -4615,8 +2958,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-btn-custom:hover {
           filter: brightness(1.05);
         }
-        .ws-btn-primary { background: #2563eb; color: white; }
-        .ws-btn-primary:hover { background: #1d4ed8; }
+        .ws-btn-primary.emerald-button { background: #2563eb; color: white; }
+        .ws-btn-primary.emerald-button:hover { background: #1d4ed8; }
 
         .ws-workspace-command-center {
           display: flex;
@@ -4716,13 +3059,13 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           background: #eff6ff;
           color: #1d4ed8;
         }
-        .ws-head-action-primary {
+        .ws-head-action-primary.emerald-button {
           background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
           border-color: #2563eb;
           color: #ffffff;
           box-shadow: 0 10px 22px rgba(37, 99, 235, 0.18);
         }
-        .ws-head-action-primary:hover {
+        .ws-head-action-primary.emerald-button:hover {
           background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
           border-color: #1d4ed8;
           color: #ffffff;
@@ -4877,8 +3220,8 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           border-color: #bfdbfe;
         }
 
-        /* ── TABLE ── */
-        .ws-table-wrap {
+        /* â”€â”€ TABLE â”€â”€ */
+        .ws-table-wrap.glass-panel {
           flex: 0 0 auto;
           min-width: 0;
           min-height: 460px;
@@ -4889,9 +3232,9 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           position: relative;
         }
 
-        .ws-table-wrap::-webkit-scrollbar { width: 6px; height: 6px; }
-        .ws-table-wrap::-webkit-scrollbar-track { background: #f1f5f9; }
-        .ws-table-wrap::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .ws-table-wrap.glass-panel::-webkit-scrollbar { width: 6px; height: 6px; }
+        .ws-table-wrap.glass-panel::-webkit-scrollbar-track { background: #f1f5f9; }
+        .ws-table-wrap.glass-panel::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
 
         .ws-column-letters {
           display: grid;
@@ -4991,7 +3334,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-th-rate::after { content: "Rate"; }
         .ws-th-total::after { content: "Price"; }
 
-        /* ── SECTION ROW ── */
+        /* â”€â”€ SECTION ROW â”€â”€ */
         .ws-section-row {
           cursor: pointer;
           background: #f1f5f9;
@@ -5000,7 +3343,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
         .ws-section-row:hover { background: #e2e8f0; }
         .ws-section-cell { padding: 0.4rem 0.75rem !important; }
-        .ws-section-inner {
+        .ws-section-inner.glass-card {
           display: flex;
           align-items: center;
           gap: 0.75rem;
@@ -5085,7 +3428,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           background: linear-gradient(90deg, #f8fafc, #eef2ff);
         }
 
-        .ws-subcategory-cell {
+        .ws-subcategory-cell.glass-card {
           padding: 0.2rem 0.4rem !important;
           border-top: 1px solid #e2e8f0;
           border-bottom: 1px solid #eef2f7;
@@ -5111,7 +3454,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           color: #1e293b;
         }
 
-        /* ── ITEM ROW ── */
+        /* â”€â”€ ITEM ROW â”€â”€ */
         .ws-item-row {
           border-bottom: 1px solid #f1f5f9;
           transition: all 0.1s ease;
@@ -5293,7 +3636,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
         .ws-outlier-icon { color: #f59e0b; flex-shrink: 0; }
 
-        /* ── INPUTS ── */
+        /* â”€â”€ INPUTS â”€â”€ */
         .ws-input {
           width: 100%;
           max-width: 100%;
@@ -5718,7 +4061,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           transition: width 0.3s;
         }
 
-        /* ── ACTIONS ── */
+        /* â”€â”€ ACTIONS â”€â”€ */
         .ws-act-cell { text-align: center; }
         .ws-act-group { display: flex; gap: 2px; justify-content: center; }
         .ws-btn-icon {
@@ -5738,7 +4081,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         .ws-btn-info { color: #64748b; }
         .ws-btn-info:hover { background: #eff6ff; color: #2563eb; opacity: 1 !important; }
 
-        /* ── RATE SOURCE SELECTOR (3-button tri-modal) ── */
+        /* â”€â”€ RATE SOURCE SELECTOR (3-button tri-modal) â”€â”€ */
         .ws-rate-source-selector {
           display: flex;
           flex-direction: column;
@@ -5822,7 +4165,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           color: #64748b;
         }
 
-        /* ── RATE REFERENCE ROW ── */
+        /* â”€â”€ RATE REFERENCE ROW â”€â”€ */
         .ws-rate-reference-row {
           display: flex;
           flex-wrap: wrap;
@@ -5855,7 +4198,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           margin-top: 0.45rem;
         }
 
-        /* ── EMPTY SECTION CTA ── */
+        /* â”€â”€ EMPTY SECTION CTA â”€â”€ */
         .ws-empty-section-row td { padding: 0 !important; }
         .ws-empty-section {
           display: flex;
@@ -5893,7 +4236,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
 
 
-        /* ── SUBTOTAL ── */
+        /* â”€â”€ SUBTOTAL â”€â”€ */
         .ws-subtotal-row { background: linear-gradient(180deg, #f8fafc 0%, #eef6ff 100%); }
         .ws-subtotal-val {
           text-align: right !important;
@@ -5925,7 +4268,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           border-color: #bfdbfe;
         }
 
-        /* ── GRAND TOTAL ── */
+        /* â”€â”€ GRAND TOTAL â”€â”€ */
         .ws-grand-total {
           background: #0f172a;
           color: white;
@@ -5943,7 +4286,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           color: #60a5fa !important;
         }
 
-        /* ── MOBILE ── */
+        /* â”€â”€ MOBILE â”€â”€ */
         @media (max-width: 1100px) {
           .ws-stage-shell {
             flex-direction: column;
@@ -6182,7 +4525,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           .ws-cost-card-total {
             grid-column: span 2;
           }
-          .ws-table-wrap {
+          .ws-table-wrap.glass-panel {
             background: #f8fafc;
           }
           .ws-column-letters {
@@ -6208,7 +4551,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             text-align: center;
           }
           .ws-section-row td,
-          .ws-subcategory-cell,
+          .ws-subcategory-cell.glass-card,
           .ws-subtotal-val,
           .ws-add-row td,
           .ws-grand-total td {
@@ -6218,7 +4561,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           .ws-section-cell {
             padding-top: 0.75rem !important;
           }
-          .ws-section-inner {
+          .ws-section-inner.glass-card {
             flex-wrap: wrap;
           }
           .ws-section-refresh-btn {
@@ -6278,7 +4621,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           }
         }
 
-        /* ── PRESENCE AVATARS ── */
+        /* â”€â”€ PRESENCE AVATARS â”€â”€ */
         .ws-presence {
           display: flex;
           align-items: center;
@@ -6306,7 +4649,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
           font-size: 0.5rem;
         }
 
-        /* ── COLLAB MODAL ── */
+        /* â”€â”€ COLLAB MODAL â”€â”€ */
         .collab-overlay {
           position: fixed; inset: 0;
           background: rgba(0,0,0,0.5);
@@ -6382,7 +4725,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
         }
         .collab-remove-btn:hover { background: #fef2f2; color: #ef4444; }
 
-        /* ── ACTIVITY PANEL ── */
+        /* â”€â”€ ACTIVITY PANEL â”€â”€ */
         .activity-panel {
           position: fixed; right: 0; top: 0; bottom: 0;
           width: 300px; background: white;
@@ -6840,7 +5183,7 @@ const BOQWorkspace = ({ project, launchIntent, onLaunchIntentHandled, onUpdate, 
             border-color: #bfdbfe !important;
             box-shadow: 0 10px 18px rgba(37, 99, 235, 0.08) !important;
           }
-          .ws-table-wrap {
+          .ws-table-wrap.glass-panel {
             margin-top: 0.2rem !important;
             background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%) !important;
             border: 1px solid #dbe4ee !important;

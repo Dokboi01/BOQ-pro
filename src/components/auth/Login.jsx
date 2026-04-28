@@ -10,12 +10,10 @@ import {
   Calculator,
   FileSpreadsheet,
   CheckCircle2,
-  ArrowLeft,
-  Moon,
-  SunMedium
+  ArrowLeft
 } from 'lucide-react';
 
-const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack, resolvedTheme, onToggleTheme }) => {
+const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -75,10 +73,6 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack, res
         </button>
 
         <div className="nav-actions">
-          <button className="theme-toggle-btn" onClick={onToggleTheme}>
-            {resolvedTheme === 'dark' ? <SunMedium size={16} /> : <Moon size={16} />}
-            {resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}
-          </button>
           <button className="nav-back-btn" onClick={onBack}>
             <ArrowLeft size={16} />
             Back to home

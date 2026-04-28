@@ -16,9 +16,7 @@ import {
   Sparkles,
   Layers3,
   Mail,
-  Phone,
-  Moon,
-  SunMedium
+  Phone
 } from 'lucide-react';
 import { PLANS, PLAN_NAMES, PLAN_TIER_ORDER, FEATURE_COMPARISON, isPaidPlan } from '../../data/plans';
 import { paystackCheckout, isPaystackConfigured, verifyPendingPaystackCheckout } from '../../utils/paystack';
@@ -66,7 +64,7 @@ const VALUE_CARDS = [
   }
 ];
 
-const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, resolvedTheme, onToggleTheme }) => {
+const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }) => {
   const [billing, setBilling] = useState('monthly');
   const [loadingPlan, setLoadingPlan] = useState(null);
   const [localError, setLocalError] = useState(null);
@@ -209,10 +207,6 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId, 
           </span>
         </button>
         <div className="nav-actions">
-          <button className="theme-toggle-btn" onClick={onToggleTheme}>
-            {resolvedTheme === 'dark' ? <SunMedium size={16} /> : <Moon size={16} />}
-            {resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}
-          </button>
           <button className="nav-back-btn" onClick={onBack}>
             <ArrowLeft size={16} />
             Back to home

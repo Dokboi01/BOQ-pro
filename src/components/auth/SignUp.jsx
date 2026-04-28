@@ -11,12 +11,10 @@ import {
   Phone,
   Shield,
   Sparkles,
-  User,
-  Moon,
-  SunMedium
+  User
 } from 'lucide-react';
 
-const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, onViewPrivacy, resolvedTheme, onToggleTheme }) => {
+const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, onViewPrivacy }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState(null);
   const [formData, setFormData] = useState({
@@ -93,10 +91,6 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
         </button>
 
         <div className="nav-actions">
-          <button className="theme-toggle-btn" onClick={onToggleTheme}>
-            {resolvedTheme === 'dark' ? <SunMedium size={16} /> : <Moon size={16} />}
-            {resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}
-          </button>
           <button className="nav-back-btn" onClick={() => onSwitchToLogin('pricing')}>
             <ArrowLeft size={16} />
             {selectedPlan ? 'Back to pricing' : 'Back to home'}

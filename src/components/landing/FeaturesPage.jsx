@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Calculator, FileSpreadsheet, MessagesSquare, BarChart3,
-  Shield, Layers3, MapPin, Clock, Zap, CheckCircle2,
+  Shield, Layers3, MapPin, Clock, CheckCircle2,
   ArrowRight, HardHat, FileText, Users, TrendingUp,
   Cloud, Lock, Download, Database, PenTool, Ruler
 } from 'lucide-react';
@@ -60,17 +60,6 @@ const featureGroups = [
       { name: 'Firestore Database', desc: 'Encrypted cloud storage with role-based access rules.' },
       { name: 'Paystack Billing', desc: 'NGN-native billing with 256-bit SSL encryption.' },
       { name: 'Audit Logging', desc: 'Every action logged for compliance and dispute resolution.' },
-    ],
-  },
-  {
-    icon: <Zap size={22} />,
-    title: 'AI-Powered Tools',
-    description: 'Smart assistance that speeds up repetitive tasks without replacing QS judgment.',
-    features: [
-      { name: 'Drawing Analysis', desc: 'Upload architectural drawings for automated quantity extraction.' },
-      { name: 'Smart Suggestions', desc: 'AI recommends rates based on project type and region.' },
-      { name: 'Report Generation', desc: 'Auto-generate narrative reports from your pricing data.' },
-      { name: 'Anomaly Detection', desc: 'Flags unusual rates or quantities for human review.' },
     ],
   },
 ];
