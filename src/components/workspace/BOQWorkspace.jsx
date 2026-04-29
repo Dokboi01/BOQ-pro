@@ -294,7 +294,7 @@ const BOQWorkspace = () => {
           const itemCount = (section.items || []).length;
           const meta = mode === 'selection'
             ? `${selectionCount} selected`
-            : `${itemCount} line${itemCount === 1 ? '' : 's'}${sectionTotal > 0 ? ` Â· N${sectionTotal.toLocaleString()}` : ''}`;
+            : `${itemCount} line${itemCount === 1 ? '' : 's'}${sectionTotal > 0 ? ` · N${sectionTotal.toLocaleString()}` : ''}`;
 
           return (
             <button
@@ -365,7 +365,7 @@ const BOQWorkspace = () => {
             onSelectBill={scrollToSection}
           />
           <div className="ws-main-pane">
-            {/* â”€â”€ Compact Workspace Header â”€â”€ */}
+            {/* ── Compact Workspace Header ── */}
             <div className="ws-compact-header glass-card">
               <div className="ws-compact-header-top staggered-fade-in">
                 <div className="ws-compact-header-left">
@@ -414,9 +414,9 @@ const BOQWorkspace = () => {
               <div className="ws-compact-stat glass-cards-row">
                 <div className="ws-compact-stat glass-card">
                   <span>Active Bill</span>
-                  <strong>{activeProjectSection?.title || 'â€”'}</strong>
+                  <strong>{activeProjectSection?.title || '—'}</strong>
                   <small>
-                    {activeSectionLineCount} line{activeSectionLineCount === 1 ? '' : 's'} Â· {activeSectionPricedItems} priced Â· {activeSectionPendingItems} pending
+                    {activeSectionLineCount} line{activeSectionLineCount === 1 ? '' : 's'} · {activeSectionPricedItems} priced · {activeSectionPendingItems} pending
                   </small>
                 </div>
                 <div className="ws-compact-stat glass-card">
@@ -433,11 +433,11 @@ const BOQWorkspace = () => {
                 <div className="ws-compact-stat glass-card ws-compact-stat glass-card-total">
                   <span>Project Total</span>
                   <strong>N{calculateGrandTotal.toLocaleString()}</strong>
-                  <small>{workspaceAnalytics.benchmarkItems} benchmark Â· {workspaceAnalytics.customItems} custom</small>
+                  <small>{workspaceAnalytics.benchmarkItems} benchmark · {workspaceAnalytics.customItems} custom</small>
                 </div>
               </div>
             </div>
-      {/* â”€â”€ Search & Filter Toolbar â”€â”€ */}
+      {/* ── Search & Filter Toolbar ── */}
       <div className="ws-toolbar-clean glass-panel">
         <div className="ws-toolbar-left">
           <div className="ws-search-box glass-input">
@@ -529,8 +529,8 @@ const BOQWorkspace = () => {
             <tr>
               <th className="ws-th-desc">Item Description</th>
               <th className="ws-th-qty">Qty</th>
-              <th className="ws-th-rate">Rate (â‚¦)</th>
-              <th className="ws-th-total">Amount (â‚¦)</th>
+              <th className="ws-th-rate">Rate (₦)</th>
+              <th className="ws-th-total">Amount (₦)</th>
             </tr>
           </thead>
           <tbody>
@@ -547,8 +547,11 @@ const BOQWorkspace = () => {
                     ref={(node) => { sectionRowRefs.current[section.id] = node; }}
                     className="ws-section-row"
                     onClick={() => {
-                      focusSection(section.id);
-                      toggleSection(section.id);
+                      if (section.id !== activeBillSectionId) {
+                        focusSection(section.id);
+                      } else {
+                        toggleSection(section.id);
+                      }
                     }}
                   >
                     <td colSpan={sectionHeaderSpan} className="ws-section-cell">
@@ -597,7 +600,7 @@ const BOQWorkspace = () => {
                           </button>
                         </div>
                         {!section.expanded && (
-                          <span className="ws-section-total">â‚¦{sectionSubtotal.toLocaleString()}</span>
+                          <span className="ws-section-total">₦{sectionSubtotal.toLocaleString()}</span>
                         )}
                       </div>
                     </td>
@@ -815,7 +818,7 @@ const BOQWorkspace = () => {
                             )}
                             {hasBenchmarkRate && selectedRateSource !== 'benchmark' && (
                               <span className="ws-rate-chip ws-rate-chip-bm-ref" title="Current market benchmark for this item">
-                                Benchmark: â‚¦{Math.round(benchmarkRate).toLocaleString()}
+                                Benchmark: ₦{Math.round(benchmarkRate).toLocaleString()}
                               </span>
                             )}
                             {benchmarkRefreshMeta?.canApplyRefresh && (
@@ -855,7 +858,7 @@ const BOQWorkspace = () => {
                           {selectedRateSource === 'benchmark' && (
                             <div className="ws-benchmark-override">
                               <Pencil size={10} className="ws-benchmark-override-icon" />
-                              <span className="ws-benchmark-override-label">Benchmark (â‚¦):</span>
+                              <span className="ws-benchmark-override-label">Benchmark (₦):</span>
                               <input
                                 type="number"
                                 className="ws-input ws-benchmark-override-input"
@@ -897,7 +900,7 @@ const BOQWorkspace = () => {
                           className={`ws-total-cell ${isWorkspaceCellSelected(section.id, item.id, 'amount') ? 'ws-cell-selected' : ''}`}
                           onClick={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'amount', itemCode, rowNumber: spreadsheetRowNumber })}
                         >
-                          <strong className="ws-total-main">â‚¦{itemTotal.toLocaleString()}</strong>
+                          <strong className="ws-total-main">₦{itemTotal.toLocaleString()}</strong>
                           {amountFormula && <span className="ws-total-formula">{amountFormula}</span>}
                           <span className={`ws-total-status ws-total-status-${automationMeta.tone}`}>{automationMeta.title}</span>
                         </td>
@@ -937,7 +940,7 @@ const BOQWorkspace = () => {
                               </div>
                               <div className="ws-mobile-card-total">
                                 <span>Amount</span>
-                                <strong>â‚¦{itemTotal.toLocaleString()}</strong>
+                                <strong>₦{itemTotal.toLocaleString()}</strong>
                                 {amountFormula && <small>{amountFormula}</small>}
                               </div>
                             </div>
@@ -1228,7 +1231,7 @@ const BOQWorkspace = () => {
                       <tr className="ws-subtotal-row">
                         <td colSpan={subtotalLeadingSpan}></td>
                         <td colSpan="2" className="ws-subtotal-val">
-                          Section Total Â· Qty {sectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })} Â· Amount â‚¦{sectionSubtotal.toLocaleString()}
+                          Section Total · Qty {sectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })} · Amount ₦{sectionSubtotal.toLocaleString()}
                         </td>
                       </tr>
                       <tr className="ws-add-row">
@@ -1254,7 +1257,7 @@ const BOQWorkspace = () => {
           <tfoot>
             <tr className="ws-grand-total">
               <td colSpan={3}>CONTRACT SUM</td>
-              <td className="ws-grand-val">â‚¦{calculateGrandTotal.toLocaleString()}</td>
+              <td className="ws-grand-val">₦{calculateGrandTotal.toLocaleString()}</td>
             </tr>
           </tfoot>
         </table>
@@ -1268,7 +1271,7 @@ const BOQWorkspace = () => {
                   <div className="ws-detail-dock-copy">
                     <span className="ws-detail-dock-eyebrow">Right Bar Controls</span>
                     <h3 className="ws-detail-dock-title">
-                      {selectedItemContext.itemCode} Â· {selectedItemContext.item.name || selectedItemContext.item.description || 'Untitled BOQ item'}
+                      {selectedItemContext.itemCode} · {selectedItemContext.item.name || selectedItemContext.item.description || 'Untitled BOQ item'}
                     </h3>
                     <div className="ws-detail-dock-meta">
                       <span className="ws-detail-meta-pill">{selectedItemContext.section.title}</span>
@@ -2804,7 +2807,7 @@ const BOQWorkspace = () => {
           border-color: #fca5a5;
         }
 
-        /* â”€â”€ TOOLBAR â”€â”€ */
+        /* ── TOOLBAR ── */
         .ws-toolbar {
           display: flex;
           align-items: center;
@@ -3220,7 +3223,7 @@ const BOQWorkspace = () => {
           border-color: #bfdbfe;
         }
 
-        /* â”€â”€ TABLE â”€â”€ */
+        /* ── TABLE ── */
         .ws-table-wrap.glass-panel {
           flex: 0 0 auto;
           min-width: 0;
@@ -3334,7 +3337,7 @@ const BOQWorkspace = () => {
         .ws-th-rate::after { content: "Rate"; }
         .ws-th-total::after { content: "Price"; }
 
-        /* â”€â”€ SECTION ROW â”€â”€ */
+        /* ── SECTION ROW ── */
         .ws-section-row {
           cursor: pointer;
           background: #f1f5f9;
@@ -3454,7 +3457,7 @@ const BOQWorkspace = () => {
           color: #1e293b;
         }
 
-        /* â”€â”€ ITEM ROW â”€â”€ */
+        /* ── ITEM ROW ── */
         .ws-item-row {
           border-bottom: 1px solid #f1f5f9;
           transition: all 0.1s ease;
@@ -3636,7 +3639,7 @@ const BOQWorkspace = () => {
         }
         .ws-outlier-icon { color: #f59e0b; flex-shrink: 0; }
 
-        /* â”€â”€ INPUTS â”€â”€ */
+        /* ── INPUTS ── */
         .ws-input {
           width: 100%;
           max-width: 100%;
@@ -4061,7 +4064,7 @@ const BOQWorkspace = () => {
           transition: width 0.3s;
         }
 
-        /* â”€â”€ ACTIONS â”€â”€ */
+        /* ── ACTIONS ── */
         .ws-act-cell { text-align: center; }
         .ws-act-group { display: flex; gap: 2px; justify-content: center; }
         .ws-btn-icon {
@@ -4081,7 +4084,7 @@ const BOQWorkspace = () => {
         .ws-btn-info { color: #64748b; }
         .ws-btn-info:hover { background: #eff6ff; color: #2563eb; opacity: 1 !important; }
 
-        /* â”€â”€ RATE SOURCE SELECTOR (3-button tri-modal) â”€â”€ */
+        /* ── RATE SOURCE SELECTOR (3-button tri-modal) ── */
         .ws-rate-source-selector {
           display: flex;
           flex-direction: column;
@@ -4165,7 +4168,7 @@ const BOQWorkspace = () => {
           color: #64748b;
         }
 
-        /* â”€â”€ RATE REFERENCE ROW â”€â”€ */
+        /* ── RATE REFERENCE ROW ── */
         .ws-rate-reference-row {
           display: flex;
           flex-wrap: wrap;
@@ -4198,7 +4201,7 @@ const BOQWorkspace = () => {
           margin-top: 0.45rem;
         }
 
-        /* â”€â”€ EMPTY SECTION CTA â”€â”€ */
+        /* ── EMPTY SECTION CTA ── */
         .ws-empty-section-row td { padding: 0 !important; }
         .ws-empty-section {
           display: flex;
@@ -4236,7 +4239,7 @@ const BOQWorkspace = () => {
         }
 
 
-        /* â”€â”€ SUBTOTAL â”€â”€ */
+        /* ── SUBTOTAL ── */
         .ws-subtotal-row { background: linear-gradient(180deg, #f8fafc 0%, #eef6ff 100%); }
         .ws-subtotal-val {
           text-align: right !important;
@@ -4268,7 +4271,7 @@ const BOQWorkspace = () => {
           border-color: #bfdbfe;
         }
 
-        /* â”€â”€ GRAND TOTAL â”€â”€ */
+        /* ── GRAND TOTAL ── */
         .ws-grand-total {
           background: #0f172a;
           color: white;
@@ -4286,7 +4289,7 @@ const BOQWorkspace = () => {
           color: #60a5fa !important;
         }
 
-        /* â”€â”€ MOBILE â”€â”€ */
+        /* ── MOBILE ── */
         @media (max-width: 1100px) {
           .ws-stage-shell {
             flex-direction: column;
@@ -4621,7 +4624,7 @@ const BOQWorkspace = () => {
           }
         }
 
-        /* â”€â”€ PRESENCE AVATARS â”€â”€ */
+        /* ── PRESENCE AVATARS ── */
         .ws-presence {
           display: flex;
           align-items: center;
@@ -4649,7 +4652,7 @@ const BOQWorkspace = () => {
           font-size: 0.5rem;
         }
 
-        /* â”€â”€ COLLAB MODAL â”€â”€ */
+        /* ── COLLAB MODAL ── */
         .collab-overlay {
           position: fixed; inset: 0;
           background: rgba(0,0,0,0.5);
@@ -4725,7 +4728,7 @@ const BOQWorkspace = () => {
         }
         .collab-remove-btn:hover { background: #fef2f2; color: #ef4444; }
 
-        /* â”€â”€ ACTIVITY PANEL â”€â”€ */
+        /* ── ACTIVITY PANEL ── */
         .activity-panel {
           position: fixed; right: 0; top: 0; bottom: 0;
           width: 300px; background: white;
