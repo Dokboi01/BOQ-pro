@@ -385,7 +385,8 @@ export function ProjectsProvider({ children }) {
 
             return false;
         }));
-    }, [user]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- user?.id captures the meaningful identity for filtering
+    }, [user?.id]);
 
     const ensureSharedProjectVisible = useCallback(async (incomingProjects = []) => {
         const sharedProjectId = new URLSearchParams(window.location.search).get('project');
@@ -407,7 +408,8 @@ export function ProjectsProvider({ children }) {
             console.warn('Shared project link recovery failed:', err?.message || err);
             return incomingProjects;
         }
-    }, [user]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- user?.id captures the meaningful identity here
+    }, [user?.id]);
 
     useEffect(() => {
         const currentUserId = user?.id || null;
@@ -434,7 +436,7 @@ export function ProjectsProvider({ children }) {
         if (!currentUserId) {
             setProjects([]);
         }
-    }, [user]);
+    }, [user?.id]);
 
     useEffect(() => {
         return () => {
@@ -499,7 +501,8 @@ export function ProjectsProvider({ children }) {
             cancelled = true;
             stopAutoSync();
         };
-    }, [ensureSharedProjectVisible, filterVisibleProjects, user]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- user?.id is the stable identity; user object ref churn would loop the effect
+    }, [ensureSharedProjectVisible, filterVisibleProjects, user?.id]);
 
     useEffect(() => {
         if (!user?.id) return;
@@ -535,7 +538,7 @@ export function ProjectsProvider({ children }) {
         return () => {
             cancelled = true;
         };
-    }, [readSavedWorkspaceState, user, writeSavedWorkspaceState]);
+    }, [readSavedWorkspaceState, user?.id, writeSavedWorkspaceState]);
 
     // ── Listen for sync status changes ──
     useEffect(() => {
@@ -699,8 +702,9 @@ export function ProjectsProvider({ children }) {
                 setActiveTab('dashboard');
                 setFocusMode(false);
             }
-            setActiveProjectId(null);
-            lastPersistedWorkspaceSignatureRef.current = '';
+            if (activeProjectId !== null) {
+                setActiveProjectId(null);
+            }
             return;
         }
 
@@ -711,13 +715,13 @@ export function ProjectsProvider({ children }) {
             );
             persistWorkspaceState(removeWorkspaceSnapshotProject(savedWorkspaceState, activeProjectId));
             setActiveProjectId(null);
-            lastPersistedWorkspaceSignatureRef.current = '';
             if (activeTab === 'workspace') {
                 setActiveTab('dashboard');
                 setFocusMode(false);
             }
         }
-    }, [activeProjectId, activeTab, cloudWorkspaceState, focusMode, persistWorkspaceState, projects, readSavedWorkspaceState, user]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- user?.id is the stable identity; user object ref churn would loop the effect
+    }, [activeProjectId, activeTab, cloudWorkspaceState, focusMode, persistWorkspaceState, projects, readSavedWorkspaceState, user?.id]);
 
     const calculateTotalValue = useMemo(() => {
         const sumProjectTotal = (project) => {

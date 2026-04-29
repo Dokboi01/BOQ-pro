@@ -1112,7 +1112,13 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
 
   const isSelectionStage = !isCustomWorkspace && boqBuilder?.stage === 'selection';
   const hasGeneratedBoq = (sections || []).some((section) => (section.items || []).length > 0);
-  
+
+  const isOutlier = React.useCallback((item, region = project?.region || 'Lagos') => {
+    const benchmarkRate = getEffectiveBenchmarkRate(item, region);
+    const unitRate = getItemUnitRate(item, region);
+    return isBenchmarkOutlier(unitRate, benchmarkRate);
+  }, [project?.region]);
+
   const workspaceVisibleSections = React.useMemo(() => {
     if (workspaceFilter === 'all') return sections || [];
     return (sections || []).filter((section) => {
@@ -1454,12 +1460,6 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
     }
     return { label: 'Manual', tone: 'manual', description: 'This item uses a manually entered unit rate.' };
   };
-
-  const isOutlier = React.useCallback((item, region = project?.region || 'Lagos') => {
-    const benchmarkRate = getEffectiveBenchmarkRate(item, region);
-    const unitRate = getItemUnitRate(item, region);
-    return isBenchmarkOutlier(unitRate, benchmarkRate);
-  }, [project?.region]);
 
   const benchmarkSyncLabel = formatBenchmarkSyncLabel(benchmarkSyncState.checkedAt);
 
