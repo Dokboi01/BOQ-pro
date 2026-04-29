@@ -385,7 +385,7 @@ export function ProjectsProvider({ children }) {
 
             return false;
         }));
-    }, [user?.id]);
+    }, [user]);
 
     const ensureSharedProjectVisible = useCallback(async (incomingProjects = []) => {
         const sharedProjectId = new URLSearchParams(window.location.search).get('project');
@@ -407,7 +407,7 @@ export function ProjectsProvider({ children }) {
             console.warn('Shared project link recovery failed:', err?.message || err);
             return incomingProjects;
         }
-    }, [user?.id]);
+    }, [user]);
 
     useEffect(() => {
         const currentUserId = user?.id || null;
@@ -434,7 +434,7 @@ export function ProjectsProvider({ children }) {
         if (!currentUserId) {
             setProjects([]);
         }
-    }, [user?.id]);
+    }, [user]);
 
     useEffect(() => {
         return () => {
@@ -499,7 +499,7 @@ export function ProjectsProvider({ children }) {
             cancelled = true;
             stopAutoSync();
         };
-    }, [ensureSharedProjectVisible, filterVisibleProjects, user?.id]);
+    }, [ensureSharedProjectVisible, filterVisibleProjects, user]);
 
     useEffect(() => {
         if (!user?.id) return;
@@ -535,7 +535,7 @@ export function ProjectsProvider({ children }) {
         return () => {
             cancelled = true;
         };
-    }, [readSavedWorkspaceState, user?.id, writeSavedWorkspaceState]);
+    }, [readSavedWorkspaceState, user, writeSavedWorkspaceState]);
 
     // ── Listen for sync status changes ──
     useEffect(() => {
@@ -717,7 +717,7 @@ export function ProjectsProvider({ children }) {
                 setFocusMode(false);
             }
         }
-    }, [activeProjectId, activeTab, cloudWorkspaceState, focusMode, persistWorkspaceState, projects, readSavedWorkspaceState, user?.id]);
+    }, [activeProjectId, activeTab, cloudWorkspaceState, focusMode, persistWorkspaceState, projects, readSavedWorkspaceState, user]);
 
     const calculateTotalValue = useMemo(() => {
         const sumProjectTotal = (project) => {
