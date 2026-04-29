@@ -500,7 +500,7 @@ const baseCatalogItem = ({
   return item;
 };
 
-const manualItem = ({
+const _manualItem = ({
   id,
   code,
   name,
