@@ -20,9 +20,13 @@ import {
   buildAutoRateResult,
   buildMaterialRateIndex,
   getItemBenchmarkRefreshInsight,
+  getItemBenchmarkEvidence,
+  getItemUnitRate,
+  getProjectBenchmarkRefreshAnalytics,
   getBenchmarkRegionalFactor,
   getEffectiveBenchmarkRate,
   getItemTotal,
+  isBenchmarkOutlier,
   repriceSectionsForRegion,
   resolveItemRateSource,
 } from '../utils/pricing';
@@ -96,6 +100,17 @@ export const sanitizeNonNegativeNumber = (value) => {
     return 0;
   }
   return parsed;
+};
+
+const formatBenchmarkSyncLabel = (checkedAt) => {
+  if (!checkedAt) return 'Not synced yet';
+  const parsed = new Date(checkedAt);
+  if (Number.isNaN(parsed.getTime())) return 'Recently synced';
+  const now = new Date();
+  const isSameDay = parsed.toDateString() === now.toDateString();
+  return isSameDay
+    ? `Synced today at ${parsed.toLocaleTimeString('en-NG', { hour: 'numeric', minute: '2-digit' })}`
+    : `Last synced ${parsed.toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}`;
 };
 
 // ==========================================
@@ -351,7 +366,7 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
     onUpdate(project.id, updated);
   };
 
-  const syncBoqItemSnapshot = (item, section = null) => {
+  const syncBoqItemSnapshot = React.useCallback((item, section = null) => {
     const normalizedEditableInputs = normalizeEditableInputs(item.editableInputs).map((input) => ({
       ...input,
       value: input.value ?? input.defaultValue
@@ -410,7 +425,7 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
       nextItem.progressPercent = nextItem.qty > 0 ? (nextItem.qtyCompleted / nextItem.qty) * 100 : 0;
     }
     return nextItem;
-  };
+  }, [project?.region, project?.structureType, project?.type]);
 
   const persistBoqBuilderState = React.useCallback((nextBuilder, nextSections = sections, region = project?.region, extraUpdates = {}) => {
     setBoqBuilder(nextBuilder);
@@ -465,7 +480,7 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
         items: [...generatedRows, ...preservedCustomRows],
       };
     })
-  ), [projectStructureType]);
+  ), [projectStructureType, syncBoqItemSnapshot]);
 
   const updateItem = (sectionId, itemId, fieldOrUpdates, valueOrBreakdown = null, breakdown = null) => {
     const updated = sections.map((section) => {
@@ -1104,12 +1119,12 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
       const hasMatch = (section.items || []).some((item) => {
         const query = searchQuery.toLowerCase();
         if (workspaceFilter === 'incomplete') return (item.qty || 0) <= 0 || (item.unitRate || 0) <= 0;
-        if (workspaceFilter === 'outliers') return isBenchmarkOutlier(item, project?.region || 'Lagos');
+        if (workspaceFilter === 'outliers') return isOutlier(item, project?.region || 'Lagos');
         return (item.description || '').toLowerCase().includes(query) || (item.itemCode || '').toLowerCase().includes(query);
       });
       return hasMatch;
     });
-  }, [sections, workspaceFilter, searchQuery, project?.region]);
+  }, [isOutlier, project?.region, searchQuery, sections, workspaceFilter]);
 
   const selectionCountsBySection = React.useMemo(() => {
     const counts = {};
@@ -1288,7 +1303,7 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
     }
 
     if (selectedRateSource === 'benchmark' && benchmarkRate <= 0) {
-      return { text: 'No benchmark rate available — switch to custom pricing.', tone: 'warning' };
+      return { text: 'No benchmark rate available - switch to custom pricing.', tone: 'warning' };
     }
 
     if (selectedRateSource === 'formula' && unitRate > 0) {
@@ -1315,7 +1330,7 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
     if (workTypeLabel) segments.push(workTypeLabel);
     if (item.customPricing.pricingReference) segments.push(item.customPricing.pricingReference);
     if (item.customPricing.supplierQuote) segments.push(item.customPricing.supplierQuote);
-    return segments.join(' • ');
+    return segments.join(' | ');
   };
 
   const getAutomationMeta = (item, benchmarkRate, unitRate) => {
@@ -1333,7 +1348,7 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
     if (selectedRateSource === 'benchmark') {
       if (benchmarkRate <= 0) {
         return {
-          title: 'No benchmark rate available — switch to custom pricing',
+          title: 'No benchmark rate available - switch to custom pricing',
           detail: `This item is not yet covered by the ${marketRegionLabel} market benchmark.`,
           tone: 'warning'
         };
@@ -1423,6 +1438,29 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
     return 'Project quantity';
   };
 
+  const getRateSourceMeta = (item) => {
+    const source = resolveItemRateSource(item);
+    if (source === 'benchmark') {
+      return { label: 'Benchmark', tone: 'benchmark', description: 'This item is priced from the market benchmark.' };
+    }
+    if (source === 'formula') {
+      return { label: 'Formula', tone: 'calculated', description: 'This item is priced from saved formula inputs.' };
+    }
+    if (item?.customPricing) {
+      return { label: 'Custom', tone: 'custom', description: 'This item uses a saved custom pricing breakdown.' };
+    }
+    if (item?.rateSource === 'calculated') {
+      return { label: 'Analysed', tone: 'calculated', description: 'This item is priced from a rate analysis.' };
+    }
+    return { label: 'Manual', tone: 'manual', description: 'This item uses a manually entered unit rate.' };
+  };
+
+  const isOutlier = React.useCallback((item, region = project?.region || 'Lagos') => {
+    const benchmarkRate = getEffectiveBenchmarkRate(item, region);
+    const unitRate = getItemUnitRate(item, region);
+    return isBenchmarkOutlier(unitRate, benchmarkRate);
+  }, [project?.region]);
+
   const benchmarkSyncLabel = formatBenchmarkSyncLabel(benchmarkSyncState.checkedAt);
 
   const activeSheetLabel = viewMode === 'valuation' ? 'Valuation Sheet' : 'Estimate Sheet';
@@ -1511,7 +1549,11 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
       };
     }).filter(Boolean);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeBillSectionId, project?.region, projectStructureType, searchQuery, workspaceFilter, workspaceVisibleSections]);
+  }, [activeBillSectionId, isOutlier, project?.region, projectStructureType, searchQuery, workspaceFilter, workspaceVisibleSections]);
+
+  const filteredItemCount = React.useMemo(() => (
+    (filteredSections || []).reduce((sum, section) => sum + (section.items || []).length, 0)
+  ), [filteredSections]);
 
   const benchmarkRefreshAnalytics = React.useMemo(() => {
     if (!Array.isArray(benchmarkMaterialIndex)) {

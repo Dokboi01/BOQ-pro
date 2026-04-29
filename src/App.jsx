@@ -174,7 +174,7 @@ function App() {
 
   // ── Early returns for auth views ──
   if (view === 'loading') return (
-    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)', color: 'var(--text-primary)', flexDirection: 'column', gap: '0.75rem' }}>
+    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)', color: 'var(--text-primary)', flexDirection: 'column', gap: '0.75rem' }}>
       <div className="loading-spinner"></div>
       <div style={{ marginLeft: '10px', fontWeight: 700 }}>BOQ Pro — Loading workspace...</div>
       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Nigerian Construction Commercial Workspace</div>
@@ -242,7 +242,7 @@ function App() {
   />;
   if (view === 'signup') return <SignUp error={authError} selectedPlan={selectedPlan} onSignUp={handleSignUp} onSwitchToLogin={(target) => { setAuthError(null); setView(target); }} onViewTerms={() => setView('terms')} onViewPrivacy={() => setView('privacy')} />;
   if (view === 'verification') return (
-    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)', color: 'var(--text-primary)', flexDirection: 'column', gap: '1.5rem', textAlign: 'center', padding: '2rem' }}>
+    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)', color: 'var(--text-primary)', flexDirection: 'column', gap: '1.5rem', textAlign: 'center', padding: '2rem' }}>
       <div style={{ borderRadius: '50%', background: 'rgba(16, 185, 129, 0.16)', padding: '20px', marginBottom: '10px' }}>
         <Mail size={48} className="text-accent" />
       </div>
@@ -277,7 +277,7 @@ function App() {
     </div>
   );
   if (view === 'forgot-password') return (
-    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)', color: 'var(--text-primary)', flexDirection: 'column', gap: '1rem', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)', color: 'var(--text-primary)', flexDirection: 'column', gap: '1rem', fontFamily: 'var(--font-main)' }}>
       <h2>🔑 Password Reset</h2>
       <p style={{ color: 'var(--text-muted)', maxWidth: '400px', textAlign: 'center' }}>Password reset is handled via Firebase. Please use the Firebase Console or contact support to reset your password.</p>
       <button onClick={() => setView('login')} style={{ padding: '0.75rem 2rem', background: 'var(--accent-600)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: '1rem' }}>Back to Login</button>

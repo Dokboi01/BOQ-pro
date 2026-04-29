@@ -435,20 +435,20 @@ const BUILDING_DETAIL_PACK = {
     ],
     site_clearance: [
         item('Tree stump uprooting and grub removal to formation level', 'Nr', 42, 18500, 'Grubbing', ['Excavator', 'Chainsaw']),
-        item('Reduce levels to building platform and trim for working space', 'mÂ³', 340, 3150, 'Platform Formation', ['Excavator', 'Levelling crew']),
+        item('Reduce levels to building platform and trim for working space', 'm3', 340, 3150, 'Platform Formation', ['Excavator', 'Levelling crew']),
         item('Dewatering of isolated foundation pits during excavation', 'Day', 18, 78000, 'Dewatering', ['Submersible pump', 'Hoses']),
-        item('Timber shoring to unstable trench faces where directed', 'mÂ²', 220, 12800, 'Excavation Support', ['Timber planks', 'Props'])
+        item('Timber shoring to unstable trench faces where directed', 'm2', 220, 12800, 'Excavation Support', ['Timber planks', 'Props'])
     ],
     filling_compaction: [
-        item('Selected fill beneath ground beams and oversite slab', 'mÂ³', 180, 9800, 'Selected Fill', ['Selected laterite', 'Compactor']),
+        item('Selected fill beneath ground beams and oversite slab', 'm3', 180, 9800, 'Selected Fill', ['Selected laterite', 'Compactor']),
         item('Compaction test certification to filled areas', 'Nr', 14, 92000, 'Field Density Testing', ['Sand cone kit', 'Nuclear density gauge']),
-        item('1000 gauge polythene membrane below ground floor slab', 'mÂ²', 1850, 1250, 'Damp Membrane', ['Polythene sheet', 'Joint tape']),
-        item('Lean concrete leveling pads to isolated bases', 'mÂ³', 45, 78500, 'Leveling Concrete', ['Cement', 'Sand', 'Granite'])
+        item('1000 gauge polythene membrane below ground floor slab', 'm2', 1850, 1250, 'Damp Membrane', ['Polythene sheet', 'Joint tape']),
+        item('Lean concrete leveling pads to isolated bases', 'm3', 45, 78500, 'Leveling Concrete', ['Cement', 'Sand', 'Granite'])
     ],
     foundation_works: [
         item('Starter bars projecting from footings into columns and walls', 'kg', 8200, 1680, 'Starter Bars', ['Y12 bars', 'Y16 bars', 'Binding wire']),
-        item('Concrete to pad footings below isolated columns', 'mÂ³', 110, 116000, 'Pad Footing Concrete', ['Concrete Grade 25', 'Granite', 'Cement']),
-        item('Waterproofing coating to foundation blockwork faces below grade', 'mÂ²', 640, 3450, 'Substructure Waterproofing', ['Bituminous coating', 'Primer']),
+        item('Concrete to pad footings below isolated columns', 'm3', 110, 116000, 'Pad Footing Concrete', ['Concrete Grade 25', 'Granite', 'Cement']),
+        item('Waterproofing coating to foundation blockwork faces below grade', 'm2', 640, 3450, 'Substructure Waterproofing', ['Bituminous coating', 'Primer']),
         item('Column base kickers and construction joint treatment', 'm', 240, 4200, 'Kickers and Joints', ['Concrete', 'Waterbar', 'Bonding agent'])
     ],
     frame_columns_beams: [
@@ -456,17 +456,17 @@ const BUILDING_DETAIL_PACK = {
         item('Beam bottom and top bar placement including stirrups', 'kg', 13800, 1680, 'Beam Reinforcement', ['Y12 bars', 'Y16 bars', 'Y20 bars']),
         item('Slab top mesh, bottom bars and trimming steel around openings', 'kg', 14800, 1660, 'Slab Reinforcement', ['Y10 bars', 'Y12 bars', 'BRC mesh']),
         item('Construction joints, waterstops and pour sequence accessories', 'Sum', 1, 780000, 'Concrete Accessories', ['PVC waterstop', 'Joint sealant']),
-        item('Concrete curing, cube sampling and striking after approved period', 'mÂ²', 2450, 1350, 'Concrete Curing', ['Curing compound', 'Water hoses'])
+        item('Concrete curing, cube sampling and striking after approved period', 'm2', 2450, 1350, 'Concrete Curing', ['Curing compound', 'Water hoses'])
     ],
     blockwork_super: [
         item('Damp proof membrane turn-ups and cavity tray details', 'm', 420, 2250, 'Moisture Control', ['DPM membrane', 'Bitumen primer']),
-        item('Reinforced blockwork with hoop iron and vertical bars to selected panels', 'mÂ²', 280, 21800, 'Reinforced Blockwork', ['Blocks', 'Hoop iron', 'Y10 bars']),
+        item('Reinforced blockwork with hoop iron and vertical bars to selected panels', 'm2', 280, 21800, 'Reinforced Blockwork', ['Blocks', 'Hoop iron', 'Y10 bars']),
         item('Precast concrete sills and copings to wall heads', 'm', 520, 9200, 'Sills and Copings', ['Precast concrete', 'Mortar']),
         item('Wall ties, movement joints and crack control mesh', 'm', 860, 2800, 'Wall Accessories', ['Wall ties', 'Joint filler', 'Mesh'])
     ],
     roofing: [
         item('Mild steel truss option to feature roof portions including primer', 'kg', 5800, 2650, 'Steel Roofing Structure', ['Mild steel', 'Red oxide primer']),
-        item('Roof underlay membrane and insulation blanket', 'mÂ²', 2250, 4200, 'Roof Insulation', ['Insulation foil', 'Roofing membrane']),
+        item('Roof underlay membrane and insulation blanket', 'm2', 2250, 4200, 'Roof Insulation', ['Insulation foil', 'Roofing membrane']),
         item('Timber/purlin rails, truss connectors and hurricane straps', 'm', 3100, 2850, 'Roof Accessories', ['Purlins', 'Connector plates', 'Straps']),
         item('Fascia soffit cladding and eaves finishing', 'm', 860, 8200, 'Eaves and Soffits', ['PVC fascia', 'Soffit board', 'Fixings'])
     ],
@@ -477,15 +477,15 @@ const BUILDING_DETAIL_PACK = {
         item('Roller shutter and access control fittings to service areas', 'Nr', 8, 865000, 'Industrial Access', ['Roller shutter', 'Motor unit', 'Guide rails'])
     ],
     finishes: [
-        item('Skim coat and wall putty preparation to internal plastered faces', 'mÂ²', 6100, 1650, 'Wall Preparation', ['Wall putty', 'Skim coat']),
+        item('Skim coat and wall putty preparation to internal plastered faces', 'm2', 6100, 1650, 'Wall Preparation', ['Wall putty', 'Skim coat']),
         item('Granite or porcelain skirting and stair nosing', 'm', 1450, 7200, 'Skirtings and Nosings', ['Granite strips', 'Tile adhesive']),
-        item('Epoxy floor finish to plant rooms and service areas', 'mÂ²', 320, 18200, 'Special Floor Finish', ['Epoxy resin', 'Hardener']),
+        item('Epoxy floor finish to plant rooms and service areas', 'm2', 320, 18200, 'Special Floor Finish', ['Epoxy resin', 'Hardener']),
         item('Quartz kitchen counter surfaces and vanity tops', 'm', 180, 68500, 'Worktops', ['Quartz top', 'Adhesive', 'Sealant'])
     ],
     painting: [
-        item('Alkali resistant primer to new plastered surfaces', 'mÂ²', 9900, 620, 'Priming', ['Primer', 'Brushes', 'Rollers']),
-        item('Sanding, stopping and surface preparation before final coats', 'mÂ²', 9900, 540, 'Preparation', ['Sandpaper', 'Filler']),
-        item('Anti-rust primer and two finishing coats to structural steel', 'mÂ²', 680, 4850, 'Steel Protection', ['Red oxide', 'Gloss paint']),
+        item('Alkali resistant primer to new plastered surfaces', 'm2', 9900, 620, 'Priming', ['Primer', 'Brushes', 'Rollers']),
+        item('Sanding, stopping and surface preparation before final coats', 'm2', 9900, 540, 'Preparation', ['Sandpaper', 'Filler']),
+        item('Anti-rust primer and two finishing coats to structural steel', 'm2', 680, 4850, 'Steel Protection', ['Red oxide', 'Gloss paint']),
         item('Road-line and parking bay marking to external paved areas', 'm', 950, 2400, 'External Markings', ['Road marking paint'])
     ],
     plumbing_sanitary: [
@@ -518,37 +518,37 @@ const ROAD_DETAIL_PACK = {
     ],
     clearing_grubbing: [
         item('Felling and disposal of isolated trees within right-of-way', 'Nr', 165, 24500, 'Tree Removal', ['Chainsaw', 'Excavator']),
-        item('Removal of existing failed pavement and concrete obstructions', 'mÂ²', 4200, 4850, 'Demolition', ['Breaker', 'Excavator', 'Tipper']),
-        item('Scarify existing shoulders and blend with new formation', 'mÂ²', 12500, 540, 'Scarification', ['Scarifier', 'Grader'])
+        item('Removal of existing failed pavement and concrete obstructions', 'm2', 4200, 4850, 'Demolition', ['Breaker', 'Excavator', 'Tipper']),
+        item('Scarify existing shoulders and blend with new formation', 'm2', 12500, 540, 'Scarification', ['Scarifier', 'Grader'])
     ],
     earthworks_excavation: [
-        item('Common excavation in cut sections including side slope trimming', 'mÂ³', 15600, 3350, 'Cut Excavation', ['Excavator', 'Dozer']),
-        item('Rock excavation and ripping in localized hard strata', 'mÂ³', 850, 18500, 'Rock Excavation', ['Rock breaker', 'Excavator']),
-        item('Bench existing embankment for widening works', 'mÂ²', 6400, 1250, 'Embankment Benching', ['Dozer', 'Labour']),
-        item('Proof rolling and remediation of pumping spots', 'mÂ²', 52000, 640, 'Proof Rolling', ['Pneumatic roller'])
+        item('Common excavation in cut sections including side slope trimming', 'm3', 15600, 3350, 'Cut Excavation', ['Excavator', 'Dozer']),
+        item('Rock excavation and ripping in localized hard strata', 'm3', 850, 18500, 'Rock Excavation', ['Rock breaker', 'Excavator']),
+        item('Bench existing embankment for widening works', 'm2', 6400, 1250, 'Embankment Benching', ['Dozer', 'Labour']),
+        item('Proof rolling and remediation of pumping spots', 'm2', 52000, 640, 'Proof Rolling', ['Pneumatic roller'])
     ],
     subgrade: [
-        item('Subgrade stabilization with cement/lime where directed', 'mÂ²', 8600, 4200, 'Chemical Stabilization', ['Cement', 'Lime', 'Recycler']),
-        item('Geotextile separator to weak formation areas', 'mÂ²', 6800, 3850, 'Geotextile Separation', ['Geotextile fabric']),
+        item('Subgrade stabilization with cement/lime where directed', 'm2', 8600, 4200, 'Chemical Stabilization', ['Cement', 'Lime', 'Recycler']),
+        item('Geotextile separator to weak formation areas', 'm2', 6800, 3850, 'Geotextile Separation', ['Geotextile fabric']),
         item('Finished subgrade level checks and density confirmation', 'Nr', 24, 98000, 'Testing and Approval', ['Level instrument', 'Density test kit'])
     ],
     subbase_base: [
-        item('Watering and compaction of each granular layer to specification', 'mÂ²', 52000, 780, 'Layer Compaction', ['Water tanker', 'Roller']),
-        item('Grading and line/level trimming of base before bituminous works', 'mÂ²', 52000, 620, 'Base Trimming', ['Grader', 'Survey gear']),
+        item('Watering and compaction of each granular layer to specification', 'm2', 52000, 780, 'Layer Compaction', ['Water tanker', 'Roller']),
+        item('Grading and line/level trimming of base before bituminous works', 'm2', 52000, 620, 'Base Trimming', ['Grader', 'Survey gear']),
         item('Field density tests and material gradation sampling', 'Nr', 36, 125000, 'Quality Assurance', ['Sampling bags', 'Sieve set'])
     ],
     bituminous_layers: [
-        item('Asphalt leveling course to depressions and tie-ins', 'mÂ²', 6200, 9600, 'Leveling Course', ['Asphalt mix', 'Bitumen']),
-        item('Hand-laid asphalt to junction radii and difficult areas', 'mÂ²', 2800, 19800, 'Hand-Laid Asphalt', ['Asphalt mix', 'Hand tools']),
+        item('Asphalt leveling course to depressions and tie-ins', 'm2', 6200, 9600, 'Leveling Course', ['Asphalt mix', 'Bitumen']),
+        item('Hand-laid asphalt to junction radii and difficult areas', 'm2', 2800, 19800, 'Hand-Laid Asphalt', ['Asphalt mix', 'Hand tools']),
         item('Asphalt core sampling and compaction testing', 'Nr', 48, 115000, 'Asphalt Testing', ['Core cutter', 'Density test kit'])
     ],
     pavement_concrete: [
         item('Tie bars, dowel baskets and basket anchorage at jointed bays', 'kg', 16800, 1720, 'Tie and Dowel Bars', ['Tie bars', 'Dowel bars', 'Baskets']),
         item('Saw cutting, sealing and groove finishing to rigid pavement panels', 'm', 7200, 5200, 'Joint Sawing and Sealing', ['Saw blades', 'Sealant']),
-        item('Curing compound spray and hessian protection to concrete pavement', 'mÂ²', 18500, 1350, 'Concrete Curing', ['Curing compound', 'Hessian'])
+        item('Curing compound spray and hessian protection to concrete pavement', 'm2', 18500, 1350, 'Concrete Curing', ['Curing compound', 'Hessian'])
     ],
     shoulders_kerbs: [
-        item('Paved shoulder surfacing and shoulder drop-off treatment', 'mÂ²', 6400, 9800, 'Paved Shoulders', ['Asphalt', 'Stone base']),
+        item('Paved shoulder surfacing and shoulder drop-off treatment', 'm2', 6400, 9800, 'Paved Shoulders', ['Asphalt', 'Stone base']),
         item('Median kerb backing concrete and bed preparation', 'm', 5200, 3200, 'Kerb Backing', ['Concrete', 'Sand']),
         item('Concrete lined median drains and crossing points', 'm', 1850, 22500, 'Median Drainage', ['Concrete', 'Reinforcement'])
     ],
@@ -560,7 +560,7 @@ const ROAD_DETAIL_PACK = {
     road_drainage: [
         item('Catch basins, gully inlets and sump cleaning points', 'Nr', 210, 165000, 'Inlet Structures', ['Concrete', 'Gratings', 'Frames']),
         item('Headwalls, wingwalls and aprons to culvert ends', 'Nr', 46, 820000, 'Headwalls and Wingwalls', ['Concrete', 'Reinforcement']),
-        item('Stone pitching and erosion protection to outfalls', 'mÂ²', 2800, 28500, 'Outfall Protection', ['Quarry stone', 'Geotextile'])
+        item('Stone pitching and erosion protection to outfalls', 'm2', 2800, 28500, 'Outfall Protection', ['Quarry stone', 'Geotextile'])
     ]
 };
 
@@ -570,11 +570,11 @@ const ROAD_CRCP_DETAIL_PACK = {
         item('Concrete trial panels and surface texture approval', 'Nr', 4, 480000, 'Trial Works', ['Concrete mix', 'Texturing tools'])
     ],
     crcp_earthworks: [
-        item('Subgrade proof rolling and remediation of soft spots', 'mÂ²', 92000, 620, 'Subgrade Preparation', ['Roller', 'Imported fill']),
-        item('Geotextile separator at localized weak formation', 'mÂ²', 12500, 3850, 'Geotextile Layer', ['Geotextile fabric'])
+        item('Subgrade proof rolling and remediation of soft spots', 'm2', 92000, 620, 'Subgrade Preparation', ['Roller', 'Imported fill']),
+        item('Geotextile separator at localized weak formation', 'm2', 12500, 3850, 'Geotextile Layer', ['Geotextile fabric'])
     ],
     crcp_base: [
-        item('Wet mixing and compaction control for stone base layer', 'mÂ²', 92000, 820, 'Base Compaction', ['Water tanker', 'Roller']),
+        item('Wet mixing and compaction control for stone base layer', 'm2', 92000, 820, 'Base Compaction', ['Water tanker', 'Roller']),
         item('Lean concrete edge strip or treated base to shoulder interface', 'm', 7200, 6800, 'Edge Base Treatment', ['Lean concrete', 'Formwork'])
     ],
     crcp_reinforcement: [
@@ -583,7 +583,7 @@ const ROAD_CRCP_DETAIL_PACK = {
     ],
     crcp_concrete: [
         item('Slipform paver guide rail verification and line correction', 'Day', 18, 225000, 'Paving Train Control', ['Guide rail tools', 'Survey gear']),
-        item('Longitudinal texturing, burlap drag and edge finishing', 'mÂ²', 92000, 1650, 'Texture and Finish', ['Burlap drag', 'Tining comb']),
+        item('Longitudinal texturing, burlap drag and edge finishing', 'm2', 92000, 1650, 'Texture and Finish', ['Burlap drag', 'Tining comb']),
         item('Terminal anchorage, end beam and transition slab details', 'Sum', 1, 12800000, 'Terminal Details', ['Reinforcement', 'Concrete', 'Dowels'])
     ],
     crcp_ancillary: [
@@ -601,45 +601,45 @@ const BRIDGE_DETAIL_PACK = {
     bridge_piling: [
         item('Permanent casing, pile boring slurry and tremie concrete operations', 'm', 1650, 148000, 'Pile Construction Accessories', ['Steel casing', 'Bentonite', 'Tremie pipe']),
         item('Pile head trimming and preparation for cap reinforcement', 'Nr', 96, 38500, 'Pile Head Treatment', ['Chipping hammer', 'Compressor']),
-        item('Pile cap blinding concrete and setting out of starter bars', 'mÂ³', 120, 78500, 'Pile Cap Preparation', ['Blinding concrete', 'Starter bars'])
+        item('Pile cap blinding concrete and setting out of starter bars', 'm3', 120, 78500, 'Pile Cap Preparation', ['Blinding concrete', 'Starter bars'])
     ],
     bridge_substructure: [
         item('Abutment back drain, weepholes and filter media', 'm', 420, 18500, 'Back Drainage', ['Perforated pipe', 'Filter media']),
         item('Reinforcement to wingwalls, return walls and dirt walls', 'kg', 28500, 1680, 'Wingwall Reinforcement', ['Y12 bars', 'Y16 bars']),
-        item('Bearing plinths and pedestal concrete to piers/abutments', 'mÂ³', 65, 172000, 'Bearing Plinths', ['Non-shrink grout', 'Concrete'])
+        item('Bearing plinths and pedestal concrete to piers/abutments', 'm3', 65, 172000, 'Bearing Plinths', ['Non-shrink grout', 'Concrete'])
     ],
     bridge_superstructure: [
-        item('Deck waterproofing membrane before wearing surface', 'mÂ²', 6200, 5800, 'Deck Waterproofing', ['Waterproof membrane', 'Primer']),
-        item('Diaphragm reinforcement and cross-beam concrete', 'mÂ³', 180, 188000, 'Diaphragm Works', ['Concrete Grade 40', 'Y16 bars']),
+        item('Deck waterproofing membrane before wearing surface', 'm2', 6200, 5800, 'Deck Waterproofing', ['Waterproof membrane', 'Primer']),
+        item('Diaphragm reinforcement and cross-beam concrete', 'm3', 180, 188000, 'Diaphragm Works', ['Concrete Grade 40', 'Y16 bars']),
         item('Deck edge fascia treatment and drip groove formation', 'm', 2850, 6200, 'Deck Edge Finishes', ['Form liners', 'Mortar'])
     ],
     bridge_fittings: [
         item('Bearing installation survey, jacking and final alignment', 'Set', 48, 285000, 'Bearing Installation Control', ['Hydraulic jack', 'Survey tools']),
         item('Parapet starter bars, anchor bolts and cast-in inserts', 'kg', 14200, 1750, 'Parapet Accessories', ['Anchor bolts', 'Starter bars']),
-        item('Approach slab backfill, compaction and transition wedge', 'mÂ³', 620, 8600, 'Approach Backfill', ['Selected fill', 'Roller'])
+        item('Approach slab backfill, compaction and transition wedge', 'm3', 620, 8600, 'Approach Backfill', ['Selected fill', 'Roller'])
     ],
     bridge_finishes: [
         item('Bridge deck kerbs, walkway edging and scupper boxes', 'm', 1850, 24500, 'Deck Drainage Edge', ['Scupper boxes', 'Concrete']),
-        item('Protective coating to exposed concrete faces', 'mÂ²', 4200, 3850, 'Concrete Protection', ['Anti-carbonation coating']),
-        item('Gabion toe protection and river bank restoration', 'mÂ³', 960, 42500, 'River Protection', ['Gabion baskets', 'Stone'])
+        item('Protective coating to exposed concrete faces', 'm2', 4200, 3850, 'Concrete Protection', ['Anti-carbonation coating']),
+        item('Gabion toe protection and river bank restoration', 'm3', 960, 42500, 'River Protection', ['Gabion baskets', 'Stone'])
     ]
 };
 
 const DRAINAGE_DETAIL_PACK = {
     drn_setting_out: [
-        item('Trench support, strutting and side protection in deep cuts', 'mÂ²', 850, 14600, 'Excavation Support', ['Steel struts', 'Timber lagging']),
-        item('Haulage and disposal of unsuitable excavated spoil', 'mÂ³', 3200, 2650, 'Spoil Disposal', ['Tipper truck']),
-        item('Formation level trimming and proof rolling', 'mÂ²', 5400, 620, 'Formation Preparation', ['Compactor', 'Survey level'])
+        item('Trench support, strutting and side protection in deep cuts', 'm2', 850, 14600, 'Excavation Support', ['Steel struts', 'Timber lagging']),
+        item('Haulage and disposal of unsuitable excavated spoil', 'm3', 3200, 2650, 'Spoil Disposal', ['Tipper truck']),
+        item('Formation level trimming and proof rolling', 'm2', 5400, 620, 'Formation Preparation', ['Compactor', 'Survey level'])
     ],
     drn_bedding_blinding: [
         item('Waterstop strips and kicker reinforcement at construction joints', 'm', 820, 3850, 'Joint Treatment', ['PVC waterstop', 'Binding wire']),
         item('Spacer blocks, cover chairs and reinforcement accessories', 'Nr', 24500, 180, 'Rebar Accessories', ['Cover blocks', 'Chairs']),
-        item('Form oil, release agents and striking/cleaning', 'mÂ²', 4200, 950, 'Formwork Accessories', ['Release oil', 'Cleaning tools'])
+        item('Form oil, release agents and striking/cleaning', 'm2', 4200, 950, 'Formwork Accessories', ['Release oil', 'Cleaning tools'])
     ],
     drn_structural: [
         item('Concrete kicker and starter bars to side wall base junction', 'm', 2850, 3200, 'Starter Bars', ['Y10 bars', 'Concrete']),
-        item('Haunch concrete to precast cover support ledges', 'mÂ³', 120, 128000, 'Haunch Concrete', ['Concrete', 'Reinforcement']),
-        item('Curing, test cubes and honeycomb repairs to drain walls', 'mÂ²', 6400, 1250, 'Concrete Curing and Repairs', ['Curing compound', 'Repair mortar'])
+        item('Haunch concrete to precast cover support ledges', 'm3', 120, 128000, 'Haunch Concrete', ['Concrete', 'Reinforcement']),
+        item('Curing, test cubes and honeycomb repairs to drain walls', 'm2', 6400, 1250, 'Concrete Curing and Repairs', ['Curing compound', 'Repair mortar'])
     ],
     drn_appurtenances: [
         item('Benching, channel shaping and plaster finish inside manholes', 'Nr', 165, 22500, 'Manhole Benching', ['Mortar', 'Finishing tools']),
@@ -647,8 +647,8 @@ const DRAINAGE_DETAIL_PACK = {
         item('Headwalls and flap gates to outfall pipe ends', 'Nr', 12, 685000, 'Outfall Appurtenances', ['Concrete', 'Flap gate', 'Reinforcement'])
     ],
     drn_protection: [
-        item('Concrete apron and cutoff walls at discharge points', 'mÂ³', 180, 135000, 'Apron Works', ['Concrete', 'Reinforcement']),
-        item('Turfing and topsoil restoration to disturbed slopes', 'mÂ²', 2850, 4200, 'Slope Restoration', ['Topsoil', 'Grass']),
+        item('Concrete apron and cutoff walls at discharge points', 'm3', 180, 135000, 'Apron Works', ['Concrete', 'Reinforcement']),
+        item('Turfing and topsoil restoration to disturbed slopes', 'm2', 2850, 4200, 'Slope Restoration', ['Topsoil', 'Grass']),
         item('Safety handrails and warning markers to open drains', 'm', 640, 18500, 'Safety Fittings', ['Mild steel rail', 'Reflective paint'])
     ],
     u_drain_specials: [
@@ -660,17 +660,17 @@ const DRAINAGE_DETAIL_PACK = {
 const FOUNDATION_DETAIL_PACK = {
     fdn_site_clearance: [
         item('Survey benchmarks, centerline offsets and batter boards', 'Sum', 1, 420000, 'Setting Out', ['Batter boards', 'Nylon lines']),
-        item('Cart away unsuitable excavated material from footing pits', 'mÂ³', 1250, 2550, 'Spoil Disposal', ['Tipper truck']),
-        item('Anti-termite treatment to excavated formation and fill', 'mÂ²', 4200, 1250, 'Termite Treatment', ['Termicide chemical'])
+        item('Cart away unsuitable excavated material from footing pits', 'm3', 1250, 2550, 'Spoil Disposal', ['Tipper truck']),
+        item('Anti-termite treatment to excavated formation and fill', 'm2', 4200, 1250, 'Termite Treatment', ['Termicide chemical'])
     ],
     fdn_fill_blind: [
         item('Compaction tests to approved fill layers', 'Nr', 10, 92000, 'Compaction Testing', ['Density test kit']),
-        item('Damp proof membrane below raft or oversite concrete', 'mÂ²', 2800, 1280, 'Membrane', ['Polythene sheet', 'Tape']),
-        item('Leveling screed and edge shuttering to blinding zones', 'mÂ²', 950, 2600, 'Leveling Screed', ['Mortar', 'Shutter boards'])
+        item('Damp proof membrane below raft or oversite concrete', 'm2', 2800, 1280, 'Membrane', ['Polythene sheet', 'Tape']),
+        item('Leveling screed and edge shuttering to blinding zones', 'm2', 950, 2600, 'Leveling Screed', ['Mortar', 'Shutter boards'])
     ],
     fdn_rebar_formwork: [
-        item('Pad footing blinding pads and concrete spacers', 'mÂ²', 640, 2850, 'Footing Preparation', ['Blinding concrete', 'Spacer blocks']),
-        item('Waterproofing additive and joint treatment to strip footings', 'mÂ³', 220, 4250, 'Concrete Admixtures', ['Waterproof admixture']),
+        item('Pad footing blinding pads and concrete spacers', 'm2', 640, 2850, 'Footing Preparation', ['Blinding concrete', 'Spacer blocks']),
+        item('Waterproofing additive and joint treatment to strip footings', 'm3', 220, 4250, 'Concrete Admixtures', ['Waterproof admixture']),
         item('Anchor bolts, holding down bolts and templates for bases', 'Set', 36, 18500, 'Anchorage', ['Anchor bolts', 'Templates'])
     ],
     fdn_raft_pilecap: [
@@ -679,8 +679,8 @@ const FOUNDATION_DETAIL_PACK = {
         item('Ground beam kicker, shuttering and casting sequence accessories', 'm', 860, 2850, 'Ground Beam Accessories', ['Waterstop', 'Form ties'])
     ],
     fdn_finish: [
-        item('Compacted backfill under floor slab and around beams', 'mÂ³', 960, 5200, 'Selected Backfill', ['Selected fill', 'Compactor']),
-        item('Bituminous paint to buried concrete faces', 'mÂ²', 620, 3450, 'Buried Surface Protection', ['Bituminous paint']),
+        item('Compacted backfill under floor slab and around beams', 'm3', 960, 5200, 'Selected Backfill', ['Selected fill', 'Compactor']),
+        item('Bituminous paint to buried concrete faces', 'm2', 620, 3450, 'Buried Surface Protection', ['Bituminous paint']),
         item('Foundation setting-out check survey before superstructure start', 'Sum', 1, 260000, 'Pre-Superstructure Survey', ['Survey gear'])
     ],
     pile_specifics: [
@@ -697,21 +697,21 @@ const COASTAL_DETAIL_PACK = {
     ],
     marine_geotech: [
         item('Anchor blocks, tie rods and walers to sheet pile system', 'Set', 68, 265000, 'Anchorage System', ['Tie rods', 'Anchor plates', 'Walers']),
-        item('Filter stone and graded transition layers behind retaining wall', 'mÂ³', 4200, 26500, 'Filter Layers', ['Filter stone', 'Geotextile']),
+        item('Filter stone and graded transition layers behind retaining wall', 'm3', 4200, 26500, 'Filter Layers', ['Filter stone', 'Geotextile']),
         item('Toe beam and coping reinforcement to retaining edge', 'kg', 28500, 1720, 'Coping Reinforcement', ['Y12 bars', 'Y16 bars'])
     ],
     marine_protection: [
         item('Underlayer stones and bedding layer below armour units', 'Tonne', 26500, 24500, 'Underlayer Placement', ['Filter stone', 'Excavator']),
         item('Toe protection trench excavation and buried armour placement', 'm', 2200, 36500, 'Toe Protection', ['Rock armour stone', 'Excavator']),
-        item('Crest wall concrete and splash apron construction', 'mÂ³', 620, 182000, 'Crest Protection', ['Concrete', 'Reinforcement'])
+        item('Crest wall concrete and splash apron construction', 'm3', 620, 182000, 'Crest Protection', ['Concrete', 'Reinforcement'])
     ],
     marine_utilities: [
         item('Outfall flap valves, headwalls and scour apron details', 'Nr', 8, 1850000, 'Outfall Structures', ['Flap valve', 'Concrete', 'Riprap']),
         item('Reinforced concrete drainage pits and inspection chambers', 'Nr', 48, 285000, 'Drainage Pits', ['Concrete', 'Covers', 'Reinforcement']),
-        item('Access road sub-base, base and wearing course package', 'mÂ²', 8600, 15200, 'Access Road Pavement', ['Stone base', 'Asphalt', 'Bitumen'])
+        item('Access road sub-base, base and wearing course package', 'm2', 8600, 15200, 'Access Road Pavement', ['Stone base', 'Asphalt', 'Bitumen'])
     ],
     marine_erosion: [
-        item('Coir mat, geocell or erosion blanket to vulnerable slopes', 'mÂ²', 4200, 6200, 'Slope Erosion Control', ['Erosion blanket', 'Pins']),
+        item('Coir mat, geocell or erosion blanket to vulnerable slopes', 'm2', 4200, 6200, 'Slope Erosion Control', ['Erosion blanket', 'Pins']),
         item('Settlement markers and monitoring survey for reclaimed edge', 'Nr', 24, 145000, 'Settlement Monitoring', ['Settlement plates', 'Survey markers']),
         item('Maintenance access ladders and safety bollards', 'Nr', 28, 62000, 'Safety Access', ['Ladders', 'Bollards'])
     ],

@@ -9,7 +9,7 @@ import {
   Sparkles
 } from 'lucide-react';
 
-const EFFECTIVE_DATE = 'April 5, 2026';
+const EFFECTIVE_DATE = 'September 2025';
 
 const TERMS_SECTIONS = [
   {
@@ -331,9 +331,9 @@ const LegalPage = ({ mode = 'terms', onBack }) => {
           align-items: center;
           justify-content: center;
           border-radius: 14px;
-          background: linear-gradient(135deg, #0f172a, #1e293b);
-          color: #f8fafc;
-          box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18);
+          background: linear-gradient(135deg, var(--accent-600), var(--teal-600));
+          color: white;
+          box-shadow: 0 16px 36px rgba(16, 185, 129, 0.18);
         }
 
         .brand-copy {

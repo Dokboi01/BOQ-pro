@@ -1,5 +1,3 @@
-/* global Buffer, process */
-
 function getRequestOrigin(req) {
   const forwardedProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
   const protocol = forwardedProto || 'https';

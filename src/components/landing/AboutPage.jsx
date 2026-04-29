@@ -18,7 +18,7 @@ const values = [
   {
     icon: <MapPin size={20} />,
     title: 'Nigeria-Focused',
-    desc: 'Generic tools don\'t understand Nigerian markets. We do — because we built this for them.',
+    desc: "Generic tools don't understand Nigerian markets. We do because we built this for them.",
   },
   {
     icon: <Heart size={20} />,
@@ -32,7 +32,7 @@ const milestones = [
   { year: '2024', title: 'First Workspace', desc: 'Built the core BOQ engine with custom rate build-up.' },
   { year: '2024', title: 'Team Pricing', desc: 'Added real-time collaboration and project sharing.' },
   { year: '2025', title: 'Drawing Tools', desc: 'Drawing analysis and annotation features launched.' },
-  { year: '2026', title: 'Nationwide', desc: 'Regional benchmarks for 5 Nigerian cities, 46+ materials.' },
+  { year: 'Sep 2025', title: 'Final Year Launch', desc: 'The project started as a final year build focused on Nigerian construction pricing.' },
 ];
 
 const AboutPage = ({ onGetStarted }) => {
@@ -93,7 +93,7 @@ const AboutPage = ({ onGetStarted }) => {
         </div>
         <div className="ap-timeline-list">
           {milestones.map((m) => (
-            <div key={m.year} className="ap-timeline-item">
+            <div key={`${m.year}-${m.title}`} className="ap-timeline-item">
               <span className="ap-timeline-year">{m.year}</span>
               <div className="ap-timeline-dot" />
               <div className="ap-timeline-body">
@@ -184,19 +184,21 @@ const AboutPage = ({ onGetStarted }) => {
         .ap-mission-card {
           padding: 2.5rem;
           border-radius: 28px;
-          background: linear-gradient(135deg, var(--obsidian-900), var(--obsidian-800));
-          color: white;
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(255, 255, 255, 0.96));
+          color: var(--primary-950);
           text-align: center;
+          border: 1px solid var(--border-light);
+          box-shadow: var(--shadow-lg);
         }
 
         .ap-mission-card h2 {
           margin: 0 0 0.8rem;
           font-size: clamp(1.4rem, 3vw, 2rem);
-          color: white;
+          color: var(--primary-950);
         }
 
         .ap-mission-card > p {
-          color: var(--obsidian-300);
+          color: var(--primary-600);
           font-size: 1rem;
           line-height: 1.7;
           max-width: 640px;
@@ -214,22 +216,22 @@ const AboutPage = ({ onGetStarted }) => {
         .ap-mission-stats div {
           padding: 1rem;
           border-radius: 16px;
-          background: rgba(255, 255, 255, 0.06);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: white;
+          border: 1px solid var(--border-light);
         }
 
         .ap-mission-stats strong {
           display: block;
           font-size: 1.6rem;
           font-weight: 800;
-          color: var(--accent-400);
+          color: var(--accent-600);
         }
 
         .ap-mission-stats span {
           display: block;
           margin-top: 0.25rem;
           font-size: 0.78rem;
-          color: var(--obsidian-400);
+          color: var(--primary-500);
         }
 
         .ap-section-heading {
@@ -335,13 +337,14 @@ const AboutPage = ({ onGetStarted }) => {
           margin: 3rem 0;
           padding: 2.5rem;
           border-radius: 28px;
-          background: linear-gradient(135deg, #064e3b, #065f46);
-          color: white;
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(255, 255, 255, 0.96));
+          color: var(--primary-950);
+          border: 1px solid var(--border-light);
         }
 
         .ap-nigeria-content { max-width: 720px; }
-        .ap-nigeria-content h2 { margin: 0 0 1rem; font-size: clamp(1.4rem, 3vw, 1.8rem); color: white; }
-        .ap-nigeria-content p { color: rgba(255,255,255,0.8); font-size: 0.95rem; line-height: 1.7; margin: 0 0 1rem; }
+        .ap-nigeria-content h2 { margin: 0 0 1rem; font-size: clamp(1.4rem, 3vw, 1.8rem); color: var(--primary-950); }
+        .ap-nigeria-content p { color: var(--primary-600); font-size: 0.95rem; line-height: 1.7; margin: 0 0 1rem; }
 
         .ap-nigeria-badges {
           display: flex;
@@ -356,9 +359,9 @@ const AboutPage = ({ onGetStarted }) => {
           gap: 0.4rem;
           padding: 0.5rem 0.85rem;
           border-radius: 999px;
-          background: rgba(255, 255, 255, 0.1);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          color: rgba(255, 255, 255, 0.85);
+          background: rgba(16, 185, 129, 0.08);
+          border: 1px solid rgba(16, 185, 129, 0.14);
+          color: var(--primary-700);
           font-size: 0.8rem;
           font-weight: 700;
         }
@@ -368,7 +371,7 @@ const AboutPage = ({ onGetStarted }) => {
           margin-top: 3rem;
           padding: 2.5rem;
           border-radius: 24px;
-          background: white;
+          background: linear-gradient(180deg, #ffffff, #f8fafc);
           border: 1px solid var(--border-light);
           box-shadow: var(--shadow-sm);
         }
@@ -383,19 +386,19 @@ const AboutPage = ({ onGetStarted }) => {
           padding: 0.95rem 1.4rem;
           border-radius: 16px;
           border: none;
-          background: var(--primary-900);
+          background: linear-gradient(135deg, var(--accent-600), var(--teal-600));
           color: white;
           font-size: 0.95rem;
           font-weight: 800;
           cursor: pointer;
           transition: all 0.2s ease;
-          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.14);
+          box-shadow: 0 14px 28px rgba(16, 185, 129, 0.22);
           font-family: inherit;
         }
 
         .ap-btn-primary:hover {
           transform: translateY(-2px);
-          box-shadow: 0 18px 36px rgba(15, 23, 42, 0.18);
+          box-shadow: 0 18px 36px rgba(16, 185, 129, 0.28);
         }
 
         @media (max-width: 768px) {

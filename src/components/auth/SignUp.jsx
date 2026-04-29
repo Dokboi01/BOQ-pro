@@ -31,17 +31,17 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
     {
       icon: <Building2 size={18} />,
       title: 'Company workspace from day one',
-      copy: 'Create the account around a company identity so projects, pricing, and exports stay tied to one workflow.'
+      copy: 'Create the account around the company identity your team will actually use.'
     },
     {
       icon: <FileSpreadsheet size={18} />,
       title: 'Real BOQ flow immediately',
-      copy: 'Start with the same benchmark-first, custom-pricing-ready workspace you saw on the welcome and pricing pages.'
+      copy: 'Start with the same benchmark-first pricing flow shown across the product.'
     },
     {
       icon: <CheckCircle2 size={18} />,
       title: 'Ready for rollout later',
-      copy: 'Begin with one user and grow into a team setup without changing the product or retraining around a new interface.'
+      copy: 'Begin with one user and grow into a team rollout without changing the interface.'
     }
   ];
 
@@ -105,17 +105,16 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
         <section className="auth-story">
           <div className="section-kicker">
             <Sparkles size={14} />
-            Create your BOQ workspace
+            Create your workspace
           </div>
 
           <h1>
             Start the company setup
-            <span> the same way the product already feels.</span>
+            <span> with the same calm feel.</span>
           </h1>
 
           <p className="auth-subtitle">
-            The signup screen now follows the same visual direction as the landing, pricing, and login pages:
-            lighter, more product-aware, and built around how BOQ Pro is actually used by QS teams and contractors.
+            Set up the account that will own your BOQ projects, pricing workflow, and exports.
           </p>
 
           <div className="signal-strip">
@@ -126,12 +125,12 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
 
           <div className="story-preview">
             <span className="preview-tag">What you are creating</span>
-            <h2>New BOQ Pro company workspace</h2>
+            <h2>New company workspace</h2>
 
             <div className="story-preview-grid">
               <div className="story-stat-card">
                 <strong>Benchmark pricing</strong>
-                <span>Start from market-backed BOQ automation</span>
+                <span>Start from market-backed pricing</span>
               </div>
               <div className="story-stat-card">
                 <strong>Custom rate build-up</strong>
@@ -161,7 +160,7 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
           <div className="auth-panel">
             <div className="auth-card-header">
               <h2>Create your account</h2>
-              <p>Set up the company account that will own your BOQ projects, pricing workflow, and exports.</p>
+              <p>Set up the company account that will own your BOQ projects, pricing, and exports.</p>
             </div>
 
             {selectedPlan && (
@@ -299,7 +298,7 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
 
             <div className="auth-note">
               <CheckCircle2 size={16} />
-              <span>Best experience: use the company email identity your team will use for shared projects and pricing rollout.</span>
+              <span>Best experience: use the company email identity your team will use for live projects.</span>
             </div>
 
             <div className="auth-footer">
@@ -379,8 +378,8 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
           align-items: center;
           justify-content: center;
           border-radius: 14px;
-          background: linear-gradient(135deg, var(--primary-900), var(--accent-600));
-          box-shadow: 0 18px 35px rgba(37, 99, 235, 0.24);
+          background: linear-gradient(135deg, var(--accent-600), var(--teal-600));
+          box-shadow: 0 18px 35px rgba(16, 185, 129, 0.2);
           color: white;
         }
 
@@ -428,9 +427,9 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
 
         .nav-create-btn {
           border: none;
-          background: var(--primary-900);
+          background: linear-gradient(135deg, var(--accent-600), var(--teal-600));
           color: white;
-          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.14);
+          box-shadow: 0 14px 28px rgba(16, 185, 129, 0.18);
         }
 
         .nav-back-btn:hover,
@@ -774,12 +773,12 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
           padding: 1rem 1.2rem;
           border-radius: 18px;
           border: none;
-          background: linear-gradient(135deg, var(--primary-900), #1e3a5f);
+          background: linear-gradient(135deg, var(--accent-600), var(--teal-600));
           color: white;
           font-size: 0.96rem;
           font-weight: 800;
           cursor: pointer;
-          box-shadow: 0 18px 32px rgba(15, 23, 42, 0.18);
+          box-shadow: 0 18px 32px rgba(16, 185, 129, 0.18);
           transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 

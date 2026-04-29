@@ -1,5 +1,3 @@
-/* global Buffer, process */
-
 import { createVerify } from 'node:crypto';
 
 const CERTS_URL = 'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com';

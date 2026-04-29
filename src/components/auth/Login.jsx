@@ -22,24 +22,23 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
     {
       icon: <Building2 size={18} />,
       title: 'Company access',
-      copy: 'Keep your projects tied to one company workflow instead of scattered personal files.'
+      copy: 'Keep projects tied to the company identity your team already uses.'
     },
     {
       icon: <Calculator size={18} />,
       title: 'Pricing workflow',
-      copy: 'Open straight into quantity takeoff, benchmark pricing, and custom rate build-up.'
+      copy: 'Open straight into takeoff, benchmarking, and rate build-up.'
     },
     {
       icon: <FileSpreadsheet size={18} />,
       title: 'Submission-ready output',
-      copy: 'Carry the same BOQ through review and exports without rebuilding it elsewhere.'
+      copy: 'Carry the same BOQ through review and export without rebuilding it.'
     }
   ];
 
   const quickSignals = [
     'Company email login',
     'Shared project sync',
-    'Custom pricing studio',
     'Client-ready exports'
   ];
 
@@ -87,17 +86,16 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
         <section className="auth-story">
           <div className="section-kicker">
             <Sparkles size={14} />
-            Sign in to your BOQ workspace
+            Sign in to your workspace
           </div>
 
           <h1>
-            Pick up the project
-            <span> exactly where your team left it.</span>
+            Return to the work
+            <span> exactly where it left off.</span>
           </h1>
 
           <p className="auth-subtitle">
-            The login page now follows the same spec as the upgraded base page: lighter, more
-            product-aware, and focused on the actual company workflow behind BOQ Pro.
+            Use the same company identity tied to your BOQ projects and keep moving without resetting the context.
           </p>
 
           <div className="signal-strip">
@@ -108,20 +106,20 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
 
           <div className="story-preview">
             <span className="preview-tag">Live workspace preview</span>
-            <h2>Current commercial view</h2>
+            <h2>Current project view</h2>
 
             <div className="story-preview-grid">
               <div className="story-stat-card">
                 <strong>7 sections</strong>
-                <span>Active on the current BOQ</span>
+                <span>Active in the current BOQ</span>
               </div>
               <div className="story-stat-card">
                 <strong>NGN 68.4M</strong>
-                <span>Latest estimate in review</span>
+                <span>Latest estimate under review</span>
               </div>
               <div className="story-stat-card">
                 <strong>Custom + benchmark</strong>
-                <span>Rate workflow preserved</span>
+                <span>Pricing workflow preserved</span>
               </div>
             </div>
           </div>
@@ -143,7 +141,7 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
           <div className="auth-panel">
             <div className="auth-card-header">
               <h2>Welcome back</h2>
-              <p>Sign in with the company email and password tied to your BOQ Pro workspace.</p>
+              <p>Sign in with the company email and password tied to your BOQ Pro account.</p>
             </div>
 
             {error && (
@@ -199,7 +197,7 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
 
             <div className="auth-note">
               <CheckCircle2 size={16} />
-              <span>Best experience: sign in with the same company identity your team uses for project rollout.</span>
+              <span>Best experience: use the same company identity your team uses for live projects.</span>
             </div>
 
             <div className="auth-footer">
@@ -279,8 +277,8 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
           align-items: center;
           justify-content: center;
           border-radius: 14px;
-          background: linear-gradient(135deg, var(--primary-900), var(--accent-600));
-          box-shadow: 0 18px 35px rgba(37, 99, 235, 0.24);
+          background: linear-gradient(135deg, var(--accent-600), var(--teal-600));
+          box-shadow: 0 18px 35px rgba(16, 185, 129, 0.2);
           color: white;
         }
 
@@ -328,9 +326,9 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
 
         .nav-create-btn {
           border: none;
-          background: var(--primary-900);
+          background: linear-gradient(135deg, var(--accent-600), var(--teal-600));
           color: white;
-          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.14);
+          box-shadow: 0 14px 28px rgba(16, 185, 129, 0.18);
         }
 
         .nav-back-btn:hover,
@@ -635,9 +633,9 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
 
         .auth-submit {
           border: none;
-          background: var(--primary-900);
+          background: linear-gradient(135deg, var(--accent-600), var(--teal-600));
           color: white;
-          box-shadow: 0 16px 30px rgba(15, 23, 42, 0.16);
+          box-shadow: 0 16px 30px rgba(16, 185, 129, 0.18);
         }
 
         .auth-submit:hover,
@@ -651,13 +649,13 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
         }
 
         .btn-guest-access {
-          border: 1px dashed var(--accent-400);
-          background: rgba(37, 99, 235, 0.05);
-          color: var(--accent-600);
+          border: 1px dashed rgba(16, 185, 129, 0.35);
+          background: rgba(16, 185, 129, 0.05);
+          color: var(--emerald-700);
         }
 
         .btn-guest-access:hover {
-          background: rgba(37, 99, 235, 0.08);
+          background: rgba(16, 185, 129, 0.08);
           border-color: var(--accent-600);
         }
 

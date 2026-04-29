@@ -37,3 +37,47 @@ health app/
 tmp/
 
 .vercel
+
+# One-off scratch files from prior AI sessions
+check.cjs
+check.py
+check_results.txt
+cleanup_workspace.cjs
+design_pass.cjs
+doit.py
+edit.cjs
+edit2.cjs
+edit_pricing.cjs
+edit_pricing.py
+final_design_tweaks.cjs
+fix.js
+fix.py
+fix_pricing.py
+fix_whitespace.cjs
+fixit.py
+global_design_pass.cjs
+inspect.py
+out.txt
+output.txt
+reconstruct_workspace.cjs
+refactor_monolith.cjs
+run_fix.py
+selection_design_pass.cjs
+simple.py
+simple_test.py
+temp_script.py
+test1.cjs
+test1.js
+test_output.txt
+test_script.py
+test_utf8.cjs
+test_write.txt
+verify.txt
+test.txt
+
+# Superseded dark mode patch helpers
+tools/fix-darkmode.cjs
+tools/fix-darkmode2.cjs
+
+# Scratch/test files in components
+src/components/landing/TEST_FILE.txt

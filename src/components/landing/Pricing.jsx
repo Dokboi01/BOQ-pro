@@ -652,7 +652,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
           align-items: center;
           justify-content: center;
           border-radius: 14px;
-          background: linear-gradient(135deg, var(--primary-900), var(--accent-600));
+          background: linear-gradient(135deg, var(--accent-600), var(--teal-600));
           box-shadow: 0 18px 35px rgba(16, 185, 129, 0.24);
           color: white;
         }
@@ -707,12 +707,12 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
           border: none;
           border-radius: 999px;
           padding: 0.78rem 1.1rem;
-          background: var(--primary-900);
+          background: linear-gradient(135deg, var(--accent-600), var(--teal-600));
           color: white;
           font-size: 0.88rem;
           font-weight: 700;
           cursor: pointer;
-          box-shadow: 0 14px 24px rgba(15, 23, 42, 0.18);
+          box-shadow: 0 14px 24px rgba(16, 185, 129, 0.18);
           transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
@@ -837,9 +837,9 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
         }
 
         .hero-cta-primary {
-          background: linear-gradient(135deg, var(--primary-900), #059669);
+          background: linear-gradient(135deg, var(--accent-600), var(--teal-600));
           color: white;
-          box-shadow: 0 18px 32px rgba(15, 23, 42, 0.18);
+          box-shadow: 0 18px 32px rgba(16, 185, 129, 0.18);
         }
 
         .hero-cta-secondary {
@@ -1124,15 +1124,16 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
           margin-top: 1rem;
           padding: 1rem;
           border-radius: 22px;
-          background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.96));
-          color: white;
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(255,255,255,0.96));
+          color: var(--primary-950);
+          border: 1px solid var(--border-light);
         }
 
         .preview-activity-title {
           display: inline-flex;
           align-items: center;
           gap: 0.5rem;
-          color: rgba(255, 255, 255, 0.72);
+          color: var(--primary-500);
           font-size: 0.78rem;
           font-weight: 800;
           letter-spacing: 0.04em;
@@ -1146,6 +1147,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
           margin-top: 0.85rem;
           font-size: 0.84rem;
           line-height: 1.55;
+          color: var(--primary-700);
         }
 
         .preview-card-side h3 {
@@ -1182,12 +1184,12 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
           margin-top: auto;
           border: none;
           border-radius: 18px;
-          background: var(--primary-900);
+          background: linear-gradient(135deg, var(--accent-600), var(--teal-600));
           color: white;
           padding: 0.95rem 1rem;
           font-weight: 800;
           cursor: pointer;
-          box-shadow: 0 16px 28px rgba(15, 23, 42, 0.16);
+          box-shadow: 0 16px 28px rgba(16, 185, 129, 0.18);
           transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
@@ -1286,7 +1288,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
           right: 0;
           text-align: center;
           padding: 0.38rem 0;
-          background: linear-gradient(135deg, var(--primary-900), var(--accent-600));
+          background: linear-gradient(135deg, var(--accent-600), var(--teal-600));
           color: white;
           font-size: 0.68rem;
           font-weight: 800;
@@ -1436,13 +1438,13 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
         .plan-cta:hover { transform: translateY(-2px); }
 
         .plan-cta-primary {
-          background: linear-gradient(135deg, var(--primary-900), #059669);
+          background: linear-gradient(135deg, var(--accent-600), var(--teal-600));
           color: white;
-          box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+          box-shadow: 0 12px 28px rgba(16, 185, 129, 0.18);
         }
 
         .plan-cta-primary:hover {
-          box-shadow: 0 16px 36px rgba(15, 23, 42, 0.25);
+          box-shadow: 0 16px 36px rgba(16, 185, 129, 0.24);
         }
 
         .plan-cta-secondary {
@@ -1685,9 +1687,9 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
         }
 
         .mobile-dock-btn-primary {
-          background: var(--primary-900);
+          background: linear-gradient(135deg, var(--accent-600), var(--teal-600));
           color: white;
-          box-shadow: 0 14px 24px rgba(15, 23, 42, 0.18);
+          box-shadow: 0 14px 24px rgba(16, 185, 129, 0.18);
         }
 
         .mobile-dock-btn-secondary {

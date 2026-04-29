@@ -98,15 +98,15 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
         .sidebar {
           width: 260px;
           height: 100vh;
-          background: linear-gradient(180deg, #0a0f1a 0%, #111827 100%);
-          color: white;
+          background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.98) 100%);
+          color: var(--text-primary);
           display: flex;
           flex-direction: column;
           transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-          border-right: 1px solid rgba(16, 185, 129, 0.08);
+          border-right: 1px solid var(--border-light);
           position: sticky;
           top: 0;
-          box-shadow: 4px 0 30px rgba(0, 0, 0, 0.2);
+          box-shadow: 4px 0 30px rgba(15, 23, 42, 0.06);
         }
 
         .sidebar.collapsed {
@@ -118,19 +118,19 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          border-bottom: 1px solid rgba(255,255,255,0.05);
+          border-bottom: 1px solid var(--border-light);
         }
 
         .logo-container {
           display: flex;
           align-items: center;
           gap: 0.75rem;
-          color: var(--accent-400);
+          color: var(--accent-600);
         }
 
         .logo-icon {
-          color: var(--emerald-400);
-          filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.3));
+          color: var(--emerald-600);
+          filter: none;
         }
 
         .logo-text-group {
@@ -143,22 +143,21 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
           font-weight: 800;
           font-size: 1.125rem;
           letter-spacing: -0.5px;
-          color: white;
+          color: var(--text-heading);
         }
 
         .logo-sub {
           font-size: 0.6rem;
-          color: var(--emerald-400);
+          color: var(--text-muted);
           letter-spacing: 0.04em;
           font-weight: 600;
           text-transform: uppercase;
-          opacity: 0.8;
         }
 
         .collapse-btn {
-          background: rgba(255,255,255,0.05);
+          background: var(--bg-card);
           border: none;
-          color: var(--primary-500);
+          color: var(--text-secondary);
           width: 24px;
           height: 24px;
           display: flex;
@@ -168,8 +167,8 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
         }
 
         .collapse-btn:hover {
-          color: white;
-          background: rgba(255,255,255,0.1);
+          color: var(--text-primary);
+          background: var(--bg-card-alt);
         }
 
         .sidebar-nav {
@@ -188,7 +187,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
           border-radius: 10px;
           border: none;
           background: transparent;
-          color: rgba(148, 163, 184, 0.9);
+          color: var(--text-secondary);
           text-align: left;
           font-weight: 500;
           font-size: 0.875rem;
@@ -198,26 +197,27 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
         }
 
         .nav-item:hover {
-          background: rgba(255,255,255,0.07);
-          color: white;
+          background: rgba(16, 185, 129, 0.08);
+          color: var(--text-primary);
           transform: translateX(4px);
         }
 
         .nav-item.active {
-          background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(20, 184, 166, 0.18));
           color: white;
-          box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
+          box-shadow: 0 4px 15px rgba(5, 150, 105, 0.14);
           font-weight: 600;
         }
 
         .upgrade-prompt {
           margin: 1rem 0.75rem;
           padding: 1.25rem;
-          background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(20, 184, 166, 0.16));
           border-radius: 12px;
-          color: white;
+          color: var(--text-primary);
           position: relative;
           overflow: hidden;
+          border: 1px solid rgba(16, 185, 129, 0.16);
         }
 
         .upgrade-prompt::before {
@@ -232,7 +232,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
         }
 
         .upgrade-prompt h4 {
-          color: white;
+          color: var(--text-heading);
           font-size: 0.875rem;
           margin-bottom: 0.5rem;
           font-weight: 800;
@@ -240,7 +240,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
 
         .upgrade-prompt p {
           font-size: 0.75rem;
-          opacity: 0.9;
+          color: var(--text-secondary);
           margin-bottom: 1rem;
           line-height: 1.4;
         }
@@ -248,7 +248,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
         .btn-upgrade {
           width: 100%;
           background: white;
-          color: #059669;
+          color: var(--emerald-600);
           border: none;
           padding: 0.625rem;
           border-radius: 8px;
@@ -275,7 +275,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
         .user-avatar {
           width: 36px;
           height: 36px;
-          background: linear-gradient(135deg, #059669, #0d9488);
+          background: linear-gradient(135deg, var(--emerald-600), var(--teal-600));
           border-radius: 50%;
           display: flex;
           align-items: center;
@@ -295,7 +295,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
           height: 10px;
           background: #22c55e;
           border-radius: 50%;
-          border: 2px solid #0f172a;
+          border: 2px solid white;
         }
 
         .user-info {
@@ -314,23 +314,23 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
 
         .user-plan {
           font-size: 0.75rem;
-          color: var(--primary-400);
+          color: var(--text-muted);
         }
 
         .sidebar-footer {
           padding: 1rem 0.75rem;
-          border-top: 1px solid rgba(255,255,255,0.05);
+          border-top: 1px solid var(--border-light);
           display: flex;
           flex-direction: column;
           gap: 0.25rem;
         }
 
         .text-danger {
-          color: #f87171 !important;
+          color: var(--danger-600) !important;
         }
 
         .text-danger:hover {
-          background: rgba(248, 113, 113, 0.1);
+          background: rgba(248, 113, 113, 0.08);
         }
 
         /* ── MOBILE: Bottom Navigation Bar ── */
@@ -347,8 +347,8 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
             align-items: center;
             z-index: 1000;
             border-right: none;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 -4px 24px rgba(0,0,0,0.3);
+            border-top: 1px solid var(--border-light);
+            box-shadow: 0 -4px 24px rgba(15,23,42,0.08);
             padding: 0 0.5rem;
             overflow: hidden;
           }

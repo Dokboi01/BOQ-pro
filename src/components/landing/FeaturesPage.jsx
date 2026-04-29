@@ -182,19 +182,19 @@ const FeaturesPage = ({ onGetStarted }) => {
           padding: 0.95rem 1.4rem;
           border-radius: 16px;
           border: none;
-          background: var(--primary-900);
+          background: linear-gradient(135deg, var(--accent-600), var(--teal-600));
           color: white;
           font-size: 0.95rem;
           font-weight: 800;
           cursor: pointer;
           transition: all 0.2s ease;
-          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.14);
+          box-shadow: 0 14px 28px rgba(16, 185, 129, 0.22);
           font-family: inherit;
         }
 
         .fp-btn-primary:hover {
           transform: translateY(-2px);
-          box-shadow: 0 18px 36px rgba(15, 23, 42, 0.18);
+          box-shadow: 0 18px 36px rgba(16, 185, 129, 0.28);
         }
 
         .fp-stats {
@@ -310,12 +310,14 @@ const FeaturesPage = ({ onGetStarted }) => {
           margin-top: 4rem;
           padding: 3rem;
           border-radius: 28px;
-          background: linear-gradient(135deg, var(--obsidian-900), var(--obsidian-800));
-          color: white;
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(255,255,255,0.96));
+          color: var(--primary-950);
+          border: 1px solid var(--border-light);
+          box-shadow: var(--shadow-lg);
         }
 
-        .fp-bottom-cta h2 { margin: 0 0 0.6rem; font-size: clamp(1.4rem, 3vw, 2rem); color: white; }
-        .fp-bottom-cta p { color: var(--obsidian-300); margin: 0 0 1.5rem; font-size: 1rem; }
+        .fp-bottom-cta h2 { margin: 0 0 0.6rem; font-size: clamp(1.4rem, 3vw, 2rem); color: var(--primary-950); }
+        .fp-bottom-cta p { color: var(--primary-600); margin: 0 0 1.5rem; font-size: 1rem; }
 
         @media (max-width: 900px) {
           .fp-stats { grid-template-columns: repeat(2, 1fr); }

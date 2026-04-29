@@ -299,20 +299,20 @@ const ContactPage = ({ onGetStarted }) => {
           padding: 0.9rem 1.4rem;
           border-radius: 14px;
           border: none;
-          background: var(--primary-900);
+          background: linear-gradient(135deg, var(--accent-600), var(--teal-600));
           color: white;
           font-size: 0.95rem;
           font-weight: 800;
           cursor: pointer;
           transition: all 0.2s ease;
-          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+          box-shadow: 0 10px 24px rgba(16, 185, 129, 0.18);
           font-family: inherit;
           margin-top: 0.5rem;
         }
 
         .cp-submit:hover {
           transform: translateY(-2px);
-          box-shadow: 0 14px 32px rgba(15, 23, 42, 0.18);
+          box-shadow: 0 14px 32px rgba(16, 185, 129, 0.24);
         }
 
         .cp-success {
@@ -433,12 +433,14 @@ const ContactPage = ({ onGetStarted }) => {
           margin-top: 3rem;
           padding: 2.5rem;
           border-radius: 24px;
-          background: linear-gradient(135deg, var(--obsidian-900), var(--obsidian-800));
-          color: white;
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(255,255,255,0.96));
+          color: var(--primary-950);
+          border: 1px solid var(--border-light);
+          box-shadow: var(--shadow-lg);
         }
 
-        .cp-cta h2 { margin: 0 0 0.5rem; font-size: clamp(1.3rem, 3vw, 1.8rem); color: white; }
-        .cp-cta p { color: var(--obsidian-300); margin: 0 0 1.2rem; font-size: 0.95rem; }
+        .cp-cta h2 { margin: 0 0 0.5rem; font-size: clamp(1.3rem, 3vw, 1.8rem); color: var(--primary-950); }
+        .cp-cta p { color: var(--primary-600); margin: 0 0 1.2rem; font-size: 0.95rem; }
 
         .cp-btn-primary {
           display: inline-flex;

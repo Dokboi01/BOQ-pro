@@ -35,7 +35,7 @@ const LandingLayout = ({
             </span>
             <span className="brand-copy-v2">
               <strong>BOQ Pro</strong>
-              <small>Nigerian Construction Workspace</small>
+              <small>Commercial workspace for construction teams</small>
             </span>
           </button>
 
@@ -78,9 +78,9 @@ const LandingLayout = ({
               The commercial workspace built specifically for Nigerian construction teams — from quantity surveyors and estimators to contractors and project managers.
             </p>
             <div className="footer-social">
-              <a href="#" aria-label="LinkedIn"><Linkedin size={18} /></a>
-              <a href="#" aria-label="Twitter"><Twitter size={18} /></a>
-              <a href="#" aria-label="Instagram"><Instagram size={18} /></a>
+              <a href="https://www.linkedin.com/" target="_blank" rel="noreferrer" aria-label="LinkedIn"><Linkedin size={18} /></a>
+              <a href="https://x.com/" target="_blank" rel="noreferrer" aria-label="X"><Twitter size={18} /></a>
+              <a href="https://www.instagram.com/" target="_blank" rel="noreferrer" aria-label="Instagram"><Instagram size={18} /></a>
             </div>
           </div>
 
@@ -89,14 +89,13 @@ const LandingLayout = ({
               <h4>Product</h4>
               <button onClick={() => onNavigate('features')}>Features</button>
               <button onClick={() => onNavigate('pricing')}>Pricing</button>
-              <button onClick={() => onNavigate('home')}>BOQ Workspace</button>
+              <button onClick={() => onNavigate('home')}>Workspace</button>
               <button onClick={() => onNavigate('home')}>Material Library</button>
             </div>
             <div className="footer-col">
               <h4>Company</h4>
               <button onClick={() => onNavigate('about')}>About Us</button>
               <button onClick={() => onNavigate('contact')}>Contact</button>
-              <button onClick={() => onNavigate('home')}>Careers</button>
             </div>
             <div className="footer-col">
               <h4>Legal</h4>
@@ -127,8 +126,8 @@ const LandingLayout = ({
             <Shield size={12} /> Secured by Firebase & Paystack
           </span>
         </div>
-        <div className="footer-student">
-          <span>A final year project by <strong>Hassan Adedokun AbdulMuiz</strong> · Civil Engineering · Adeleke University</span>
+        <div className="footer-academic">
+          <span>Academic final year project started in September 2025 by <strong>Hassan Adedokun Abdulmuiz</strong>, Civil Engineering Department, Adeleke University.</span>
         </div>
       </footer>
 
@@ -138,8 +137,8 @@ const LandingLayout = ({
           position: relative;
           overflow-x: hidden;
           background:
-            radial-gradient(circle at top left, rgba(16, 185, 129, 0.07), transparent 28%),
-            radial-gradient(circle at 90% 12%, rgba(5, 150, 105, 0.06), transparent 22%),
+            radial-gradient(circle at top left, rgba(16, 185, 129, 0.06), transparent 28%),
+            radial-gradient(circle at 90% 12%, rgba(5, 150, 105, 0.05), transparent 22%),
             linear-gradient(180deg, #ffffff 0%, #f8fafc 52%, #f0fdf4 100%);
           color: var(--primary-900);
           font-family: var(--font-main);
@@ -204,7 +203,7 @@ const LandingLayout = ({
           align-items: center;
           justify-content: center;
           border-radius: 12px;
-          background: linear-gradient(135deg, var(--primary-900), var(--accent-600));
+          background: linear-gradient(135deg, var(--accent-600), var(--teal-600));
           box-shadow: 0 12px 28px rgba(16, 185, 129, 0.22);
           color: white;
         }
@@ -289,19 +288,19 @@ const LandingLayout = ({
           padding: 0.65rem 1.1rem;
           border-radius: 12px;
           border: none;
-          background: var(--primary-900);
+          background: linear-gradient(135deg, var(--accent-600), var(--teal-600));
           color: white;
           font-size: 0.88rem;
           font-weight: 700;
           cursor: pointer;
           transition: all 0.2s ease;
           font-family: inherit;
-          box-shadow: 0 10px 22px rgba(15, 23, 42, 0.14);
+          box-shadow: 0 10px 22px rgba(16, 185, 129, 0.18);
         }
 
         .nav-cta-v2:hover {
           transform: translateY(-1px);
-          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
+          box-shadow: 0 14px 28px rgba(16, 185, 129, 0.24);
         }
 
         .landing-main-v2 {
@@ -317,9 +316,10 @@ const LandingLayout = ({
         .landing-footer-v2 {
           position: relative;
           z-index: 2;
-          background: linear-gradient(180deg, var(--obsidian-900), var(--obsidian-950));
-          color: white;
+          background: linear-gradient(180deg, #ffffff, #f8fafc);
+          color: var(--primary-900);
           margin-top: 4rem;
+          border-top: 1px solid var(--border-light);
         }
 
         .footer-inner {
@@ -335,17 +335,17 @@ const LandingLayout = ({
           display: inline-flex;
           align-items: center;
           gap: 0.6rem;
-          color: white;
+          color: var(--primary-950);
           font-size: 1.1rem;
         }
 
         .footer-brand-mark svg {
-          color: var(--accent-400);
+          color: var(--accent-600);
         }
 
         .footer-brand-copy {
           margin: 1rem 0 1.5rem;
-          color: var(--obsidian-300);
+          color: var(--primary-600);
           font-size: 0.88rem;
           line-height: 1.7;
           max-width: 280px;
@@ -360,11 +360,11 @@ const LandingLayout = ({
           width: 36px;
           height: 36px;
           border-radius: 10px;
-          background: rgba(255, 255, 255, 0.08);
+          background: rgba(16, 185, 129, 0.08);
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          color: var(--obsidian-300);
+          color: var(--primary-700);
           transition: all 0.2s ease;
         }
 
@@ -384,7 +384,7 @@ const LandingLayout = ({
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.06em;
-          color: var(--obsidian-300);
+          color: var(--primary-500);
           margin: 0 0 1rem;
         }
 
@@ -395,7 +395,7 @@ const LandingLayout = ({
           padding: 0.4rem 0;
           border: none;
           background: transparent;
-          color: var(--obsidian-400);
+          color: var(--primary-600);
           font-size: 0.86rem;
           cursor: pointer;
           transition: color 0.2s ease;
@@ -411,12 +411,12 @@ const LandingLayout = ({
           align-items: center;
           gap: 0.5rem;
           padding: 0.4rem 0;
-          color: var(--obsidian-400);
+          color: var(--primary-600);
           font-size: 0.86rem;
         }
 
         .footer-contact-row svg {
-          color: var(--accent-500);
+          color: var(--accent-600);
           flex-shrink: 0;
         }
 
@@ -424,12 +424,12 @@ const LandingLayout = ({
           width: min(1280px, calc(100% - 2rem));
           margin: 0 auto;
           padding: 1.25rem 0;
-          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          border-top: 1px solid var(--border-light);
           display: flex;
           justify-content: space-between;
           align-items: center;
           font-size: 0.78rem;
-          color: var(--obsidian-500);
+          color: var(--primary-500);
         }
 
         .footer-bottom-trust {
@@ -439,7 +439,7 @@ const LandingLayout = ({
         }
 
         .footer-bottom-trust svg {
-          color: var(--accent-500);
+          color: var(--accent-600);
         }
 
         @media (max-width: 900px) {
@@ -448,24 +448,26 @@ const LandingLayout = ({
           .footer-columns { grid-template-columns: repeat(2, 1fr); }
         }
 
-        .footer-student {
+        .footer-academic {
           width: min(1280px, calc(100% - 2rem));
           margin: 0 auto;
-          padding: 0.75rem 0 1.25rem;
+          padding: 0.85rem 0 1.35rem;
           text-align: center;
           font-size: 0.75rem;
-          color: var(--obsidian-400);
+          line-height: 1.6;
+          color: var(--primary-500);
+          border-top: 1px solid var(--border-light);
         }
 
-        .footer-student strong {
-          color: var(--accent-400);
+        .footer-academic strong {
+          color: var(--primary-900);
           font-weight: 700;
         }
 
         @media (max-width: 600px) {
           .footer-columns { grid-template-columns: 1fr; }
           .footer-bottom { flex-direction: column; gap: 0.5rem; text-align: center; }
-          .footer-student { padding: 0.5rem 1rem 1rem; }
+          .footer-academic { padding: 0.75rem 1rem 1rem; }
         }
       `}</style>
     </div>

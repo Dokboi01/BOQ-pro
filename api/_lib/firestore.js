@@ -1,5 +1,3 @@
-/* global Buffer, process */
-
 import { createSign } from 'node:crypto';
 
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';

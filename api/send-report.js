@@ -1,4 +1,3 @@
-/* global process */
 import { Resend } from 'resend';
 import { requireFirebaseAuth } from './_lib/firebase-auth.js';
 

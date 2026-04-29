@@ -489,7 +489,7 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
         .search-bar input { border: none; outline: none; background: transparent; width: 100%; font-size: 0.85rem; }
         .control, .primary-btn { border-radius: 12px; padding: 0.7rem 0.85rem; font-size: 0.82rem; }
         .control { border: 1px solid var(--border-medium); background: white; }
-        .primary-btn { border: none; background: var(--primary-900); color: white; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; cursor: pointer; }
+        .primary-btn { border: none; background: linear-gradient(135deg, var(--accent-600), var(--teal-600)); color: white; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; cursor: pointer; box-shadow: 0 12px 24px rgba(16, 185, 129, 0.16); }
         .primary-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .project-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
         .project-card { cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; }
@@ -526,7 +526,7 @@ const ProjectDashboard = ({ user, projects = [], onCreateProject, onSelectProjec
         .intel-head { margin-bottom: 0.5rem; }
         .panel-card { display: flex; flex-direction: column; gap: 1rem; }
         .tab-btn { border: 1px solid #dbe4ee; background: white; color: var(--primary-600); border-radius: 999px; padding: 0.45rem 0.7rem; font-size: 0.74rem; font-weight: 800; cursor: pointer; }
-        .tab-btn.active { background: var(--primary-900); color: white; border-color: var(--primary-900); }
+        .tab-btn.active { background: linear-gradient(135deg, var(--accent-600), var(--teal-600)); color: white; border-color: var(--accent-600); }
         .chart-stack, .risk-list { display: flex; flex-direction: column; gap: 0.8rem; }
         .chart-row { display: flex; flex-direction: column; gap: 0.35rem; }
         .chart-labels span:first-child { color: var(--primary-800); font-weight: 700; }

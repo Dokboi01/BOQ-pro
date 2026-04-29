@@ -535,13 +535,14 @@ const Settings = ({ user, onUpgrade }) => {
         }
 
         .btn-primary {
-          background: var(--primary-900);
+          background: linear-gradient(135deg, var(--accent-600), var(--teal-600));
           color: white;
           border: none;
           padding: 0.75rem 1.5rem;
           border-radius: var(--radius-sm);
           font-weight: 700;
           cursor: pointer;
+          box-shadow: 0 12px 24px rgba(16, 185, 129, 0.18);
         }
 
         .current-plan-card {
@@ -569,20 +570,20 @@ const Settings = ({ user, onUpgrade }) => {
         .plan-details p { font-size: 0.875rem; color: var(--text-muted); }
 
         .btn-upgrade-glow {
-          background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+          background: linear-gradient(135deg, var(--accent-600), var(--teal-600));
           color: white;
           border: none;
           padding: 0.75rem 1.25rem;
           border-radius: 10px;
           font-weight: 700;
-          box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+          box-shadow: 0 8px 20px rgba(16, 185, 129, 0.18);
           cursor: pointer;
           transition: all 0.3s;
         }
 
         .btn-upgrade-glow:hover {
           transform: translateY(-2px);
-          box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+          box-shadow: 0 12px 30px rgba(16, 185, 129, 0.24);
         }
 
         .limits-section {
@@ -610,7 +611,7 @@ const Settings = ({ user, onUpgrade }) => {
           overflow: hidden;
         }
 
-        .limit-fill { height: 100%; border-radius: 100px; background: var(--primary-800); }
+        .limit-fill { height: 100%; border-radius: 100px; background: var(--accent-600); }
 
         .history-section h4 { margin-bottom: 1rem; font-size: 0.875rem; }
         

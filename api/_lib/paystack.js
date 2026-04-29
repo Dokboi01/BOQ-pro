@@ -1,4 +1,3 @@
-/* global process */
 import { createHmac } from 'node:crypto';
 import { getPaystackAmount, isPaidPlan, PLAN_NAMES } from '../../src/data/plans.js';
 

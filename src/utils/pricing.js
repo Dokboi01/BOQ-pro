@@ -105,8 +105,8 @@ const parseIsoTimestamp = (value) => {
 
 export const normalizeUnit = (unit = '') => {
   const value = String(unit).toLowerCase().replace(/\s+/g, '');
-  if (/(mÂ³|m3|cum|cubic)/.test(value)) return 'm3';
-  if (/(mÂ²|m2|sqm|sq\.m|square)/.test(value)) return 'm2';
+  if (/(m3|m3|cum|cubic)/.test(value)) return 'm3';
+  if (/(m2|m2|sqm|sq\.m|square)/.test(value)) return 'm2';
   if (/^(m|lm|rm|linm|mtr|meter|metre)$/.test(value)) return 'm';
   if (/^(kg|kilogram)$/.test(value)) return 'kg';
   if (/^(ton|t|tonne)$/.test(value)) return 'ton';

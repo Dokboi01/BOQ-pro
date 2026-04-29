@@ -157,21 +157,52 @@ html {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   font-feature-settings: 'kern', 'liga', 'calt';
+  scrollbar-gutter: stable;
+  background: var(--bg-main);
 }
 
 body {
   font-family: var(--font-main);
-  background-color: var(--bg-main);
+  background:
+    radial-gradient(circle at top, rgba(16, 185, 129, 0.04), transparent 32%),
+    linear-gradient(180deg, #f8fafc 0%, var(--bg-main) 22%, var(--bg-main) 100%);
   color: var(--text-primary);
   line-height: 1.6;
   font-feature-settings: 'kern', 'liga', 'calt';
   font-variant-ligatures: common-ligatures contextual;
   overflow-x: hidden;
+  color-scheme: light;
 }
 
 #root {
   min-height: 100vh;
   background: var(--bg-main);
+}
+
+* {
+  scrollbar-color: rgba(17, 24, 39, 0.28) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(17, 24, 39, 0.22);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(17, 24, 39, 0.32);
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 /* ── Typography ── */
@@ -910,16 +941,17 @@ button:focus-visible {
    ═══════════════════════════════════════════════════════════════ */
 
 .obsidian-surface {
-  background: var(--obsidian-950) !important;
-  color: var(--obsidian-50) !important;
+  background: linear-gradient(180deg, #ffffff, #f8fafc) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-light) !important;
 }
 
 .glass-panel {
-  background: rgba(13, 21, 34, 0.7) !important;
-  backdrop-filter: blur(24px) saturate(1.8) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(1.8) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(20px) saturate(1.2) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.2) !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
+  box-shadow: var(--shadow-lg) !important;
 }
 
 .emerald-button {
@@ -946,17 +978,17 @@ button:focus-visible {
 }
 
 .glass-input {
-  background: rgba(255, 255, 255, 0.05) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  color: white !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid var(--border-medium) !important;
+  color: var(--text-primary) !important;
   backdrop-filter: blur(8px) !important;
   transition: all 0.3s ease !important;
 }
 
 .glass-input:focus {
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: white !important;
   border-color: var(--emerald-500) !important;
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.2) !important;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12) !important;
 }
 
 .staggered-fade-in > * {
@@ -1005,7 +1037,7 @@ button:focus-visible {
 
 .workspace-content-area {
   padding: 0 !important;
-  background: var(--obsidian-950) !important;
+  background: linear-gradient(180deg, #f8fafc 0%, #f0fdf4 100%) !important;
 }
 
 /* ── Sticky Summary Bar ── */
@@ -1013,17 +1045,17 @@ button:focus-visible {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(10, 15, 26, 0.85);
+  background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
   margin: 0 -2.5rem 2rem;
   padding: 0.85rem 2.5rem;
   display: flex;
   align-items: center;
   gap: 2.5rem;
-  color: white;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-md);
 }
 
 .summary-item {
@@ -1034,7 +1066,7 @@ button:focus-visible {
 .summary-item .label {
   font-size: 0.65rem;
   font-weight: 800;
-  color: var(--emerald-400);
+  color: var(--accent-600);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -1048,7 +1080,7 @@ button:focus-visible {
 .summary-divider {
   width: 1px;
   height: 28px;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(148, 163, 184, 0.25);
 }
 
 /* ── Topbar / Header ── */
@@ -1086,15 +1118,15 @@ button:focus-visible {
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 800;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--obsidian-300);
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+  color: var(--text-secondary);
   transition: all 0.3s ease;
 }
 
-.sync-synced { border-color: rgba(16, 185, 129, 0.2); color: var(--emerald-400); background: rgba(16, 185, 129, 0.08); }
-.sync-syncing { color: var(--teal-400); animation: pulse 2s infinite; }
-.sync-pending { color: var(--amber-400); border-color: rgba(245, 158, 11, 0.2); }
+.sync-synced { border-color: rgba(16, 185, 129, 0.2); color: var(--emerald-600); background: rgba(16, 185, 129, 0.08); }
+.sync-syncing { color: var(--teal-600); animation: pulse 2s infinite; }
+.sync-pending { color: var(--amber-600); border-color: rgba(245, 158, 11, 0.2); }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
