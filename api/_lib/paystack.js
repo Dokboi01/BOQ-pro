@@ -1,6 +1,6 @@
 /* global process */
 import { createHmac } from 'node:crypto';
-import { getPaystackAmount, isPaidPlan, PLAN_NAMES } from '../../src/data/plans.js';
+import { getPaystackAmount, getPaystackCheckoutSupport, isPaidPlan, PLAN_NAMES } from '../../src/data/plans.js';
 
 const PAYSTACK_BASE_URL = 'https://api.paystack.co';
 
@@ -111,6 +111,14 @@ export async function initializeSubscriptionTransaction({
   const reference = `boqpro_${planName.toLowerCase().replace(/\s+/g, '_')}_${billingCycle}_${Date.now()}`;
   const recurringPlanCode = getPaystackPlanCode(planName, billingCycle);
   const expectedAmount = getPaystackAmount(planName, billingCycle);
+  const checkoutSupport = getPaystackCheckoutSupport(planName, billingCycle);
+
+  if (!checkoutSupport.supported) {
+    const error = new Error(checkoutSupport.reason || 'This BOQ Pro plan cannot be checked out through Paystack right now.');
+    error.status = 400;
+    throw error;
+  }
+
   const metadata = {
     product: 'BOQ Pro',
     purpose: 'subscription',

@@ -319,9 +319,54 @@ export const PLAN_TIER_ORDER = [
     PLAN_NAMES.ENTERPRISE
 ];
 
+export const PAYSTACK_MAX_TRANSACTION_KOBO = 10000000;
+
 export const isPaidPlan = (planName) => {
     const plan = getPlanByName(planName);
     return plan && plan.priceMonthly !== null && plan.priceMonthly > 0;
+};
+
+const formatKoboToNaira = (amountKobo) => `₦${(Number(amountKobo || 0) / 100).toLocaleString()}`;
+
+export const getPaystackCheckoutSupport = (planName, billing = 'monthly') => {
+    const plan = getPlanByName(planName);
+    const normalizedBilling = billing === 'annual' ? 'annual' : 'monthly';
+
+    if (!plan || !isPaidPlan(plan.label)) {
+        return {
+            supported: false,
+            reason: `The ${plan?.label || PLAN_NAMES.STUDENT} plan does not require Paystack checkout.`,
+            amountKobo: 0,
+            maxAmountKobo: PAYSTACK_MAX_TRANSACTION_KOBO,
+        };
+    }
+
+    if (plan.label === PLAN_NAMES.ENTERPRISE) {
+        return {
+            supported: false,
+            reason: 'Enterprise plans are handled offline and are not processed through Paystack checkout.',
+            amountKobo: null,
+            maxAmountKobo: PAYSTACK_MAX_TRANSACTION_KOBO,
+        };
+    }
+
+    const amountKobo = getPaystackAmount(plan.label, normalizedBilling);
+
+    if (amountKobo > PAYSTACK_MAX_TRANSACTION_KOBO) {
+        return {
+            supported: false,
+            reason: `${plan.label} ${normalizedBilling} checkout exceeds the Paystack online charge limit of ${formatKoboToNaira(PAYSTACK_MAX_TRANSACTION_KOBO)}. Choose monthly billing or process this plan offline.`,
+            amountKobo,
+            maxAmountKobo: PAYSTACK_MAX_TRANSACTION_KOBO,
+        };
+    }
+
+    return {
+        supported: true,
+        reason: null,
+        amountKobo,
+        maxAmountKobo: PAYSTACK_MAX_TRANSACTION_KOBO,
+    };
 };
 
 export const isUpgrade = (currentPlan, targetPlan) => {

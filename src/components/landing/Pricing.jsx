@@ -18,7 +18,7 @@ import {
   Mail,
   Phone
 } from 'lucide-react';
-import { PLANS, PLAN_NAMES, PLAN_TIER_ORDER, FEATURE_COMPARISON, isPaidPlan } from '../../data/plans';
+import { PLANS, PLAN_NAMES, PLAN_TIER_ORDER, FEATURE_COMPARISON, getPaystackCheckoutSupport, isPaidPlan } from '../../data/plans';
 import { paystackCheckout, isPaystackConfigured, verifyPendingPaystackCheckout } from '../../utils/paystack';
 
 const PLAN_ICONS = {
@@ -145,6 +145,12 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
 
     // Enterprise — mailto (handled in JSX)
     if (planName === PLAN_NAMES.ENTERPRISE) return;
+
+    const checkoutSupport = getPaystackCheckoutSupport(planName, billing);
+    if (!checkoutSupport.supported) {
+      setLocalError(checkoutSupport.reason);
+      return;
+    }
 
     // Paid plan — signed-out users first create/login to a real account
     if (!userEmail || !userId) {
@@ -405,6 +411,8 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
             const price = billing === 'annual' ? plan.displayAnnual : plan.displayMonthly;
             const period = plan.priceMonthly === 0 ? '' : billing === 'annual' ? '/year' : '/month';
             const isEnterprise = planName === PLAN_NAMES.ENTERPRISE;
+            const checkoutSupport = getPaystackCheckoutSupport(planName, billing);
+            const showCheckoutWarning = !isEnterprise && isPaidPlan(planName) && !checkoutSupport.supported;
 
             return (
               <article
@@ -437,6 +445,12 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
                 )}
 
                 <p className="plan-desc">{plan.description}</p>
+
+                {showCheckoutWarning && (
+                  <div className="plan-checkout-warning">
+                    {checkoutSupport.reason}
+                  </div>
+                )}
 
                 <div className="feature-list">
                   {plan.featureLabels.map((feature) => (
@@ -1382,6 +1396,18 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
           color: var(--primary-600);
           font-size: 0.82rem;
           line-height: 1.65;
+        }
+
+        .plan-checkout-warning {
+          margin-top: 0.85rem;
+          padding: 0.8rem 0.9rem;
+          border-radius: 14px;
+          background: #fff7ed;
+          border: 1px solid #fdba74;
+          color: #9a3412;
+          font-size: 0.76rem;
+          line-height: 1.5;
+          font-weight: 700;
         }
 
         .feature-list {

@@ -121,7 +121,7 @@ const BOQWorkspace = () => {
     { key: 'rate', letter: 'C', label: 'Rate' },
     { key: 'amount', letter: 'D', label: 'Price' },
   ];
-  const spreadsheetColumnTemplate = 'minmax(360px, 1fr) 150px 160px 170px';
+  const spreadsheetColumnTemplate = 'minmax(440px, 1.45fr) 140px 150px 165px';
 
   const selectWorkspaceCell = ({ sectionId, itemId, columnKey, itemCode, rowNumber }) => {
     setSelectedCell({
@@ -1876,10 +1876,14 @@ const BOQWorkspace = () => {
           min-width: 0;
         }
         .ws-item-name {
+          display: block;
           font-size: 0.78rem;
+          font-weight: 800;
           color: #0f172a;
           line-height: 1.2;
           letter-spacing: -0.01em;
+          white-space: normal;
+          overflow-wrap: anywhere;
         }
         .ws-item-code-pill {
           display: inline-flex;
@@ -3289,7 +3293,7 @@ const BOQWorkspace = () => {
           font-size: 0.82rem;
           background: white;
           table-layout: fixed;
-          min-width: 840px;
+          min-width: 905px;
         }
 
         .ws-table thead {
@@ -3473,7 +3477,7 @@ const BOQWorkspace = () => {
           font-size: 0.78rem;
           color: #334155;
           border-right: 1px solid #f1f5f9;
-          vertical-align: middle;
+          vertical-align: top;
           line-height: 1.4;
           background: inherit;
         }
@@ -3523,8 +3527,12 @@ const BOQWorkspace = () => {
           font-weight: 550;
           color: #334155;
           line-height: 1.35;
-          word-break: break-word;
-          white-space: pre-wrap;
+          white-space: normal;
+          overflow-wrap: anywhere;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
           user-select: text;
         }
         .ws-simple-desc {
@@ -3532,12 +3540,16 @@ const BOQWorkspace = () => {
           flex-direction: column;
           gap: 0.22rem;
           min-width: 0;
+          max-width: 100%;
+          overflow: hidden;
         }
         .ws-simple-desc-top {
           display: flex;
           align-items: center;
           gap: 0.35rem;
-          flex-wrap: wrap;
+          flex-wrap: nowrap;
+          min-width: 0;
+          overflow: hidden;
         }
         .ws-simple-item-code,
         .ws-simple-unit-pill {
@@ -3551,6 +3563,7 @@ const BOQWorkspace = () => {
           text-transform: uppercase;
           line-height: 1;
           padding: 0.18rem 0.44rem;
+          flex-shrink: 0;
         }
         .ws-simple-item-code {
           background: #eff6ff;
