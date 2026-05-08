@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   ArrowLeft
 } from 'lucide-react';
+import QuantraIcon from '../ui/QuantraIcon';
 
 const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) => {
   const [email, setEmail] = useState('');

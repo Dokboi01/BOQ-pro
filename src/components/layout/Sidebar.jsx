@@ -15,6 +15,7 @@ import {
   MapPin,
   Shield
 } from 'lucide-react';
+import QuantraIcon from '../ui/QuantraIcon';
 import { getAccessPlanName, isFreeAccessPlan } from '../../utils/subscription';
 
 const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
@@ -34,11 +35,11 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
     <aside className={`sidebar glass-panel ${collapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-header">
         <div className="logo-container">
-          <Shield size={24} className="logo-icon" />
+          <QuantraIcon size={26} className="logo-icon" />
           {!collapsed && (
             <div className="logo-text-group">
-              <span className="logo-text emerald-text-gradient">Quantra</span>
-              <span className="logo-sub">Nigerian Construction Workspace</span>
+              <span className="logo-text"><span style={{color:'white'}}>Quan</span><span style={{color:'var(--emerald-400)'}}>tra</span></span>
+              <span className="logo-sub">Rate · Quantity · Estimation</span>
             </div>
           )}
         </div>

@@ -13,6 +13,7 @@ import {
   Sparkles,
   User
 } from 'lucide-react';
+import QuantraIcon from '../ui/QuantraIcon';
 
 const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, onViewPrivacy }) => {
   const [isLoading, setIsLoading] = useState(false);

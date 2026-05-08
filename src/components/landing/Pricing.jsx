@@ -18,6 +18,7 @@ import {
   Mail,
   Phone
 } from 'lucide-react';
+import QuantraIcon from '../ui/QuantraIcon';
 import { PLANS, PLAN_NAMES, PLAN_TIER_ORDER, FEATURE_COMPARISON, getPaystackCheckoutSupport, isPaidPlan } from '../../data/plans';
 import { paystackCheckout, verifyPendingPaystackCheckout } from '../../utils/paystack';
 

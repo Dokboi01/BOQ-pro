@@ -3,6 +3,7 @@ import {
   Shield, ArrowRight, Mail, Phone, MapPin,
   Linkedin, Twitter, Instagram, ChevronRight
 } from 'lucide-react';
+import QuantraIcon from '../ui/QuantraIcon';
 
 const NAV_LINKS = [
   { key: 'home', label: 'Home' },
@@ -31,11 +32,11 @@ const LandingLayout = ({
         <div className="landing-nav-inner">
           <button className="brand-mark-v2" onClick={() => onNavigate('home')}>
             <span className="brand-icon-v2">
-              <Shield size={18} />
+              <QuantraIcon size={22} />
             </span>
             <span className="brand-copy-v2">
               <strong>Quantra</strong>
-              <small>Nigerian Construction Workspace</small>
+              <small>Rate · Quantity · Estimation</small>
             </span>
           </button>
 
@@ -71,7 +72,7 @@ const LandingLayout = ({
         <div className="footer-inner">
           <div className="footer-brand">
             <div className="footer-brand-mark">
-              <Shield size={20} />
+              <QuantraIcon size={22} />
               <strong>Quantra</strong>
             </div>
             <p className="footer-brand-copy">

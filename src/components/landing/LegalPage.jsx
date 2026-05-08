@@ -8,6 +8,7 @@ import {
   Shield,
   Sparkles
 } from 'lucide-react';
+import QuantraIcon from '../ui/QuantraIcon';
 
 const EFFECTIVE_DATE = 'April 5, 2026';
 

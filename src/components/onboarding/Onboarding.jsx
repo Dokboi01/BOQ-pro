@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Shield, ArrowRight, UserCircle, Briefcase, GraduationCap, HardHat, Rocket, CheckCircle2 } from 'lucide-react';
+import QuantraIcon from '../ui/QuantraIcon';
 
 const Onboarding = ({ onComplete }) => {
     const [step, setStep] = useState(1);

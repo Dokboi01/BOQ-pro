@@ -25,6 +25,7 @@ import {
   Wrench,
   Cpu
 } from 'lucide-react';
+import QuantraIcon from '../ui/QuantraIcon';
 
 const Hero = ({ onGetStarted, onLogin }) => {
   const headlineStats = [
