@@ -409,6 +409,8 @@ export const getMaterialBenchmarkGovernance = (material = {}) => {
   const regionCoverage = Object.keys(material.regionRates || material.regions || {}).length;
   const sourceCount = clampNumber(material.sourceCount);
   const confidence = clampNumber(material.confidence);
+  const hasCarryForwardEvidence = Array.isArray(material.sources)
+    && material.sources.some((source) => String(source?.type || '').toLowerCase().trim() === 'carry-forward');
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -437,6 +439,9 @@ export const getMaterialBenchmarkGovernance = (material = {}) => {
     if (diffDays < 0 || approvalStatus === 'stale') {
       freshnessLabel = 'Benchmark stale';
       freshnessTone = 'stale';
+    } else if (hasCarryForwardEvidence) {
+      freshnessLabel = 'Carry-forward benchmark';
+      freshnessTone = 'due';
     } else if (diffDays <= 7) {
       freshnessLabel = 'Review due soon';
       freshnessTone = 'due';
@@ -457,6 +462,9 @@ export const getMaterialBenchmarkGovernance = (material = {}) => {
   if (approvalStatus === 'approved' && freshnessTone === 'fresh' && sourceCount >= 3 && confidence >= 0.72) {
     healthLabel = 'Benchmark ready';
     healthTone = 'ready';
+  } else if (hasCarryForwardEvidence) {
+    healthLabel = 'Needs reconfirmation';
+    healthTone = 'watch';
   } else if (approvalStatus === 'draft' || sourceCount <= 1) {
     healthLabel = 'Evidence building';
     healthTone = 'building';
