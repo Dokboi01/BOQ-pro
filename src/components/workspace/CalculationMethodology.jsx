@@ -158,7 +158,7 @@ const CalculationMethodology = () => {
                 <div className="cm-hero-content">
                     <div className="cm-hero-badge"><BookOpen size={14} /> Professional QS Reference</div>
                     <h1>Rate Analysis Methodology</h1>
-                    <p>The standard 6-step professional rate build-up used in BOQ Pro, based on Nigerian construction industry practice.</p>
+                    <p>The standard 6-step professional rate build-up used in Quantra, based on Nigerian construction industry practice.</p>
                 </div>
             </div>
 
@@ -266,7 +266,7 @@ const CalculationMethodology = () => {
                     <Globe size={16} />
                     <span>Regional Adjustment Factors</span>
                 </div>
-                <p className="cm-regional-desc">Rates vary by location due to material availability, labour costs, and transport distances. BOQ Pro automatically applies these modifiers.</p>
+                <p className="cm-regional-desc">Rates vary by location due to material availability, labour costs, and transport distances. Quantra automatically applies these modifiers.</p>
                 <div className="cm-region-grid">
                     {[
                         { name: 'Lagos', factor: '1.00x', note: 'Base rate' },

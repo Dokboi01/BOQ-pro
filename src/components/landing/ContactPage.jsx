@@ -156,11 +156,11 @@ const ContactPage = ({ onGetStarted }) => {
             <h3>Direct contact</h3>
             <div className="cp-direct-row">
               <Mail size={14} />
-              <span>hello@boqpro.ng</span>
+              <span>hello@quantra.ng</span>
             </div>
             <div className="cp-direct-row">
               <Phone size={14} />
-              <span>+234 800 BOQ PRO</span>
+              <span>+234 800 Quantra</span>
             </div>
           </div>
         </section>
@@ -185,7 +185,7 @@ const ContactPage = ({ onGetStarted }) => {
       {/* CTA */}
       <section className="cp-cta">
         <h2>Ready to start pricing?</h2>
-        <p>Create a free account and see how BOQ Pro fits your workflow.</p>
+        <p>Create a free account and see how Quantra fits your workflow.</p>
         <button className="cp-btn-primary" onClick={onGetStarted}>
           Start free <ArrowRight size={18} />
         </button>

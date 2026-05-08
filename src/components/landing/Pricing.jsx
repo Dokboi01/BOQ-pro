@@ -203,7 +203,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
         <button className="brand-mark" onClick={onBack}>
           <span className="brand-icon"><Shield size={18} /></span>
           <span className="brand-copy">
-            <strong>BOQ Pro</strong>
+            <strong>Quantra</strong>
             <small>Commercial workspace for construction teams</small>
           </span>
         </button>
@@ -302,7 +302,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
               <div className="preview-card-head">
                 <div>
                   <span className="preview-tag">Plan guide</span>
-                  <h2>How teams usually grow with BOQ Pro</h2>
+                  <h2>How teams usually grow with Quantra</h2>
                 </div>
                 <span className="preview-mode">
                   <Sparkles size={14} />

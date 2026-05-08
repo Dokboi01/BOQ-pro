@@ -1,4 +1,4 @@
-# BOQ Pro Audit Report
+# Quantra Audit Report
 
 ## Executive summary
 

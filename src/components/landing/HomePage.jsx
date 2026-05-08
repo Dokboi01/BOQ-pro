@@ -125,7 +125,7 @@ const HomePage = ({ onGetStarted, onLogin }) => {
             </h1>
 
             <p className="hp-subtitle">
-              BOQ Pro brings quantity takeoff, benchmark pricing, custom rate build-up, collaboration,
+              Quantra brings quantity takeoff, benchmark pricing, custom rate build-up, collaboration,
               and exports into one construction-focused workspace your team can actually use on live jobs
               across Nigeria.
             </p>
@@ -247,7 +247,7 @@ const HomePage = ({ onGetStarted, onLogin }) => {
           <span className="hp-section-kicker">Inside the app</span>
           <h2>A system built around how Nigerian construction teams work.</h2>
           <p>
-            BOQ Pro is designed to carry a job from early measurement to final review
+            Quantra is designed to carry a job from early measurement to final review
             without making the team jump across multiple tools.
           </p>
         </div>
@@ -337,7 +337,7 @@ const HomePage = ({ onGetStarted, onLogin }) => {
         <div className="hp-cta-content">
           <span className="hp-section-kicker">Ready to test it?</span>
           <h2>Start with one company account and one real project.</h2>
-          <p>Use BOQ Pro to price one job properly, pressure-test the workflow, and grow from there.</p>
+          <p>Use Quantra to price one job properly, pressure-test the workflow, and grow from there.</p>
           <div className="hp-cta-actions">
             <button className="hp-btn-primary" onClick={onGetStarted}>
               Get started free <ArrowRight size={18} />

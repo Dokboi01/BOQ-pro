@@ -1,6 +1,6 @@
 export const MARKET_SYNC_CAPTURED_AT = '2026-05-08T08:00:00.000Z';
 export const MARKET_SYNC_SNAPSHOT_ID = 'ng-market-2026-05-08';
-export const MARKET_SYNC_ACTOR = 'BOQ Pro Market Desk';
+export const MARKET_SYNC_ACTOR = 'Quantra Market Desk';
 const PREVIOUS_MARKET_SYNC_CAPTURED_AT = '2026-04-27T08:00:00.000Z';
 const PREVIOUS_MARKET_SYNC_SNAPSHOT_ID = 'ng-market-2026-04-27';
 
@@ -23,7 +23,7 @@ const buildHistory = (price, benchmark = price) => {
 };
 
 const buildCarryForwardSource = (price) => ([{
-  label: 'BOQ Pro market library carry-forward',
+  label: 'Quantra market library carry-forward',
   type: 'carry-forward',
   region: 'Lagos',
   rate: price,

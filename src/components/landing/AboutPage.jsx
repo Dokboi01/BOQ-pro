@@ -13,7 +13,7 @@ const values = [
   {
     icon: <Users size={20} />,
     title: 'Built For Teams',
-    desc: 'Construction is a team sport. BOQ Pro is designed for collaboration, not solo spreadsheets.',
+    desc: 'Construction is a team sport. Quantra is designed for collaboration, not solo spreadsheets.',
   },
   {
     icon: <MapPin size={20} />,
@@ -44,7 +44,7 @@ const AboutPage = ({ onGetStarted }) => {
           <span className="ap-kicker">About Us</span>
           <h1>Built by Nigerian construction people, for Nigerian construction people.</h1>
           <p>
-            BOQ Pro was born out of frustration. Frustration with spreadsheets that break,
+            Quantra was born out of frustration. Frustration with spreadsheets that break,
             rates that can\'t be defended, and teams that lose track of pricing decisions
             in WhatsApp threads. We set out to build something better.
           </p>
@@ -115,7 +115,7 @@ const AboutPage = ({ onGetStarted }) => {
             material costs, labour rates, or regional variations.
           </p>
           <p>
-            We built BOQ Pro to change that. With real benchmarks for Lagos, Abuja, Port Harcourt, Ibadan, and Kano,
+            We built Quantra to change that. With real benchmarks for Lagos, Abuja, Port Harcourt, Ibadan, and Kano,
             we\'re giving Nigerian construction professionals the tools they deserve.
           </p>
           <div className="ap-nigeria-badges">

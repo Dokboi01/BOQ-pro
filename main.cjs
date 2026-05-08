@@ -5,7 +5,7 @@ function createWindow() {
     const win = new BrowserWindow({
         width: 1280,
         height: 800,
-        title: "BOQ Pro - Professional Engineering Estimates",
+        title: "Quantra - Professional Engineering Estimates",
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,

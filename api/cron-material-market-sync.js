@@ -23,7 +23,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const summary = await runMaterialMarketSync({ actor: 'BOQ Pro Market Bot' });
+    const summary = await runMaterialMarketSync({ actor: 'Quantra Market Bot' });
     return sendJson(res, 200, {
       success: true,
       summary,

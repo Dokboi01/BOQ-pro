@@ -12,7 +12,7 @@ import { formatKoboToNaira } from '../data/plans';
  * The secret key never enters the client.
  */
 
-const PENDING_PAYSTACK_CHECKOUT_KEY = 'boq_pro_pending_paystack_checkout';
+const PENDING_PAYSTACK_CHECKOUT_KEY = 'quantra_pending_paystack_checkout';
 const POLL_INTERVAL_MS = 2500;
 const MAX_POLL_DURATION_MS = 10 * 60 * 1000;
 

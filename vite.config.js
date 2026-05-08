@@ -18,8 +18,8 @@ export default defineConfig(({ mode }) => {
           maximumFileSizeToCacheInBytes: 5000000, // Increase limit to 5MB
         },
         manifest: {
-          name: 'BOQ Pro - Enterprise Engineering',
-          short_name: 'BOQ Pro',
+          name: 'Quantra - Enterprise Engineering',
+          short_name: 'Quantra',
           description: 'Advanced Civil Engineering BOQ & Rate Analysis Tool',
           theme_color: '#0f172a',
           icons: [

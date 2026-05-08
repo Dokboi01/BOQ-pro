@@ -85,7 +85,7 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
             <Shield size={18} />
           </span>
           <span className="brand-copy">
-            <strong>BOQ Pro</strong>
+            <strong>Quantra</strong>
             <small>Commercial workspace for construction teams</small>
           </span>
         </button>
@@ -115,7 +115,7 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
 
           <p className="auth-subtitle">
             The signup screen now follows the same visual direction as the landing, pricing, and login pages:
-            lighter, more product-aware, and built around how BOQ Pro is actually used by QS teams and contractors.
+            lighter, more product-aware, and built around how Quantra is actually used by QS teams and contractors.
           </p>
 
           <div className="signal-strip">
@@ -126,7 +126,7 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
 
           <div className="story-preview">
             <span className="preview-tag">What you are creating</span>
-            <h2>New BOQ Pro company workspace</h2>
+            <h2>New Quantra company workspace</h2>
 
             <div className="story-preview-grid">
               <div className="story-stat-card">
@@ -161,7 +161,7 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
           <div className="auth-panel">
             <div className="auth-card-header">
               <h2>Create your account</h2>
-              <p>Set up the company account that will own your BOQ projects, pricing workflow, and exports.</p>
+              <p>Set up the company account that will own your Quantrajects, pricing workflow, and exports.</p>
             </div>
 
             {selectedPlan && (
@@ -292,7 +292,7 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
               </div>
 
               <button type="submit" className={`auth-submit ${isLoading ? 'loading' : ''}`} disabled={isLoading}>
-                {isLoading ? 'Creating account...' : 'Create your BOQ Pro account'}
+                {isLoading ? 'Creating account...' : 'Create your Quantra account'}
                 {!isLoading && <ArrowRight size={18} />}
               </button>
             </form>
@@ -303,7 +303,7 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
             </div>
 
             <div className="auth-footer">
-              <span>Already have a BOQ Pro account?</span>
+              <span>Already have a Quantra account?</span>
               <button className="text-link text-link-strong" onClick={() => onSwitchToLogin('login')}>
                 Sign in
               </button>

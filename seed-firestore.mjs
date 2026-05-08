@@ -1,5 +1,5 @@
 /**
- * BOQ Pro — Firestore Seed Script
+ * Quantra — Firestore Seed Script
  * Seeds the materials and market_indices collections with initial data.
  * 
  * Run with: node seed-firestore.mjs
@@ -88,7 +88,7 @@ const indicesToSeed = [
 // ── Main Seed Function ──
 
 async function seed() {
-  console.log('🚀 BOQ Pro — Starting Firestore seed...\n');
+  console.log('🚀 Quantra — Starting Firestore seed...\n');
 
   // Initialize Firebase Admin
   let app;

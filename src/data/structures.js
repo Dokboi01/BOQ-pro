@@ -1,4 +1,4 @@
-// BOQ Pro - Expanded professional structure libraries
+// Quantra - Expanded professional structure libraries
 
 export const STRUCTURE_CATEGORIES = {
     BUILDING: 'Building',

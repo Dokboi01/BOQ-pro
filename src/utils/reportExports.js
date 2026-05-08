@@ -54,7 +54,7 @@ const buildProjectMeta = (projectInfo, boqData) => {
     reference: toDisplayString(projectInfo?.ref, 'N/A'),
     notes: toDisplayString(projectInfo?.notes, 'No generic notes provided.'),
     assumptions: toDisplayString(projectInfo?.assumptions, 'No specific assumptions.'),
-    preparedBy: toDisplayString(projectInfo?.preparedBy, 'BOQ Pro Professional'),
+    preparedBy: toDisplayString(projectInfo?.preparedBy, 'Quantra Professional'),
     checkedBy: toDisplayString(projectInfo?.checkedBy, 'Senior QA/QC'),
   };
 };
@@ -179,7 +179,7 @@ export const exportToPDF = (projectInfo, boqData, isUnpriced) => {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(100, 116, 139);
-  doc.text('BOQ PRO ENTERPRISE', margin, 25);
+  doc.text('Quantra ENTERPRISE', margin, 25);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.text('Digital Engineering Standards Platform', margin, 31);
@@ -292,7 +292,7 @@ export const exportToPDF = (projectInfo, boqData, isUnpriced) => {
       doc.rect(0, 0, pageWidth, 3, 'F');
       doc.setFontSize(7);
       doc.setTextColor(148, 163, 184);
-      doc.text(`BOQ PRO ENTERPRISE | ${meta.reference} | ${meta.date}`, margin, pageHeight - 8);
+      doc.text(`Quantra ENTERPRISE | ${meta.reference} | ${meta.date}`, margin, pageHeight - 8);
       doc.text(`Page ${doc.internal.getNumberOfPages()}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
     }
   });

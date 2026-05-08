@@ -118,7 +118,7 @@ function getLocalUserId() {
   if (auth.currentUser?.uid) return auth.currentUser.uid;
 
   try {
-    const cached = localStorage.getItem('boq_pro_profile');
+    const cached = localStorage.getItem('quantra_profile');
     if (!cached) return null;
     const parsed = JSON.parse(cached);
     return parsed?.id || null;

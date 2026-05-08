@@ -57,7 +57,7 @@ const buildMaterialBenchmarkEvidence = (material, activeRegion) => ({
   sources: Array.isArray(material?.sources)
     ? material.sources.map((source) => source.label).filter(Boolean).slice(0, 4)
     : [],
-  verifiedBy: material?.verifiedBy || 'BOQ Pro Market Review',
+  verifiedBy: material?.verifiedBy || 'Quantra Market Review',
   updatedAt: material?.updatedAt || null,
   benchmarkBand: material?.benchmarkBand || material?.range || '',
   exactRegions: Object.keys(material?.regionRates || material?.regions || {}),
@@ -436,7 +436,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
       ].filter(Boolean),
       usage: formData.get('usage'),
       updatedAt,
-      verifiedBy: String(formData.get('verifiedBy') || '').trim() || editingMaterial?.verifiedBy || 'BOQ Pro Market Review',
+      verifiedBy: String(formData.get('verifiedBy') || '').trim() || editingMaterial?.verifiedBy || 'Quantra Market Review',
       sourceCount,
       confidence: confidencePercent > 0 ? confidencePercent / 100 : (editingMaterial?.confidence || undefined),
       benchmarkBand: benchmarkBand || editingMaterial?.benchmarkBand,
@@ -466,7 +466,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
       ? buildMaterialApprovedSnapshotEntry({
         previousSnapshot: previousApprovedSnapshot,
         material: newMat,
-        actor: user?.displayName || user?.email || newMat.verifiedBy || 'BOQ Pro Market Review',
+        actor: user?.displayName || user?.email || newMat.verifiedBy || 'Quantra Market Review',
         activeRegion: activeRegionLabel,
         approvedAt: newMat.approvedAt || updatedAt,
         note: benchmarkDeskNote || sourceNote
@@ -479,7 +479,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
     const benchmarkHistoryEntry = buildMaterialBenchmarkHistoryEntry({
       previousMaterial: editingMaterial,
       nextMaterial: newMat,
-      actor: user?.displayName || user?.email || newMat.verifiedBy || 'BOQ Pro Market Review',
+      actor: user?.displayName || user?.email || newMat.verifiedBy || 'Quantra Market Review',
       activeRegion: activeRegionLabel,
       changedAt: updatedAt,
       reason: benchmarkDeskNote || sourceNote
@@ -746,7 +746,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                     <span className="history-event-time">{formatBenchmarkTimelineStamp(entry.changedAt)}</span>
                   </div>
                   <div className="history-event-meta">
-                    <span className="benchmark-evidence">{entry.actor || 'BOQ Pro Market Review'}</span>
+                    <span className="benchmark-evidence">{entry.actor || 'Quantra Market Review'}</span>
                     <span className={`benchmark-flag ${entry.approvalStatus || 'review'}`}>{entry.approvalStatus || 'review'}</span>
                     {entry.sourceCount > 0 && <span className="benchmark-evidence">{entry.sourceCount} sources</span>}
                   </div>
@@ -985,7 +985,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                     <div className="history-event-header">
                       <div>
                         <strong>{snapshot.title}</strong>
-                        <span>{snapshot.approvedBy || snapshot.actor || 'BOQ Pro Market Review'}</span>
+                        <span>{snapshot.approvedBy || snapshot.actor || 'Quantra Market Review'}</span>
                       </div>
                       <span className="history-event-time">{formatBenchmarkTimelineStamp(snapshot.approvedAt)}</span>
                     </div>
@@ -1021,7 +1021,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                   <div className="history-event-header">
                     <div>
                       <strong>{entry.title}</strong>
-                      <span>{entry.actor || 'BOQ Pro Market Review'}</span>
+                      <span>{entry.actor || 'Quantra Market Review'}</span>
                     </div>
                     <span className="history-event-time">{formatBenchmarkTimelineStamp(entry.changedAt)}</span>
                   </div>

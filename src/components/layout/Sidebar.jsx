@@ -37,7 +37,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
           <Shield size={24} className="logo-icon" />
           {!collapsed && (
             <div className="logo-text-group">
-              <span className="logo-text emerald-text-gradient">BOQ Pro</span>
+              <span className="logo-text emerald-text-gradient">Quantra</span>
               <span className="logo-sub">Nigerian Construction Workspace</span>
             </div>
           )}

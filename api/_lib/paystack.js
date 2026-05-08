@@ -108,19 +108,19 @@ export async function initializeSubscriptionTransaction({
 }) {
   assertSupportedPaidPlan(planName);
 
-  const reference = `boqpro_${planName.toLowerCase().replace(/\s+/g, '_')}_${billingCycle}_${Date.now()}`;
+  const reference = `quantra_${planName.toLowerCase().replace(/\s+/g, '_')}_${billingCycle}_${Date.now()}`;
   const recurringPlanCode = getPaystackPlanCode(planName, billingCycle);
   const expectedAmount = getPaystackAmount(planName, billingCycle);
   const checkoutSupport = getPaystackCheckoutSupport(planName, billingCycle);
 
   if (!checkoutSupport.supported) {
-    const error = new Error(checkoutSupport.reason || 'This BOQ Pro plan cannot be checked out through Paystack right now.');
+    const error = new Error(checkoutSupport.reason || 'This Quantra plan cannot be checked out through Paystack right now.');
     error.status = 400;
     throw error;
   }
 
   const metadata = {
-    product: 'BOQ Pro',
+    product: 'Quantra',
     purpose: 'subscription',
     planName,
     billingCycle,

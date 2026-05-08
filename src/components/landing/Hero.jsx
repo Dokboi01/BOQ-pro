@@ -115,7 +115,7 @@ const Hero = ({ onGetStarted, onLogin }) => {
             <Shield size={18} />
           </span>
           <span className="brand-copy">
-            <strong>BOQ Pro</strong>
+            <strong>Quantra</strong>
             <small>Commercial workspace for construction teams</small>
           </span>
         </button>
@@ -141,7 +141,7 @@ const Hero = ({ onGetStarted, onLogin }) => {
             </h1>
 
             <p className="hero-subtitle">
-              BOQ Pro brings quantity takeoff, benchmark pricing, custom rate build-up, collaboration,
+              Quantra brings quantity takeoff, benchmark pricing, custom rate build-up, collaboration,
               and exports into one construction-focused workspace your team can actually use on live jobs.
             </p>
 
@@ -266,7 +266,7 @@ const Hero = ({ onGetStarted, onLogin }) => {
             <span className="section-kicker">Inside the app</span>
             <h2>A base page that feels like the product you open next.</h2>
             <p>
-              BOQ Pro is strongest when it looks less like a generic landing page and more like a
+              Quantra is strongest when it looks less like a generic landing page and more like a
               serious commercial system for construction teams. This front page now shows that
               company workflow more clearly.
             </p>
@@ -334,7 +334,7 @@ const Hero = ({ onGetStarted, onLogin }) => {
             <span className="section-kicker">Ready to test it?</span>
             <h2>Start with one company account and one real project.</h2>
             <p>
-              Use BOQ Pro to price one job properly, pressure-test the workflow, and grow from there.
+              Use Quantra to price one job properly, pressure-test the workflow, and grow from there.
             </p>
           </div>
           <div className="closing-actions">

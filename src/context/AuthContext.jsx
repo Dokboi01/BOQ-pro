@@ -30,11 +30,29 @@ import { isPaidPlan } from '../data/plans';
 
 const PUBLIC_VIEWS = new Set(['landing', 'pricing', 'login', 'signup', 'forgot-password', 'terms', 'privacy']);
 
+// One-time migration from old "boq_pro_" localStorage keys to "quantra_" keys.
+// This ensures existing users don't lose cached profile or pending data after the rebrand.
+if (typeof window !== 'undefined') {
+    const migrations = [
+        ['boq_pro_profile', 'quantra_profile'],
+        ['boq_pro_pending_subscription', 'quantra_pending_subscription'],
+        ['boq_pro_pending_payment', 'quantra_pending_payment'],
+        ['boq_pro_pending_paystack_checkout', 'quantra_pending_paystack_checkout'],
+    ];
+    for (const [oldKey, newKey] of migrations) {
+        const old = localStorage.getItem(oldKey);
+        if (old && !localStorage.getItem(newKey)) {
+            localStorage.setItem(newKey, old);
+            localStorage.removeItem(oldKey);
+        }
+    }
+}
+
 export function AuthProvider({ children }) {
     const toast = useToast();
 
     // Initialize from cache for instant UI
-    const cachedProfile = localStorage.getItem('boq_pro_profile');
+    const cachedProfile = localStorage.getItem('quantra_profile');
     const pendingSubscription = readPendingSubscription();
     let initialUser = null;
     let initialView = 'loading';
@@ -99,7 +117,7 @@ export function AuthProvider({ children }) {
                     if (prev && JSON.stringify(prev) === JSON.stringify(normalizedUser)) {
                         return prev;
                     }
-                    localStorage.setItem('boq_pro_profile', JSON.stringify(normalizedUser));
+                    localStorage.setItem('quantra_profile', JSON.stringify(normalizedUser));
                     return normalizedUser;
                 });
             }
@@ -129,7 +147,7 @@ export function AuthProvider({ children }) {
                 }
 
                 // If we already have a cached user, skip blocking on Firestore
-                const cached = localStorage.getItem('boq_pro_profile');
+                const cached = localStorage.getItem('quantra_profile');
                 if (cached) {
                     try {
                         const cachedUser = JSON.parse(cached);
@@ -164,7 +182,7 @@ export function AuthProvider({ children }) {
                         if (prev && JSON.stringify(prev) === JSON.stringify(fullUser)) {
                             return prev;
                         }
-                        localStorage.setItem('boq_pro_profile', JSON.stringify(fullUser));
+                        localStorage.setItem('quantra_profile', JSON.stringify(fullUser));
                         return fullUser;
                     });
                     initializationComplete.current = true;
@@ -188,7 +206,7 @@ export function AuthProvider({ children }) {
                     };
                     const normalizedBasicUser = normalizeUserProfile(basicUser);
                     setUser(normalizedBasicUser);
-                    localStorage.setItem('boq_pro_profile', JSON.stringify(normalizedBasicUser));
+                    localStorage.setItem('quantra_profile', JSON.stringify(normalizedBasicUser));
                     initializationComplete.current = true;
 
                     // If we suspect they are already onboarded (or we just don't know), 
@@ -197,7 +215,7 @@ export function AuthProvider({ children }) {
                 }
             } else {
                 // User is signed out
-                localStorage.removeItem('boq_pro_profile');
+                localStorage.removeItem('quantra_profile');
                 setUser(null);
                 setPendingUser(null);
                 setSelectedPlan(readPendingSubscription()?.plan || null);
@@ -228,17 +246,17 @@ export function AuthProvider({ children }) {
         const pendingSelection = readPendingSubscription();
 
         // Guest bypass — skip Firebase Auth entirely
-        if (credentials.email === 'guest@boqpro.com') {
+        if (credentials.email === 'guest@quantra.com') {
             const guestUser = normalizeUserProfile({
                 id: 'guest_user',
-                email: 'guest@boqpro.com',
+                email: 'guest@quantra.com',
                 full_name: 'Guest Engineer',
                 plan: 'Professional',
                 is_onboarded: true,
                 role: 'Quantity Surveyor'
             });
             setUser(guestUser);
-            localStorage.setItem('boq_pro_profile', JSON.stringify(guestUser));
+            localStorage.setItem('quantra_profile', JSON.stringify(guestUser));
             setView('app');
             return;
         }
@@ -264,7 +282,7 @@ export function AuthProvider({ children }) {
                 company_key: buildCompanyKey({ email: result.user.email })
             });
             setUser(optimisticUser);
-            localStorage.setItem('boq_pro_profile', JSON.stringify(optimisticUser));
+            localStorage.setItem('quantra_profile', JSON.stringify(optimisticUser));
             initializationComplete.current = true; // ⚡ IMPORTANT: Prevents the timeout from kicking us out
             setView(pendingSelection?.plan && isPaidPlan(pendingSelection.plan) ? 'pricing' : 'app');
 
@@ -402,19 +420,19 @@ export function AuthProvider({ children }) {
             if (updatedProfile) {
                 const updatedUser = normalizeUserProfile({ ...user, ...updatedProfile, is_onboarded: true });
                 setUser(updatedUser);
-                localStorage.setItem('boq_pro_profile', JSON.stringify(updatedUser));
+                localStorage.setItem('quantra_profile', JSON.stringify(updatedUser));
             } else {
                 // Even if Firestore update didn't return data, update local state
                 const updatedUser = normalizeUserProfile({ ...user, role: data.userType, is_onboarded: true });
                 setUser(updatedUser);
-                localStorage.setItem('boq_pro_profile', JSON.stringify(updatedUser));
+                localStorage.setItem('quantra_profile', JSON.stringify(updatedUser));
             }
         } catch (err) {
             console.error('❌ Onboarding profile update failed:', err);
             // Still update local state so user isn't stuck
             const updatedUser = normalizeUserProfile({ ...user, role: data.userType, is_onboarded: true });
             setUser(updatedUser);
-            localStorage.setItem('boq_pro_profile', JSON.stringify(updatedUser));
+            localStorage.setItem('quantra_profile', JSON.stringify(updatedUser));
         } finally {
             // Guarantee navigation to dashboard
             setView('app');
@@ -454,7 +472,7 @@ export function AuthProvider({ children }) {
                         pendingSubscriptionSelection: null,
                     });
                     setUser(normalizedUser);
-                    localStorage.setItem('boq_pro_profile', JSON.stringify(normalizedUser));
+                    localStorage.setItem('quantra_profile', JSON.stringify(normalizedUser));
                 } else {
                     const profileUpdate = buildSubscriptionProfileUpdate({
                         planName: normalizedPlan,
@@ -468,7 +486,7 @@ export function AuthProvider({ children }) {
                     });
                     const normalizedUser = normalizeUserProfile({ ...user, ...(result || profileUpdate), pendingSubscriptionSelection: null });
                     setUser(normalizedUser);
-                    localStorage.setItem('boq_pro_profile', JSON.stringify(normalizedUser));
+                    localStorage.setItem('quantra_profile', JSON.stringify(normalizedUser));
                 }
                 clearPendingSubscription();
                 setSelectedPlan(null);
@@ -487,7 +505,7 @@ export function AuthProvider({ children }) {
                         pendingSubscriptionSelection: null,
                     });
                     setUser(normalizedUser);
-                    localStorage.setItem('boq_pro_profile', JSON.stringify(normalizedUser));
+                    localStorage.setItem('quantra_profile', JSON.stringify(normalizedUser));
                     clearPendingSubscription();
                     setSelectedPlan(null);
                     setView('app');
@@ -514,7 +532,7 @@ export function AuthProvider({ children }) {
             console.error('❌ Logout error:', err);
         } finally {
             // Guarantee local cleanup and navigation
-            localStorage.removeItem('boq_pro_profile');
+            localStorage.removeItem('quantra_profile');
             setUser(null);
             setView('landing');
         }

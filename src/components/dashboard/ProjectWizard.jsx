@@ -246,7 +246,7 @@ const ProjectWizard = ({ onSelect, onClose }) => {
               <div className="step-header">
                 <button className="btn-back" onClick={() => setStep(3)}><ChevronLeft size={16} /> Back</button>
                 <span className="step-number">Step 4 of {TOTAL_STEPS}</span>
-                <h3>Finalize BOQ Project</h3>
+                <h3>Finalize Quantraject</h3>
                 <p>Review the setup, add optional pricing notes, and create the project. We’ll open the dedicated BOQ item-selection page before the estimate sheet.</p>
               </div>
 

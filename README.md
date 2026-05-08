@@ -1,4 +1,4 @@
-# BOQ Pro - Professional Bill of Quantities Management
+# Quantra - Professional Bill of Quantities Management
 
 ## Live Demo
 
@@ -6,7 +6,7 @@
 
 ## Overview
 
-BOQ Pro is a professional-grade Bill of Quantities management platform designed for civil engineering practitioners. Built with modern cloud infrastructure and premium UI/UX design.
+Quantra is a professional-grade Bill of Quantities management platform designed for civil engineering practitioners. Built with modern cloud infrastructure and premium UI/UX design.
 
 ### Key Features
 
@@ -38,7 +38,7 @@ This application is set up for GitHub to Vercel deployment. OpenAI is the defaul
 - `RESEND_FROM_EMAIL` - Optional sender address for Resend.
 - `VITE_PAYSTACK_PUBLIC_KEY` - Frontend Paystack public key used to enable the checkout flow.
 - `PAYSTACK_SECRET_KEY` - Backend Paystack secret key for transaction initialize / verify / webhook.
-- `PAYSTACK_PLAN_CODE_*` - Paystack recurring plan codes for each paid BOQ Pro tier and billing cycle.
+- `PAYSTACK_PLAN_CODE_*` - Paystack recurring plan codes for each paid Quantra tier and billing cycle.
 - `FIREBASE_PROJECT_ID` - Firebase project id used by the secure subscription API routes.
 - `FIREBASE_SERVICE_ACCOUNT_EMAIL` - Firebase service account email for secure profile updates from API routes.
 - `FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY` - Firebase service account private key for secure profile updates from API routes.
@@ -55,7 +55,7 @@ This application is set up for GitHub to Vercel deployment. OpenAI is the defaul
 
 ## Material Benchmark Sync
 
-BOQ Pro now includes a server-side material market sync path so the material library and benchmark engine can move together:
+Quantra now includes a server-side material market sync path so the material library and benchmark engine can move together:
 
 1. The current Nigeria material feed is defined in `src/data/materialMarketFeed.js`.
 2. `GET /api/cron-material-market-sync` is called daily by Vercel cron.
@@ -75,7 +75,7 @@ The auto-sync infrastructure is live, but benchmark accuracy still depends on th
 
 ## Paystack Subscription Flow
 
-BOQ Pro now uses a verified Paystack flow instead of client-only plan activation:
+Quantra now uses a verified Paystack flow instead of client-only plan activation:
 
 1. Signed-in user chooses a paid plan.
 2. The frontend calls `/api/paystack-initialize-subscription`.
@@ -92,4 +92,4 @@ Keep the Paystack secret key and Firebase service account credentials in Vercel 
 
 For investment inquiries or technical questions, please reach out through the repository.
 
-© 2026 BOQ Pro - Professional Bill of Quantities Management
+© 2026 Quantra - Professional Bill of Quantities Management

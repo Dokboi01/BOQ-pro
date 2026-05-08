@@ -80,7 +80,7 @@ const FeaturesPage = ({ onGetStarted }) => {
           <span className="fp-kicker">Features</span>
           <h1>Everything you need to price Nigerian construction properly.</h1>
           <p>
-            From first measurement to final handover — BOQ Pro gives you the tools
+            From first measurement to final handover — Quantra gives you the tools
             that quantity surveyors, estimators, and contractors actually use on live jobs.
           </p>
           <button className="fp-btn-primary" onClick={onGetStarted}>

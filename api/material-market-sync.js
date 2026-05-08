@@ -26,7 +26,7 @@ export default async function handler(req, res) {
 
   try {
     const body = req.method === 'POST' ? await readJsonBody(req) : {};
-    const actor = String(body?.actor || '').trim() || 'BOQ Pro Market Desk';
+    const actor = String(body?.actor || '').trim() || 'Quantra Market Desk';
     const summary = await runMaterialMarketSync({ actor });
 
     return sendJson(res, 200, {

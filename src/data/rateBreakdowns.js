@@ -1,5 +1,5 @@
 /**
- * BOQ Pro — Engineering Rate Breakdown Engine
+ * Quantra — Engineering Rate Breakdown Engine
  * Maps each BOQ item description to its correct materials, labour, and plant
  * based on Nigerian construction market standards (2025/2026).
  *

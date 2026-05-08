@@ -83,7 +83,7 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
     client: activeProject?.clientName || user?.organization || 'Private Client',
     location: activeProject?.region || 'Lagos - Algiers Sector',
     region: activeProject?.region || 'Lagos',
-    preparedBy: activeProject?.preparedBy || user?.full_name || 'BOQ Pro Professional',
+    preparedBy: activeProject?.preparedBy || user?.full_name || 'Quantra Professional',
     checkedBy: activeProject?.checkedBy || 'Senior QA/QC',
     date: activeProject?.date || new Date().toLocaleDateString(),
     notes: activeProject?.notes || '',

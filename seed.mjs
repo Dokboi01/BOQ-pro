@@ -1,5 +1,5 @@
 /**
- * BOQ Pro — Direct Supabase Seed Script
+ * Quantra — Direct Supabase Seed Script
  * Run with: node seed.mjs
  */
 import { createClient } from '@supabase/supabase-js';
@@ -70,7 +70,7 @@ const indicesToSeed = [
 ];
 
 async function seed() {
-    console.log('🚀 BOQ Pro — Starting database seed...\n');
+    console.log('🚀 Quantra — Starting database seed...\n');
 
     // Test connection first
     const { error: pingError } = await supabase.from('materials').select('count').limit(1);

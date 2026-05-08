@@ -34,7 +34,7 @@ const LandingLayout = ({
               <Shield size={18} />
             </span>
             <span className="brand-copy-v2">
-              <strong>BOQ Pro</strong>
+              <strong>Quantra</strong>
               <small>Nigerian Construction Workspace</small>
             </span>
           </button>
@@ -72,7 +72,7 @@ const LandingLayout = ({
           <div className="footer-brand">
             <div className="footer-brand-mark">
               <Shield size={20} />
-              <strong>BOQ Pro</strong>
+              <strong>Quantra</strong>
             </div>
             <p className="footer-brand-copy">
               The commercial workspace built specifically for Nigerian construction teams — from quantity surveyors and estimators to contractors and project managers.
@@ -107,11 +107,11 @@ const LandingLayout = ({
               <h4>Contact</h4>
               <div className="footer-contact-row">
                 <Mail size={14} />
-                <span>hello@boqpro.ng</span>
+                <span>hello@quantra.ng</span>
               </div>
               <div className="footer-contact-row">
                 <Phone size={14} />
-                <span>+234 800 BOQ PRO</span>
+                <span>+234 800 Quantra</span>
               </div>
               <div className="footer-contact-row">
                 <MapPin size={14} />
@@ -122,7 +122,7 @@ const LandingLayout = ({
         </div>
 
         <div className="footer-bottom">
-          <span>© {new Date().getFullYear()} BOQ Pro. Built for Nigerian construction.</span>
+          <span>© {new Date().getFullYear()} Quantra. Built for Nigerian construction.</span>
           <span className="footer-bottom-trust">
             <Shield size={12} /> Secured by Firebase & Paystack
           </span>

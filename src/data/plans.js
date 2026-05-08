@@ -1,5 +1,5 @@
 /**
- * BOQ Pro — Plan Definitions & Feature Gating
+ * Quantra — Plan Definitions & Feature Gating
  *
  * 6-tier pricing structure with Paystack integration metadata.
  * Amounts stored in kobo (NGN subunit) for Paystack. Display prices in Naira.
@@ -223,7 +223,7 @@ export const PLANS = {
         id: 'enterprise',
         label: 'Enterprise',
         tagline: 'Institutional rollout',
-        description: 'For firms that want BOQ Pro deployed as a company system with fully managed onboarding, SLA, and unlimited scale.',
+        description: 'For firms that want Quantra deployed as a company system with fully managed onboarding, SLA, and unlimited scale.',
         priceMonthly: null,
         priceAnnual: null,
         displayMonthly: 'Custom',

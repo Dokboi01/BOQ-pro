@@ -123,7 +123,7 @@ const DEFAULT_RATE_SOURCE_OPTIONS = ['benchmark', 'formula', 'manual'];
 const SEED_BENCHMARK_DATE = '2026-04-18';
 const DEFAULT_CATALOG_BENCHMARK_NOTE = 'Catalog seed benchmark. Replace with verified Nigerian market rate.';
 const MARKET_LIBRARY_BENCHMARK_DATE = '2026-05-08';
-const MARKET_LIBRARY_BENCHMARK_NOTE = 'Benchmark derived from the current BOQ Pro market library and rate breakdown reference for Nigeria. Validate with supplier quotes and project-specific logistics before tender use.';
+const MARKET_LIBRARY_BENCHMARK_NOTE = 'Benchmark derived from the current Quantra market library and rate breakdown reference for Nigeria. Validate with supplier quotes and project-specific logistics before tender use.';
 const MARKET_LIBRARY_BENCHMARK_FACTOR = 0.85;
 const MARKET_LIBRARY_FALLBACK_FACTOR = 0.78;
 const CATALOG_REGIONAL_FACTORS = {
@@ -283,7 +283,7 @@ const deriveCatalogBenchmark = (item = {}, structureType = '') => {
     return {
       rate: formulaRate,
       sourceType: 'formula-market-derived',
-      sourceNote: 'Benchmark resolved from the catalog formula build-up using current BOQ Pro benchmark inputs.',
+      sourceNote: 'Benchmark resolved from the catalog formula build-up using current Quantra benchmark inputs.',
       confidenceLevel: 'medium',
       calibrationFactor: MARKET_LIBRARY_BENCHMARK_FACTOR,
       matchSource: 'formula-build',
@@ -351,7 +351,7 @@ const ensureCatalogItemBenchmark = (item = {}, structureType = '') => {
         region: currentMetadata.region || 'Nigeria',
         sourceType: benchmarkSourceType,
         sourceNote: useFormulaDerivedMetadata
-          ? 'Benchmark resolved from the catalog formula build-up using current BOQ Pro benchmark inputs.'
+          ? 'Benchmark resolved from the catalog formula build-up using current Quantra benchmark inputs.'
           : (currentMetadata.sourceNote || DEFAULT_CATALOG_BENCHMARK_NOTE),
         dateCaptured: currentMetadata.dateCaptured || MARKET_LIBRARY_BENCHMARK_DATE,
         confidenceLevel: useFormulaDerivedMetadata

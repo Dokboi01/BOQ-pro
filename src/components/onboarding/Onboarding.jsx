@@ -31,7 +31,7 @@ const Onboarding = ({ onComplete }) => {
                         <div className="step-icon">
                             <Shield size={48} className="text-accent-600" />
                         </div>
-                        <h1>Welcome to BOQ Pro</h1>
+                        <h1>Welcome to Quantra</h1>
                         <p>Let's personalize your workspace to match your professional workflow.</p>
                         <button className="btn-primary" onClick={handleNext}>
                             Get Started <ArrowRight size={18} />

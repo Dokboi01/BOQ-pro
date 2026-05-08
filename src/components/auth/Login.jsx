@@ -52,7 +52,7 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
 
   const handleGuestAccess = async () => {
     setIsLoading(true);
-    await onLogin({ email: 'guest@boqpro.com', password: 'password' });
+    await onLogin({ email: 'guest@quantra.com', password: 'password' });
     setIsLoading(false);
   };
 
@@ -67,7 +67,7 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
             <Shield size={18} />
           </span>
           <span className="brand-copy">
-            <strong>BOQ Pro</strong>
+            <strong>Quantra</strong>
             <small>Commercial workspace for construction teams</small>
           </span>
         </button>
@@ -97,7 +97,7 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
 
           <p className="auth-subtitle">
             The login page now follows the same spec as the upgraded base page: lighter, more
-            product-aware, and focused on the actual company workflow behind BOQ Pro.
+            product-aware, and focused on the actual company workflow behind Quantra.
           </p>
 
           <div className="signal-strip">
@@ -143,7 +143,7 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
           <div className="auth-panel">
             <div className="auth-card-header">
               <h2>Welcome back</h2>
-              <p>Sign in with the company email and password tied to your BOQ Pro workspace.</p>
+              <p>Sign in with the company email and password tied to your Quantra workspace.</p>
             </div>
 
             {error && (
@@ -188,7 +188,7 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
               </div>
 
               <button type="submit" className={`auth-submit ${isLoading ? 'loading' : ''}`} disabled={isLoading}>
-                {isLoading ? 'Signing in...' : 'Sign in to BOQ Pro'}
+                {isLoading ? 'Signing in...' : 'Sign in to Quantra'}
                 {!isLoading && <ArrowRight size={18} />}
               </button>
 

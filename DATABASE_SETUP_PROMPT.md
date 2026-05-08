@@ -1,11 +1,11 @@
 # Database Setup Prompt — For Gemini / DeepSeek
 
-Copy and paste the following prompt into Gemini or DeepSeek to have it set up the Firestore database for BOQ Pro:
+Copy and paste the following prompt into Gemini or DeepSeek to have it set up the Firestore database for Quantra:
 
 ---
 
 ```
-You are helping set up a Firebase Firestore database for a BOQ (Bill of Quantities) web application called "BOQ Pro".
+You are helping set up a Firebase Firestore database for a BOQ (Bill of Quantities) web application called "Quantra".
 
 ## Firebase Project
 - Project ID: boq-pro-72332

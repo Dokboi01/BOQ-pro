@@ -316,7 +316,7 @@ export function ProjectsProvider({ children }) {
     const lastPersistedWorkspaceSignatureRef = useRef('');
 
     const getWorkspaceStateStorageKey = useCallback(() => (
-        user?.id ? `boq_pro_last_workspace:${user.id}` : null
+        user?.id ? `quantra_last_workspace:${user.id}` : null
     ), [user?.id]);
 
     const readSavedWorkspaceState = useCallback(() => {

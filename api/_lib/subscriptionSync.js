@@ -54,7 +54,7 @@ export async function applyVerifiedSubscriptionCharge(transaction) {
   });
 
   if (!profile?.id) {
-    throw new Error('Could not resolve a BOQ Pro profile for the verified transaction.');
+    throw new Error('Could not resolve a Quantra profile for the verified transaction.');
   }
 
   // Bug #8: Idempotency — skip if this exact transaction reference was already applied

@@ -1,5 +1,5 @@
 {
-  "name": "boq-pro",
+  "name": "quantra",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -51,8 +51,8 @@
     "wait-on": "^9.0.3"
   },
   "build": {
-    "appId": "com.boqpro.app",
-    "productName": "BOQ Pro",
+    "appId": "com.quantra.app",
+    "productName": "Quantra",
     "directories": {
       "output": "release"
     },

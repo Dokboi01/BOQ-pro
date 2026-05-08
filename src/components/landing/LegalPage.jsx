@@ -15,14 +15,14 @@ const TERMS_SECTIONS = [
   {
     title: '1. Acceptance of these Terms',
     body: [
-      'These Terms and Conditions govern access to and use of BOQ Pro, including the web application, pricing workspace, benchmark rate tools, reporting tools, integrations, and related services.',
-      'By creating an account, purchasing a plan, accessing a company workspace, or using BOQ Pro, you agree to be bound by these Terms. If you use BOQ Pro on behalf of a company, consultancy, contractor, or other organization, you confirm that you have authority to bind that organization to these Terms.'
+      'These Terms and Conditions govern access to and use of Quantra, including the web application, pricing workspace, benchmark rate tools, reporting tools, integrations, and related services.',
+      'By creating an account, purchasing a plan, accessing a company workspace, or using Quantra, you agree to be bound by these Terms. If you use Quantra on behalf of a company, consultancy, contractor, or other organization, you confirm that you have authority to bind that organization to these Terms.'
     ]
   },
   {
-    title: '2. What BOQ Pro provides',
+    title: '2. What Quantra provides',
     body: [
-      'BOQ Pro is a construction pricing and commercial workflow platform built to help users create, manage, review, and export bills of quantities, benchmark-driven estimates, custom rate build-ups, reports, and related project records.',
+      'Quantra is a construction pricing and commercial workflow platform built to help users create, manage, review, and export bills of quantities, benchmark-driven estimates, custom rate build-ups, reports, and related project records.',
       'Certain parts of the Service may use benchmark market data, regional adjustments, project templates, automated calculations, collaboration tools, and AI-assisted features to speed up estimating and commercial review.'
     ]
   },
@@ -37,7 +37,7 @@ const TERMS_SECTIONS = [
   {
     title: '4. Benchmark pricing and professional responsibility',
     body: [
-      'BOQ Pro is designed to automate pricing visibility by combining user-entered quantities with benchmark rates, regional pricing logic, and other commercial inputs. Unless an item is switched to a custom pricing mode, users should expect BOQ Pro to calculate an amount from the available benchmark rate and entered quantity.',
+      'Quantra is designed to automate pricing visibility by combining user-entered quantities with benchmark rates, regional pricing logic, and other commercial inputs. Unless an item is switched to a custom pricing mode, users should expect Quantra to calculate an amount from the available benchmark rate and entered quantity.',
       'Benchmark rates, material intelligence, market signals, and automated amounts are provided as decision-support tools only. They are not a guarantee of market availability, procurement cost, tender outcome, final contract sum, or site performance.',
       'You remain responsible for reviewing all quantities, assumptions, rates, exclusions, taxes, preliminaries, logistics, wastage, scope interpretation, and final commercial outputs before relying on them for procurement, tendering, valuation, negotiation, or contract administration.'
     ]
@@ -45,7 +45,7 @@ const TERMS_SECTIONS = [
   {
     title: '5. Custom pricing, project data, and exports',
     body: [
-      'You retain responsibility for the content you upload or create in BOQ Pro, including drawings, BOQ descriptions, pricing notes, rates, reports, exports, comments, and task records.',
+      'You retain responsibility for the content you upload or create in Quantra, including drawings, BOQ descriptions, pricing notes, rates, reports, exports, comments, and task records.',
       'You represent that you have the necessary rights to upload, process, share, and export your project data using the Service.',
       'Exports, reports, and shared project links should be reviewed before being sent to clients, consultants, contractors, or other third parties.'
     ]
@@ -53,61 +53,61 @@ const TERMS_SECTIONS = [
   {
     title: '6. AI features and third-party services',
     body: [
-      'Some BOQ Pro features may rely on third-party infrastructure or services, including hosting, authentication, analytics, payment processing, AI providers, cloud databases, and email delivery providers.',
+      'Some Quantra features may rely on third-party infrastructure or services, including hosting, authentication, analytics, payment processing, AI providers, cloud databases, and email delivery providers.',
       'AI-generated suggestions, summaries, classifications, or recommendations may be incomplete or inaccurate and must be reviewed by a human user before adoption.',
-      'Third-party services may also have their own terms, privacy policies, and technical limits that apply to your use of those services through BOQ Pro.'
+      'Third-party services may also have their own terms, privacy policies, and technical limits that apply to your use of those services through Quantra.'
     ]
   },
   {
     title: '7. Fees, subscriptions, billing, and refunds',
     body: [
       'Paid features may be offered on subscription or quoted commercial terms. Where applicable, fees are payable in advance and may be billed monthly, annually, or on another agreed commercial cycle.',
-      'Payments processed through BOQ Pro may be handled by a third-party payment processor, including Paystack. You authorize BOQ Pro and its payment processor to collect the applicable charges, taxes, and any permitted adjustments for your chosen plan.',
-      'Except where required by applicable law, paid fees are generally non-refundable once a billing period begins or a paid service has been provisioned. If BOQ Pro approves a refund, payment processor charges may still remain non-refundable where the payment processor treats them as already consumed service charges.'
+      'Payments processed through Quantra may be handled by a third-party payment processor, including Paystack. You authorize Quantra and its payment processor to collect the applicable charges, taxes, and any permitted adjustments for your chosen plan.',
+      'Except where required by applicable law, paid fees are generally non-refundable once a billing period begins or a paid service has been provisioned. If Quantra approves a refund, payment processor charges may still remain non-refundable where the payment processor treats them as already consumed service charges.'
     ]
   },
   {
     title: '8. Acceptable use',
     body: [
-      'You must not use BOQ Pro to violate law, infringe intellectual property rights, upload malicious code, interfere with other users, reverse engineer restricted parts of the Service, scrape the Service at scale without permission, or attempt unauthorized access to accounts, projects, or company workspaces.',
-      'You must not misrepresent benchmark outputs as guaranteed market quotations issued directly by BOQ Pro or by any supplier unless that representation is true and properly documented.'
+      'You must not use Quantra to violate law, infringe intellectual property rights, upload malicious code, interfere with other users, reverse engineer restricted parts of the Service, scrape the Service at scale without permission, or attempt unauthorized access to accounts, projects, or company workspaces.',
+      'You must not misrepresent benchmark outputs as guaranteed market quotations issued directly by Quantra or by any supplier unless that representation is true and properly documented.'
     ]
   },
   {
     title: '9. Intellectual property',
     body: [
-      'BOQ Pro, including its software, design, workflows, branding, benchmark presentation logic, and related materials, remains the property of BOQ Pro and its licensors, except for user-owned project content.',
-      'Subject to these Terms and any applicable paid plan, BOQ Pro grants you a limited, non-exclusive, revocable right to access and use the Service for your internal business, educational, or evaluation use.',
-      'You may not copy, resell, sublicense, redistribute, or create unauthorized derivative offerings from the Service except where BOQ Pro expressly permits it in writing.'
+      'Quantra, including its software, design, workflows, branding, benchmark presentation logic, and related materials, remains the property of Quantra and its licensors, except for user-owned project content.',
+      'Subject to these Terms and any applicable paid plan, Quantra grants you a limited, non-exclusive, revocable right to access and use the Service for your internal business, educational, or evaluation use.',
+      'You may not copy, resell, sublicense, redistribute, or create unauthorized derivative offerings from the Service except where Quantra expressly permits it in writing.'
     ]
   },
   {
     title: '10. Availability, sync, and backups',
     body: [
-      'BOQ Pro may offer local-first saving, cloud sync, offline buffering, and cloud backup features, but uninterrupted availability is not guaranteed.',
+      'Quantra may offer local-first saving, cloud sync, offline buffering, and cloud backup features, but uninterrupted availability is not guaranteed.',
       'You should maintain your own reasonable internal controls and backups for important commercial records and final contract documents. Temporary sync delay, service interruption, browser issues, or third-party outages may affect project availability or freshness.'
     ]
   },
   {
     title: '11. Data handling and privacy',
     body: [
-      'BOQ Pro may process account information, company information, project data, usage events, device or browser metadata, payment references, and support communications in order to provide, secure, improve, and support the Service.',
-      'Where BOQ Pro processes personal data, it will do so in accordance with its Privacy Policy and applicable law, including relevant data protection requirements that may apply in Nigeria and in the jurisdictions where users operate.',
-      'You are responsible for ensuring that your own use of BOQ Pro complies with any client confidentiality, procurement, data handling, and project information obligations that apply to your business.'
+      'Quantra may process account information, company information, project data, usage events, device or browser metadata, payment references, and support communications in order to provide, secure, improve, and support the Service.',
+      'Where Quantra processes personal data, it will do so in accordance with its Privacy Policy and applicable law, including relevant data protection requirements that may apply in Nigeria and in the jurisdictions where users operate.',
+      'You are responsible for ensuring that your own use of Quantra complies with any client confidentiality, procurement, data handling, and project information obligations that apply to your business.'
     ]
   },
   {
     title: '12. Suspension and termination',
     body: [
-      'You may stop using the Service at any time. BOQ Pro may suspend, limit, or terminate access where reasonably necessary for security, non-payment, fraud prevention, legal compliance, abuse prevention, or material breach of these Terms.',
+      'You may stop using the Service at any time. Quantra may suspend, limit, or terminate access where reasonably necessary for security, non-payment, fraud prevention, legal compliance, abuse prevention, or material breach of these Terms.',
       'Upon termination, provisions that reasonably should survive termination will remain in effect, including provisions on fees already incurred, intellectual property, disclaimers, limitation of liability, and dispute resolution.'
     ]
   },
   {
     title: '13. Disclaimers and limitation of liability',
     body: [
-      'To the maximum extent permitted by law, BOQ Pro is provided on an "as is" and "as available" basis. We do not warrant that the Service will always be uninterrupted, error-free, fully secure, or suitable for every procurement, tender, estimating, or commercial purpose.',
-      'To the maximum extent permitted by law, BOQ Pro and its operators will not be liable for indirect, incidental, special, consequential, exemplary, or punitive damages, or for loss of profit, revenue, goodwill, data, contracts, or business opportunity arising out of or related to use of the Service.',
+      'To the maximum extent permitted by law, Quantra is provided on an "as is" and "as available" basis. We do not warrant that the Service will always be uninterrupted, error-free, fully secure, or suitable for every procurement, tender, estimating, or commercial purpose.',
+      'To the maximum extent permitted by law, Quantra and its operators will not be liable for indirect, incidental, special, consequential, exemplary, or punitive damages, or for loss of profit, revenue, goodwill, data, contracts, or business opportunity arising out of or related to use of the Service.',
       'Nothing in these Terms limits liability that cannot be excluded by applicable law, including any mandatory rights users may have under consumer protection or other non-excludable legal rules.'
     ]
   },
@@ -121,14 +121,14 @@ const TERMS_SECTIONS = [
   {
     title: '15. Changes to these Terms',
     body: [
-      'BOQ Pro may update these Terms from time to time to reflect product changes, legal requirements, pricing changes, or operational needs. When material changes are made, BOQ Pro may update the effective date and provide notice through the app, website, billing flow, or other reasonable channels.',
-      'Your continued use of BOQ Pro after updated Terms take effect means you accept the revised Terms.'
+      'Quantra may update these Terms from time to time to reflect product changes, legal requirements, pricing changes, or operational needs. When material changes are made, Quantra may update the effective date and provide notice through the app, website, billing flow, or other reasonable channels.',
+      'Your continued use of Quantra after updated Terms take effect means you accept the revised Terms.'
     ]
   },
   {
     title: '16. Contact',
     body: [
-      'For legal, billing, or account questions about these Terms, use the official BOQ Pro support or commercial contact channel made available inside the app, on your pricing page, or through your subscription or onboarding communications.'
+      'For legal, billing, or account questions about these Terms, use the official Quantra support or commercial contact channel made available inside the app, on your pricing page, or through your subscription or onboarding communications.'
     ]
   }
 ];
@@ -137,22 +137,22 @@ const PRIVACY_SECTIONS = [
   {
     title: 'Privacy Snapshot',
     body: [
-      'BOQ Pro may collect account details, company details, project content, benchmark selections, usage events, device or browser information, and billing references needed to operate the Service.',
+      'Quantra may collect account details, company details, project content, benchmark selections, usage events, device or browser information, and billing references needed to operate the Service.',
       'This information may be used to authenticate users, save projects, sync workspaces, process payments, deliver support, improve benchmark quality, detect abuse, and keep the platform secure.',
-      'Project and account data may be processed through service providers used by BOQ Pro, such as hosting, cloud database, analytics, payment, and email providers. Those providers process data under their own terms and privacy commitments.'
+      'Project and account data may be processed through service providers used by Quantra, such as hosting, cloud database, analytics, payment, and email providers. Those providers process data under their own terms and privacy commitments.'
     ]
   },
   {
     title: 'Your responsibilities',
     body: [
-      'Do not upload personal or confidential information that you are not authorized to process through BOQ Pro.',
-      'Where client, employee, or site data is involved, make sure your organization has an appropriate lawful basis and internal approval for using BOQ Pro to manage that information.'
+      'Do not upload personal or confidential information that you are not authorized to process through Quantra.',
+      'Where client, employee, or site data is involved, make sure your organization has an appropriate lawful basis and internal approval for using Quantra to manage that information.'
     ]
   },
   {
     title: 'Your choices',
     body: [
-      'Depending on applicable law and your subscription setup, you may have rights relating to access, correction, deletion, or restriction of personal data. You can start those requests through BOQ Pro support.',
+      'Depending on applicable law and your subscription setup, you may have rights relating to access, correction, deletion, or restriction of personal data. You can start those requests through Quantra support.',
       'Privacy-related details should be reviewed and supplemented with your final legal and operational contact information before public release.'
     ]
   }
@@ -171,8 +171,8 @@ const LegalPage = ({ mode = 'terms', onBack }) => {
   const isPrivacy = mode === 'privacy';
   const pageTitle = isPrivacy ? 'Privacy Policy' : 'Terms and Conditions';
   const pageSubtitle = isPrivacy
-    ? 'A plain-language summary of how BOQ Pro handles account, project, and billing-related data.'
-    : 'The commercial and legal framework for using BOQ Pro as a benchmark-first construction pricing platform.';
+    ? 'A plain-language summary of how Quantra handles account, project, and billing-related data.'
+    : 'The commercial and legal framework for using Quantra as a benchmark-first construction pricing platform.';
 
   return (
     <div className="legal-shell">
@@ -185,7 +185,7 @@ const LegalPage = ({ mode = 'terms', onBack }) => {
             <Shield size={18} />
           </span>
           <span className="brand-copy">
-            <strong>BOQ Pro</strong>
+            <strong>Quantra</strong>
             <small>Commercial workspace for construction teams</small>
           </span>
         </button>
@@ -202,11 +202,11 @@ const LegalPage = ({ mode = 'terms', onBack }) => {
         <section className="legal-hero">
           <div className="section-kicker">
             <Sparkles size={14} />
-            BOQ Pro legal
+            Quantra legal
           </div>
           <h1>
             {pageTitle}
-            <span> for the current BOQ Pro product.</span>
+            <span> for the current Quantra product.</span>
           </h1>
           <p className="legal-subtitle">{pageSubtitle}</p>
 

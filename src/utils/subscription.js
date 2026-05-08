@@ -5,8 +5,8 @@ import {
   isPaidPlan,
 } from '../data/plans.js';
 
-export const PENDING_SUBSCRIPTION_STORAGE_KEY = 'boq_pro_pending_subscription';
-const LEGACY_PENDING_PAYMENT_STORAGE_KEY = 'boq_pro_pending_payment';
+export const PENDING_SUBSCRIPTION_STORAGE_KEY = 'quantra_pending_subscription';
+const LEGACY_PENDING_PAYMENT_STORAGE_KEY = 'quantra_pending_payment';
 
 const ACTIVE_ACCESS_STATUSES = new Set(['active', 'trialing', 'grace', 'free']);
 

@@ -568,7 +568,7 @@ const summarizeBenchmarkEvidence = (breakdown, region = 'Lagos', matchSource = '
     || 0;
   const verifiedBy = Array.from(new Set(
     materialRows.map((row) => row?.benchmarkVerifiedBy).filter(Boolean)
-  )).join(', ') || 'BOQ Pro Market Review';
+  )).join(', ') || 'Quantra Market Review';
   const exactRegions = Array.from(new Set(
     materialRows.flatMap((row) => Object.keys(row?.benchmarkRegionRates || {}))
   ));

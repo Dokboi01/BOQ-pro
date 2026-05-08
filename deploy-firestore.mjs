@@ -1,5 +1,5 @@
 /**
- * BOQ Pro — Deploy Firestore Security Rules & Composite Index
+ * Quantra — Deploy Firestore Security Rules & Composite Index
  * 
  * Uses the Firebase service account to authenticate and deploy:
  * 1. Security rules to Firestore
@@ -151,7 +151,7 @@ async function createCompositeIndex(accessToken) {
 }
 
 async function main() {
-  console.log('🚀 BOQ Pro — Deploying Firestore configuration\n');
+  console.log('🚀 Quantra — Deploying Firestore configuration\n');
 
   console.log('🔑 Getting access token from service account...');
   let accessToken;
