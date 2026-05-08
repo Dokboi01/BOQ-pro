@@ -35,6 +35,10 @@ export function getPaystackPlanCode(planName, billingCycle) {
   return process.env[PAYSTACK_PLAN_ENV_MAP?.[planName]?.[billingCycle] || ''] || null;
 }
 
+export function isRecurringPlanCheckoutEnabled() {
+  return String(process.env.PAYSTACK_USE_RECURRING_PLANS || 'false').toLowerCase().trim() === 'true';
+}
+
 export function assertSupportedPaidPlan(planName) {
   if (!isPaidPlan(planName)) {
     throw new Error(`The ${planName || PLAN_NAMES.STUDENT} plan does not require Paystack checkout.`);
@@ -109,7 +113,9 @@ export async function initializeSubscriptionTransaction({
   assertSupportedPaidPlan(planName);
 
   const reference = `quantra_${planName.toLowerCase().replace(/\s+/g, '_')}_${billingCycle}_${Date.now()}`;
-  const recurringPlanCode = getPaystackPlanCode(planName, billingCycle);
+  const recurringPlanCode = isRecurringPlanCheckoutEnabled()
+    ? getPaystackPlanCode(planName, billingCycle)
+    : null;
   const expectedAmount = getPaystackAmount(planName, billingCycle);
   const checkoutSupport = getPaystackCheckoutSupport(planName, billingCycle);
 

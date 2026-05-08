@@ -38,6 +38,7 @@ This application is set up for GitHub to Vercel deployment. OpenAI is the defaul
 - `RESEND_FROM_EMAIL` - Optional sender address for Resend.
 - `VITE_PAYSTACK_PUBLIC_KEY` - Frontend Paystack public key used to enable the checkout flow.
 - `PAYSTACK_SECRET_KEY` - Backend Paystack secret key for transaction initialize / verify / webhook.
+- `PAYSTACK_USE_RECURRING_PLANS` - Optional. Defaults to `false` so checkout uses direct amounts first. Set to `true` only after Paystack recurring plan codes are confirmed to work correctly.
 - `PAYSTACK_PLAN_CODE_*` - Paystack recurring plan codes for each paid Quantra tier and billing cycle.
 - `FIREBASE_PROJECT_ID` - Firebase project id used by the secure subscription API routes.
 - `FIREBASE_SERVICE_ACCOUNT_EMAIL` - Firebase service account email for secure profile updates from API routes.
@@ -80,6 +81,7 @@ Quantra now uses a verified Paystack flow instead of client-only plan activation
 1. Signed-in user chooses a paid plan.
 2. The frontend calls `/api/paystack-initialize-subscription`.
 3. The Vercel API route uses `PAYSTACK_SECRET_KEY` to create the checkout session.
+   By default Quantra initializes checkout with the direct plan amount. Recurring Paystack plan codes are only used when `PAYSTACK_USE_RECURRING_PLANS=true`.
 4. The frontend opens the hosted Paystack checkout and polls `/api/paystack-verify-subscription`.
 5. After Paystack verification succeeds, the API route updates the Firebase `profiles` document with the normalized subscription payload.
 6. `POST /api/paystack-webhook` keeps renewals, failed invoices, and cancellation events in sync.
