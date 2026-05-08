@@ -12,6 +12,10 @@ import {
   STRUCTURE_OPTIONS,
   getStructureDefinition,
 } from '../../data/boqCatalog';
+import {
+  DEFAULT_NIGERIA_LOCATION,
+  groupNigeriaStateOptionsByZone,
+} from '../../data/nigeriaLocations';
 
 const TOTAL_STEPS = 4;
 
@@ -20,7 +24,7 @@ const ProjectWizard = ({ onSelect, onClose }) => {
   const [formData, setFormData] = useState({
     name: '',
     clientName: '',
-    region: 'Lagos',
+    region: DEFAULT_NIGERIA_LOCATION,
     notes: '',
     assumptions: '',
     exclusions: '',
@@ -32,6 +36,7 @@ const ProjectWizard = ({ onSelect, onClose }) => {
     () => getStructureDefinition(structureType),
     [structureType]
   );
+  const groupedStates = useMemo(() => groupNigeriaStateOptionsByZone(), []);
 
   const totalAvailableItems = useMemo(
     () => (structureDefinition?.sections || []).reduce(
@@ -124,7 +129,7 @@ const ProjectWizard = ({ onSelect, onClose }) => {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Project Region <span className="req">*</span></label>
+                  <label>Project State / Market <span className="req">*</span></label>
                   <div className="input-icon-wrapper">
                     <MapPin size={16} className="input-icon" />
                     <select
@@ -132,11 +137,15 @@ const ProjectWizard = ({ onSelect, onClose }) => {
                       onChange={(event) => setFormData((prev) => ({ ...prev, region: event.target.value }))}
                       className="pl-8"
                     >
-                      <option value="Lagos">Lagos</option>
-                      <option value="Abuja">Abuja</option>
-                      <option value="Port_Harcourt">Port Harcourt</option>
-                      <option value="Ibadan">Ibadan</option>
-                      <option value="Kano">Kano</option>
+                      {groupedStates.map((group) => (
+                        <optgroup key={group.zone} label={group.zone}>
+                          {group.states.map((state) => (
+                            <option key={state.value} value={state.value}>
+                              {state.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -256,7 +265,7 @@ const ProjectWizard = ({ onSelect, onClose }) => {
                     <h5>Project</h5>
                     <div className="summary-row"><span>Name</span><strong>{formData.name}</strong></div>
                     <div className="summary-row"><span>Client</span><strong>{formData.clientName}</strong></div>
-                    <div className="summary-row"><span>Region</span><strong>{formData.region}</strong></div>
+                    <div className="summary-row"><span>State / Market</span><strong>{formData.region}</strong></div>
                   </div>
                   <div className="summary-group">
                     <h5>BOQ Setup</h5>

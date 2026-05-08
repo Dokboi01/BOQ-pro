@@ -13,7 +13,7 @@ const featureGroups = [
     description: 'The core pricing engine where estimates come to life. Built for the way Nigerian construction teams actually work.',
     features: [
       { name: 'Custom Rate Build-Up', desc: 'Materials + labour + plant + transport + overheads + profit = defendable rates.' },
-      { name: 'Benchmark Pricing', desc: 'Pre-loaded regional benchmarks for Lagos, Abuja, Port Harcourt, Ibadan, and Kano.' },
+      { name: 'Benchmark Pricing', desc: 'Pre-loaded anchor benchmarks calibrated for all 36 Nigerian states plus FCT Abuja.' },
       { name: 'Quantity Takeoff', desc: 'Measure directly against BOQ line items with proper unit tracking.' },
       { name: 'Section Management', desc: 'Organise by substructure, superstructure, finishes, MEP, and custom sections.' },
     ],
@@ -48,7 +48,7 @@ const featureGroups = [
       { name: '46+ Materials', desc: 'Cement, reinforcement, roofing, tiles, paint, and more.' },
       { name: 'Market Indices', desc: 'Track price movements across 8 key material categories.' },
       { name: 'Custom Materials', desc: 'Add your own suppliers and rates to the library.' },
-      { name: 'Regional Pricing', desc: 'Materials priced differently for Lagos vs Kano vs Abuja.' },
+      { name: 'Regional Pricing', desc: 'Materials and BOQ items adjust by active state market, not one flat national rate.' },
     ],
   },
   {
@@ -65,7 +65,7 @@ const featureGroups = [
 ];
 
 const stats = [
-  { value: '5', label: 'Nigerian cities with benchmarks' },
+  { value: '37', label: 'Nigerian state markets supported' },
   { value: '46+', label: 'Materials in the library' },
   { value: '3', label: 'Export formats (PDF, Excel, JSON)' },
   { value: '24h', label: 'Average tender turnaround' },

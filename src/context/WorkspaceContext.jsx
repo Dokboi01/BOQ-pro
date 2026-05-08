@@ -8,6 +8,10 @@ import {
   createCustomBoqItem,
   getStructureSectionCatalog,
 } from '../data/boqCatalog';
+import {
+  DEFAULT_NIGERIA_LOCATION,
+  getNigeriaLocationDisplayName,
+} from '../data/nigeriaLocations';
 import { buildCompanyKey, deriveCompanyName } from '../utils/companyAccess';
 import { buildCustomPricingFromRateAnalysis, WORK_TYPE_LABELS } from '../utils/customPricing';
 import {
@@ -149,8 +153,8 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
   const { user } = useAuth();
   const isCustomWorkspace = project?.projectMode === 'custom';
   const projectStructureType = project?.structureType || project?.type || '';
-  const marketRegionLabel = project?.region || 'Lagos';
-  const marketRegionDisplay = marketRegionLabel.replace(/_/g, ' ');
+  const marketRegionLabel = getNigeriaLocationDisplayName(project?.region || DEFAULT_NIGERIA_LOCATION);
+  const marketRegionDisplay = marketRegionLabel;
 
   const loadMarketBenchmarks = async ({ silent = false } = {}) => {
     try {

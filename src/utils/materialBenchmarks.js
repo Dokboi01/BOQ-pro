@@ -1,3 +1,9 @@
+import {
+  getNigeriaBenchmarkRegion,
+  getNigeriaLocationFactor,
+  getNigeriaLocationLookupCandidates,
+} from '../data/nigeriaLocations';
+
 const clampNumber = (value) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -626,11 +632,21 @@ export const getMaterialRegionalBenchmark = (material, region = 'Lagos') => {
   if (!material) return 0;
 
   const regionRates = material.regionRates || material.regions || {};
-  const requestedRegionKey = normalizeRegionLookup(region);
+  const lookupCandidates = getNigeriaLocationLookupCandidates(region).map((entry) => normalizeRegionLookup(entry));
 
-  for (const [regionName, value] of Object.entries(regionRates)) {
-    if (normalizeRegionLookup(regionName) === requestedRegionKey) {
-      return clampNumber(value);
+  for (const candidate of lookupCandidates) {
+    for (const [regionName, value] of Object.entries(regionRates)) {
+      if (normalizeRegionLookup(regionName) === candidate) {
+        const benchmarkRegion = getNigeriaBenchmarkRegion(region);
+        const regionFactor = getNigeriaLocationFactor(region);
+        const isAnchorFallback = normalizeRegionLookup(regionName) === normalizeRegionLookup(benchmarkRegion)
+          && candidate === normalizeRegionLookup(benchmarkRegion)
+          && normalizeRegionLookup(region) !== normalizeRegionLookup(benchmarkRegion);
+
+        return isAnchorFallback
+          ? clampNumber(value) * regionFactor
+          : clampNumber(value);
+      }
     }
   }
 

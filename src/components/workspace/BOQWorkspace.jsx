@@ -12,6 +12,10 @@ import BOQItemDetailPanel from './BOQItemDetailPanel';
 import BOQSelectionStage from './BOQSelectionStage';
 import BOQBillPanel from './BOQBillPanel';
 import { getStructureSectionCatalog } from '../../data/boqCatalog';
+import {
+  DEFAULT_NIGERIA_LOCATION,
+  groupNigeriaStateOptionsByZone,
+} from '../../data/nigeriaLocations';
 import { WORK_TYPE_LABELS } from '../../utils/customPricing';
 import {
   getFormulaDisplayText,
@@ -115,6 +119,7 @@ const BOQWorkspace = () => {
             label: benchmarkSyncLabel ? `Benchmark synced ${benchmarkSyncLabel}` : 'Benchmark library current',
             tone: 'success'
           };
+  const groupedStateOptions = React.useMemo(() => groupNigeriaStateOptionsByZone(), []);
   const spreadsheetColumns = [
     { key: 'description', letter: 'A', label: 'Item Description' },
     { key: 'quantity', letter: 'B', label: 'Qty' },
@@ -478,12 +483,16 @@ const BOQWorkspace = () => {
 
           <div className="ws-region-selector">
             <Globe size={14} />
-            <select value={project?.region || 'Lagos'} onChange={(e) => handleRegionChange(e.target.value)}>
-              <option value="Lagos">Lagos</option>
-              <option value="Abuja">Abuja</option>
-              <option value="Port_Harcourt">Port Harcourt</option>
-              <option value="Ibadan">Ibadan</option>
-              <option value="Kano">Kano</option>
+            <select value={marketRegionLabel || DEFAULT_NIGERIA_LOCATION} onChange={(e) => handleRegionChange(e.target.value)}>
+              {groupedStateOptions.map((group) => (
+                <optgroup key={group.zone} label={group.zone}>
+                  {group.states.map((state) => (
+                    <option key={state.value} value={state.value}>
+                      {state.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
             </select>
           </div>
 

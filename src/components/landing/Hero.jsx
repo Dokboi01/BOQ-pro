@@ -31,7 +31,7 @@ const Hero = ({ onGetStarted, onLogin }) => {
   const headlineStats = [
     { value: '24 hrs', label: 'Typical tender turnaround' },
     { value: '1 workspace', label: 'Pricing, notes, reports, and handoff' },
-    { value: 'Region-aware', label: 'Lagos, Abuja, PH, Ibadan, Kano' }
+    { value: '36 states + FCT', label: 'State-aware Nigerian benchmarks' }
   ];
 
   const capabilityCards = [
@@ -101,7 +101,7 @@ const Hero = ({ onGetStarted, onLogin }) => {
 
   const activityFeed = [
     'Custom pricing updated for backyard entrance gate',
-    'Rates benchmarked against Lagos regional market',
+    'Rates benchmarked against the active state market',
     'BOQ export prepared for review'
   ];
 

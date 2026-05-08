@@ -3,6 +3,7 @@ import {
     createProjectSectionsFromStructure,
     getStructureDefinition,
 } from '../data/boqCatalog';
+import { DEFAULT_NIGERIA_LOCATION } from '../data/nigeriaLocations';
 import { PLAN_LIMITS, PLAN_NAMES } from '../data/plans';
 import { useAuth } from './useAuth';
 import { useToast } from '../components/ui/useToast';
@@ -946,7 +947,7 @@ export function ProjectsProvider({ children }) {
 
         const processedSections = buildProjectSections(sectionsToProcess, {
             structureType: structureName || structureId,
-            region: 'Lagos'
+            region: DEFAULT_NIGERIA_LOCATION
         });
 
         const projectId = `local_${Date.now()}`;
@@ -958,7 +959,7 @@ export function ProjectsProvider({ children }) {
             status: 'Active',
             sections: processedSections,
             date: new Date().toISOString().split('T')[0],
-            region: 'Lagos',
+            region: DEFAULT_NIGERIA_LOCATION,
             pricingMode: 'user-entered'
         };
 
@@ -1006,7 +1007,7 @@ export function ProjectsProvider({ children }) {
         const processedSections = buildProjectSections(baseSections, {
             unpriced: isUnpricedTemplate,
             structureType: structureTypeLabel,
-            region: projectConfig.region || 'Lagos'
+            region: projectConfig.region || DEFAULT_NIGERIA_LOCATION
         });
 
         const projectId = `local_${Date.now()}`;
@@ -1032,7 +1033,7 @@ export function ProjectsProvider({ children }) {
             status: 'Active',
             sections: processedSections,
             date: new Date().toISOString().split('T')[0],
-            region: projectConfig.region || 'Lagos',
+            region: projectConfig.region || DEFAULT_NIGERIA_LOCATION,
             notes: projectConfig.notes || '',
             assumptions: projectConfig.assumptions || '',
             exclusions: projectConfig.exclusions || '',

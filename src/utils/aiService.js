@@ -1,5 +1,10 @@
 import { getSetting } from '../db/database';
 import { getCurrentIdToken } from './authToken';
+import {
+  DEFAULT_NIGERIA_LOCATION,
+  getNigeriaBenchmarkRegion,
+  getNigeriaLocationFactor,
+} from '../data/nigeriaLocations';
 
 const DEFAULT_AI_MODEL = 'gpt-4o';
 
@@ -188,13 +193,16 @@ export const calculateResourceRequirement = (description, qty, unit) => {
 };
 
 export const getRegionalModifier = (region) => {
-  const modifiers = {
-    LAGOS: 1.0,
-    ABUJA: 1.15,
-    PORT_HARCOURT: 1.1,
-    IBADAN: 0.9,
-    KANO: 0.95,
+  const benchmarkRegion = getNigeriaBenchmarkRegion(region || DEFAULT_NIGERIA_LOCATION);
+  const stateFactor = getNigeriaLocationFactor(region || DEFAULT_NIGERIA_LOCATION);
+  const anchorModifiers = {
+    Lagos: 1.0,
+    Abuja: 1.15,
+    'Port Harcourt': 1.1,
+    Ibadan: 0.9,
+    Kano: 0.95,
+    Enugu: 1.03,
   };
 
-  return modifiers[region?.toUpperCase()] || 1.0;
+  return (anchorModifiers[benchmarkRegion] || 1.0) * stateFactor;
 };

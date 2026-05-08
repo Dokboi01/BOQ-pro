@@ -18,7 +18,7 @@ const IMAGES = {
 
 const headlineStats = [
   { value: '24 hrs', label: 'Typical tender turnaround' },
-  { value: '5 cities', label: 'Lagos, Abuja, PH, Ibadan, Kano' },
+  { value: '36 states + FCT', label: 'State-aware benchmark coverage' },
   { value: '1 workspace', label: 'Pricing, notes, reports, handoff' },
 ];
 
@@ -55,7 +55,7 @@ const projectSnapshot = [
 
 const activityFeed = [
   'Custom pricing updated for backyard entrance gate',
-  'Rates benchmarked against Lagos regional market',
+  'Rates benchmarked against the active state market',
   'BOQ export prepared for review',
 ];
 
@@ -215,8 +215,8 @@ const HomePage = ({ onGetStarted, onLogin }) => {
       <section className="hp-regions">
         <div className="hp-regions-heading">
           <span className="hp-section-kicker">Regional benchmarks</span>
-          <h2>Priced for the Nigerian market</h2>
-          <p>Real regional cost data for the cities where your projects actually happen.</p>
+          <h2>Priced for all 36 states plus FCT</h2>
+          <p>Quantra uses anchor market rates and state adjustments so projects can be priced anywhere in Nigeria.</p>
         </div>
         <div className="hp-regions-grid">
           {nigerianRegions.map((r) => (

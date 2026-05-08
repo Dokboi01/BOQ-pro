@@ -1,6 +1,11 @@
 import { getRegionalModifier } from './aiService';
 import { getBreakdownForItem } from '../data/rateBreakdowns';
 import {
+  DEFAULT_NIGERIA_LOCATION,
+  getNigeriaBenchmarkRegion,
+  getNigeriaLocationFactor,
+} from '../data/nigeriaLocations';
+import {
   getExactMaterialRegionalBenchmark,
   getMaterialRegionalBenchmark,
   normalizeMaterialBenchmarkRecord
@@ -26,12 +31,13 @@ export const WORK_TYPE_PROFILES = {
   general: { shares: { materials: 0.56, labour: 0.21, plant: 0.08, transport: 0.15 }, waste: 3, siteAdjustment: 3, overheads: 12, profit: 10, roundingStep: 100 }
 };
 
-const REGION_COST_PROFILES = {
+const ANCHOR_REGION_COST_PROFILES = {
   Lagos: { materials: 1, labour: 1, plant: 1, transport: 1, site: 1 },
   Abuja: { materials: 1.07, labour: 1.15, plant: 1.1, transport: 1.14, site: 1.05 },
-  Port_Harcourt: { materials: 1.05, labour: 1.11, plant: 1.08, transport: 1.15, site: 1.06 },
+  'Port Harcourt': { materials: 1.05, labour: 1.11, plant: 1.08, transport: 1.15, site: 1.06 },
   Ibadan: { materials: 0.93, labour: 0.91, plant: 0.94, transport: 0.91, site: 0.96 },
-  Kano: { materials: 0.95, labour: 0.93, plant: 0.96, transport: 0.95, site: 0.98 }
+  Kano: { materials: 0.95, labour: 0.93, plant: 0.96, transport: 0.95, site: 0.98 },
+  Enugu: { materials: 1.02, labour: 1.01, plant: 1.0, transport: 1.03, site: 1.0 },
 };
 
 const STOP_WORDS = new Set([
@@ -142,13 +148,28 @@ export const getWorkTypeProfile = (workType = 'general') => {
 };
 
 export const getRegionalCostProfile = (region = 'Lagos') => {
-  const fallback = Math.max(getRegionalModifier(region), 0.001);
-  return REGION_COST_PROFILES[region] || {
-    materials: fallback,
-    labour: fallback,
-    plant: fallback,
-    transport: fallback,
-    site: fallback
+  const requestedRegion = region || DEFAULT_NIGERIA_LOCATION;
+  const benchmarkRegion = getNigeriaBenchmarkRegion(requestedRegion);
+  const locationFactor = Math.max(getNigeriaLocationFactor(requestedRegion), 0.001);
+  const fallback = Math.max(getRegionalModifier(requestedRegion), 0.001);
+  const anchorProfile = ANCHOR_REGION_COST_PROFILES[benchmarkRegion];
+
+  if (!anchorProfile) {
+    return {
+      materials: fallback,
+      labour: fallback,
+      plant: fallback,
+      transport: fallback,
+      site: fallback,
+    };
+  }
+
+  return {
+    materials: anchorProfile.materials * locationFactor,
+    labour: anchorProfile.labour * locationFactor,
+    plant: anchorProfile.plant * locationFactor,
+    transport: anchorProfile.transport * locationFactor,
+    site: anchorProfile.site * locationFactor,
   };
 };
 
@@ -667,6 +688,17 @@ export const getBenchmarkRegionalFactor = (item, region = 'Lagos') => {
     return exactRegionalRate / lagosRate;
   }
 
+  const benchmarkRegion = getNigeriaBenchmarkRegion(region);
+  const locationFactor = Math.max(getNigeriaLocationFactor(region), 0.001);
+  const anchorRegionalRate = getExactMaterialRegionalBenchmark({
+    benchmark: item?.benchmark,
+    regionRates: item?.benchmarkRegionalRates || {}
+  }, benchmarkRegion);
+
+  if (anchorRegionalRate > 0 && lagosRate > 0) {
+    return (anchorRegionalRate * locationFactor) / lagosRate;
+  }
+
   const workType = item?.customPricing?.workType || inferWorkType(item?.description);
   const cacheKey = `${workType}|${region}`;
 
@@ -792,7 +824,7 @@ export const buildAutoRateResult = (item, { structureType, region = 'Lagos', mat
   const supportedRegions = Array.from(new Set([
     'Lagos',
     region,
-    ...Object.keys(REGION_COST_PROFILES),
+    ...Object.keys(ANCHOR_REGION_COST_PROFILES),
     ...(marketAligned.materials || []).flatMap((row) => Object.keys(row.benchmarkRegionRates || {}))
   ]));
   const benchmarkRegionalRates = supportedRegions.reduce((acc, regionName) => {

@@ -304,7 +304,7 @@ const ReportViewer = ({
 
       <div className="executive-notes">
         <h4>COMMERCIAL NOTES</h4>
-        <p>This estimate is based on Lagos prevailing market rates as of Q1 2026. A 10% contingency has been included for price volatility in steel and bitumen indices.</p>
+        <p>This estimate is based on prevailing {projectRegion} market rates within the current benchmark cycle. A 10% contingency has been included for price volatility in steel and bitumen indices.</p>
       </div>
 
       <div className="ai-executive-summary enterprise-card mt-8 text-left">

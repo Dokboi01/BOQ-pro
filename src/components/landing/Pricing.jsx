@@ -42,7 +42,7 @@ const PLAN_TONES = {
 
 const TRUST_SIGNALS = [
   'Built for Nigerian QS Firms',
-  'Built for Lagos Contractors',
+  'Built for Contractors Across Nigeria',
   'Built for Regional Estimators',
   'Built for Company Rollout'
 ];
