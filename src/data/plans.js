@@ -283,9 +283,12 @@ export const getPlanByName = (name) => {
 };
 
 // ── Helper: get Paystack amount in kobo for a plan ──
+// Returns null for Enterprise / custom plans (no online amount).
+// Returns 0 for free plans. Returns the kobo amount for paid plans.
 export const getPaystackAmount = (planName, billing = 'monthly') => {
     const plan = getPlanByName(planName);
-    if (!plan || plan.priceMonthly === 0 || plan.priceMonthly === null) return 0;
+    if (!plan || plan.priceMonthly === null) return null;
+    if (plan.priceMonthly === 0) return 0;
     return billing === 'annual' ? plan.priceAnnual : plan.priceMonthly;
 };
 
@@ -319,14 +322,17 @@ export const PLAN_TIER_ORDER = [
     PLAN_NAMES.ENTERPRISE
 ];
 
-export const PAYSTACK_MAX_TRANSACTION_KOBO = 10000000;
+// Maximum single online charge allowed by your Paystack integration (in kobo).
+// Verify the actual limit on your Paystack dashboard — this may differ by
+// business type and can be raised by contacting Paystack support.
+export const PAYSTACK_MAX_TRANSACTION_KOBO = 10000000; // ₦100,000
 
 export const isPaidPlan = (planName) => {
     const plan = getPlanByName(planName);
     return plan && plan.priceMonthly !== null && plan.priceMonthly > 0;
 };
 
-const formatKoboToNaira = (amountKobo) => `₦${(Number(amountKobo || 0) / 100).toLocaleString()}`;
+export const formatKoboToNaira = (amountKobo) => `₦${(Number(amountKobo || 0) / 100).toLocaleString()}`;
 
 export const getPaystackCheckoutSupport = (planName, billing = 'monthly') => {
     const plan = getPlanByName(planName);

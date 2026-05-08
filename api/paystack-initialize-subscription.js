@@ -38,7 +38,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('Paystack initialize error:', error);
-    return sendJson(req, res, Number(error.status || 500), {
+    return sendJson(req, res, parseInt(error.status, 10) || 500, {
       error: error.message || 'Failed to initialize Paystack subscription checkout.',
     });
   }

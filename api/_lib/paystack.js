@@ -141,7 +141,7 @@ export async function initializeSubscriptionTransaction({
   if (recurringPlanCode) {
     payload.plan = recurringPlanCode;
   } else {
-    payload.amount = String(expectedAmount);
+    payload.amount = expectedAmount;
   }
 
   const response = await paystackRequest('/transaction/initialize', {

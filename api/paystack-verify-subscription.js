@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     const { transaction, context, expectedAmount } = await verifySubscriptionTransaction(reference);
     const transactionStatus = String(transaction?.status || '').toLowerCase();
 
-    if (expectedAmount && Number(transaction?.amount) !== Number(expectedAmount)) {
+    if (expectedAmount != null && Number(transaction?.amount) !== Number(expectedAmount)) {
       return sendJson(req, res, 409, {
         success: false,
         verified: false,
@@ -58,6 +58,7 @@ export default async function handler(req, res) {
     let syncWarning = null;
 
     try {
+      // Bug #8: Idempotency — skip re-applying if this reference was already processed
       updatedProfile = await applyVerifiedSubscriptionCharge(transaction);
       serverSynced = Boolean(updatedProfile);
     } catch (syncError) {
@@ -77,7 +78,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('Paystack verify error:', error);
-    return sendJson(req, res, Number(error.status || 500), {
+    return sendJson(req, res, parseInt(error.status, 10) || 500, {
       error: error.message || 'Failed to verify the Paystack transaction.',
     });
   }

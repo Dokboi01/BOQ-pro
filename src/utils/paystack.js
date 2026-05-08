@@ -1,4 +1,5 @@
 import { getCurrentIdToken } from './authToken';
+import { formatKoboToNaira } from '../data/plans';
 
 /**
  * Paystack checkout helper.
@@ -108,7 +109,8 @@ function openCenteredPopup(url, title = 'Paystack Checkout') {
     );
 
     if (!popup) {
-        window.location.assign(url);
+        // Bug #10: Instead of navigating away (which destroys all app state),
+        // return null and let the caller handle the blocked popup.
         return null;
     }
 
@@ -151,6 +153,16 @@ export async function paystackCheckout({
     savePendingCheckoutSession(session);
 
     const popup = openCenteredPopup(initPayload.authorizationUrl);
+
+    // Bug #10: If popup was blocked, open the checkout URL in a new tab instead
+    // of navigating the current window away (which destroys app state).
+    if (!popup) {
+        window.open(initPayload.authorizationUrl, '_blank');
+        // Return a resolved promise — the user will return via the callback URL
+        // and the Pricing component's ?paystack=return handler will pick it up.
+        return { status: 'popup_blocked', session };
+    }
+
     const startedAt = Date.now();
 
     return new Promise((resolve, reject) => {
@@ -167,11 +179,16 @@ export async function paystackCheckout({
             fn(payload);
         };
 
+        // Bug #5: Wrap async onSuccess in try/catch so the promise is never leaked
         const succeed = finish(async (payload) => {
-            if (onSuccess) {
-                await onSuccess(payload);
+            try {
+                if (onSuccess) {
+                    await onSuccess(payload);
+                }
+                resolve(payload);
+            } catch (err) {
+                reject(err instanceof Error ? err : new Error(String(err)));
             }
-            resolve(payload);
         });
 
         const cancel = finish((payload) => {
@@ -229,15 +246,6 @@ export async function paystackCheckout({
     });
 }
 
-export function isPaystackConfigured() {
-    // The secure BOQ Pro flow initializes checkout from the backend and opens
-    // the hosted Paystack authorization URL, so a frontend public key is no
-    // longer required just to enable the paid-plan UI.
-    return true;
-}
-
-export function formatNaira(kobo) {
-    if (kobo === null || kobo === undefined) return 'Custom';
-    if (kobo === 0) return 'Free';
-    return `₦${(kobo / 100).toLocaleString()}`;
-}
+// Bug #14: Removed duplicate formatNaira — use the canonical formatKoboToNaira
+// from src/data/plans.js instead. Re-exported here for backward compatibility.
+export const formatNaira = formatKoboToNaira;

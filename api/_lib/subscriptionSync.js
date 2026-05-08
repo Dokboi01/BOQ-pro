@@ -57,6 +57,12 @@ export async function applyVerifiedSubscriptionCharge(transaction) {
     throw new Error('Could not resolve a BOQ Pro profile for the verified transaction.');
   }
 
+  // Bug #8: Idempotency — skip if this exact transaction reference was already applied
+  const txRef = transaction.reference || transaction.ref || null;
+  if (txRef && profile.subscription?.transactionReference === txRef) {
+    return profile;
+  }
+
   const billingCycle = normalizeBillingCycle(context.billingCycle);
   const profileUpdate = buildSubscriptionProfileUpdate({
     planName,

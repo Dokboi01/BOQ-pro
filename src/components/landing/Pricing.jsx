@@ -19,7 +19,7 @@ import {
   Phone
 } from 'lucide-react';
 import { PLANS, PLAN_NAMES, PLAN_TIER_ORDER, FEATURE_COMPARISON, getPaystackCheckoutSupport, isPaidPlan } from '../../data/plans';
-import { paystackCheckout, isPaystackConfigured, verifyPendingPaystackCheckout } from '../../utils/paystack';
+import { paystackCheckout, verifyPendingPaystackCheckout } from '../../utils/paystack';
 
 const PLAN_ICONS = {
   [PLAN_NAMES.STUDENT]: GraduationCap,
@@ -161,11 +161,6 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
     }
 
     // Paid plan — secure Paystack checkout
-    if (!isPaystackConfigured()) {
-      setLocalError('Paystack is not configured yet. Add the frontend public key and backend Paystack environment variables before starting paid checkout.');
-      return;
-    }
-
     setLoadingPlan(planName);
     try {
       await paystackCheckout({
