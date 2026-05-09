@@ -691,7 +691,6 @@ const BOQWorkspace = () => {
                               {item.isVO && <span className="ws-vo">VO</span>}
                             </div>
                             <strong className="ws-item-name">{item.name || item.description || 'Untitled BOQ item'}</strong>
-                            <p className="ws-desc-text">{item.description || 'No description provided'}</p>
                           </div>
                         </td>
                         <td
@@ -3488,7 +3487,7 @@ const BOQWorkspace = () => {
         .ws-simple-desc {
           display: flex;
           flex-direction: column;
-          gap: 0.22rem;
+          gap: 0.12rem;
           min-width: 0;
           max-width: 100%;
           overflow: hidden;
