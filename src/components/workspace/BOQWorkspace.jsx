@@ -1479,11 +1479,14 @@ const BOQWorkspace = () => {
         .ws-workspace-shell {
           display: grid;
           grid-template-columns: 280px minmax(0, 1fr) 360px;
-          gap: 0; /* Tighten gap for 3-panel feel */
+          gap: 0;
           width: 100%;
           height: calc(100vh - 56px);
           overflow: hidden;
-          background: #f1f5f9;
+          background: #f1f5f9 !important;
+          border: none !important;
+          box-shadow: none !important;
+          backdrop-filter: none !important;
         }
         .ws-main-pane {
           display: flex;
@@ -1491,9 +1494,9 @@ const BOQWorkspace = () => {
           height: 100%;
           min-height: 0;
           min-width: 0;
-          background: #f8fafc;
-          border-left: 1px solid #e2e8f0;
-          border-right: 1px solid #e2e8f0;
+          background: #f8fafc !important;
+          border-left: 1px solid #e2e8f0 !important;
+          border-right: 1px solid #e2e8f0 !important;
           overflow-y: auto;
           overflow-x: hidden;
           scrollbar-width: thin;
@@ -3174,14 +3177,17 @@ const BOQWorkspace = () => {
           border-color: #bfdbfe;
         }
 
-        /* â”€â”€ TABLE â”€â”€ */
+        /* ── TABLE ── */
         .ws-table-wrap.glass-panel {
-          flex: 0 0 auto;
+          flex: 1 1 0%;
           min-width: 0;
-          min-height: 460px;
+          min-height: 0;
           overflow-x: auto;
-          overflow-y: visible;
-          background: #ffffff;
+          overflow-y: auto;
+          background: #ffffff !important;
+          border: none !important;
+          box-shadow: none !important;
+          backdrop-filter: none !important;
           box-sizing: border-box;
           position: relative;
         }
