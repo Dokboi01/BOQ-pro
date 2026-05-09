@@ -1680,44 +1680,6 @@ const BOQWorkspace = () => {
           background: #eff6ff;
           border-radius: 999px;
         }
-
-          color: #0f172a;
-          line-height: 1.4;
-        }
-        .ws-detail-dock-copy small {
-          color: #64748b;
-          font-size: 0.76rem;
-          line-height: 1.5;
-        }
-        .ws-detail-dock-actions {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.45rem;
-        }
-        .ws-detail-empty {
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          gap: 0.75rem;
-          padding: 1.5rem;
-          flex: 1;
-          background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
-        }
-        .ws-detail-empty strong {
-          color: #0f172a;
-          font-size: 1rem;
-        }
-        .ws-detail-empty p {
-          margin: 0;
-          color: #64748b;
-          font-size: 0.84rem;
-          line-height: 1.6;
-        }
-        .ws-detail-empty-actions {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.6rem;
-        }
         .ws-summary-strip {
           min-width: 0;
           display: flex;
