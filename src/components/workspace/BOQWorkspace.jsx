@@ -126,7 +126,7 @@ const BOQWorkspace = () => {
     { key: 'rate', letter: 'C', label: 'Rate' },
     { key: 'amount', letter: 'D', label: 'Price' },
   ];
-  const spreadsheetColumnTemplate = 'minmax(520px, 1.8fr) 118px 142px 148px';
+  const spreadsheetColumnTemplate = 'minmax(0, 1.9fr) minmax(82px, 0.55fr) minmax(96px, 0.7fr) minmax(104px, 0.75fr)';
 
   const selectWorkspaceCell = ({ sectionId, itemId, columnKey, itemCode, rowNumber }) => {
     setSelectedCell({
@@ -3178,7 +3178,7 @@ const BOQWorkspace = () => {
           flex: 0 0 auto;
           min-width: 0;
           min-height: 460px;
-          overflow-x: auto;
+          overflow-x: hidden;
           overflow-y: visible;
           background: #ffffff;
           box-sizing: border-box;
@@ -3241,8 +3241,8 @@ const BOQWorkspace = () => {
           border-collapse: collapse;
           font-size: 0.82rem;
           background: white;
-          table-layout: auto;
-          min-width: 980px;
+          table-layout: fixed;
+          min-width: 100%;
         }
 
         .ws-table thead {
@@ -3267,12 +3267,12 @@ const BOQWorkspace = () => {
         .ws-table th:last-child { border-right: none; }
 
         .ws-th-num { width: 50px; text-align: center; }
-        .ws-th-desc { width: 52%; }
+        .ws-th-desc { width: 46%; }
         .ws-th-unit { width: 60px; text-align: center; }
-        .ws-th-qty { width: 118px; text-align: right; }
+        .ws-th-qty { width: 16%; text-align: right; }
         .ws-th-sm { width: 72px; text-align: center; }
-        .ws-th-rate { width: 142px; text-align: right; }
-        .ws-th-total { width: 148px; text-align: right; }
+        .ws-th-rate { width: 18%; text-align: right; }
+        .ws-th-total { width: 20%; text-align: right; }
         .ws-th-act { width: 40px; }
         .ws-th-rate,
         .ws-th-total {
@@ -3847,20 +3847,20 @@ const BOQWorkspace = () => {
         }
         .ws-th-desc,
         .ws-desc {
-          position: sticky;
-          left: 0;
-          z-index: 11;
+          position: static;
+          left: auto;
+          z-index: auto;
           background: #ffffff;
-          min-width: 460px;
+          min-width: 0;
           max-width: none;
-          width: 52%;
+          width: auto;
           overflow: hidden;
           text-overflow: ellipsis;
-          box-shadow: 1px 0 0 rgba(148, 163, 184, 0.22);
+          box-shadow: none;
         }
         .ws-table thead .ws-th-num,
         .ws-table thead .ws-th-desc {
-          z-index: 13;
+          z-index: auto;
           background: #f8fafc;
         }
         .ws-item-row .ws-num,
