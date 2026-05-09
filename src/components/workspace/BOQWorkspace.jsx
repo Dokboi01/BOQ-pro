@@ -126,7 +126,7 @@ const BOQWorkspace = () => {
     { key: 'rate', letter: 'C', label: 'Rate' },
     { key: 'amount', letter: 'D', label: 'Price' },
   ];
-  const spreadsheetColumnTemplate = 'minmax(440px, 1.45fr) 140px 150px 165px';
+  const spreadsheetColumnTemplate = 'minmax(520px, 1.8fr) 118px 142px 148px';
 
   const selectWorkspaceCell = ({ sectionId, itemId, columnKey, itemCode, rowNumber }) => {
     setSelectedCell({
@@ -1831,7 +1831,9 @@ const BOQWorkspace = () => {
           line-height: 1.2;
           letter-spacing: -0.01em;
           white-space: normal;
-          overflow-wrap: anywhere;
+          word-break: normal;
+          overflow-wrap: break-word;
+          max-width: 100%;
         }
         .ws-item-code-pill {
           display: inline-flex;
@@ -3240,8 +3242,8 @@ const BOQWorkspace = () => {
           border-collapse: collapse;
           font-size: 0.82rem;
           background: white;
-          table-layout: fixed;
-          min-width: 905px;
+          table-layout: auto;
+          min-width: 980px;
         }
 
         .ws-table thead {
@@ -3266,12 +3268,12 @@ const BOQWorkspace = () => {
         .ws-table th:last-child { border-right: none; }
 
         .ws-th-num { width: 50px; text-align: center; }
-        .ws-th-desc { width: auto; }
+        .ws-th-desc { width: 52%; }
         .ws-th-unit { width: 60px; text-align: center; }
-        .ws-th-qty { width: 150px; text-align: right; }
+        .ws-th-qty { width: 118px; text-align: right; }
         .ws-th-sm { width: 72px; text-align: center; }
-        .ws-th-rate { width: 160px; text-align: right; }
-        .ws-th-total { width: 170px; text-align: right; }
+        .ws-th-rate { width: 142px; text-align: right; }
+        .ws-th-total { width: 148px; text-align: right; }
         .ws-th-act { width: 40px; }
         .ws-th-rate,
         .ws-th-total {
@@ -3479,7 +3481,8 @@ const BOQWorkspace = () => {
           color: #334155;
           line-height: 1.35;
           white-space: normal;
-          overflow-wrap: anywhere;
+          word-break: normal;
+          overflow-wrap: break-word;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
@@ -3842,9 +3845,9 @@ const BOQWorkspace = () => {
           left: 0;
           z-index: 11;
           background: #ffffff;
-          min-width: 360px;
+          min-width: 460px;
           max-width: none;
-          width: auto;
+          width: 52%;
           overflow: hidden;
           text-overflow: ellipsis;
           box-shadow: 1px 0 0 rgba(148, 163, 184, 0.22);
