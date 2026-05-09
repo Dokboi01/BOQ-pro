@@ -1830,9 +1830,9 @@ const BOQWorkspace = () => {
           color: #0f172a;
           line-height: 1.2;
           letter-spacing: -0.01em;
-          white-space: normal;
-          word-break: normal;
-          overflow-wrap: break-word;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
           max-width: 100%;
         }
         .ws-item-code-pill {
@@ -3476,17 +3476,13 @@ const BOQWorkspace = () => {
         }
         .ws-desc-text {
           margin: 0;
-          font-size: 0.72rem;
-          font-weight: 550;
-          color: #334155;
-          line-height: 1.35;
-          white-space: normal;
-          word-break: normal;
-          overflow-wrap: break-word;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
+          font-size: 0.68rem;
+          font-weight: 520;
+          color: #64748b;
+          line-height: 1.25;
+          white-space: nowrap;
           overflow: hidden;
+          text-overflow: ellipsis;
           user-select: text;
         }
         .ws-simple-desc {
@@ -3643,8 +3639,19 @@ const BOQWorkspace = () => {
           padding: 0.22rem 0.35rem;
         }
         .ws-unit-input { text-align: center; font-weight: 700; text-transform: uppercase; font-size: 0.6875rem; color: #64748b; letter-spacing: 0.04em; }
-        .ws-qty-input { text-align: right; font-weight: 700; font-size: 0.88rem; }
-        .ws-rate-input { text-align: right; font-weight: 600; }
+        .ws-qty-input {
+          text-align: right;
+          font-weight: 700;
+          font-size: 0.88rem;
+          width: min(100%, 88px);
+          margin-left: auto;
+        }
+        .ws-rate-input {
+          text-align: right;
+          font-weight: 600;
+          width: min(100%, 98px);
+          margin-left: auto;
+        }
         .ws-sm-input { text-align: center; font-weight: 600; width: 100%; }
         .ws-input:disabled { color: #94a3b8; background: #f8fafc; }
         .ws-qty-display {
@@ -3740,7 +3747,7 @@ const BOQWorkspace = () => {
           font-weight: 700;
           color: #1e293b;
           font-size: 0.72rem;
-          white-space: normal;
+          white-space: nowrap;
         }
         .ws-total-main {
           display: block;
