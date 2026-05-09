@@ -83,11 +83,11 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
       <nav className="auth-nav">
         <button className="brand-mark" onClick={() => onSwitchToLogin('landing')}>
           <span className="brand-icon">
-            <Shield size={18} />
+            <QuantraIcon size={22} />
           </span>
           <span className="brand-copy">
             <strong>Quantra</strong>
-            <small>Commercial workspace for construction teams</small>
+            <small>Professional Bill of Quantities Management</small>
           </span>
         </button>
 
@@ -319,9 +319,9 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
           position: relative;
           overflow: hidden;
           background:
-            radial-gradient(circle at top left, rgba(37, 99, 235, 0.09), transparent 30%),
-            radial-gradient(circle at 88% 16%, rgba(217, 119, 6, 0.08), transparent 22%),
-            linear-gradient(180deg, #ffffff 0%, #f8fafc 54%, #f1f5f9 100%);
+            radial-gradient(circle at top left, rgba(30, 108, 247, 0.09), transparent 30%),
+            radial-gradient(circle at 88% 16%, rgba(212, 160, 23, 0.08), transparent 22%),
+            linear-gradient(180deg, #ffffff 0%, #f8fafc 54%, #eef3ff 100%);
           color: var(--primary-900);
           font-family: var(--font-main);
         }
@@ -330,8 +330,8 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
           position: absolute;
           inset: 0;
           background:
-            radial-gradient(circle at 18% 24%, rgba(96, 165, 250, 0.18), transparent 18%),
-            radial-gradient(circle at 82% 74%, rgba(251, 191, 36, 0.12), transparent 18%);
+            radial-gradient(circle at 18% 24%, rgba(30, 108, 247, 0.18), transparent 18%),
+            radial-gradient(circle at 82% 74%, rgba(212, 160, 23, 0.12), transparent 18%);
           pointer-events: none;
         }
 
@@ -381,7 +381,7 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
           justify-content: center;
           border-radius: 14px;
           background: linear-gradient(135deg, var(--primary-900), var(--accent-600));
-          box-shadow: 0 18px 35px rgba(37, 99, 235, 0.24);
+          box-shadow: 0 18px 35px rgba(30, 108, 247, 0.24);
           color: white;
         }
 

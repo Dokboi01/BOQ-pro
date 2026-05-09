@@ -1,4 +1,6 @@
 import {
+  NIGERIA_BENCHMARK_ANCHOR_STATES,
+  NIGERIA_STATE_OPTIONS,
   getNigeriaBenchmarkRegion,
   getNigeriaLocationFactor,
   getNigeriaLocationLookupCandidates,
@@ -96,6 +98,71 @@ const normalizeRegionRates = (material = {}, benchmark = 0, marketRead = 0) => {
   }
 
   return regionRates;
+};
+
+const normalizeStateRates = (material = {}, regionRates = {}) => {
+  const rawStateRates = material.stateRates || {};
+  const normalizedStateRates = Object.entries(rawStateRates).reduce((acc, [stateName, value]) => {
+    const numericValue = clampNumber(value);
+    if (!stateName || !numericValue) return acc;
+    acc[stateName] = numericValue;
+    return acc;
+  }, {});
+
+  if (Object.keys(normalizedStateRates).length) {
+    return normalizedStateRates;
+  }
+
+  NIGERIA_STATE_OPTIONS.forEach(({ value: stateName }) => {
+    const benchmarkRegion = getNigeriaBenchmarkRegion(stateName);
+    const anchorRate = clampNumber(regionRates?.[benchmarkRegion] ?? regionRates?.Lagos);
+    if (anchorRate > 0) {
+      normalizedStateRates[stateName] = Math.round(anchorRate * getNigeriaLocationFactor(stateName));
+    }
+  });
+
+  return normalizedStateRates;
+};
+
+const normalizeExactStateCoverage = (material = {}, regionRates = {}, stateRates = {}) => {
+  const explicitExactCoverage = Array.isArray(material.exactStateCoverage)
+    ? material.exactStateCoverage.filter(Boolean)
+    : [];
+
+  if (explicitExactCoverage.length) {
+    return Array.from(new Set(explicitExactCoverage));
+  }
+
+  return Array.from(new Set(
+    Object.keys(regionRates || {})
+      .map((regionName) => NIGERIA_BENCHMARK_ANCHOR_STATES[regionName])
+      .filter((stateName) => stateName && stateRates?.[stateName])
+  ));
+};
+
+const normalizeBenchmarkDepth = (material = {}, regionRates = {}, stateRates = {}, exactStateCoverage = []) => {
+  if (material?.benchmarkDepth && typeof material.benchmarkDepth === 'object') {
+    return {
+      ...material.benchmarkDepth,
+      anchorRegionCount: clampNumber(material.benchmarkDepth.anchorRegionCount) || Object.keys(regionRates || {}).length,
+      stateCoverageCount: clampNumber(material.benchmarkDepth.stateCoverageCount) || Object.keys(stateRates || {}).length,
+      exactStateCount: clampNumber(material.benchmarkDepth.exactStateCount) || exactStateCoverage.length,
+      derivedStateCount: clampNumber(material.benchmarkDepth.derivedStateCount)
+        || Math.max(Object.keys(stateRates || {}).length - exactStateCoverage.length, 0),
+      exactStates: Array.isArray(material.benchmarkDepth.exactStates)
+        ? Array.from(new Set(material.benchmarkDepth.exactStates.filter(Boolean)))
+        : exactStateCoverage,
+    };
+  }
+
+  return {
+    strategy: 'hybrid-state-market',
+    anchorRegionCount: Object.keys(regionRates || {}).length,
+    stateCoverageCount: Object.keys(stateRates || {}).length,
+    exactStateCount: exactStateCoverage.length,
+    derivedStateCount: Math.max(Object.keys(stateRates || {}).length - exactStateCoverage.length, 0),
+    exactStates: exactStateCoverage,
+  };
 };
 
 const normalizeSourceEntry = (source, index, material, context) => {
@@ -226,6 +293,7 @@ const normalizeBenchmarkHistoryEntry = (entry, index, material, context) => {
   const title = String(entry?.title || entry?.label || 'Benchmark update').trim();
   const previousRegionRates = normalizeHistoryRegionRates(entry?.previousRegionRates || {});
   const regionRates = normalizeHistoryRegionRates(entry?.regionRates || entry?.regions || context.regionRates || {});
+  const stateRates = normalizeStateRates(entry, regionRates);
   const regionChanges = Array.isArray(entry?.regionChanges)
     ? entry.regionChanges.filter(Boolean)
     : summarizeRegionChanges(previousRegionRates, regionRates);
@@ -245,6 +313,7 @@ const normalizeBenchmarkHistoryEntry = (entry, index, material, context) => {
     confidence: clampNumber(entry?.confidence ?? context.confidence),
     activeRegion: entry?.activeRegion || Object.keys(regionRates)[0] || 'Lagos',
     regionRates,
+    stateRates,
     previousRegionRates,
     regionChanges,
     changeSummary: entry?.changeSummary || regionChanges.slice(0, 4).join(' | '),
@@ -296,6 +365,7 @@ const normalizeApprovalSnapshotEntry = (entry, index, material, context) => {
     || context.updatedAt
     || new Date().toISOString();
   const regionRates = normalizeHistoryRegionRates(entry?.regionRates || entry?.regions || context.regionRates || {});
+  const stateRates = normalizeStateRates(entry, regionRates);
   const benchmark = clampNumber(entry?.benchmark ?? context.benchmark);
 
   return {
@@ -313,6 +383,7 @@ const normalizeApprovalSnapshotEntry = (entry, index, material, context) => {
     benchmarkBand: entry?.benchmarkBand || context.benchmarkBand || '',
     activeRegion: entry?.activeRegion || Object.keys(regionRates)[0] || 'Lagos',
     regionRates,
+    stateRates,
     note: entry?.note || context.benchmarkDeskNote || '',
   };
 };
@@ -413,6 +484,8 @@ export const getMaterialBenchmarkGovernance = (material = {}) => {
     .toLowerCase()
     .trim();
   const regionCoverage = Object.keys(material.regionRates || material.regions || {}).length;
+  const stateCoverage = Object.keys(material.stateRates || {}).length;
+  const exactStateCount = Array.isArray(material.exactStateCoverage) ? material.exactStateCoverage.length : 0;
   const sourceCount = clampNumber(material.sourceCount);
   const confidence = clampNumber(material.confidence);
   const hasCarryForwardEvidence = Array.isArray(material.sources)
@@ -489,7 +562,14 @@ export const getMaterialBenchmarkGovernance = (material = {}) => {
     nextReviewAt: nextReviewAt ? nextReviewAt.toISOString() : null,
     reviewCycleDays,
     regionCoverage,
-    coverageLabel: `${regionCoverage} region${regionCoverage === 1 ? '' : 's'} benchmarked`
+    stateCoverage,
+    exactStateCount,
+    coverageLabel: stateCoverage
+      ? `${stateCoverage} state market${stateCoverage === 1 ? '' : 's'} covered`
+      : `${regionCoverage} region${regionCoverage === 1 ? '' : 's'} benchmarked`,
+    depthLabel: exactStateCount
+      ? `${exactStateCount} exact state market${exactStateCount === 1 ? '' : 's'}`
+      : 'Anchor-derived state coverage',
   };
 };
 
@@ -503,6 +583,7 @@ export const buildMaterialApprovedSnapshotEntry = ({
 } = {}) => {
   const previousVersion = clampNumber(previousSnapshot?.version) || 0;
   const regionRates = normalizeHistoryRegionRates(material?.regionRates || material?.regions || {});
+  const stateRates = normalizeStateRates(material, regionRates);
   const nextVersion = previousVersion + 1;
 
   return {
@@ -520,6 +601,7 @@ export const buildMaterialApprovedSnapshotEntry = ({
     benchmarkBand: material?.benchmarkBand || material?.range || '',
     activeRegion,
     regionRates,
+    stateRates,
     note: note || material?.benchmarkDeskNote || '',
   };
 };
@@ -583,6 +665,7 @@ export const buildMaterialBenchmarkHistoryEntry = ({
 } = {}) => {
   const previousRegionRates = normalizeHistoryRegionRates(previousMaterial?.regionRates || previousMaterial?.regions || {});
   const nextRegionRates = normalizeHistoryRegionRates(nextMaterial?.regionRates || nextMaterial?.regions || {});
+  const nextStateRates = normalizeStateRates(nextMaterial, nextRegionRates);
   const previousBenchmark = clampNumber(previousMaterial?.benchmark);
   const nextBenchmark = clampNumber(nextMaterial?.benchmark);
   const previousApproval = String(previousMaterial?.approvalStatus || (previousMaterial?.approvedAt ? 'approved' : 'review')).toLowerCase().trim();
@@ -621,6 +704,7 @@ export const buildMaterialBenchmarkHistoryEntry = ({
     confidence: clampNumber(nextMaterial?.confidence),
     activeRegion,
     regionRates: nextRegionRates,
+    stateRates: nextStateRates,
     previousRegionRates,
     regionChanges,
     changeSummary: regionChanges.slice(0, 4).join(' | '),
@@ -631,8 +715,17 @@ export const buildMaterialBenchmarkHistoryEntry = ({
 export const getMaterialRegionalBenchmark = (material, region = 'Lagos') => {
   if (!material) return 0;
 
+  const stateRates = material.stateRates || {};
   const regionRates = material.regionRates || material.regions || {};
   const lookupCandidates = getNigeriaLocationLookupCandidates(region).map((entry) => normalizeRegionLookup(entry));
+
+  for (const candidate of lookupCandidates) {
+    for (const [stateName, value] of Object.entries(stateRates)) {
+      if (normalizeRegionLookup(stateName) === candidate) {
+        return clampNumber(value);
+      }
+    }
+  }
 
   for (const candidate of lookupCandidates) {
     for (const [regionName, value] of Object.entries(regionRates)) {
@@ -656,12 +749,28 @@ export const getMaterialRegionalBenchmark = (material, region = 'Lagos') => {
 export const getExactMaterialRegionalBenchmark = (material, region = 'Lagos') => {
   if (!material) return 0;
 
+  const stateRates = material.stateRates || {};
+  const exactStateCoverage = Array.isArray(material.exactStateCoverage)
+    ? material.exactStateCoverage.map((entry) => normalizeRegionLookup(entry))
+    : [];
   const regionRates = material.regionRates || material.regions || {};
-  const requestedRegionKey = normalizeRegionLookup(region);
+  const requestedRegionKeys = getNigeriaLocationLookupCandidates(region).map((entry) => normalizeRegionLookup(entry));
 
-  for (const [regionName, value] of Object.entries(regionRates)) {
-    if (normalizeRegionLookup(regionName) === requestedRegionKey) {
-      return clampNumber(value);
+  for (const requestedRegionKey of requestedRegionKeys) {
+    if (exactStateCoverage.includes(requestedRegionKey)) {
+      for (const [stateName, value] of Object.entries(stateRates)) {
+        if (normalizeRegionLookup(stateName) === requestedRegionKey) {
+          return clampNumber(value);
+        }
+      }
+    }
+  }
+
+  for (const requestedRegionKey of requestedRegionKeys) {
+    for (const [regionName, value] of Object.entries(regionRates)) {
+      if (normalizeRegionLookup(regionName) === requestedRegionKey) {
+        return clampNumber(value);
+      }
     }
   }
 
@@ -674,6 +783,9 @@ export const normalizeMaterialBenchmarkRecord = (material = {}) => {
   const benchmark = clampNumber(material.benchmark ?? material.price ?? material.rate);
   const marketRead = clampNumber(material.price ?? material.currentRead ?? material.rate ?? benchmark);
   const regionRates = normalizeRegionRates(material, benchmark, marketRead);
+  const stateRates = normalizeStateRates(material, regionRates);
+  const exactStateCoverage = normalizeExactStateCoverage(material, regionRates, stateRates);
+  const benchmarkDepth = normalizeBenchmarkDepth(material, regionRates, stateRates, exactStateCoverage);
   const resolvedUpdatedAt = resolveDate(
     material.updatedAt
     || material.updated_at
@@ -683,6 +795,7 @@ export const normalizeMaterialBenchmarkRecord = (material = {}) => {
     benchmark,
     marketRead,
     regionRates,
+    stateRates,
     updatedAt: resolvedUpdatedAt
   });
   const sourceCount = Math.max(clampNumber(material.sourceCount), sources.length || 0);
@@ -743,6 +856,9 @@ export const normalizeMaterialBenchmarkRecord = (material = {}) => {
     benchmark: benchmark || marketRead,
     regionRates,
     regions: { ...regionRates },
+    stateRates: { ...stateRates },
+    exactStateCoverage,
+    benchmarkDepth,
     sourceCount,
     sources,
     confidence,
@@ -774,25 +890,31 @@ export const buildMaterialBenchmarkPayload = (material = {}) => {
     approvedSnapshot: normalized.approvedSnapshot
       ? {
         ...normalized.approvedSnapshot,
-        regionRates: { ...(normalized.approvedSnapshot.regionRates || {}) }
+        regionRates: { ...(normalized.approvedSnapshot.regionRates || {}) },
+        stateRates: { ...(normalized.approvedSnapshot.stateRates || {}) }
       }
       : null,
     approvedSnapshots: Array.isArray(normalized.approvedSnapshots)
       ? normalized.approvedSnapshots.map((entry) => ({
         ...entry,
-        regionRates: { ...(entry.regionRates || {}) }
+        regionRates: { ...(entry.regionRates || {}) },
+        stateRates: { ...(entry.stateRates || {}) }
       }))
       : [],
     benchmarkHistory: Array.isArray(normalized.benchmarkHistory)
       ? normalized.benchmarkHistory.map((entry) => ({
         ...entry,
         regionRates: { ...(entry.regionRates || {}) },
+        stateRates: { ...(entry.stateRates || {}) },
         previousRegionRates: { ...(entry.previousRegionRates || {}) },
         regionChanges: Array.isArray(entry.regionChanges) ? [...entry.regionChanges] : []
       }))
       : [],
     regionRates: { ...(normalized.regionRates || {}) },
     regions: { ...(normalized.regions || {}) },
+    stateRates: { ...(normalized.stateRates || {}) },
+    exactStateCoverage: Array.isArray(normalized.exactStateCoverage) ? [...normalized.exactStateCoverage] : [],
+    benchmarkDepth: normalized.benchmarkDepth ? { ...normalized.benchmarkDepth } : null,
     sources: Array.isArray(normalized.sources) ? normalized.sources.map((source) => ({ ...source })) : []
   };
 

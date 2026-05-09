@@ -177,7 +177,7 @@ function App() {
     <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)', color: 'var(--text-primary)', flexDirection: 'column', gap: '0.75rem' }}>
       <div className="loading-spinner"></div>
       <div style={{ marginLeft: '10px', fontWeight: 700 }}>Quantra — Loading workspace...</div>
-      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Nigerian Construction Commercial Workspace</div>
+      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Professional Bill of Quantities Management</div>
     </div>
 
   );

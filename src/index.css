@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════
-   Quantra — Premium Design System v2.0
-   Obsidian/Emerald Theme · Plus Jakarta Sans
+   Quantra — Premium Design System v3.0
+   Navy / Blue / Gold Brand · Plus Jakarta Sans
    ═══════════════════════════════════════════════════════════════ */
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -47,6 +47,24 @@
   --rose-500: #f43f5e;
   --rose-400: #fb7185;
 
+  /* ── Quantra Brand Blue ── */
+  --quantra-blue-800: #0f3d8a;
+  --quantra-blue-700: #1557cc;
+  --quantra-blue-600: #1e6cf7;
+  --quantra-blue-500: #3b8af7;
+  --quantra-blue-400: #6da4fc;
+  --quantra-blue-300: #93bdfd;
+  --quantra-blue-200: #bdd4fe;
+  --quantra-blue-100: #dde9ff;
+
+  /* ── Quantra Brand Gold ── */
+  --quantra-gold-700: #8a6508;
+  --quantra-gold-600: #b8860b;
+  --quantra-gold-500: #d4a017;
+  --quantra-gold-400: #e0b830;
+  --quantra-gold-300: #f0d060;
+  --quantra-gold-200: #f5e090;
+
   /* Legacy aliases (for backward compatibility) */
   --primary-950: var(--obsidian-950);
   --primary-900: var(--obsidian-900);
@@ -60,10 +78,11 @@
   --primary-100: var(--obsidian-100);
   --primary-50: var(--obsidian-50);
 
-  --accent-600: var(--emerald-600);
-  --accent-500: var(--emerald-500);
-  --accent-400: var(--emerald-400);
-  --accent-200: var(--emerald-200);
+  /* Brand accent → Quantra Blue (was emerald) */
+  --accent-600: var(--quantra-blue-600);
+  --accent-500: var(--quantra-blue-500);
+  --accent-400: var(--quantra-blue-400);
+  --accent-200: var(--quantra-blue-200);
 
   --success-600: var(--emerald-600);
   --warning-600: var(--amber-600);
@@ -296,7 +315,7 @@ button:focus-visible {
 /* ── Primary Button ── */
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--emerald-600), var(--teal-600));
+  background: linear-gradient(135deg, var(--quantra-blue-600), var(--quantra-blue-700));
   color: white;
   border: none;
   padding: 0.625rem 1.25rem;
@@ -307,7 +326,7 @@ button:focus-visible {
   align-items: center;
   gap: 0.5rem;
   justify-content: center;
-  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.25);
+  box-shadow: 0 4px 14px rgba(30, 108, 247, 0.25);
   position: relative;
   overflow: hidden;
 }
@@ -322,7 +341,7 @@ button:focus-visible {
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(5, 150, 105, 0.35);
+  box-shadow: 0 8px 25px rgba(30, 108, 247, 0.35);
 }
 
 .btn-primary:active {
@@ -923,10 +942,10 @@ button:focus-visible {
 }
 
 .emerald-button {
-  background: linear-gradient(135deg, var(--emerald-600), var(--teal-600)) !important;
+  background: linear-gradient(135deg, var(--quantra-blue-600), var(--quantra-blue-700)) !important;
   color: white !important;
   border: none !important;
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.3) !important;
+  box-shadow: 0 0 20px rgba(30, 108, 247, 0.3) !important;
   font-weight: 800 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.05em !important;
@@ -935,7 +954,7 @@ button:focus-visible {
 
 .emerald-button:hover {
   transform: translateY(-2px) scale(1.02) !important;
-  box-shadow: 0 0 30px rgba(16, 185, 129, 0.5) !important;
+  box-shadow: 0 0 30px rgba(30, 108, 247, 0.5) !important;
 }
 
 .emerald-text-gradient {

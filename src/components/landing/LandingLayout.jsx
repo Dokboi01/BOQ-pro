@@ -36,7 +36,7 @@ const LandingLayout = ({
             </span>
             <span className="brand-copy-v2">
               <strong>Quantra</strong>
-              <small>Rate · Quantity · Estimation</small>
+              <small>Professional Bill of Quantities Management</small>
             </span>
           </button>
 
@@ -139,9 +139,9 @@ const LandingLayout = ({
           position: relative;
           overflow-x: hidden;
           background:
-            radial-gradient(circle at top left, rgba(16, 185, 129, 0.07), transparent 28%),
-            radial-gradient(circle at 90% 12%, rgba(5, 150, 105, 0.06), transparent 22%),
-            linear-gradient(180deg, #ffffff 0%, #f8fafc 52%, #f0fdf4 100%);
+            radial-gradient(circle at top left, rgba(30, 108, 247, 0.07), transparent 28%),
+            radial-gradient(circle at 90% 12%, rgba(212, 160, 23, 0.06), transparent 22%),
+            linear-gradient(180deg, #ffffff 0%, #f8fafc 52%, #eef3ff 100%);
           color: var(--primary-900);
           font-family: var(--font-main);
         }
@@ -150,8 +150,8 @@ const LandingLayout = ({
           position: absolute;
           inset: 0;
           background:
-            radial-gradient(circle at 18% 24%, rgba(52, 211, 153, 0.14), transparent 18%),
-            radial-gradient(circle at 82% 74%, rgba(16, 185, 129, 0.10), transparent 18%);
+            radial-gradient(circle at 18% 24%, rgba(30, 108, 247, 0.14), transparent 18%),
+            radial-gradient(circle at 82% 74%, rgba(212, 160, 23, 0.10), transparent 18%);
           pointer-events: none;
         }
 
@@ -206,7 +206,7 @@ const LandingLayout = ({
           justify-content: center;
           border-radius: 12px;
           background: linear-gradient(135deg, var(--primary-900), var(--accent-600));
-          box-shadow: 0 12px 28px rgba(16, 185, 129, 0.22);
+          box-shadow: 0 12px 28px rgba(30, 108, 247, 0.22);
           color: white;
         }
 
@@ -248,12 +248,12 @@ const LandingLayout = ({
         }
 
         .landing-nav-link:hover {
-          background: rgba(16, 185, 129, 0.08);
+          background: rgba(30, 108, 247, 0.08);
           color: var(--primary-900);
         }
 
         .landing-nav-link.active {
-          background: rgba(16, 185, 129, 0.12);
+          background: rgba(30, 108, 247, 0.12);
           color: var(--accent-600);
           font-weight: 700;
         }

@@ -9,6 +9,15 @@ export const NIGERIA_GEO_ZONES = [
   'North East',
 ];
 
+export const NIGERIA_BENCHMARK_ANCHOR_STATES = {
+  Lagos: 'Lagos',
+  Abuja: 'FCT Abuja',
+  'Port Harcourt': 'Rivers',
+  Ibadan: 'Oyo',
+  Kano: 'Kano',
+  Enugu: 'Enugu',
+};
+
 const STATE_MARKETS = [
   { name: 'Abia', code: 'AB', zone: 'South East', benchmarkRegion: 'Enugu', factor: 1.01, aliases: ['Umuahia', 'Aba'] },
   { name: 'Adamawa', code: 'AD', zone: 'North East', benchmarkRegion: 'Abuja', factor: 1.03, aliases: ['Yola'] },

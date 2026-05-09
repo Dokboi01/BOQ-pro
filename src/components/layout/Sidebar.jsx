@@ -38,8 +38,8 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
           <QuantraIcon size={26} className="logo-icon" />
           {!collapsed && (
             <div className="logo-text-group">
-              <span className="logo-text"><span style={{color:'white'}}>Quan</span><span style={{color:'var(--emerald-400)'}}>tra</span></span>
-              <span className="logo-sub">Rate · Quantity · Estimation</span>
+              <span className="logo-text"><span style={{color:'white'}}>Quan</span><span style={{color:'var(--quantra-blue-400)'}}>tra</span></span>
+              <span className="logo-sub">Professional Bill of Quantities Management</span>
             </div>
           )}
         </div>
@@ -99,12 +99,12 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
         .sidebar {
           width: 260px;
           height: 100vh;
-          background: linear-gradient(180deg, #0a0f1a 0%, #111827 100%);
+          background: linear-gradient(180deg, #060d1a 0%, #0c1a2e 100%);
           color: white;
           display: flex;
           flex-direction: column;
           transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-          border-right: 1px solid rgba(16, 185, 129, 0.08);
+          border-right: 1px solid rgba(30, 108, 247, 0.08);
           position: sticky;
           top: 0;
           box-shadow: 4px 0 30px rgba(0, 0, 0, 0.2);
@@ -130,8 +130,8 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
         }
 
         .logo-icon {
-          color: var(--emerald-400);
-          filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.3));
+          color: var(--quantra-blue-400);
+          filter: drop-shadow(0 0 8px rgba(30, 108, 247, 0.3));
         }
 
         .logo-text-group {
@@ -149,7 +149,7 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
 
         .logo-sub {
           font-size: 0.6rem;
-          color: var(--emerald-400);
+          color: var(--quantra-blue-400);
           letter-spacing: 0.04em;
           font-weight: 600;
           text-transform: uppercase;
@@ -205,16 +205,16 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
         }
 
         .nav-item.active {
-          background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
+          background: linear-gradient(135deg, #1557cc 0%, #1e6cf7 100%);
           color: white;
-          box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
+          box-shadow: 0 4px 15px rgba(30, 108, 247, 0.4);
           font-weight: 600;
         }
 
         .upgrade-prompt {
           margin: 1rem 0.75rem;
           padding: 1.25rem;
-          background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
+          background: linear-gradient(135deg, #1557cc 0%, #1e6cf7 100%);
           border-radius: 12px;
           color: white;
           position: relative;
@@ -276,14 +276,14 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
         .user-avatar {
           width: 36px;
           height: 36px;
-          background: linear-gradient(135deg, #059669, #0d9488);
+          background: linear-gradient(135deg, #1557cc, #1e6cf7);
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
           font-weight: 700;
           font-size: 0.875rem;
-          box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+          box-shadow: 0 0 0 2px rgba(30, 108, 247, 0.3);
           position: relative;
         }
 

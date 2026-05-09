@@ -1,3 +1,10 @@
+import {
+  NIGERIA_BENCHMARK_ANCHOR_STATES,
+  NIGERIA_STATE_OPTIONS,
+  getNigeriaBenchmarkRegion,
+  getNigeriaLocationFactor,
+} from './nigeriaLocations';
+
 export const MARKET_SYNC_CAPTURED_AT = '2026-05-08T08:00:00.000Z';
 export const MARKET_SYNC_SNAPSHOT_ID = 'ng-market-2026-05-08';
 export const MARKET_SYNC_ACTOR = 'Quantra Market Desk';
@@ -15,6 +22,65 @@ const buildRegionalRates = (lagosRate, overrides = {}) => ({
   Ibadan: Math.round(lagosRate * 0.97),
   ...overrides,
 });
+
+const buildExactStateCoverage = (regions = {}, exactStateOverrides = {}) => {
+  const exactStates = new Set();
+
+  Object.keys(exactStateOverrides || {}).forEach((stateName) => {
+    if (stateName) exactStates.add(stateName);
+  });
+
+  Object.keys(regions || {}).forEach((regionName) => {
+    const anchorState = NIGERIA_BENCHMARK_ANCHOR_STATES[regionName];
+    if (anchorState) {
+      exactStates.add(anchorState);
+    }
+  });
+
+  return Array.from(exactStates);
+};
+
+const buildStateRates = (regions = {}, exactStateOverrides = {}) => {
+  const stateRates = {};
+
+  NIGERIA_STATE_OPTIONS.forEach(({ value: stateName }) => {
+    const exactOverride = Number(exactStateOverrides?.[stateName]);
+    if (Number.isFinite(exactOverride) && exactOverride > 0) {
+      stateRates[stateName] = Math.round(exactOverride);
+      return;
+    }
+
+    const benchmarkRegion = getNigeriaBenchmarkRegion(stateName);
+    const anchorRate = Number(regions?.[benchmarkRegion] ?? regions?.Lagos);
+    if (Number.isFinite(anchorRate) && anchorRate > 0) {
+      stateRates[stateName] = Math.round(anchorRate * getNigeriaLocationFactor(stateName));
+    }
+  });
+
+  return stateRates;
+};
+
+const buildBenchmarkDepth = (regions = {}, stateRates = {}, exactStateOverrides = {}) => {
+  const exactStates = buildExactStateCoverage(regions, exactStateOverrides);
+
+  return {
+    strategy: 'hybrid-state-market',
+    anchorRegionCount: Object.keys(regions || {}).length,
+    stateCoverageCount: Object.keys(stateRates || {}).length,
+    exactStateCount: exactStates.length,
+    derivedStateCount: Math.max(Object.keys(stateRates || {}).length - exactStates.length, 0),
+    exactStates,
+  };
+};
+
+const buildStateBenchmarkBundle = (regions = {}, exactStateOverrides = {}) => {
+  const stateRates = buildStateRates(regions, exactStateOverrides);
+  return {
+    stateRates,
+    exactStateCoverage: buildExactStateCoverage(regions, exactStateOverrides),
+    benchmarkDepth: buildBenchmarkDepth(regions, stateRates, exactStateOverrides),
+  };
+};
 
 const buildHistory = (price, benchmark = price) => {
   const baseline = Math.max(Math.round(price * 0.94), 1);
@@ -39,11 +105,15 @@ const carryForwardEntry = ({
   unit,
   usage,
   regions = buildRegionalRates(price),
+  exactStateOverrides = {},
   range = formatRange(price * 0.94, price * 1.06),
   trend = 'stable',
   delta = '0.0%',
   reviewCycleDays = 14,
-}) => ({
+}) => {
+  const stateBenchmarkBundle = buildStateBenchmarkBundle(regions, exactStateOverrides);
+
+  return ({
   name,
   category,
   price,
@@ -61,7 +131,9 @@ const carryForwardEntry = ({
   reviewCycleDays,
   benchmarkDeskNote: `Carried forward from ${PREVIOUS_MARKET_SYNC_SNAPSHOT_ID} and held for urgent supplier reconfirmation in the current market review.`,
   sources: buildCarryForwardSource(price),
+  ...stateBenchmarkBundle,
 });
+};
 
 const verifiedEntry = ({
   name,
@@ -71,6 +143,7 @@ const verifiedEntry = ({
   unit,
   usage,
   regions = buildRegionalRates(price),
+  exactStateOverrides = {},
   range = formatRange(benchmark, price * 1.03),
   trend = 'stable',
   delta = '0.0%',
@@ -78,7 +151,10 @@ const verifiedEntry = ({
   confidence = 0.84,
   benchmarkDeskNote = 'Aligned to the current May 2026 market snapshot and scheduled for active review.',
   sources = [],
-}) => ({
+}) => {
+  const stateBenchmarkBundle = buildStateBenchmarkBundle(regions, exactStateOverrides);
+
+  return ({
   name,
   category,
   price,
@@ -96,7 +172,9 @@ const verifiedEntry = ({
   reviewCycleDays,
   benchmarkDeskNote,
   sources,
+  ...stateBenchmarkBundle,
 });
+};
 
 export const SEED_MATERIAL_MARKET_LIBRARY = [
   verifiedEntry({
@@ -109,6 +187,19 @@ export const SEED_MATERIAL_MARKET_LIBRARY = [
     delta: '-18.4%',
     usage: 'Primary binder for all concrete works, plastering, and block making.',
     regions: buildRegionalRates(10200, { Abuja: 10500, 'Port Harcourt': 10350, Kano: 10000, Enugu: 10150, Ibadan: 9900 }),
+    exactStateOverrides: {
+      Lagos: 10200,
+      'FCT Abuja': 10500,
+      Rivers: 10350,
+      Oyo: 9900,
+      Kano: 10000,
+      Enugu: 10150,
+      Ogun: 10050,
+      Anambra: 10250,
+      Delta: 10200,
+      Kaduna: 10100,
+      Edo: 10100,
+    },
     range: formatRange(9800, 10500),
     sources: [
       {
@@ -141,6 +232,19 @@ export const SEED_MATERIAL_MARKET_LIBRARY = [
     delta: '-15.7%',
     usage: 'Portland Pozzolana Cement used for mass concrete, foundations, and coastal works.',
     regions: buildRegionalRates(9700, { Abuja: 10100, 'Port Harcourt': 9950, Kano: 9550, Enugu: 9800, Ibadan: 9450 }),
+    exactStateOverrides: {
+      Lagos: 9700,
+      'FCT Abuja': 10100,
+      Rivers: 9950,
+      Oyo: 9450,
+      Kano: 9550,
+      Enugu: 9800,
+      Ogun: 9550,
+      Anambra: 9850,
+      Delta: 9900,
+      Kaduna: 9700,
+      Edo: 9725,
+    },
     range: formatRange(9200, 10100),
     sources: [
       {
@@ -174,6 +278,19 @@ export const SEED_MATERIAL_MARKET_LIBRARY = [
     delta: '-16.0%',
     usage: 'Essential for concrete production and mortar mixes.',
     regions: buildRegionalRates(10500, { Abuja: 11800, 'Port Harcourt': 11200, Kano: 10200, Enugu: 10800, Ibadan: 9300 }),
+    exactStateOverrides: {
+      Lagos: 10500,
+      'FCT Abuja': 11800,
+      Rivers: 11200,
+      Oyo: 9300,
+      Kano: 10200,
+      Enugu: 10800,
+      Ogun: 10100,
+      Anambra: 10950,
+      Delta: 11100,
+      Kaduna: 10650,
+      Edo: 10700,
+    },
     range: formatRange(9500, 11500),
     confidence: 0.68,
     benchmarkDeskNote: 'Blended from Lagos truck-load market checks and national sand references, then normalized to a delivered per-ton planning benchmark for the May 2026 snapshot.',
@@ -208,6 +325,18 @@ export const SEED_MATERIAL_MARKET_LIBRARY = [
     delta: '-12.4%',
     usage: 'Coarse aggregate for structural concrete mixing.',
     regions: buildRegionalRates(16200, { Abuja: 17300, 'Port Harcourt': 16700, Kano: 15850, Ibadan: 15000 }),
+    exactStateOverrides: {
+      Lagos: 16200,
+      'FCT Abuja': 17300,
+      Rivers: 16700,
+      Oyo: 15000,
+      Kano: 15850,
+      Ogun: 15650,
+      Enugu: 16050,
+      Delta: 16600,
+      Anambra: 16150,
+      Kaduna: 16250,
+    },
     range: formatRange(14800, 17250),
     confidence: 0.74,
     benchmarkDeskNote: 'Rebased to a tighter Lagos delivered-planning rate using current 20- and 30-ton granite listings instead of the older high-side single-listing midpoint.',
@@ -269,6 +398,18 @@ export const SEED_MATERIAL_MARKET_LIBRARY = [
     delta: '-3.8%',
     usage: 'High-tensile reinforcement for structural concrete elements.',
     regions: buildRegionalRates(1130000, { Abuja: 1165000, 'Port Harcourt': 1155000, Kano: 1115000 }),
+    exactStateOverrides: {
+      Lagos: 1130000,
+      'FCT Abuja': 1165000,
+      Rivers: 1155000,
+      Kano: 1115000,
+      Enugu: 1140000,
+      Ogun: 1120000,
+      Oyo: 1112000,
+      Kaduna: 1122000,
+      Anambra: 1148000,
+      Delta: 1152000,
+    },
     range: formatRange(1070000, 1170000),
     confidence: 0.78,
     benchmarkDeskNote: 'Rebalanced to the middle of the Q1 2026 Lagos bar-price range after converting published per-bar references to a per-ton planning benchmark.',
@@ -292,6 +433,18 @@ export const SEED_MATERIAL_MARKET_LIBRARY = [
     unit: 'Ton',
     usage: 'Main structural bars for beams, columns, and slab reinforcement.',
     regions: buildRegionalRates(1090000, { Abuja: 1125000, 'Port Harcourt': 1115000, Kano: 1075000 }),
+    exactStateOverrides: {
+      Lagos: 1090000,
+      'FCT Abuja': 1125000,
+      Rivers: 1115000,
+      Kano: 1075000,
+      Enugu: 1100000,
+      Ogun: 1082000,
+      Oyo: 1075000,
+      Kaduna: 1088000,
+      Anambra: 1108000,
+      Delta: 1112000,
+    },
     range: formatRange(1030000, 1130000),
     trend: 'stable',
     delta: '-6.4%',
@@ -361,6 +514,19 @@ export const SEED_MATERIAL_MARKET_LIBRARY = [
     delta: '+7.7%',
     usage: 'Load-bearing and non-load-bearing external and internal walls.',
     regions: buildRegionalRates(700, { Abuja: 740, 'Port Harcourt': 720, Kano: 670, Ibadan: 650 }),
+    exactStateOverrides: {
+      Lagos: 700,
+      'FCT Abuja': 740,
+      Rivers: 720,
+      Oyo: 650,
+      Kano: 670,
+      Ogun: 680,
+      Enugu: 690,
+      Anambra: 700,
+      Delta: 710,
+      Kaduna: 695,
+      Edo: 700,
+    },
     range: formatRange(650, 740),
     confidence: 0.78,
     sources: [
@@ -385,6 +551,19 @@ export const SEED_MATERIAL_MARKET_LIBRARY = [
     delta: '+30.0%',
     usage: 'Partition and lightweight internal walls.',
     regions: buildRegionalRates(650, { Abuja: 690, 'Port Harcourt': 670, Ibadan: 610 }),
+    exactStateOverrides: {
+      Lagos: 650,
+      'FCT Abuja': 690,
+      Rivers: 670,
+      Oyo: 610,
+      Kano: 630,
+      Ogun: 625,
+      Enugu: 645,
+      Anambra: 650,
+      Delta: 660,
+      Kaduna: 640,
+      Edo: 645,
+    },
     range: formatRange(600, 690),
     confidence: 0.76,
     sources: [
@@ -443,6 +622,18 @@ export const SEED_MATERIAL_MARKET_LIBRARY = [
     delta: '+4.8%',
     usage: 'Hot-mix asphalt production for wearing courses and binder courses.',
     regions: buildRegionalRates(175000, { Abuja: 182000, 'Port Harcourt': 178500 }),
+    exactStateOverrides: {
+      Lagos: 175000,
+      'FCT Abuja': 182000,
+      Rivers: 178500,
+      Kano: 172500,
+      Ogun: 174500,
+      Oyo: 171500,
+      Enugu: 176000,
+      Delta: 177000,
+      Kaduna: 175000,
+      Anambra: 176500,
+    },
     range: formatRange(166000, 184000),
     confidence: 0.74,
     benchmarkDeskNote: 'Rebased to the April 2026 60/70 export quotation and landed into a Lagos drum planning benchmark for the May 2026 roadworks snapshot.',
@@ -488,6 +679,19 @@ export const SEED_MATERIAL_MARKET_LIBRARY = [
     delta: '-70.9%',
     usage: 'Backfilling and sub-grade material for road construction.',
     regions: buildRegionalRates(3200, { Abuja: 3400, 'Port Harcourt': 3300, Kano: 3050, Enugu: 3250, Ibadan: 2950 }),
+    exactStateOverrides: {
+      Lagos: 3200,
+      'FCT Abuja': 3400,
+      Rivers: 3300,
+      Oyo: 2950,
+      Kano: 3050,
+      Enugu: 3250,
+      Ogun: 3000,
+      Kogi: 3150,
+      Kaduna: 3100,
+      Delta: 3280,
+      Anambra: 3200,
+    },
     range: formatRange(2700, 3500),
     confidence: 0.62,
     benchmarkDeskNote: 'Converted from current ton-based laterite and filling-sand references into a low-confidence per-cubic-metre planning benchmark for earthworks, so installation items can add haulage and compaction separately.',
