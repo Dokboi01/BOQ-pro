@@ -910,29 +910,6 @@ const BOQWorkspace = () => {
                           {amountFormula && <span className="ws-total-formula">{amountFormula}</span>}
                           <span className={`ws-total-status ws-total-status-${automationMeta.tone}`}>{automationMeta.title}</span>
                         </td>
-                        <td className="ws-act-cell">
-                          {viewMode === 'valuation' ? (
-                            <button className={`ws-btn-icon ${item.isVO ? 'ws-vo-active' : ''}`}
-                              onClick={() => toggleVO(section.id, item.id)} title="Variation Order">
-                              <AlertTriangle size={12} />
-                            </button>
-                          ) : (
-                            <div className="ws-act-group">
-                              <button className={`ws-btn-icon ${item.bids?.length > 0 ? 'ws-bid-active' : ''}`}
-                                onClick={() => setBiddingItem({ sectionId: section.id, item })} title="Bids">
-                                <Gavel size={12} />
-                              </button>
-                              <button className="ws-btn-icon"
-                                onClick={() => duplicateItem(section.id, item.id)} title="Duplicate Item">
-                                <Copy size={12} />
-                              </button>
-                              <button className="ws-btn-icon ws-btn-danger"
-                                onClick={() => onDelete(project.id, section.id, item.id)} title="Delete">
-                                <Trash2 size={12} />
-                              </button>
-                            </div>
-                          )}
-                        </td>
                       </tr>
                       <tr className={`ws-mobile-row ${outlier ? 'ws-outlier' : ''} ${isIncomplete ? 'ws-item-incomplete' : ''}`}>
                         <td colSpan={totalColumnCount} className="ws-mobile-cell">
@@ -3434,6 +3411,9 @@ const BOQWorkspace = () => {
           border-bottom: 1px solid #f1f5f9;
           transition: all 0.1s ease;
           background: #ffffff;
+        }
+        .ws-mobile-row {
+          display: none;
         }
         .ws-item-row:hover { background: #f8fbff; }
         .ws-item-row:nth-child(even) { background: #fafbfc; }
