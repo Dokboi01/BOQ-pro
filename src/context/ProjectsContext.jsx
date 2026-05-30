@@ -772,6 +772,7 @@ export function ProjectsProvider({ children }) {
     }, []);
 
     const openWorkspace = useCallback((projectId, intent = null) => {
+        hasRestoredWorkspaceRef.current = true;
         setActiveProjectId(projectId);
         setActiveTab('workspace');
         setFocusMode(true);
@@ -970,10 +971,8 @@ export function ProjectsProvider({ children }) {
 
             // 2. Update UI immediately
             setProjects(prev => [savedProject, ...prev]);
-            setActiveProjectId(savedProject.id);
             setShowSelector(false);
-            setActiveTab('workspace');
-            setFocusMode(true);
+            openWorkspace(savedProject.id);
 
             toast.success('Project created!');
 
@@ -1055,10 +1054,8 @@ export function ProjectsProvider({ children }) {
         try {
             const savedProject = await saveLocal(newProj, { source: 'user' });
             setProjects(prev => [savedProject, ...prev]);
-            setActiveProjectId(savedProject.id);
             setShowSelector(false);
-            setActiveTab('workspace');
-            setFocusMode(true);
+            openWorkspace(savedProject.id);
             toast.success('Project created successfully!');
             syncToCloud(savedProject);
             logActivity(savedProject.id, 'project_created', { name: savedProject.name, type: savedProject.type });
@@ -1070,7 +1067,7 @@ export function ProjectsProvider({ children }) {
         }
     };
 
-    const handleAnalysisComplete = async (elements) => {
+    const handleAnalysisComplete = useCallback(async (elements) => {
         const analyzedSections = elements.map(el => ({
             id: Math.random().toString(36).substr(2, 9),
             title: el.title,
@@ -1102,15 +1099,13 @@ export function ProjectsProvider({ children }) {
         try {
             const savedProject = await saveLocal(newProj, { source: 'user' });
             setProjects(prev => [savedProject, ...prev]);
-            setActiveProjectId(savedProject.id);
             setShowAnalyzer(false);
-            setActiveTab('workspace');
-            setFocusMode(true);
+            openWorkspace(savedProject.id);
             syncToCloud(savedProject);
         } catch (err) {
             console.error('Error creating project from analysis:', err);
         }
-    };
+    }, [openWorkspace]);
 
     const handleUpdateProject = async (projectId, updatedSections, region = null, additionalUpdates = {}) => {
         // 1. Optimistic UI update
@@ -1326,6 +1321,7 @@ export function ProjectsProvider({ children }) {
         forceSync,
         handleCreateProject,
         handleQuickCustomPricingTest,
+        openWorkspace,
         handleCompleteWizard,
         handleStructureSelect,
         handleAnalysisComplete,

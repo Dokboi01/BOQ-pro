@@ -1,7 +1,7 @@
 {
   "name": "quantra",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "main": "main.cjs",
   "scripts": {
@@ -12,26 +12,35 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "electron:dev": "cross-env NODE_ENV=development electron .",
-    "electron:build": "npm run build && electron-builder"
+    "electron:build": "npm run build && electron-builder",
+    "release": "npm version patch && git push && git push --tags"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.2.0",
+    "@google-cloud/firestore": "^8.6.0",
+    "@google-cloud/storage": "^7.19.0",
     "@google/generative-ai": "^0.24.1",
+    "@grpc/grpc-js": "^1.14.4",
+    "@grpc/proto-loader": "^0.8.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@vercel/analytics": "^2.0.1",
     "bcryptjs": "^3.0.3",
     "dexie": "^4.3.0",
-    "exceljs": "^4.4.0",
+    "exceljs": "^3.4.0",
     "firebase": "^12.10.0",
-    "firebase-admin": "^13.8.0",
+    "firebase-admin": "^13.10.0",
+    "jsonwebtoken": "^9.0.3",
     "jspdf": "^4.0.0",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.563.0",
     "openai": "^6.31.0",
     "playwright": "^1.59.1",
+    "protobufjs": "^8.5.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "resend": "^6.9.3"
+    "resend": "^6.9.3",
+    "teeny-request": "^10.1.2",
+    "uuid": "^14.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

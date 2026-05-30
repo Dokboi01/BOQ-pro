@@ -103,6 +103,7 @@ function App() {
     workspaceIntent, clearWorkspaceIntent,
     calculateTotalValue,
     syncStatus, forceSync,
+    openWorkspace,
     handleCreateProject, handleQuickCustomPricingTest, handleCompleteWizard, handleAnalysisComplete,
     handleUpdateProject, handleAddSection, handleDeleteSectionOrItem,
     handleDeleteProject,
@@ -146,12 +147,16 @@ function App() {
     const linkedProject = projects.find((project) => project.id === sharedProjectId);
     if (!linkedProject) return;
 
-    setActiveProjectId(linkedProject.id);
-    setActiveTab(requestedTab === 'reports' ? 'reports' : 'workspace');
-    setFocusMode(true);
+    if (requestedTab === 'reports') {
+      setActiveProjectId(linkedProject.id);
+      setActiveTab('reports');
+      setFocusMode(true);
+    } else {
+      openWorkspace(linkedProject.id);
+    }
     handledSharedProjectRef.current = sharedProjectId;
     clearSharedProjectParams();
-  }, [clearSharedProjectParams, projects, requestedTab, setActiveProjectId, setActiveTab, setFocusMode, sharedProjectId, user]);
+  }, [clearSharedProjectParams, openWorkspace, projects, requestedTab, setActiveProjectId, setActiveTab, setFocusMode, sharedProjectId, user]);
 
   React.useEffect(() => {
     if (paystackReturn !== 'return' || !user) return;
@@ -293,11 +298,7 @@ function App() {
           user={user}
           projects={projects}
           onCreateProject={handleCreateProject}
-          onSelectProject={(id) => {
-            setActiveProjectId(id);
-            setActiveTab('workspace');
-            setFocusMode(true);
-          }}
+          onSelectProject={(id) => openWorkspace(id)}
           onDeleteProject={handleDeleteProject}
           onUpgrade={() => { setView('pricing'); }}
         />;

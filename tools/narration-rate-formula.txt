@@ -1,0 +1,17 @@
+Welcome to Quantra.
+
+In this version of the walkthrough, the focus is on how quantity, rate, and formula work together inside the app.
+
+We begin by creating a building project and moving into the item selection stage. Instead of choosing any random line, Quantra lets the estimator filter for formula-ready items. That means the selected concrete item already comes with a pricing basis, a formula preview, and example inputs before the BOQ is even generated.
+
+Once the item is inside the workspace, the table stays simple, but the right panel carries the commercial logic. First, quantity is generated with the takeoff calculator. Because this line is measured in cubic metres, Quantra matches it to a volume calculator. Length, width, depth, and repeats produce the measured quantity, and any allowance can be added before the result is applied to the BOQ.
+
+Next, the formula editor explains the rate itself. For this item, the unit rate is not guessed. It is assembled from editable cost inputs such as concrete supply, transport or pumping, placing, vibrating, finishing, curing, testing, and overhead and profit. As soon as one of those inputs changes, Quantra recalculates the formula rate immediately, and the BOQ amount updates as quantity multiplied by calculated unit rate.
+
+If the team wants a quick market check, the same row can switch to benchmark pricing. That replaces the formula output with the regional market benchmark so the estimator can compare the engineered rate against the live commercial reference.
+
+If the team needs a defended tender rate, the row can switch again into manual pricing and open the pricing studio. Here, the rate is rebuilt from materials, labour, plant, transport, waste, site difficulty, overheads, and profit.
+
+Finally, detailed rate analysis shows the full commercial equation on one screen. Direct cost, plus waste, plus site adjustment, plus overheads, plus profit, produces the unit rate. Then quantity multiplied by unit rate gives the final BOQ amount.
+
+After pricing, the same workflow continues into the library, export screens, calculations guide, and settings without leaving the project.
