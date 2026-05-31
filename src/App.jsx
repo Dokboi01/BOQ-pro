@@ -15,6 +15,7 @@ import PricingPage from './components/landing/Pricing';
 import LegalPage from './components/landing/LegalPage';
 import Login from './components/auth/Login';
 import SignUp from './components/auth/SignUp';
+import PasswordReset from './components/auth/PasswordReset';
 import Onboarding from './components/onboarding/Onboarding';
 import Sidebar from './components/layout/Sidebar';
 import ProjectDashboard from './components/dashboard/ProjectDashboard';
@@ -75,13 +76,13 @@ class ErrorBoundary extends React.Component {
 }
 
 function App() {
-  console.log('App Rendering...');
+
 
   // Track app load
   React.useEffect(() => {
     if (analytics) {
       logEvent(analytics, 'app_open');
-      console.log('📈 Analytics: app_open logged');
+
     }
   }, []);
 
@@ -281,19 +282,14 @@ function App() {
       </div>
     </div>
   );
-  if (view === 'forgot-password') return (
-    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)', color: 'var(--text-primary)', flexDirection: 'column', gap: '1rem', fontFamily: 'Inter, sans-serif' }}>
-      <h2>🔑 Password Reset</h2>
-      <p style={{ color: 'var(--text-muted)', maxWidth: '400px', textAlign: 'center' }}>Password reset is handled via Firebase. Please use the Firebase Console or contact support to reset your password.</p>
-      <button onClick={() => setView('login')} style={{ padding: '0.75rem 2rem', background: 'var(--accent-600)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: '1rem' }}>Back to Login</button>
-    </div>
-  );
+  if (view === 'forgot-password') return <PasswordReset onBack={() => setView('login')} />;
   if (view === 'onboarding') return <Onboarding onComplete={handleOnboardingComplete} />;
 
   // ── Main App Content Router ──
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
+
         return <ProjectDashboard
           user={user}
           projects={projects}

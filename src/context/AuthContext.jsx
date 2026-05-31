@@ -135,7 +135,6 @@ export function AuthProvider({ children }) {
         });
 
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            console.log('🔐 AUTH STATE:', firebaseUser ? firebaseUser.email : 'signed out');
 
             if (firebaseUser) {
                 // 🛡️ GUARD: If already initialized and on 'app', don't re-navigate
@@ -242,24 +241,8 @@ export function AuthProvider({ children }) {
 
     const handleLogin = async (credentials) => {
         setAuthError(null);
-        console.log('🚀 Attempting login for:', credentials.email);
         const pendingSelection = readPendingSubscription();
 
-        // Guest bypass — skip Firebase Auth entirely
-        if (credentials.email === 'guest@quantra.com') {
-            const guestUser = normalizeUserProfile({
-                id: 'guest_user',
-                email: 'guest@quantra.com',
-                full_name: 'Guest Engineer',
-                plan: 'Professional',
-                is_onboarded: true,
-                role: 'Quantity Surveyor'
-            });
-            setUser(guestUser);
-            localStorage.setItem('quantra_profile', JSON.stringify(guestUser));
-            setView('app');
-            return;
-        }
 
         try {
             const result = await signInWithEmailAndPassword(
@@ -268,7 +251,6 @@ export function AuthProvider({ children }) {
                 credentials.password
             );
 
-            console.log('✅ Login successful:', result.user.email);
 
             // ⚡ Optimistic navigation — go to app IMMEDIATELY with basic data
             // Don't wait for Firestore profile fetch
@@ -309,7 +291,6 @@ export function AuthProvider({ children }) {
     const handleSignUp = async (data) => {
         setAuthError(null);
         setVerificationEmailStatus('idle');
-        console.log('🚀 Attempting signup for:', data.email);
 
         try {
             const company_name = deriveCompanyName({ companyName: data.companyName, email: data.email });
@@ -365,7 +346,6 @@ export function AuthProvider({ children }) {
                 console.warn('⚠️ Firestore profile creation failed (will retry later):', profileErr.message);
             }
 
-            console.log('✅ Signup successful:', result.user.email);
             setPendingUser(result.user);
             initializationComplete.current = true; // ⚡ Prevent timeout on signup path
 
@@ -399,7 +379,6 @@ export function AuthProvider({ children }) {
             try {
                 setAuthError(null);
                 await sendEmailVerification(targetUser);
-                console.log('📧 Verification email resent to:', targetUser.email);
                 setVerificationEmailStatus('sent');
                 toast.success(`Verification email sent to ${targetUser.email}.`);
             } catch (err) {

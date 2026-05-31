@@ -10,16 +10,18 @@ service cloud.firestore {
     match /projects/{projectId} {
       allow read: if request.auth != null && (
         resource.data.user_id == request.auth.uid ||
-        resource.data.collaborator_ids.hasAny([request.auth.token.email.lower()]) ||
-        resource.data.company_key == request.auth.token.company_key
+        ('collaborator_ids' in resource.data && resource.data.collaborator_ids.hasAny([request.auth.token.email.lower()])) ||
+        ('company_key' in resource.data && resource.data.company_key != '' && resource.data.company_key == request.auth.token.company_key)
       );
-      allow create: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.user_id == request.auth.uid
+        && request.resource.data.keys().hasAll(['user_id', 'name']);
       allow update, delete: if request.auth != null && resource.data.user_id == request.auth.uid;
     }
 
-    // Settings: only the owner can read/write
+    // Settings: only the owner can read/write (exact UID match)
     match /settings/{settingId} {
-      allow read, write: if request.auth != null && settingId.startsWith(request.auth.uid);
+      allow read, write: if request.auth != null && settingId == request.auth.uid;
     }
 
     // Materials: any authenticated user can read; only admins can write

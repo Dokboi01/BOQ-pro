@@ -76,7 +76,7 @@
       "icon": "public/favicon.ico"
     }
   },
-  "description": "[View Live Application](#) *(Link will be available after Vercel deployment)*",
+  "description": "Quantra — Professional Bill of Quantities management for Nigerian construction teams. AI-assisted analysis, rate benchmarks, and submission-ready exports.",
   "directories": {
     "test": "test"
   },
@@ -84,8 +84,8 @@
     "type": "git",
     "url": "git+https://github.com/Dokboi01/BOQ-pro.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["BOQ", "bill-of-quantities", "quantity-surveyor", "construction", "Nigeria", "rate-analysis", "engineering"],
+  "author": "Quantra Engineering",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/Dokboi01/BOQ-pro/issues"

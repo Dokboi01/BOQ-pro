@@ -51,11 +51,6 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
     setIsLoading(false);
   };
 
-  const handleGuestAccess = async () => {
-    setIsLoading(true);
-    await onLogin({ email: 'guest@quantra.com', password: 'password' });
-    setIsLoading(false);
-  };
 
   return (
     <div className="auth-shell">
@@ -97,8 +92,8 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
           </h1>
 
           <p className="auth-subtitle">
-            The login page now follows the same spec as the upgraded base page: lighter, more
-            product-aware, and focused on the actual company workflow behind Quantra.
+            Access your projects, rates, and exports — everything stays in sync
+            across your team, ready for the next submission.
           </p>
 
           <div className="signal-strip">
@@ -193,9 +188,6 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
                 {!isLoading && <ArrowRight size={18} />}
               </button>
 
-              <button type="button" className="btn-guest-access" onClick={handleGuestAccess} disabled={isLoading}>
-                Engineer guest access for quick testing
-              </button>
             </form>
 
             <div className="auth-note">
