@@ -5233,6 +5233,368 @@ const BOQWorkspace = () => {
             border: 1px dashed #cbd5e1 !important;
             border-radius: 16px !important;
           }
+
+          @media (max-width: 1180px) {
+            .ws-workspace-shell.glass-panel {
+              gap: 0.75rem !important;
+              padding: 0.75rem !important;
+              background: #f1f5f9 !important;
+            }
+
+            .ws-main-pane {
+              border: 1px solid #dbe4ee !important;
+              border-radius: 18px !important;
+              overflow: visible !important;
+              background: #f8fafc !important;
+            }
+
+            .ws-detail-dock {
+              border-radius: 18px !important;
+              max-height: none !important;
+            }
+          }
+
+          @media (max-width: 768px) {
+            .ws-workspace-body {
+              padding: 0 !important;
+              gap: 0 !important;
+            }
+
+            .ws-workspace-shell.glass-panel {
+              gap: 0.55rem !important;
+              padding: 0.55rem !important;
+              min-height: calc(100vh - 56px) !important;
+            }
+
+            .ws-main-pane {
+              border-radius: 14px !important;
+            }
+
+            .ws-compact-header.glass-card {
+              padding: 0.65rem !important;
+              border-radius: 14px !important;
+              gap: 0.55rem !important;
+            }
+
+            .ws-compact-header-top.staggered-fade-in {
+              gap: 0.6rem !important;
+            }
+
+            .ws-compact-title-row {
+              gap: 0.45rem !important;
+            }
+
+            .ws-compact-title {
+              font-size: 1rem !important;
+              line-height: 1.2 !important;
+            }
+
+            .ws-compact-eyebrow,
+            .ws-compact-meta-line {
+              font-size: 0.58rem !important;
+            }
+
+            .ws-compact-meta-line {
+              gap: 0.35rem !important;
+              line-height: 1.35 !important;
+            }
+
+            .ws-compact-sync-pill,
+            .ws-compact-bill-pill {
+              padding: 0.14rem 0.4rem !important;
+              font-size: 0.56rem !important;
+            }
+
+            .ws-compact-header-actions {
+              gap: 0.45rem !important;
+            }
+
+            .ws-compact-action-cluster,
+            .ws-compact-action-cluster-tools {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 0.4rem !important;
+            }
+
+            .ws-sheet-tabbar-compact {
+              grid-column: 1 / -1;
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              padding: 0.25rem !important;
+              border-radius: 12px !important;
+            }
+
+            .ws-sheet-tab {
+              width: auto !important;
+              min-height: 32px !important;
+              border-radius: 9px !important;
+              font-size: 0.68rem !important;
+            }
+
+            .ws-head-action {
+              width: 100% !important;
+              min-height: 34px !important;
+              padding: 0.42rem 0.5rem !important;
+              border-radius: 10px !important;
+              font-size: 0.68rem !important;
+              gap: 0.32rem !important;
+            }
+
+            .ws-compact-stat.glass-cards-row {
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+              gap: 0.45rem !important;
+            }
+
+            .ws-compact-stat.glass-card {
+              min-height: auto !important;
+              padding: 0.55rem !important;
+              border-radius: 12px !important;
+              gap: 0.2rem !important;
+            }
+
+            .ws-compact-stat.glass-card span {
+              font-size: 0.52rem !important;
+            }
+
+            .ws-compact-stat.glass-card strong {
+              font-size: 0.82rem !important;
+              line-height: 1.15 !important;
+            }
+
+            .ws-compact-stat.glass-card small,
+            .ws-compact-progress-track {
+              display: none !important;
+            }
+
+            .ws-toolbar-clean.glass-panel {
+              margin: 0.5rem 0 0 !important;
+              padding: 0.5rem !important;
+              border-radius: 12px !important;
+              gap: 0.45rem !important;
+            }
+
+            .ws-toolbar-left,
+            .ws-toolbar-right {
+              width: 100% !important;
+              gap: 0.4rem !important;
+            }
+
+            .ws-search-box.glass-input {
+              min-height: 34px !important;
+              border-radius: 10px !important;
+              padding: 0 0.5rem !important;
+            }
+
+            .ws-search-box.glass-input input {
+              font-size: 0.72rem !important;
+            }
+
+            .ws-search-results {
+              display: none !important;
+            }
+
+            .ws-filter-group {
+              flex: 1 1 auto !important;
+              display: grid !important;
+              grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+              gap: 0.3rem !important;
+              overflow: visible !important;
+            }
+
+            .ws-filter-pill {
+              min-height: 30px !important;
+              padding: 0.32rem 0.28rem !important;
+              border-radius: 9px !important;
+              font-size: 0.58rem !important;
+              white-space: nowrap !important;
+            }
+
+            .ws-region-selector {
+              width: 100% !important;
+              min-height: 34px !important;
+              border-radius: 10px !important;
+            }
+
+            .ws-region-selector select {
+              font-size: 0.68rem !important;
+            }
+
+            .ws-divider-v,
+            .ws-presence-avatars {
+              display: none !important;
+            }
+
+            .ws-table-wrap.glass-panel {
+              margin-top: 0.55rem !important;
+              min-height: 360px !important;
+              border-radius: 12px !important;
+              overflow-x: hidden !important;
+              padding-bottom: 0.55rem !important;
+            }
+
+            .ws-column-letters {
+              display: grid !important;
+              grid-template-columns: minmax(0, 1.7fr) minmax(62px, 0.65fr) minmax(76px, 0.8fr) minmax(84px, 0.9fr) !important;
+            }
+
+            .ws-column-letter {
+              padding: 0.34rem 0.42rem !important;
+              gap: 0.2rem !important;
+            }
+
+            .ws-column-letter span {
+              font-size: 0.62rem !important;
+            }
+
+            .ws-column-letter small {
+              font-size: 0.46rem !important;
+            }
+
+            .ws-table {
+              display: table !important;
+              width: 100% !important;
+              min-width: 100% !important;
+              table-layout: fixed !important;
+              font-size: 0.68rem !important;
+              background: #ffffff !important;
+            }
+
+            .ws-table thead {
+              display: table-header-group !important;
+            }
+
+            .ws-table th {
+              padding: 0.42rem 0.38rem !important;
+              font-size: 0.48rem !important;
+              letter-spacing: 0.04em !important;
+            }
+
+            .ws-th-desc { width: 42% !important; }
+            .ws-th-qty { width: 17% !important; }
+            .ws-th-rate { width: 19% !important; }
+            .ws-th-total { width: 22% !important; }
+
+            .ws-item-row {
+              display: table-row !important;
+            }
+
+            .ws-mobile-row {
+              display: none !important;
+            }
+
+            .ws-item-row td {
+              padding: 0.5rem 0.38rem !important;
+              font-size: 0.66rem !important;
+              line-height: 1.25 !important;
+              vertical-align: middle !important;
+            }
+
+            .ws-simple-desc {
+              gap: 0.08rem !important;
+            }
+
+            .ws-simple-desc-top {
+              gap: 0.2rem !important;
+            }
+
+            .ws-simple-item-code,
+            .ws-simple-unit-pill,
+            .ws-vo {
+              font-size: 0.42rem !important;
+              padding: 0.11rem 0.24rem !important;
+            }
+
+            .ws-item-name {
+              font-size: 0.66rem !important;
+              line-height: 1.18 !important;
+            }
+
+            .ws-qty-wrap,
+            .ws-rate-wrap {
+              width: 100% !important;
+              justify-content: flex-end !important;
+            }
+
+            .ws-input.ws-qty-input,
+            .ws-input.ws-rate-input {
+              width: 100% !important;
+              height: 28px !important;
+              min-height: 28px !important;
+              padding: 0.18rem 0.25rem !important;
+              font-size: 0.64rem !important;
+              border-radius: 7px !important;
+            }
+
+            .ws-qty-display,
+            .ws-rate-reference-row,
+            .ws-rate-meta,
+            .ws-rate-note,
+            .ws-total-formula,
+            .ws-total-status {
+              display: none !important;
+            }
+
+            .ws-total-main {
+              font-size: 0.66rem !important;
+              line-height: 1.18 !important;
+              overflow: hidden !important;
+              text-overflow: ellipsis !important;
+              white-space: nowrap !important;
+            }
+
+            .ws-section-cell,
+            .ws-subcategory-cell.glass-card {
+              padding: 0.36rem 0.45rem !important;
+            }
+
+            .ws-section-inner.glass-card {
+              gap: 0.35rem !important;
+              padding: 0 !important;
+              flex-wrap: nowrap !important;
+            }
+
+            .ws-section-title-input {
+              font-size: 0.64rem !important;
+            }
+
+            .ws-section-meta,
+            .ws-section-badge,
+            .ws-section-refresh-btn {
+              display: none !important;
+            }
+
+            .ws-section-total {
+              width: auto !important;
+              margin-left: auto !important;
+              padding-left: 0 !important;
+              font-size: 0.62rem !important;
+              white-space: nowrap !important;
+            }
+
+            .ws-detail-dock {
+              border-radius: 14px !important;
+            }
+
+            .ws-detail-dock-header {
+              padding: 0.8rem !important;
+              gap: 0.55rem !important;
+            }
+
+            .ws-detail-dock-title {
+              font-size: 0.92rem !important;
+            }
+
+            .ws-detail-dock-meta,
+            .ws-detail-guide {
+              display: none !important;
+            }
+
+            .ws-detail-dock-actions {
+              display: grid !important;
+              grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+              gap: 0.35rem !important;
+            }
+          }
       `}</style>
     </div>
   );

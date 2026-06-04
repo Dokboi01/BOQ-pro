@@ -343,8 +343,9 @@ const BOQBillPanel = ({
             position: static;
             border-right: none;
             padding-right: 0;
-            padding-bottom: 0.25rem;
+            padding-bottom: 0;
             overflow-y: visible;
+            gap: 0.6rem;
           }
 
           .wbp-list {
@@ -352,6 +353,12 @@ const BOQBillPanel = ({
             overflow-x: auto;
             overflow-y: hidden;
             padding-bottom: 0.25rem;
+            gap: 0.45rem;
+            scrollbar-width: none;
+          }
+
+          .wbp-list::-webkit-scrollbar {
+            display: none;
           }
 
           .wbp-header-stats {
@@ -368,17 +375,102 @@ const BOQBillPanel = ({
         }
 
         @media (max-width: 640px) {
+          .wbp-panel {
+            gap: 0.45rem;
+          }
+
           .wbp-header {
-            padding: 0.9rem;
+            padding: 0.65rem;
+            border-radius: 14px;
+            gap: 0.35rem;
+          }
+
+          .wbp-eyebrow {
+            font-size: 0.54rem;
+          }
+
+          .wbp-header strong {
+            font-size: 0.86rem;
+          }
+
+          .wbp-header small {
+            font-size: 0.64rem;
+            line-height: 1.35;
           }
 
           .wbp-header-stats {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.35rem;
+          }
+
+          .wbp-header-stat,
+          .wbp-header-stat-strong {
+            grid-column: auto;
+            padding: 0.48rem;
+            border-radius: 10px;
+          }
+
+          .wbp-header-stat span {
+            font-size: 0.48rem;
+          }
+
+          .wbp-header-stat strong {
+            font-size: 0.72rem;
+          }
+
+          .wbp-header-stat small {
+            display: none;
           }
 
           .wbp-item {
-            min-width: 240px;
-            padding: 0.85rem;
+            min-width: 210px;
+            grid-template-columns: 32px minmax(0, 1fr);
+            gap: 0.5rem;
+            padding: 0.58rem;
+            border-radius: 14px;
+          }
+
+          .wbp-index {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            font-size: 0.64rem;
+          }
+
+          .wbp-copy {
+            gap: 0.22rem;
+          }
+
+          .wbp-copy strong {
+            font-size: 0.72rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .wbp-copy small,
+          .wbp-active-pill {
+            font-size: 0.48rem;
+            padding: 0.1rem 0.28rem;
+          }
+
+          .wbp-total-block {
+            grid-column: 1 / -1;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            min-width: 0;
+            padding-left: 0;
+            padding-top: 0.18rem;
+            border-top: 1px solid #e2e8f0;
+          }
+
+          .wbp-total-label {
+            font-size: 0.46rem;
+          }
+
+          .wbp-total {
+            font-size: 0.62rem;
           }
         }
       `}</style>
