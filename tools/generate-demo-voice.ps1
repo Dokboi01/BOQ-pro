@@ -26,7 +26,7 @@ Welcome to Quantra.
 
 This walkthrough shows how a project moves from setup to a priced bill of quantities.
 
-We start on the landing page, sign in with guest access, and open the dashboard.
+We start on the landing page, sign in to the workspace, and open the dashboard.
 From there, a new project is created, the structure type is selected, and the bill items are picked before the BOQ workspace is generated.
 
 Inside the workspace, each row stays simple: description, quantity, rate, and amount.

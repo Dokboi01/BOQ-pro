@@ -124,8 +124,15 @@ const main = async () => {
     await clickWhenReady(page, loginButton);
     await pause(page, 1300);
 
-    console.log('Using guest access...');
-    await clickVisibleTextButton(page, 'Engineer guest access for quick testing');
+    console.log('Logging in with demo credentials...');
+    const email = process.env.DEMO_USER_EMAIL || 'test@quantra.com';
+    const password = process.env.DEMO_USER_PASSWORD || 'password';
+
+    await typeSlowly(page.getByPlaceholder('name@company.com'), email);
+    await pause(page, 200);
+    await typeSlowly(page.getByPlaceholder('Enter your password'), password);
+    await pause(page, 250);
+    await clickVisibleTextButton(page, 'Sign in to Quantra');
     await page.getByRole('button', { name: 'Create New Project', exact: true }).waitFor({ state: 'visible' });
     await pause(page, 1800);
 

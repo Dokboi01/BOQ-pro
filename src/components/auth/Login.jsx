@@ -611,8 +611,7 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
           text-decoration: underline;
         }
 
-        .auth-submit,
-        .btn-guest-access {
+        .auth-submit {
           width: 100%;
           min-height: 52px;
           display: inline-flex;
@@ -624,37 +623,17 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
           font-weight: 800;
           cursor: pointer;
           transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-        }
-
-        .auth-submit {
           border: none;
           background: var(--primary-900);
           color: white;
           box-shadow: 0 16px 30px rgba(15, 23, 42, 0.16);
         }
 
-        .auth-submit:hover,
-        .btn-guest-access:hover {
+        .auth-submit:hover {
           transform: translateY(-2px);
         }
 
         .auth-submit.loading {
-          pointer-events: none;
-          opacity: 0.7;
-        }
-
-        .btn-guest-access {
-          border: 1px dashed var(--accent-400);
-          background: rgba(37, 99, 235, 0.05);
-          color: var(--accent-600);
-        }
-
-        .btn-guest-access:hover {
-          background: rgba(37, 99, 235, 0.08);
-          border-color: var(--accent-600);
-        }
-
-        .btn-guest-access:disabled {
           pointer-events: none;
           opacity: 0.7;
         }

@@ -64,14 +64,26 @@ const main = async () => {
     await clickWhenReady(loginButton);
     await pause(page, 1400);
 
-    console.log('Using guest access...');
-    const guestAccessButton = page.getByRole('button', {
-      name: 'Engineer guest access for quick testing',
-      exact: true,
-    });
-    await moveMouseToCenter(page, guestAccessButton);
+    console.log('Logging in with demo credentials...');
+    const email = process.env.DEMO_USER_EMAIL || 'test@quantra.com';
+    const password = process.env.DEMO_USER_PASSWORD || 'password';
+
+    const emailInput = page.getByPlaceholder('name@company.com');
+    await moveMouseToCenter(page, emailInput);
+    await pause(page, 150);
+    await typeSlowly(emailInput, email);
+    await pause(page, 150);
+
+    const passwordInput = page.getByPlaceholder('Enter your password');
+    await moveMouseToCenter(page, passwordInput);
+    await pause(page, 150);
+    await typeSlowly(passwordInput, password);
+    await pause(page, 150);
+
+    const submitBtn = page.getByRole('button', { name: 'Sign in to Quantra', exact: true });
+    await moveMouseToCenter(page, submitBtn);
     await pause(page, 300);
-    await clickWhenReady(guestAccessButton);
+    await clickWhenReady(submitBtn);
     await page.getByRole('heading', { name: /Good Afternoon,/ }).waitFor({ state: 'visible' });
     await pause(page, 1800);
 
