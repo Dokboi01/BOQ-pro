@@ -342,7 +342,7 @@ function App() {
           onClick={() => setFocusMode(false)}
           title="Exit Focus Mode"
         >
-          <ChevronRight size={20} />
+          <ChevronLeft size={20} />
         </button>
       )}
 
