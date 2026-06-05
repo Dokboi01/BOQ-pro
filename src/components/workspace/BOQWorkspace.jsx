@@ -2187,7 +2187,7 @@ const BOQWorkspace = () => {
           display: flex;
           flex-direction: column;
           gap: 0.7rem;
-          padding: 0.9rem 1rem 0.85rem;
+          padding: 1rem;
           background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
           border-bottom: 1px solid #e2e8f0;
         }
@@ -2383,7 +2383,7 @@ const BOQWorkspace = () => {
           align-items: center;
           flex-wrap: wrap;
           gap: 0.7rem;
-          padding: 0.5rem 1rem;
+          padding: 0.75rem 1rem;
           background: #ffffff;
           border-bottom: 1px solid #e2e8f0;
           position: static;
@@ -3252,17 +3252,17 @@ const BOQWorkspace = () => {
         }
         .ws-table th {
           background: #f8fafc;
-          padding: 0.5rem 0.75rem;
+          padding: 0.75rem 1rem;
           text-align: left;
           font-size: 0.6rem;
           font-weight: 800;
-          color: #64748b;
+          color: #475569;
           text-transform: uppercase;
           letter-spacing: 0.08em;
-          border-bottom: 1px solid #e2e8f0;
-          border-right: 1px solid #e2e8f0;
+          border-bottom: 1px solid #cbd5e1;
+          border-right: 1px solid #cbd5e1;
           white-space: nowrap;
-          box-shadow: 0 1px 0 #e2e8f0;
+          box-shadow: 0 1px 0 #cbd5e1;
         }
         .ws-table th:last-child { border-right: none; }
 
@@ -3295,7 +3295,7 @@ const BOQWorkspace = () => {
           border-bottom: 1px solid #cbd5e1;
         }
         .ws-section-row:hover { background: #e2e8f0; }
-        .ws-section-cell { padding: 0.4rem 0.75rem !important; }
+        .ws-section-cell { padding: 0.75rem 1rem !important; }
         .ws-section-inner.glass-card {
           display: flex;
           align-items: center;
@@ -3311,7 +3311,7 @@ const BOQWorkspace = () => {
         }
         .ws-section-title-input {
           background: none; border: none; outline: none;
-          font-size: 0.75rem; font-weight: 800; color: #0f172a;
+          font-size: 0.875rem; font-weight: 800; color: #0f172a;
           flex: 1; padding: 2px 4px;
           text-transform: uppercase;
           letter-spacing: 0.025em;
@@ -3382,7 +3382,7 @@ const BOQWorkspace = () => {
         }
 
         .ws-subcategory-cell.glass-card {
-          padding: 0.2rem 0.4rem !important;
+          padding: 0.5rem 1rem !important;
           border-top: 1px solid #e2e8f0;
           border-bottom: 1px solid #eef2f7;
         }
@@ -3402,33 +3402,39 @@ const BOQWorkspace = () => {
         }
 
         .ws-subcategory-title {
-          font-size: 0.72rem;
-          font-weight: 800;
+          font-size: 0.78rem;
+          font-weight: 700;
           color: #1e293b;
         }
 
         /* â”€â”€ ITEM ROW â”€â”€ */
         .ws-item-row {
-          border-bottom: 1px solid #f1f5f9;
+          border-bottom: 1px solid #e2e8f0;
           transition: all 0.1s ease;
           background: #ffffff;
         }
         .ws-mobile-row {
           display: none;
         }
-        .ws-item-row:hover { background: #f8fbff; }
+        .ws-item-row:hover { background: rgba(30, 108, 247, 0.04); }
         .ws-item-row:nth-child(even) { background: #fafbfc; }
 
         .ws-item-row-selected {
-          background: #eff6ff !important;
-          box-shadow: inset 3px 0 0 #2563eb;
+          background: #eef6ff !important;
+        }
+        .ws-item-row-selected td {
+          border-top: 1px solid #dbeafe !important;
+          border-bottom: 1px solid #dbeafe !important;
+        }
+        .ws-item-row-selected td:first-child {
+          box-shadow: inset 4px 0 0 #2563eb !important;
         }
 
         .ws-item-row td {
-          padding: 0.62rem 0.8rem !important;
+          padding: 0.75rem 1rem !important;
           font-size: 0.78rem;
           color: #334155;
-          border-right: 1px solid #f1f5f9;
+          border-right: 1px solid #e2e8f0;
           vertical-align: top;
           line-height: 1.4;
           background: inherit;
@@ -4144,6 +4150,15 @@ const BOQWorkspace = () => {
           flex-wrap: wrap;
           gap: 0.3rem;
           margin: 0.35rem 0 0;
+          justify-content: flex-end;
+        }
+
+        .ws-rate-meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.25rem;
+          justify-content: flex-end;
+          margin-top: 0.3rem;
         }
 
         .ws-rate-ref-pill {
@@ -4247,7 +4262,7 @@ const BOQWorkspace = () => {
           color: white;
         }
         .ws-grand-total td {
-          padding: 0.75rem 0.625rem !important;
+          padding: 0.75rem 1rem !important;
           font-weight: 900;
           font-size: 0.75rem;
           text-transform: uppercase;
@@ -5271,7 +5286,7 @@ const BOQWorkspace = () => {
             }
 
             .ws-compact-header.glass-card {
-              padding: 0.65rem !important;
+              padding: 0.75rem !important;
               border-radius: 14px !important;
               gap: 0.55rem !important;
             }
@@ -5368,7 +5383,7 @@ const BOQWorkspace = () => {
 
             .ws-toolbar-clean.glass-panel {
               margin: 0.5rem 0 0 !important;
-              padding: 0.5rem !important;
+              padding: 0.75rem !important;
               border-radius: 12px !important;
               gap: 0.45rem !important;
             }

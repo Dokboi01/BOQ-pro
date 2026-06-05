@@ -485,16 +485,6 @@ const BOQItemDetailPanel = ({
         </div>
 
         <style>{`
-          :root {
-            --idp-bg: #ffffff;
-            --idp-border: #e8edf5;
-            --idp-text: #0f172a;
-            --idp-muted: #64748b;
-            --idp-accent: #2563eb;
-            --idp-accent-soft: #eff6ff;
-            --idp-r: 14px;
-          }
-
           .idp-overlay {
             position: fixed; inset: 0; z-index: 1300;
             background: rgba(15,23,42,0.4); backdrop-filter: blur(12px);
@@ -505,6 +495,14 @@ const BOQItemDetailPanel = ({
           .idp-overlay-docked { position: static; background: transparent; backdrop-filter: none; display: block; animation: none; }
 
           .idp-panel {
+            --idp-bg: var(--bg-card);
+            --idp-border: var(--border-light);
+            --idp-text: var(--text-primary);
+            --idp-muted: var(--text-muted);
+            --idp-accent: var(--quantra-blue-600);
+            --idp-accent-soft: var(--quantra-blue-100);
+            --idp-r: var(--radius-md);
+
             width: min(520px, 100vw); height: 100dvh; background: var(--idp-bg);
             display: flex; flex-direction: column;
             box-shadow: -16px 0 50px rgba(15,23,42,0.18);
@@ -623,7 +621,7 @@ const BOQItemDetailPanel = ({
           .idp-price-opt {
             display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
             padding: 0.55rem 0.7rem; border-radius: 10px;
-            border: 1.5px solid #eef2f7; background: white;
+            border: 1px solid var(--border-light); background: white;
             cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
           }
           .idp-price-opt:hover:not(:disabled) { border-color: #cbd5e1; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(15,23,42,0.05); }
@@ -660,66 +658,182 @@ const BOQItemDetailPanel = ({
           .idp-bd-total span { font-size: 0.62rem; font-weight: 700; color: #64748b; }
           .idp-bd-total strong { font-size: 0.76rem; font-weight: 900; color: var(--idp-text); }
 
-          /* Description */
-          .idp-desc-edit { display: flex; flex-direction: column; gap: 0.25rem; }
-          .idp-desc-ta {
-            width: 100%; max-width: 100%; box-sizing: border-box;
-            border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 0.6rem 0.7rem;
-            font-size: 0.78rem; font-weight: 520; font-family: inherit; line-height: 1.5;
-            color: #1e293b; outline: none; resize: vertical; min-height: 56px; background: #fafbff;
-            transition: border-color 0.15s, box-shadow 0.15s;
-          }
-          .idp-desc-ta:focus { border-color: var(--idp-accent); box-shadow: 0 0 0 2px rgba(37,99,235,0.08); background: white; }
-          .idp-desc-hint { font-size: 0.55rem; color: #94a3b8; font-weight: 600; }
-
-          /* Logic */
-          .idp-logic-card { background: #f8fafc; border-radius: var(--idp-r); padding: 0.8rem; border: 1px solid #f1f5f9; }
-          .idp-logic-expr { margin-bottom: 0.7rem; }
-          .idp-micro-label { display: block; font-size: 0.52rem; font-weight: 800; text-transform: uppercase; color: #94a3b8; margin-bottom: 4px; letter-spacing: 0.06em; }
-          .idp-logic-expr code { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #4338ca; background: white; border: 1px solid #e2e8f0; padding: 0.4rem 0.6rem; border-radius: 6px; display: block; }
-          .idp-vars-grid { margin-bottom: 0.7rem; }
-          .idp-vars-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
-          .idp-var-chip { background: white; border: 1px solid #e2e8f0; padding: 0.4rem 0.55rem; border-radius: 8px; }
-          .idp-var-name { display: block; font-size: 0.5rem; color: #64748b; font-weight: 800; }
-          .idp-var-chip strong { font-size: 0.78rem; font-weight: 900; color: #0f172a; }
-          .idp-var-chip strong small { font-size: 0.52rem; margin-left: 2px; color: #94a3b8; }
-          .idp-logic-result p { margin: 0; font-size: 0.72rem; color: #475569; line-height: 1.4; }
-          .idp-logic-btn { width: 100%; padding: 0.5rem; border-radius: 8px; background: var(--idp-text); color: white; border: none; font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; transition: all 0.15s; margin-top: 0.6rem; }
-          .idp-logic-btn:hover { background: var(--idp-accent); transform: translateY(-1px); }
-
-          /* Meta Grid */
-          .idp-meta-grid { display: flex; flex-direction: column; gap: 0.35rem; }
-          .idp-meta-grid .idp-meta-row { padding: 0.2rem 0; border-bottom: 1px solid #f8fafc; }
-          .idp-meta-grid .idp-meta-row:last-child { border-bottom: none; }
-          .idp-meta-row { display: flex; justify-content: space-between; align-items: center; }
-          .idp-meta-label { font-size: 0.62rem; color: var(--idp-muted); font-weight: 600; }
-          .idp-meta-value { font-size: 0.68rem; color: var(--idp-text); font-weight: 800; }
-          .idp-meta-mono { font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em; }
-
-          /* Intel */
-          .idp-intel-card { background: #fff; border: 1px solid #f1f5f9; border-radius: var(--idp-r); overflow: hidden; }
-          .idp-intel-row { display: flex; justify-content: space-between; padding: 0.7rem; background: #fafafa; border-bottom: 1px solid #f1f5f9; }
-          .idp-intel-row strong { font-size: 0.78rem; }
-          .idp-conf { color: var(--cf); font-weight: 900; }
-          .idp-intel-meta { padding: 0.7rem; display: flex; flex-direction: column; gap: 0.35rem; }
-          .idp-empty-pill { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem; border-radius: 10px; background: #f8fafc; border: 1px solid #f1f5f9; color: #64748b; font-size: 0.7rem; font-weight: 500; }
-
-          /* Link button */
-          .idp-link-btn { display: flex; align-items: center; gap: 0.35rem; margin-top: 0.5rem; padding: 0.4rem 0.6rem; border-radius: 8px; border: 1px solid #e2e8f0; background: white; font-size: 0.65rem; font-weight: 700; color: var(--idp-accent); cursor: pointer; transition: all 0.15s; width: 100%; justify-content: center; }
-          .idp-link-btn:hover { background: var(--idp-accent-soft); border-color: #bfdbfe; }
-
-          /* Notes */
-          .idp-notes-block { display: flex; flex-direction: column; gap: 0.3rem; }
-          .idp-notes-ta { width: 100%; max-width: 100%; box-sizing: border-box; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 0.6rem 0.7rem; font-size: 0.78rem; font-weight: 500; font-family: inherit; line-height: 1.5; outline: none; transition: border-color 0.15s; resize: vertical; min-height: 56px; }
-          .idp-notes-ta:focus { border-color: var(--idp-accent); }
-          .idp-hint-box { margin-top: 0.4rem; padding: 0.5rem; border-radius: 8px; background: #fffbeb; border: 1px solid #fef3c7; display: flex; gap: 8px; color: #92400e; font-size: 0.65rem; font-weight: 600; line-height: 1.3; }
+          /* Description & Notes */
+          .idp-desc-ta, .idp-notes-ta { width: 100%; box-sizing: border-box; border: 1px solid var(--border-medium); border-radius: 8px; padding: 0.52rem 0.75rem; font-size: 0.74rem; font-weight: 520; font-family: inherit; line-height: 1.5; color: #1e293b; outline: none; resize: vertical; min-height: 52px; background: #fafbff; transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-premium), background var(--duration-fast) var(--ease-standard); }
+          .idp-desc-ta:focus, .idp-notes-ta:focus { border-color: var(--idp-accent); box-shadow: 0 0 0 2px var(--idp-accent-soft); background: white; }
 
           /* Footer */
-          .idp-footer { padding: 0.55rem 1rem; border-top: 1px solid var(--idp-border); display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.96); flex-shrink: 0; }
-          .idp-footer-info { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: #94a3b8; font-weight: 700; }
-          .idp-footer-dot { width: 6px; height: 6px; border-radius: 50%; }
-          .idp-done-btn { padding: 0.45rem 1rem; border-radius: 8px; background: var(--idp-accent); color: white; border: none; font-size: 0.7rem; font-weight: 800; cursor: pointer; transition: all 0.15s; }
-          .idp-done-btn:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(37,99,235,0.15); }
+          .idp-footer { padding: 0.5rem 1rem; border-top: 1px solid var(--idp-border); display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.96); flex-shrink: 0; }
+          .idp-done-btn { min-height: 32px; padding: 0.38rem 0.82rem; border-radius: 7px; background: var(--idp-accent); color: white; border: none; font-size: 0.7rem; font-weight: 800; cursor: pointer; transition: all 0.15s; }
+
+          /* Final workspace polish: tighter rhythm without changing the panel structure. */
+          .idp-panel-docked {
+            background: #ffffff;
+          }
+
+          .idp-header {
+            padding: 0.78rem 1rem 0.68rem;
+            gap: 0.55rem;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+          }
+
+          .idp-header-top {
+            gap: 0.6rem;
+          }
+
+          .idp-header-left {
+            min-width: 0;
+          }
+
+          .idp-eyebrow,
+          .idp-stat-lbl,
+          .idp-micro-label,
+          .idp-section-badge {
+            letter-spacing: 0.06em;
+          }
+
+          .idp-title {
+            font-size: 1rem;
+            line-height: 1.18;
+            letter-spacing: 0;
+          }
+
+          .idp-header-meta {
+            gap: 0.24rem;
+            margin-top: 0.32rem;
+          }
+
+          .idp-meta-tag {
+            border-radius: 5px;
+            padding: 0.13rem 0.38rem;
+          }
+
+          .idp-close-trigger {
+            width: 30px;
+            height: 30px;
+            border-radius: 7px;
+          }
+
+          .idp-stats-row {
+            gap: 0.35rem;
+          }
+
+          .idp-stat {
+            padding: 0.42rem 0.45rem;
+            border-radius: 8px;
+          }
+
+          .idp-stat strong {
+            font-size: 0.78rem;
+            letter-spacing: 0;
+          }
+
+          .idp-user-guide {
+            gap: 0.3rem;
+          }
+
+          .idp-user-guide span {
+            min-height: 26px;
+            padding: 0.24rem 0.3rem;
+            border-radius: 7px;
+          }
+
+          .idp-actions-bar {
+            gap: 0.28rem;
+            padding: 0.5rem 1rem;
+          }
+
+          .idp-quick-action {
+            min-height: 30px;
+            padding: 0.26rem 0.46rem;
+            border-radius: 7px;
+          }
+
+          .idp-section-header {
+            padding: 0.54rem 1rem;
+          }
+
+          .idp-section-header-compact {
+            padding: 0.48rem 1rem;
+          }
+
+          .idp-section-header-left {
+            gap: 0.48rem;
+          }
+
+          .idp-section-icon-wrap {
+            width: 24px;
+            height: 24px;
+            border-radius: 7px;
+          }
+
+          .idp-section-header strong {
+            font-size: 0.72rem;
+            letter-spacing: 0;
+          }
+
+          .idp-section-body {
+            padding: 0 1rem 0.68rem;
+          }
+
+          .idp-price-opt {
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+          }
+
+          .idp-price-opt-l {
+            min-width: 0;
+          }
+
+          .idp-price-opt-copy {
+            min-width: 0;
+          }
+
+          .idp-price-opt-name,
+          .idp-price-opt-sub {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .idp-logic-card,
+          .idp-intel-card,
+          .idp-empty-pill,
+          .idp-desc-ta,
+          .idp-notes-ta {
+            border-radius: 8px;
+          }
+
+          .idp-desc-ta,
+          .idp-notes-ta {
+            min-height: 52px;
+            padding: 0.52rem 0.75rem;
+            font-size: 0.74rem;
+          }
+
+          .idp-footer {
+            padding: 0.5rem 1rem;
+          }
+
+          .idp-done-btn {
+            min-height: 32px;
+            padding: 0.38rem 0.82rem;
+            border-radius: 7px;
+          }
+
+          @media (max-width: 768px) {
+            .idp-panel { width: 100%; height: auto; min-height: 0; border-left: none; }
+            .idp-header { padding: 0.68rem; gap: 0.45rem; }
+            .idp-title { font-size: 0.9rem; }
+            .idp-stats-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.28rem; }
+            .idp-user-guide { display: none; }
+            .idp-body { overflow-y: visible; }
+            .idp-actions-bar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 0.45rem 0.68rem; gap: 0.3rem; }
+            .idp-quick-action { justify-content: center; padding: 0.28rem 0.25rem; font-size: 0; }
+            .idp-section-header { padding: 0.48rem 0.68rem; }
+            .idp-section-body { padding: 0 0.68rem 0.58rem; }
+            .idp-footer { padding: 0.45rem 0.68rem; }
+          }
         `}</style>
       </div>
     </div>
