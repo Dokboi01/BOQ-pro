@@ -2896,23 +2896,48 @@ const BOQWorkspace = () => {
         }
 
         .ws-btn {
-          display: flex; align-items: center; gap: 0.25rem;
-          padding: 0.3rem 0.625rem; border-radius: 6px;
-          font-size: 0.625rem; font-weight: 700; cursor: pointer;
-          border: none; transition: all 0.15s;
+          display: flex; align-items: center; gap: 0.35rem;
+          padding: 0.38rem 0.75rem; border-radius: var(--radius-md);
+          font-size: 0.68rem; font-weight: 700; cursor: pointer;
+          border: 1px solid transparent; transition: all var(--duration-fast) var(--ease-premium);
         }
-        .ws-btn-ghost { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.1); }
-        .ws-btn-ghost:hover { background: rgba(255,255,255,0.12); color: white; }
+        .ws-btn:hover {
+          transform: translateY(-1px);
+        }
+        .ws-btn:active {
+          transform: translateY(0) scale(0.96);
+        }
+        .ws-btn-ghost { 
+          background: var(--bg-card-muted); 
+          color: var(--text-secondary); 
+          border: 1px solid var(--border-light); 
+        }
+        .ws-btn-ghost:hover { 
+          background: var(--quantra-blue-100); 
+          color: var(--quantra-blue-700); 
+          border-color: var(--quantra-blue-300);
+          box-shadow: var(--shadow-sm);
+        }
         .ws-btn-custom {
-          background: linear-gradient(135deg, rgba(16,185,129,0.95), rgba(5,150,105,0.95));
+          background: linear-gradient(135deg, var(--quantra-blue-600) 0%, var(--quantra-blue-700) 100%);
           color: white;
-          box-shadow: 0 10px 20px rgba(5, 150, 105, 0.25);
+          box-shadow: 0 4px 12px rgba(30, 108, 247, 0.2);
+          border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .ws-btn-custom:hover {
-          filter: brightness(1.05);
+          background: linear-gradient(135deg, var(--quantra-blue-500) 0%, var(--quantra-blue-600) 100%);
+          box-shadow: 0 6px 16px rgba(30, 108, 247, 0.3);
         }
-        .ws-btn-primary.emerald-button { background: #2563eb; color: white; }
-        .ws-btn-primary.emerald-button:hover { background: #1d4ed8; }
+        .ws-btn-primary.emerald-button { 
+          background: linear-gradient(135deg, var(--quantra-blue-600) 0%, var(--quantra-blue-700) 100%); 
+          color: white;
+          box-shadow: 0 4px 12px rgba(30, 108, 247, 0.2);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .ws-btn-primary.emerald-button:hover { 
+          background: linear-gradient(135deg, var(--quantra-blue-500) 0%, var(--quantra-blue-600) 100%);
+          box-shadow: 0 6px 16px rgba(30, 108, 247, 0.3);
+        }
 
         .ws-workspace-command-center {
           display: flex;
@@ -2998,30 +3023,64 @@ const BOQWorkspace = () => {
           justify-content: center;
           gap: 0.4rem;
           padding: 0.58rem 0.8rem;
-          border-radius: 14px;
-          border: 1px solid #dbe4ee;
-          background: rgba(255, 255, 255, 0.94);
-          color: #334155;
+          border-radius: var(--radius-md);
+          border: 1px solid var(--border-light);
+          background: var(--bg-card);
+          color: var(--text-secondary);
           font-size: 0.72rem;
-          font-weight: 800;
+          font-weight: 700;
           cursor: pointer;
-          transition: all 0.18s ease;
+          transition: all var(--duration-fast) var(--ease-premium);
         }
         .ws-head-action:hover {
-          border-color: #bfdbfe;
-          background: #eff6ff;
-          color: #1d4ed8;
+          border-color: var(--quantra-blue-400);
+          background: var(--quantra-blue-100);
+          color: var(--quantra-blue-700);
+          transform: translateY(-1.5px);
+          box-shadow: var(--shadow-sm);
+        }
+        .ws-head-action:active {
+          transform: translateY(0) scale(0.97);
         }
         .ws-head-action-primary.emerald-button {
-          background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
-          border-color: #2563eb;
+          background: linear-gradient(135deg, var(--quantra-blue-600) 0%, var(--quantra-blue-700) 100%);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           color: #ffffff;
-          box-shadow: 0 10px 22px rgba(37, 99, 235, 0.18);
+          box-shadow: 0 4px 14px rgba(30, 108, 247, 0.22);
         }
         .ws-head-action-primary.emerald-button:hover {
-          background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
-          border-color: #1d4ed8;
-          color: #ffffff;
+          background: linear-gradient(135deg, var(--quantra-blue-500) 0%, var(--quantra-blue-600) 100%);
+          box-shadow: 0 6px 18px rgba(30, 108, 247, 0.3);
+        }
+        .ws-sheet-tabbar-compact {
+          display: flex;
+          background: var(--border-light);
+          padding: 3px;
+          border-radius: 10px;
+          gap: 2px;
+          border: 1px solid var(--border-light);
+        }
+        .ws-sheet-tab {
+          border: none;
+          background: transparent;
+          color: var(--text-muted);
+          font-weight: 700;
+          font-size: 0.72rem;
+          padding: 0.4rem 1rem;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all var(--duration-fast) var(--ease-premium);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .ws-sheet-tab:hover {
+          color: var(--text-secondary);
+        }
+        .ws-sheet-tab.active {
+          background: var(--bg-card);
+          color: var(--quantra-blue-600);
+          box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
         }
         .ws-head-action-strong {
           border-color: #bfdbfe;
@@ -3159,18 +3218,18 @@ const BOQWorkspace = () => {
         }
         .ws-btn {
           padding: 0.55rem 0.8rem;
-          border-radius: 12px;
+          border-radius: var(--radius-md);
           font-size: 0.72rem;
         }
         .ws-btn-ghost {
-          background: #f8fafc;
-          color: #334155;
-          border: 1px solid #dbe4ee;
+          background: var(--bg-card-muted);
+          color: var(--text-secondary);
+          border: 1px solid var(--border-light);
         }
         .ws-btn-ghost:hover {
-          background: #eff6ff;
-          color: #1d4ed8;
-          border-color: #bfdbfe;
+          background: var(--quantra-blue-100);
+          color: var(--quantra-blue-700);
+          border-color: var(--quantra-blue-300);
         }
 
         /* â”€â”€ TABLE â”€â”€ */
@@ -4044,21 +4103,27 @@ const BOQWorkspace = () => {
         .ws-act-cell { text-align: center; }
         .ws-act-group { display: flex; gap: 2px; justify-content: center; }
         .ws-btn-icon {
-          display: flex; align-items: center; justify-content: center;
+          display: inline-flex; align-items: center; justify-content: center;
           width: 24px; height: 24px;
-          border: none; background: transparent; color: #94a3b8;
-          border-radius: 4px; cursor: pointer;
-          transition: all 0.15s;
+          border: 1px solid transparent; background: transparent; color: var(--text-muted);
+          border-radius: var(--radius-sm); cursor: pointer;
+          transition: all var(--duration-fast) var(--ease-premium);
+        }
+        .ws-btn-icon:hover {
+          transform: scale(1.1);
+        }
+        .ws-btn-icon:active {
+          transform: scale(0.95);
         }
         .ws-item-row:hover .ws-btn-icon,
         .ws-section-row:hover .ws-btn-icon,
         .ws-item-row-selected .ws-btn-icon { opacity: 1; }
-        .ws-btn-danger:hover { background: #fef2f2; color: #ef4444; }
-        .ws-btn-library:hover { background: #eff6ff; color: #1d4ed8; }
-        .ws-bid-active { opacity: 1 !important; color: #2563eb; }
-        .ws-vo-active { opacity: 1 !important; color: #f59e0b; }
-        .ws-btn-info { color: #64748b; }
-        .ws-btn-info:hover { background: #eff6ff; color: #2563eb; opacity: 1 !important; }
+        .ws-btn-danger:hover { background: #fef2f2; color: var(--danger-600); border-color: rgba(225, 29, 72, 0.1); }
+        .ws-btn-library:hover { background: var(--quantra-blue-100); color: var(--quantra-blue-700); border-color: var(--quantra-blue-300); }
+        .ws-bid-active { opacity: 1 !important; color: var(--quantra-blue-600); }
+        .ws-vo-active { opacity: 1 !important; color: var(--warning-600); }
+        .ws-btn-info { color: var(--text-muted); }
+        .ws-btn-info:hover { background: var(--quantra-blue-100); color: var(--quantra-blue-600); border-color: var(--quantra-blue-300); opacity: 1 !important; }
 
         /* â”€â”€ RATE SOURCE SELECTOR (3-button tri-modal) â”€â”€ */
         .ws-rate-source-selector {

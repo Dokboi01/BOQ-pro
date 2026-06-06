@@ -241,15 +241,15 @@ a:hover {
 button {
   cursor: pointer;
   font-family: inherit;
-  transition: transform var(--duration-base) var(--ease-premium),
-              box-shadow var(--duration-base) var(--ease-premium),
+  transition: transform var(--duration-fast) var(--ease-premium),
+              box-shadow var(--duration-fast) var(--ease-premium),
               background-color var(--duration-fast) var(--ease-standard),
               border-color var(--duration-fast) var(--ease-standard),
               color var(--duration-fast) var(--ease-standard);
 }
 
 button:focus-visible {
-  outline: 2px solid var(--emerald-500);
+  outline: 2px solid var(--quantra-blue-500);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
@@ -257,7 +257,7 @@ button:focus-visible {
 /* ── Selection ── */
 
 ::selection {
-  background: rgba(16, 185, 129, 0.2);
+  background: rgba(30, 108, 247, 0.15);
   color: var(--text-heading);
 }
 
@@ -286,14 +286,14 @@ button:focus-visible {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--emerald-500), transparent);
+  background: linear-gradient(90deg, transparent, var(--quantra-blue-500), transparent);
   opacity: 0;
   transition: opacity 0.35s ease;
 }
 
 .enterprise-card:hover {
   box-shadow: var(--shadow-lg);
-  border-color: var(--emerald-200);
+  border-color: var(--quantra-blue-200);
   transform: translateY(-2px);
 }
 
@@ -345,7 +345,7 @@ button:focus-visible {
 }
 
 .btn-primary:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.96);
 }
 
 /* ── Outline Button ── */
@@ -361,13 +361,19 @@ button:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  transition: all var(--duration-fast) var(--ease-premium);
 }
 
 .btn-outline:hover {
   background: var(--bg-card-alt);
-  border-color: var(--emerald-400);
-  color: var(--emerald-600);
-  transform: translateY(-1px);
+  border-color: var(--quantra-blue-400);
+  color: var(--quantra-blue-700);
+  transform: translateY(-1.5px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-outline:active {
+  transform: translateY(0) scale(0.96);
 }
 
 /* ── Secondary Button ── */
@@ -383,14 +389,18 @@ button:focus-visible {
   align-items: center;
   gap: 0.5rem;
   color: var(--text-primary);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--duration-fast) var(--ease-premium);
 }
 
 .btn-secondary:hover {
-  border-color: var(--emerald-400);
-  color: var(--emerald-600);
-  transform: translateY(-1px);
+  border-color: var(--quantra-blue-400);
+  color: var(--quantra-blue-700);
+  transform: translateY(-1.5px);
   box-shadow: var(--shadow-md);
+}
+
+.btn-secondary:active {
+  transform: translateY(0) scale(0.96);
 }
 
 /* ── Text Utilities ── */
