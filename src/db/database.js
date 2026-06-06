@@ -16,6 +16,7 @@ import {
 import { buildCompanyKey, deriveCompanyName } from '../utils/companyAccess';
 import { getSeedMarketIndices, getSeedMaterials } from './seed_materials';
 import { buildMaterialBenchmarkPayload, normalizeMaterialBenchmarkRecord } from '../utils/materialBenchmarks';
+import { selfUpdateMarketData, driftMarketIndices } from '../utils/materialMarketSync';
 
 /**
  * Strip heavy, reconstructable fields from a single BOQ item before cloud upload.
@@ -477,10 +478,35 @@ export const getMaterials = async () => {
     try {
         const snapshot = await getDocs(query(collection(db, 'materials'), orderBy('name')));
         const materials = snapshot.docs.map(d => normalizeMaterialBenchmarkRecord({ id: d.id, ...d.data() }));
-        return materials.length > 0 ? materials : getSeedMaterials();
+        const rawMaterials = materials.length > 0 ? materials : getSeedMaterials();
+        
+        const indices = await getMarketIndices();
+        const { materials: updatedMaterials, updatedCount } = selfUpdateMarketData({ materials: rawMaterials, indices });
+        
+        if (auth.currentUser && updatedCount > 0 && materials.length > 0) {
+            updatedMaterials.forEach(mat => {
+                const original = materials.find(o => o.id === mat.id);
+                if (original && original.nextReviewAt !== mat.nextReviewAt) {
+                    const docId = mat.id || mat.name.replace(/\s+/g, '_').toLowerCase();
+                    const payload = buildMaterialBenchmarkPayload(mat);
+                    setDoc(doc(db, 'materials', docId), {
+                        ...payload,
+                        updated_at: serverTimestamp()
+                    }, { merge: true }).catch(() => {});
+                }
+            });
+        }
+        
+        return updatedMaterials;
     } catch (err) {
         console.error('Error fetching materials:', err);
-        return getSeedMaterials();
+        try {
+            const indices = driftMarketIndices(getSeedMarketIndices());
+            const { materials: updatedMaterials } = selfUpdateMarketData({ materials: getSeedMaterials(), indices });
+            return updatedMaterials;
+        } catch (subErr) {
+            return getSeedMaterials();
+        }
     }
 };
 
@@ -525,10 +551,29 @@ export const getMarketIndices = async () => {
     try {
         const snapshot = await getDocs(collection(db, 'market_indices'));
         const indices = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        return indices.length > 0 ? indices : getSeedMarketIndices();
+        const rawIndices = indices.length > 0 ? indices : getSeedMarketIndices();
+        const driftedIndices = driftMarketIndices(rawIndices);
+        
+        if (auth.currentUser && indices.length > 0) {
+            driftedIndices.forEach(idx => {
+                const original = indices.find(o => o.id === idx.id);
+                if (!original || original.val !== idx.val || original.updatedAt !== idx.updatedAt) {
+                    const docId = idx.id || idx.label.replace(/\s+/g, '_').toLowerCase();
+                    setDoc(doc(db, 'market_indices', docId), {
+                        val: idx.val,
+                        previousVal: idx.previousVal ?? idx.val,
+                        delta: idx.delta,
+                        trend: idx.trend,
+                        updatedAt: idx.updatedAt
+                    }, { merge: true }).catch(() => {});
+                }
+            });
+        }
+        
+        return driftedIndices;
     } catch (err) {
         console.error('Error fetching market indices:', err);
-        return getSeedMarketIndices();
+        return driftMarketIndices(getSeedMarketIndices());
     }
 };
 

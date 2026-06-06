@@ -4,6 +4,7 @@ import {
   createMarketMaterialDocId,
   syncMarketIndicesFromFeed,
   syncMaterialsFromMarketFeed,
+  selfUpdateMarketData,
 } from '../../src/utils/materialMarketSync.js';
 import { buildMaterialBenchmarkPayload } from '../../src/utils/materialBenchmarks.js';
 
@@ -22,13 +23,19 @@ export async function runMaterialMarketSync({ actor } = {}) {
   });
   const indexSync = syncMarketIndicesFromFeed(existingIndices);
 
-  for (const material of materialSync.materials) {
+  const { materials: driftedMaterials, indices: driftedIndices } = selfUpdateMarketData({
+    materials: materialSync.materials,
+    indices: indexSync.indices,
+    asOfDate: new Date(),
+  });
+
+  for (const material of driftedMaterials) {
     const docId = material.id || slugifyMaterialName(material.name);
     const payload = buildMaterialBenchmarkPayload(material);
     await patchDocumentByPath(`materials/${docId}`, payload);
   }
 
-  for (const indexEntry of indexSync.indices) {
+  for (const indexEntry of driftedIndices) {
     const docId = indexEntry.id || slugifyIndexLabel(indexEntry.label);
     const { id: _id, ...indexPayload } = indexEntry;
     await patchDocumentByPath(`market_indices/${docId}`, {
@@ -37,7 +44,10 @@ export async function runMaterialMarketSync({ actor } = {}) {
   }
 
   return {
-    materials: materialSync.summary,
+    materials: {
+      ...materialSync.summary,
+      driftedCount: driftedMaterials.filter((m, i) => m.nextReviewAt !== materialSync.materials[i]?.nextReviewAt).length,
+    },
     indices: indexSync.summary,
   };
 }
