@@ -880,21 +880,84 @@ const BOQItemDetailPanel = ({
           }
 
           /* Breakdown */
-          .idp-breakdown-grid { display: flex; flex-direction: column; gap: 0.35rem; }
-          .idp-bd-row { display: grid; grid-template-columns: 40px 1fr 32px 70px; gap: 0.4rem; align-items: center; font-size: 0.65rem; }
-          .idp-bd-bar-bg { height: 6px; border-radius: 3px; background: #f1f5f9; overflow: hidden; grid-column: 1/-1; }
-          .idp-bd-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
-          .idp-bd-row { display: grid; grid-template-columns: 1fr 32px 70px; gap: 0.3rem; align-items: center; }
-          .idp-bd-label { font-weight: 700; color: #475569; font-size: 0.65rem; }
-          .idp-bd-pct { font-weight: 800; color: var(--idp-text); font-size: 0.62rem; text-align: right; }
-          .idp-bd-val { font-weight: 700; color: #64748b; font-size: 0.6rem; text-align: right; }
-          .idp-bd-total { display: flex; justify-content: space-between; align-items: center; padding-top: 0.4rem; border-top: 1px solid #f1f5f9; margin-top: 0.2rem; }
-          .idp-bd-total span { font-size: 0.62rem; font-weight: 700; color: #64748b; }
-          .idp-bd-total strong { font-size: 0.76rem; font-weight: 900; color: var(--idp-text); }
+          .idp-breakdown-grid { display: flex; flex-direction: column; gap: 0.15rem; }
+          .idp-bd-row {
+            display: grid;
+            grid-template-columns: 1fr 35px 75px;
+            gap: 0.25rem 0.5rem;
+            align-items: center;
+            padding: 0.35rem 0;
+            border-bottom: 1px dashed #f1f5f9;
+          }
+          .idp-bd-row:last-of-type {
+            border-bottom: none;
+          }
+          .idp-bd-bar-bg {
+            height: 6px;
+            border-radius: 3px;
+            background: #f1f5f9;
+            overflow: hidden;
+            grid-column: 1 / -1;
+            margin-bottom: 2px;
+          }
+          .idp-bd-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.4s ease-out;
+          }
+          .idp-bd-label {
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: #475569;
+          }
+          .idp-bd-pct {
+            font-size: 0.68rem;
+            font-weight: 800;
+            color: var(--idp-text);
+            text-align: right;
+          }
+          .idp-bd-val {
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: #64748b;
+            text-align: right;
+          }
+          .idp-bd-total { display: flex; justify-content: space-between; align-items: center; padding-top: 0.5rem; border-top: 1px solid #e2e8f0; margin-top: 0.3rem; }
+          .idp-bd-total span { font-size: 0.7rem; font-weight: 700; color: #64748b; }
+          .idp-bd-total strong { font-size: 0.82rem; font-weight: 900; color: var(--idp-text); }
 
           /* Description & Notes */
           .idp-desc-ta, .idp-notes-ta { width: 100%; box-sizing: border-box; border: 1px solid var(--border-medium); border-radius: 8px; padding: 0.52rem 0.75rem; font-size: 0.74rem; font-weight: 520; font-family: inherit; line-height: 1.5; color: #1e293b; outline: none; resize: vertical; min-height: 52px; background: #fafbff; transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-premium), background var(--duration-fast) var(--ease-standard); }
           .idp-desc-ta:focus, .idp-notes-ta:focus { border-color: var(--idp-accent); box-shadow: 0 0 0 2px var(--idp-accent-soft); background: white; }
+
+          /* Notes Section Styling */
+          .idp-notes-block {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+          }
+          .idp-notes-ta {
+            min-height: 90px !important;
+          }
+          .idp-hint-box {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.45rem;
+            padding: 0.5rem 0.65rem;
+            border-radius: 8px;
+            background: #fffbeb;
+            border: 1px solid #fef3c7;
+            color: #b45309;
+            font-size: 0.62rem;
+            line-height: 1.4;
+            font-weight: 550;
+          }
+          .idp-hint-box svg {
+            color: #d97706;
+            margin-top: 1px;
+            flex-shrink: 0;
+          }
 
           /* Description Section Styling */
           .idp-desc-edit {
