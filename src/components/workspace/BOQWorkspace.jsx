@@ -11,7 +11,7 @@ import BOQFormulaModal from './BOQFormulaModal';
 import BOQItemDetailPanel from './BOQItemDetailPanel';
 import BOQSelectionStage from './BOQSelectionStage';
 import BOQBillPanel from './BOQBillPanel';
-import { getStructureSectionCatalog } from '../../data/boqCatalog';
+import { getStructureSectionCatalog, findCatalogItemByCode } from '../../data/boqCatalog';
 import {
   DEFAULT_NIGERIA_LOCATION,
   groupNigeriaStateOptionsByZone,
@@ -29,6 +29,10 @@ import {
   getItemTotal,
   getItemUnitRate,
   resolveItemRateSource,
+  getUnitScaleFactor,
+  inferWorkType,
+  getBaseUnitForWorkType,
+  normalizeUnit,
 } from '../../utils/pricing';
 import {
   Plus,
@@ -867,20 +871,37 @@ const BOQWorkspace = () => {
                               <input
                                 type="number"
                                 className="ws-input ws-benchmark-override-input"
-                                value={item.benchmarkRegionalRates?.[project?.region || 'Lagos'] || item.benchmark || ''}
+                                value={getEffectiveBenchmarkRate(item, project?.region || 'Lagos') || ''}
                                 min="0"
                                 step="any"
                                 title="Override the benchmark rate with your own market data"
                                 onChange={(e) => {
                                   const nextBenchmark = sanitizeNonNegativeNumber(e.target.value);
                                   const nextRegion = project?.region || 'Lagos';
+
+                                  const workType = item.customPricing?.workType || inferWorkType(item.description || item.name);
+                                  let fromUnit = item.catalogUnit;
+                                  if (!fromUnit && item.code) {
+                                    const catalogItem = findCatalogItemByCode(item.code);
+                                    if (catalogItem) {
+                                      fromUnit = catalogItem.unit;
+                                    }
+                                  }
+                                  if (!fromUnit) {
+                                    fromUnit = getBaseUnitForWorkType(workType);
+                                  }
+                                  const unit = normalizeUnit(item.unit);
+                                  const scaleFactor = getUnitScaleFactor(item.description || item.name, workType, fromUnit, unit);
+
+                                  const unscaledNextBenchmark = nextBenchmark / scaleFactor;
+
                                   const nextRegionalRates = {
                                     ...(item.benchmarkRegionalRates || {}),
-                                    [nextRegion]: nextBenchmark,
+                                    [nextRegion]: unscaledNextBenchmark,
                                   };
                                   const nextBaseBenchmark = nextRegion === 'Lagos'
-                                    ? nextBenchmark
-                                    : (item.benchmark || (nextBenchmark / Math.max(getBenchmarkRegionalFactor(item, nextRegion), 0.001)));
+                                    ? unscaledNextBenchmark
+                                    : (item.benchmark || (unscaledNextBenchmark / Math.max(getBenchmarkRegionalFactor(item, nextRegion), 0.001)));
 
                                   updateItem(section.id, item.id, {
                                     benchmark: nextBaseBenchmark,

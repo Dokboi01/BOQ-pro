@@ -5509,6 +5509,7 @@ export const cloneCatalogItemToProjectItem = (catalogItem, { structureType, bill
     name: catalogItem.name,
     description: catalogItem.description || catalogItem.name,
     unit: catalogItem.unit || 'Nr',
+    catalogUnit: catalogItem.unit || 'Nr',
     structureType,
     billSection: billSectionId,
     billSectionTitle,
@@ -5620,3 +5621,15 @@ export const createCustomBoqItem = ({ structureType = '', billSectionId = '', bi
   customPricing: null,
   isVO: false,
 });
+
+export const findCatalogItemByCode = (code) => {
+  if (!code) return null;
+  for (const struct of Object.values(BOQ_STRUCTURE_LIBRARY)) {
+    for (const section of struct.sections || []) {
+      for (const item of section.availableItems || []) {
+        if (item.code === code) return item;
+      }
+    }
+  }
+  return null;
+};

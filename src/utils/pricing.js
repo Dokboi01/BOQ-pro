@@ -11,6 +11,7 @@ import {
   normalizeMaterialBenchmarkRecord
 } from './materialBenchmarks';
 import { evaluateBoqFormulaRate, isFormulaDrivenItem } from './boqFormulas';
+import { findCatalogItemByCode } from '../data/boqCatalog';
 
 export const WORK_TYPE_PROFILES = {
   concrete: { shares: { materials: 0.58, labour: 0.18, plant: 0.14, transport: 0.10 }, waste: 2.5, siteAdjustment: 3, overheads: 12, profit: 10, roundingStep: 100 },
@@ -118,6 +119,108 @@ export const normalizeUnit = (unit = '') => {
   if (/^(ton|t|tonne)$/.test(value)) return 'ton';
   if (/^(nr|no|nos|pcs|pc|item|sum)$/.test(String(unit).trim().toLowerCase())) return 'nr';
   return 'm3';
+};
+
+export const getBaseUnitForWorkType = (workType = 'general') => {
+  const wt = String(workType).toLowerCase().trim();
+  if (wt === 'concrete') return 'm3';
+  if (wt === 'earthwork') return 'm3';
+  if (wt === 'masonry') return 'm2';
+  if (wt === 'plastering') return 'm2';
+  if (wt === 'tiling') return 'm2';
+  if (wt === 'painting') return 'm2';
+  if (wt === 'formwork') return 'm2';
+  if (wt === 'reinforcement') return 'kg';
+  if (wt === 'steelwork') return 'kg';
+  if (wt === 'pipework') return 'm';
+  return 'nr';
+};
+
+export const getUnitScaleFactor = (description = '', workType = 'general', fromUnit = 'nr', toUnit = 'nr') => {
+  const normFrom = String(fromUnit).toLowerCase().trim();
+  const normTo = String(toUnit).toLowerCase().trim();
+
+  if (normFrom === normTo) return 1;
+
+  const desc = String(description).toLowerCase();
+
+  // 1. Concrete and Earthwork (base unit m3)
+  if (normFrom === 'm3') {
+    if (normTo === 'm2') {
+      let thickness = 0.15; // default 150mm
+      const mmMatch = desc.match(/\b(\d+(?:\.\d+)?)\s*(?:mm|millimetre|millimeter)\b/i);
+      const cmMatch = desc.match(/\b(\d+(?:\.\d+)?)\s*(?:cm|centimetre|centimeter)\b/i);
+      const mMatch = desc.match(/\b(\d+(?:\.\d+)?)\s*(?:m|metre|meter)\b/i);
+      
+      if (mmMatch) {
+        thickness = parseFloat(mmMatch[1]) / 1000;
+      } else if (cmMatch) {
+        thickness = parseFloat(cmMatch[1]) / 100;
+      } else if (mMatch && !desc.includes('per m') && !desc.includes('/m')) {
+        const val = parseFloat(mMatch[1]);
+        if (val < 2) thickness = val;
+      }
+      return thickness;
+    }
+    
+    if (normTo === 'm') {
+      const dimsMatch = desc.match(/\b(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*(?:mm|millimetre|millimeter)\b/i);
+      if (dimsMatch) {
+        const w = parseFloat(dimsMatch[1]) / 1000;
+        const h = parseFloat(dimsMatch[2]) / 1000;
+        return w * h;
+      }
+      
+      if (workType === 'earthwork') {
+        return 0.36; 
+      }
+      return 0.05;
+    }
+  }
+
+  // 2. Masonry / Blockwork (base unit m2)
+  if (normFrom === 'm2') {
+    if (normTo === 'm3') {
+      let thickness = 0.225; // default 225mm block
+      if (desc.includes('150mm') || desc.includes('6-inch') || desc.includes('6 inch')) {
+        thickness = 0.15;
+      } else if (desc.includes('100mm') || desc.includes('4-inch') || desc.includes('4 inch')) {
+        thickness = 0.10;
+      } else if (desc.includes('225mm') || desc.includes('9-inch') || desc.includes('9 inch')) {
+        thickness = 0.225;
+      }
+      return 1 / thickness;
+    }
+    
+    if (normTo === 'm') {
+      return 0.3;
+    }
+  }
+
+  // 3. Reinforcement / Steelwork (base unit kg)
+  if (normFrom === 'kg') {
+    if (normTo === 'ton' || normTo === 'tonne' || normTo === 't') {
+      return 1000; // 1 ton = 1000 kg
+    }
+  }
+  if (normFrom === 'ton' || normFrom === 'tonne') {
+    if (normTo === 'kg') {
+      return 0.001;
+    }
+  }
+
+  // 4. Monthly Preliminaries / Hire
+  if (normTo === 'month' || normTo === 'monthly') {
+    if (normFrom === 'day' || normFrom === 'd') {
+      return 30;
+    }
+    if (normFrom === 'week' || normFrom === 'wk') {
+      return 4.33; 
+    }
+    return 22; // default working days/month scale
+  }
+
+  return 1;
 };
 
 export const inferWorkType = (description = '') => {
@@ -229,23 +332,49 @@ export const getSuggestedOutput = ({ category, rowName, workType, unit }) => {
 
 export const normalizeBreakdownForItem = (breakdown, item = {}) => {
   const unit = normalizeUnit(item?.unit);
-  const workType = inferWorkType(item?.description);
+  const workType = inferWorkType(item?.description || item?.name);
   const defaults = getWorkTypeProfile(workType);
   const safe = cloneBreakdown(breakdown) || {};
   const laborRows = safe.labor || safe.labour || [];
 
+  let fromUnit = item?.catalogUnit;
+  if (!fromUnit && item?.code) {
+    const catalogItem = findCatalogItemByCode(item.code);
+    if (catalogItem) {
+      fromUnit = catalogItem.unit;
+    }
+  }
+  if (!fromUnit) {
+    fromUnit = getBaseUnitForWorkType(workType);
+  }
+
+  const scaleFactor = getUnitScaleFactor(item?.description || item?.name, workType, fromUnit, unit);
+
   return {
     ...safe,
-    materials: (safe.materials || []).map((row) => ({ ...row, waste: row.waste ?? defaults.waste })),
-    labor: laborRows.map((row) => ({
+    materials: (safe.materials || []).map((row) => ({
       ...row,
-      output: row.output ?? getSuggestedOutput({ category: 'labor', rowName: row.name || '', workType, unit })
+      qty: clampNumber(row.qty) * scaleFactor,
+      waste: row.waste ?? defaults.waste
     })),
-    plant: (safe.plant || []).map((row) => ({
+    labor: laborRows.map((row) => {
+      const baseOutput = row.output ?? getSuggestedOutput({ category: 'labor', rowName: row.name || '', workType, unit: fromUnit });
+      return {
+        ...row,
+        output: Math.max(baseOutput / scaleFactor, 0.001)
+      };
+    }),
+    plant: (safe.plant || []).map((row) => {
+      const baseOutput = row.output ?? getSuggestedOutput({ category: 'plant', rowName: row.name || '', workType, unit: fromUnit });
+      return {
+        ...row,
+        output: Math.max(baseOutput / scaleFactor, 0.001)
+      };
+    }),
+    transport: (safe.transport || []).map((row) => ({
       ...row,
-      output: row.output ?? getSuggestedOutput({ category: 'plant', rowName: row.name || '', workType, unit })
+      qty: clampNumber(row.qty) * scaleFactor
     })),
-    transport: safe.transport || [],
     overheads: safe.overheads ?? defaults.overheads,
     profit: safe.profit ?? defaults.profit
   };
@@ -739,11 +868,26 @@ export const getEffectiveBenchmarkRate = (item, region = 'Lagos') => {
     benchmark: item?.benchmark,
     regionRates: item?.benchmarkRegionalRates || {}
   }, region);
-  if (exactRegionalRate > 0) return exactRegionalRate;
+
+  const workType = inferWorkType(item?.description || item?.name);
+  let fromUnit = item?.catalogUnit;
+  if (!fromUnit && item?.code) {
+    const catalogItem = findCatalogItemByCode(item.code);
+    if (catalogItem) {
+      fromUnit = catalogItem.unit;
+    }
+  }
+  if (!fromUnit) {
+    fromUnit = getBaseUnitForWorkType(workType);
+  }
+  const unit = normalizeUnit(item?.unit);
+  const scaleFactor = getUnitScaleFactor(item?.description || item?.name, workType, fromUnit, unit);
+
+  if (exactRegionalRate > 0) return exactRegionalRate * scaleFactor;
 
   const benchmark = clampNumber(item?.benchmark);
   if (!benchmark) return 0;
-  return benchmark * getBenchmarkRegionalFactor(item, region) * getBenchmarkCalibrationFactor(item);
+  return benchmark * getBenchmarkRegionalFactor(item, region) * getBenchmarkCalibrationFactor(item) * scaleFactor;
 };
 
 /**
@@ -774,7 +918,9 @@ export const getItemUnitRate = (item, region = 'Lagos') => {
     const formulaRate = evaluateBoqFormulaRate(item);
     if (formulaRate != null && formulaRate > 0) return clampNumber(formulaRate);
     // Final fallback: benchmark rate so the row isn't empty
-    return clampNumber(item?.benchmarkRate ?? item?.benchmark ?? item?.unitRate ?? item?.rate);
+    const fallbackBenchmark = getEffectiveBenchmarkRate(item, region);
+    if (fallbackBenchmark > 0) return fallbackBenchmark;
+    return clampNumber(item?.unitRate ?? item?.rate);
   }
 
   // manual — prefer explicit manualRate field, fall back to legacy rate fields
@@ -821,6 +967,21 @@ export const buildAutoRateResult = (item, { structureType, region = 'Lagos', mat
   const marketAligned = applyMarketRatesToBreakdown(sourceBreakdown, materialIndex);
   const regionalized = applyRegionCostProfileToBreakdown(marketAligned, region, item);
   const summary = calculateBreakdownSummary(regionalized);
+
+  const unit = normalizeUnit(item?.unit);
+  const workType = inferWorkType(item?.description || item?.name);
+  let fromUnit = item?.catalogUnit;
+  if (!fromUnit && item?.code) {
+    const catalogItem = findCatalogItemByCode(item.code);
+    if (catalogItem) {
+      fromUnit = catalogItem.unit;
+    }
+  }
+  if (!fromUnit) {
+    fromUnit = getBaseUnitForWorkType(workType);
+  }
+  const scaleFactor = getUnitScaleFactor(item?.description || item?.name, workType, fromUnit, unit);
+
   const supportedRegions = Array.from(new Set([
     'Lagos',
     region,
@@ -833,19 +994,19 @@ export const buildAutoRateResult = (item, { structureType, region = 'Lagos', mat
     );
 
     if (regionalSummary.unitRate > 0) {
-      acc[regionName] = regionalSummary.unitRate;
+      acc[regionName] = regionalSummary.unitRate / scaleFactor;
     }
 
     return acc;
   }, {});
 
   const benchmark = benchmarkRegionalRates.Lagos
-    || summary.unitRate
+    || (summary.unitRate / scaleFactor)
     || clampNumber(item?.benchmark);
 
   return {
     benchmark,
-    rate: benchmarkRegionalRates[region] || summary.unitRate,
+    rate: benchmarkRegionalRates[region] !== undefined ? (benchmarkRegionalRates[region] * scaleFactor) : summary.unitRate,
     breakdown: regionalized,
     summary,
     matchSource,

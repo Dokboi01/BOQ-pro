@@ -7,6 +7,7 @@ import {
   cloneCatalogItemToProjectItem,
   createCustomBoqItem,
   getStructureSectionCatalog,
+  findCatalogItemByCode,
 } from '../data/boqCatalog';
 import {
   DEFAULT_NIGERIA_LOCATION,
@@ -33,6 +34,10 @@ import {
   isBenchmarkOutlier,
   repriceSectionsForRegion,
   resolveItemRateSource,
+  getUnitScaleFactor,
+  inferWorkType,
+  getBaseUnitForWorkType,
+  normalizeUnit,
 } from '../utils/pricing';
 import {
   startPresence,
@@ -712,7 +717,21 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
       benchmarkEvidence = fallbackAutoRate?.benchmarkEvidence || benchmarkEvidence;
 
       if (!derivedBenchmark && Number(item.rate) > 0) {
-        derivedBenchmark = Number(item.rate) / Math.max(regionalFactor, 0.001);
+        const workType = item.customPricing?.workType || inferWorkType(item.description || item.name);
+        let fromUnit = item.catalogUnit;
+        if (!fromUnit && item.code) {
+          const catalogItem = findCatalogItemByCode(item.code);
+          if (catalogItem) {
+            fromUnit = catalogItem.unit;
+          }
+        }
+        if (!fromUnit) {
+          fromUnit = getBaseUnitForWorkType(workType);
+        }
+        const unit = normalizeUnit(item.unit);
+        const scaleFactor = getUnitScaleFactor(item.description || item.name, workType, fromUnit, unit);
+
+        derivedBenchmark = (Number(item.rate) / Math.max(regionalFactor, 0.001)) / scaleFactor;
       }
     }
 
