@@ -194,6 +194,7 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
   const [isBuildingRate, setIsBuildingRate] = useState(false);
   const [aiBuildUpError, setAiBuildUpError] = useState(null);
   const [aiSpecifications, setAiSpecifications] = useState(null);
+  const [customConstraints, setCustomConstraints] = useState('');
 
   React.useEffect(() => {
     const fetchInsight = async () => {
@@ -209,7 +210,7 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
     setIsBuildingRate(true);
     setAiBuildUpError(null);
     try {
-      const result = await generateAIRateBreakdown(item, { region });
+      const result = await generateAIRateBreakdown(item, { region, customConstraints });
       if (result && typeof result === 'object') {
         const id = () => Date.now() + Math.floor(Math.random() * 10000);
         
@@ -406,6 +407,16 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
                 <p className="ai-summary">{aiInsight?.summary}</p>
                 <div className="ai-recommendation">
                   <strong>Recommendation:</strong> {aiInsight?.recommendation}
+                </div>
+                <div className="ai-buildup-constraints">
+                  <input
+                    type="text"
+                    className="constraints-input"
+                    value={customConstraints}
+                    onChange={(e) => setCustomConstraints(e.target.value)}
+                    placeholder="Custom site constraints/instructions (e.g. use Dangote cement)..."
+                    disabled={isBuildingRate || isAnalyzing}
+                  />
                 </div>
                 <div className="ai-buildup-action-container">
                   <button
@@ -1055,7 +1066,23 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
         .advisor-loading { font-size: 0.75rem; color: #64748b; font-style: italic; }
         .ai-summary { font-size: 0.75rem; color: #1e293b; line-height: 1.5; margin: 0; font-weight: 500; }
         .ai-recommendation { font-size: 0.6875rem; color: #2563eb; background: rgba(37, 99, 235, 0.08); padding: 0.5rem 0.75rem; border-radius: 6px; font-weight: 600; border-left: 3px solid #2563eb; }
-        .ai-buildup-action-container { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem; }
+        .ai-buildup-constraints { margin-top: 0.5rem; width: 100%; }
+        .constraints-input {
+          width: 100%;
+          border: 1px solid #cbd5e1;
+          border-radius: 6px;
+          padding: 0.45rem 0.65rem;
+          font-size: 0.72rem;
+          background: white;
+          color: #0f172a;
+          outline: none;
+          transition: all 0.2s ease;
+        }
+        .constraints-input:focus {
+          border-color: var(--quantra-blue-500);
+          box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+        }
+        .ai-buildup-action-container { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; }
         .btn-ai-buildup {
           display: inline-flex;
           align-items: center;
@@ -1148,6 +1175,15 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
         }
         :root[data-theme='dark'] .ai-buildup-error {
           color: #fb7185;
+        }
+        :root[data-theme='dark'] .constraints-input {
+          background: var(--bg-card-muted);
+          border-color: var(--border-medium);
+          color: var(--text-primary);
+        }
+        :root[data-theme='dark'] .constraints-input:focus {
+          border-color: var(--quantra-blue-500);
+          box-shadow: 0 0 0 2px rgba(212, 160, 23, 0.15);
         }
         :root[data-theme='dark'] .ai-specs-card {
           background: linear-gradient(135deg, rgba(20, 15, 5, 0.95), rgba(15, 10, 2, 0.9));

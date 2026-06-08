@@ -353,6 +353,7 @@ const CustomPricingModal = ({ item, region, structureType, onClose, onSave, onOp
   const [pricing, setPricing] = useState(seeded.pricing);
   const [isBuildingRate, setIsBuildingRate] = useState(false);
   const [aiBuildUpError, setAiBuildUpError] = useState(null);
+  const [customConstraints, setCustomConstraints] = useState('');
   const modalRef = React.useRef(null);
 
   React.useEffect(() => {
@@ -363,7 +364,7 @@ const CustomPricingModal = ({ item, region, structureType, onClose, onSave, onOp
     setIsBuildingRate(true);
     setAiBuildUpError(null);
     try {
-      const result = await generateAIRateBreakdown(item, { region });
+      const result = await generateAIRateBreakdown(item, { region, customConstraints });
       if (result && typeof result === 'object') {
         const materialRows = result.materials || [];
         const materialBase = materialRows.reduce((sum, row) => sum + (Number(row.qty ?? 0) * Number(row.rate ?? 0)), 0);
@@ -806,6 +807,16 @@ const CustomPricingModal = ({ item, region, structureType, onClose, onSave, onOp
             <div className="summary-card">
               <span className="summary-eyebrow">Useful Actions</span>
               <div className="summary-actions">
+                <div className="ai-constraints-wrapper">
+                  <input
+                    type="text"
+                    className="constraints-input-sm"
+                    value={customConstraints}
+                    onChange={(e) => setCustomConstraints(e.target.value)}
+                    placeholder="Constraints (e.g. use Dangote cement)"
+                    disabled={isBuildingRate}
+                  />
+                </div>
                 <button
                   className="summary-action-btn btn-ai-buildup-action"
                   disabled={isBuildingRate}
@@ -1192,6 +1203,25 @@ const CustomPricingModal = ({ item, region, structureType, onClose, onSave, onOp
           border-top: 1px dashed #cbd5e1;
           font-weight: 800;
         }
+        .ai-constraints-wrapper {
+          width: 100%;
+        }
+        .constraints-input-sm {
+          width: 100%;
+          border: 1px solid #cbd5e1;
+          border-radius: 12px;
+          padding: 0.65rem 0.8rem;
+          font-size: 0.76rem;
+          background: #f8fafc;
+          color: #0f172a;
+          outline: none;
+          transition: all 0.2s ease;
+        }
+        .constraints-input-sm:focus {
+          border-color: #2563eb;
+          box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+          background: white;
+        }
         .summary-actions {
           display: flex;
           flex-direction: column;
@@ -1356,6 +1386,16 @@ const CustomPricingModal = ({ item, region, structureType, onClose, onSave, onOp
         }
         :root[data-theme='dark'] .ai-buildup-error-text {
           color: #fb7185;
+        }
+        :root[data-theme='dark'] .constraints-input-sm {
+          background: var(--bg-card-muted);
+          border-color: var(--border-medium);
+          color: var(--text-primary);
+        }
+        :root[data-theme='dark'] .constraints-input-sm:focus {
+          border-color: var(--quantra-blue-500);
+          box-shadow: 0 0 0 2px rgba(212, 160, 23, 0.15);
+          background: var(--bg-card);
         }
         @media (max-width: 960px) {
           .custom-pricing-content {
