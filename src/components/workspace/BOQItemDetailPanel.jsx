@@ -503,6 +503,7 @@ const BOQItemDetailPanel = ({
             --idp-accent-soft: var(--quantra-blue-100);
             --idp-r: var(--radius-md);
 
+            font-family: var(--font-main), 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             width: min(520px, 100vw); height: 100dvh; background: var(--idp-bg);
             display: flex; flex-direction: column;
             box-shadow: -16px 0 50px rgba(15,23,42,0.18);
@@ -511,6 +512,91 @@ const BOQItemDetailPanel = ({
           }
           @keyframes idpSI { from { transform: translateX(100%); } to { transform: translateX(0); } }
           .idp-panel-docked { width: 100%; height: 100%; min-height: 0; border-left: none; box-shadow: none; background: linear-gradient(180deg,#fcfdff,#f8fbff); animation: none; }
+
+          /* Metadata Grid & Rows */
+          .idp-meta-grid,
+          .idp-intel-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            margin-top: 0.35rem;
+          }
+          .idp-meta-row {
+            display: grid;
+            grid-template-columns: 140px 1fr;
+            gap: 0.85rem;
+            padding: 0.45rem 0;
+            border-bottom: 1px solid #f1f5f9;
+            align-items: flex-start;
+          }
+          .idp-meta-row:last-child {
+            border-bottom: none;
+          }
+          .idp-meta-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            line-height: 1.4;
+          }
+          .idp-meta-value {
+            font-size: 0.72rem;
+            font-weight: 550;
+            color: #1e293b;
+            line-height: 1.4;
+            word-break: break-word;
+          }
+          .idp-meta-mono {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.68rem;
+            color: #0f172a;
+            background: #f8fafc;
+            padding: 0.1rem 0.3rem;
+            border-radius: 4px;
+            font-weight: 600;
+          }
+
+          /* Intel Card (Benchmark details) */
+          .idp-intel-card {
+            background: #fafbff;
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+          }
+          .idp-intel-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-light);
+            padding-bottom: 0.6rem;
+            margin-bottom: 0.6rem;
+          }
+          .idp-intel-row strong {
+            font-size: 0.76rem;
+            font-weight: 800;
+            color: var(--idp-text);
+          }
+          .idp-conf {
+            padding: 0.15rem 0.4rem;
+            border-radius: 5px;
+            background: var(--cf);
+            color: white;
+            font-size: 0.58rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+          }
+          .idp-micro-label {
+            display: block;
+            font-size: 0.55rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #94a3b8;
+            letter-spacing: 0.08em;
+            margin-bottom: 2px;
+          }
 
           /* Header */
           .idp-header {
