@@ -1289,6 +1289,10 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
           background: rgba(120, 53, 15, 0.25);
           border-color: rgba(251, 191, 36, 0.35);
         }
+        :root[data-theme='dark'] .output-hint {
+          background: rgba(15, 23, 42, 0.5);
+          color: var(--text-secondary);
+        }
         :root[data-theme='dark'] .btn-icon-small {
           background: var(--bg-card-alt);
           color: var(--text-secondary);

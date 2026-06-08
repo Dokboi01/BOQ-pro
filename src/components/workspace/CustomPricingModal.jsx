@@ -1397,6 +1397,9 @@ const CustomPricingModal = ({ item, region, structureType, onClose, onSave, onOp
           box-shadow: 0 0 0 2px rgba(212, 160, 23, 0.15);
           background: var(--bg-card);
         }
+        :root[data-theme='dark'] .detail-list-grid {
+          border-top: 1px dashed var(--border-medium);
+        }
         @media (max-width: 960px) {
           .custom-pricing-content {
             grid-template-columns: 1fr;
