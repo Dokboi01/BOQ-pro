@@ -598,6 +598,96 @@ const BOQItemDetailPanel = ({
             margin-bottom: 2px;
           }
 
+          /* Formula Logic Styling */
+          .idp-logic-card {
+            background: #fafbff;
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+          }
+          .idp-logic-expr {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+          }
+          .idp-logic-expr code {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            padding: 0.45rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            color: #0f172a;
+            word-break: break-all;
+            display: block;
+            line-height: 1.4;
+            font-weight: 600;
+          }
+          .idp-vars-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+          }
+          .idp-vars-chips {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 0.4rem;
+          }
+          .idp-var-chip {
+            background: #ffffff;
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            padding: 0.35rem 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.1rem;
+            box-shadow: 0 1px 2px rgba(15,23,42,0.02);
+          }
+          .idp-var-name {
+            font-size: 0.55rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          .idp-var-chip strong {
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: var(--idp-text);
+          }
+          .idp-var-chip strong small {
+            font-size: 0.52rem;
+            color: #94a3b8;
+            font-weight: 600;
+            margin-left: 1px;
+          }
+          .idp-logic-result {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            border-top: 1px dashed var(--border-light);
+            padding-top: 0.6rem;
+          }
+          .idp-logic-result p {
+            margin: 0;
+            font-size: 0.72rem;
+            color: #334155;
+            line-height: 1.45;
+            background: #ffffff;
+            border: 1px solid #f1f5f9;
+            padding: 0.45rem 0.6rem;
+            border-radius: 6px;
+            font-weight: 500;
+            word-break: break-word;
+          }
+
           /* Header */
           .idp-header {
             padding: 0.85rem 1rem 0.7rem; background: linear-gradient(180deg,#f8fbff,#fff);
