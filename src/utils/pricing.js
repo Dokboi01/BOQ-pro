@@ -864,13 +864,6 @@ export const getBenchmarkCalibrationFactor = (item = {}) => {
 };
 
 export const getEffectiveBenchmarkRate = (item, region = 'Lagos') => {
-  if (isFormulaDrivenItem(item)) {
-    const formulaRate = evaluateBoqFormulaRate(item);
-    if (formulaRate != null && formulaRate > 0) {
-      return formulaRate;
-    }
-  }
-
   const exactRegionalRate = getExactMaterialRegionalBenchmark({
     benchmark: item?.benchmark,
     regionRates: item?.benchmarkRegionalRates || {}
@@ -889,6 +882,15 @@ export const getEffectiveBenchmarkRate = (item, region = 'Lagos') => {
   }
   const unit = normalizeUnit(item?.unit);
   const scaleFactor = getUnitScaleFactor(item?.description || item?.name, workType, fromUnit, unit);
+
+  if (isFormulaDrivenItem(item)) {
+    const formulaRate = evaluateBoqFormulaRate(item);
+    if (formulaRate != null && formulaRate > 0) {
+      const regionalFactor = getBenchmarkRegionalFactor(item, region);
+      const calibrationFactor = getBenchmarkCalibrationFactor(item);
+      return formulaRate * regionalFactor * calibrationFactor * scaleFactor;
+    }
+  }
 
   if (exactRegionalRate > 0) return exactRegionalRate * scaleFactor;
 
