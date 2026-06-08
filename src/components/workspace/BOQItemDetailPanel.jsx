@@ -896,6 +896,23 @@ const BOQItemDetailPanel = ({
           .idp-desc-ta, .idp-notes-ta { width: 100%; box-sizing: border-box; border: 1px solid var(--border-medium); border-radius: 8px; padding: 0.52rem 0.75rem; font-size: 0.74rem; font-weight: 520; font-family: inherit; line-height: 1.5; color: #1e293b; outline: none; resize: vertical; min-height: 52px; background: #fafbff; transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-premium), background var(--duration-fast) var(--ease-standard); }
           .idp-desc-ta:focus, .idp-notes-ta:focus { border-color: var(--idp-accent); box-shadow: 0 0 0 2px var(--idp-accent-soft); background: white; }
 
+          /* Description Section Styling */
+          .idp-desc-edit {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            margin-top: 0.5rem;
+          }
+          .idp-desc-ta {
+            min-height: 110px !important;
+          }
+          .idp-desc-hint {
+            font-size: 0.6rem;
+            color: #94a3b8;
+            font-weight: 600;
+            font-style: italic;
+          }
+
           /* Footer */
           .idp-footer { padding: 0.5rem 1rem; border-top: 1px solid var(--idp-border); display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.96); flex-shrink: 0; }
           .idp-done-btn {
