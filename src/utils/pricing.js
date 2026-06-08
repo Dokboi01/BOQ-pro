@@ -864,6 +864,13 @@ export const getBenchmarkCalibrationFactor = (item = {}) => {
 };
 
 export const getEffectiveBenchmarkRate = (item, region = 'Lagos') => {
+  if (isFormulaDrivenItem(item)) {
+    const formulaRate = evaluateBoqFormulaRate(item);
+    if (formulaRate != null && formulaRate > 0) {
+      return formulaRate;
+    }
+  }
+
   const exactRegionalRate = getExactMaterialRegionalBenchmark({
     benchmark: item?.benchmark,
     regionRates: item?.benchmarkRegionalRates || {}
