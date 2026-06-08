@@ -475,6 +475,7 @@ export async function generateRateBreakdown({ item = {}, context = {}, preferred
   2. Labor and plant unit costs are crew or plant daily cost divided by daily output.
      - For labor and plant, 'qty' represents the crew size or machine count (e.g. 1 mason, 2 general laborers), and 'output' represents the daily output of that crew/machine in the item's unit (e.g. 10 m2 of blockwork per day).
   3. The resulting computed rate must represent a highly accurate, realistic market rate for the region (\${region}). Do not make the rates excessively high or generic; adapt to current real-world competitive subcontractor market conditions.
+  4. Extract key design specifications (like thickness, mix ratio, block size, concrete strength grade, material type, and waste factor) from the description. Add these to a 'specifications' map in the JSON output. If a parameter is not applicable or not mentioned in the description, set its value to null.
   
   Available baseline materials and their current local prices (use regional prices if available):
   \${JSON.stringify(materialsList, null, 2)}
@@ -521,7 +522,15 @@ export async function generateRateBreakdown({ item = {}, context = {}, preferred
       { "name": "Haulage", "qty": 1, "unit": "Trip", "rate": 5000 }
     ],
     "overheads": 15,
-    "profit": 10
+    "profit": 10,
+    "specifications": {
+      "mixRatio": "1:2:4",
+      "thickness": "150mm",
+      "strength": "C25",
+      "size": "9-inch",
+      "materialType": "Granite / Hollow Block / etc",
+      "wasteFactor": "5%"
+    }
   }`;
 
   const userPrompt = `Analyze the item description and unit. Generate a first-principles rate breakdown:

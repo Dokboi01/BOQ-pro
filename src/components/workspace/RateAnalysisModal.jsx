@@ -193,6 +193,7 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
   const [collapsedSteps, setCollapsedSteps] = useState({});
   const [isBuildingRate, setIsBuildingRate] = useState(false);
   const [aiBuildUpError, setAiBuildUpError] = useState(null);
+  const [aiSpecifications, setAiSpecifications] = useState(null);
 
   React.useEffect(() => {
     const fetchInsight = async () => {
@@ -251,6 +252,7 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
           analysisMode: 'detailed-analysis',
           matchSource: 'ai-generated'
         };
+        setAiSpecifications(result.specifications || null);
         setBreakdown(normalized);
       } else {
         throw new Error('Invalid breakdown format received from AI.');
@@ -421,6 +423,53 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
               </div>
             )}
           </div>
+
+          {aiSpecifications && (
+            <div className="ai-specs-card enterprise-card">
+              <div className="specs-header">
+                <ShieldCheck size={14} className="text-gold" />
+                <span>AI Structural Specifications Inferred</span>
+              </div>
+              <div className="specs-grid">
+                {aiSpecifications.mixRatio && (
+                  <div className="spec-item">
+                    <span className="spec-label">Mix Ratio</span>
+                    <span className="spec-val">{aiSpecifications.mixRatio}</span>
+                  </div>
+                )}
+                {aiSpecifications.thickness && (
+                  <div className="spec-item">
+                    <span className="spec-label">Thickness</span>
+                    <span className="spec-val">{aiSpecifications.thickness}</span>
+                  </div>
+                )}
+                {aiSpecifications.strength && (
+                  <div className="spec-item">
+                    <span className="spec-label">Strength</span>
+                    <span className="spec-val">{aiSpecifications.strength}</span>
+                  </div>
+                )}
+                {aiSpecifications.size && (
+                  <div className="spec-item">
+                    <span className="spec-label">Size</span>
+                    <span className="spec-val">{aiSpecifications.size}</span>
+                  </div>
+                )}
+                {aiSpecifications.materialType && (
+                  <div className="spec-item">
+                    <span className="spec-label">Material Type</span>
+                    <span className="spec-val">{aiSpecifications.materialType}</span>
+                  </div>
+                )}
+                {aiSpecifications.wasteFactor && (
+                  <div className="spec-item">
+                    <span className="spec-label">Waste Allowance</span>
+                    <span className="spec-val">{aiSpecifications.wasteFactor}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="formula-banner">
             <div className="formula-label"><TrendingUp size={14} /> QS Rate Formula</div>
@@ -1038,6 +1087,54 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
           color: #dc2626;
           font-weight: 600;
         }
+        .ai-specs-card {
+          background: linear-gradient(135deg, #fefbf3, #fdf6e2);
+          border: 1px solid #fce8b2;
+          padding: 0.9rem 1.1rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.65rem;
+          border-radius: 10px;
+        }
+        .specs-header {
+          display: flex;
+          align-items: center;
+          gap: 0.45rem;
+          font-size: 0.68rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: #854d0e;
+        }
+        .specs-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+          gap: 0.6rem 0.8rem;
+        }
+        .spec-item {
+          display: flex;
+          flex-direction: column;
+          gap: 0.2rem;
+          padding: 0.4rem 0.6rem;
+          background: rgba(255, 255, 255, 0.7);
+          border: 1px solid #fef08a;
+          border-radius: 8px;
+        }
+        .spec-label {
+          font-size: 0.6rem;
+          text-transform: uppercase;
+          font-weight: 800;
+          color: #a16207;
+          letter-spacing: 0.02em;
+        }
+        .spec-val {
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: #451a03;
+        }
+        .text-gold {
+          color: #d4a017;
+        }
         :root[data-theme='dark'] .btn-ai-buildup {
           color: #0c0a09; /* Deep black text for gold contrast */
           box-shadow: 0 4px 12px rgba(212, 160, 23, 0.2);
@@ -1051,6 +1148,23 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
         }
         :root[data-theme='dark'] .ai-buildup-error {
           color: #fb7185;
+        }
+        :root[data-theme='dark'] .ai-specs-card {
+          background: linear-gradient(135deg, rgba(20, 15, 5, 0.95), rgba(15, 10, 2, 0.9));
+          border-color: rgba(212, 160, 23, 0.2);
+        }
+        :root[data-theme='dark'] .specs-header {
+          color: var(--quantra-blue-300);
+        }
+        :root[data-theme='dark'] .spec-item {
+          background: rgba(9, 17, 31, 0.82);
+          border-color: var(--border-light);
+        }
+        :root[data-theme='dark'] .spec-label {
+          color: var(--text-muted);
+        }
+        :root[data-theme='dark'] .spec-val {
+          color: var(--text-primary);
         }
         .text-primary { color: #2563eb; }
 
