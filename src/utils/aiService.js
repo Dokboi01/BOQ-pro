@@ -206,3 +206,21 @@ export const getRegionalModifier = (region) => {
 
   return (anchorModifiers[benchmarkRegion] || 1.0) * stateFactor;
 };
+
+export const generateAIRateBreakdown = async (item, context = {}) => {
+  const preferences = await getAiPreferences();
+
+  try {
+    const data = await postAiRequest({
+      action: 'rate-breakdown',
+      item,
+      context,
+      ...preferences,
+    });
+
+    return data.result;
+  } catch (err) {
+    console.error('[AI] Rate breakdown failed:', err.message);
+    throw err;
+  }
+};

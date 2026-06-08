@@ -16,7 +16,7 @@ import {
   ChevronDown,
   ChevronRight
 } from 'lucide-react';
-import { generateAIInsight } from '../../utils/aiService';
+import { generateAIInsight, generateAIRateBreakdown } from '../../utils/aiService';
 import { getBreakdownForItem } from '../../data/rateBreakdowns';
 import { applyRegionCostProfileToBreakdown } from '../../utils/pricing';
 import {
@@ -191,6 +191,8 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
   const [aiInsight, setAiInsight] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [collapsedSteps, setCollapsedSteps] = useState({});
+  const [isBuildingRate, setIsBuildingRate] = useState(false);
+  const [aiBuildUpError, setAiBuildUpError] = useState(null);
 
   React.useEffect(() => {
     const fetchInsight = async () => {
@@ -201,6 +203,65 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
     };
     fetchInsight();
   }, [item]);
+
+  const handleAIBuildUp = async () => {
+    setIsBuildingRate(true);
+    setAiBuildUpError(null);
+    try {
+      const result = await generateAIRateBreakdown(item, { region });
+      if (result && typeof result === 'object') {
+        const id = () => Date.now() + Math.floor(Math.random() * 10000);
+        
+        // Normalize the breakdown values from the AI response
+        const normalized = {
+          ...breakdown,
+          materials: (result.materials || []).map((m) => ({
+            id: id(),
+            name: m.name,
+            qty: Number(m.qty ?? m.quantity ?? 0),
+            unit: m.unit || 'Unit',
+            rate: Number(m.rate ?? m.price ?? 0),
+            waste: Number(m.waste ?? 0),
+          })),
+          labor: (result.labor || []).map((l) => ({
+            id: id(),
+            name: l.name,
+            qty: Number(l.qty ?? l.quantity ?? 0),
+            unit: l.unit || 'Day',
+            rate: Number(l.rate ?? l.price ?? 0),
+            output: Number(l.output ?? 1),
+          })),
+          plant: (result.plant || []).map((p) => ({
+            id: id(),
+            name: p.name,
+            qty: Number(p.qty ?? p.quantity ?? 0),
+            unit: p.unit || 'Day',
+            rate: Number(p.rate ?? p.price ?? 0),
+            output: Number(p.output ?? 1),
+          })),
+          transport: (result.transport || []).map((t) => ({
+            id: id(),
+            name: t.name,
+            qty: Number(t.qty ?? t.quantity ?? 0),
+            unit: t.unit || 'Trip',
+            rate: Number(t.rate ?? t.price ?? 0),
+          })),
+          overheads: Number(result.overheads ?? result.overhead ?? 15),
+          profit: Number(result.profit ?? 10),
+          analysisMode: 'detailed-analysis',
+          matchSource: 'ai-generated'
+        };
+        setBreakdown(normalized);
+      } else {
+        throw new Error('Invalid breakdown format received from AI.');
+      }
+    } catch (err) {
+      console.error('[RateAnalysis] AI build-up failed:', err);
+      setAiBuildUpError(err.message || 'AI Build-Up failed. Please try again.');
+    } finally {
+      setIsBuildingRate(false);
+    }
+  };
 
   const toggleStep = (step) => {
     setCollapsedSteps((prev) => ({ ...prev, [step]: !prev[step] }));
@@ -343,6 +404,19 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
                 <p className="ai-summary">{aiInsight?.summary}</p>
                 <div className="ai-recommendation">
                   <strong>Recommendation:</strong> {aiInsight?.recommendation}
+                </div>
+                <div className="ai-buildup-action-container">
+                  <button
+                    className="btn-ai-buildup"
+                    disabled={isBuildingRate || isAnalyzing}
+                    onClick={handleAIBuildUp}
+                  >
+                    <Zap size={12} />
+                    {isBuildingRate ? 'Generating AI First-Principles Build-Up...' : 'Generate AI First-Principles Build-Up'}
+                  </button>
+                  {aiBuildUpError && (
+                    <span className="ai-buildup-error">{aiBuildUpError}</span>
+                  )}
                 </div>
               </div>
             )}
@@ -932,6 +1006,52 @@ const RateAnalysisModal = ({ item, structureType, region = 'Lagos', onClose, onS
         .advisor-loading { font-size: 0.75rem; color: #64748b; font-style: italic; }
         .ai-summary { font-size: 0.75rem; color: #1e293b; line-height: 1.5; margin: 0; font-weight: 500; }
         .ai-recommendation { font-size: 0.6875rem; color: #2563eb; background: rgba(37, 99, 235, 0.08); padding: 0.5rem 0.75rem; border-radius: 6px; font-weight: 600; border-left: 3px solid #2563eb; }
+        .ai-buildup-action-container { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem; }
+        .btn-ai-buildup {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          background: linear-gradient(135deg, var(--quantra-blue-600) 0%, var(--quantra-blue-500) 100%);
+          color: white;
+          border: none;
+          padding: 0.6rem 1rem;
+          border-radius: 8px;
+          font-weight: 700;
+          font-size: 0.75rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+        }
+        .btn-ai-buildup:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
+        }
+        .btn-ai-buildup:disabled {
+          background: #cbd5e1;
+          color: #94a3b8;
+          cursor: not-allowed;
+          box-shadow: none;
+        }
+        .ai-buildup-error {
+          font-size: 0.6875rem;
+          color: #dc2626;
+          font-weight: 600;
+        }
+        :root[data-theme='dark'] .btn-ai-buildup {
+          color: #0c0a09; /* Deep black text for gold contrast */
+          box-shadow: 0 4px 12px rgba(212, 160, 23, 0.2);
+        }
+        :root[data-theme='dark'] .btn-ai-buildup:disabled {
+          background: var(--bg-card-muted);
+          color: var(--text-muted);
+        }
+        :root[data-theme='dark'] .btn-ai-buildup:hover:not(:disabled) {
+          box-shadow: 0 6px 16px rgba(212, 160, 23, 0.4);
+        }
+        :root[data-theme='dark'] .ai-buildup-error {
+          color: #fb7185;
+        }
         .text-primary { color: #2563eb; }
 
         :root[data-theme='dark'] .analysis-overlay {

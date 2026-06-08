@@ -5,6 +5,7 @@ import {
   analyzeStructuralFile,
   generateProjectSummary,
   generateRateInsight,
+  generateRateBreakdown,
 } from './_lib/ai-provider.js';
 
 export default async function handler(req, res) {
@@ -28,6 +29,9 @@ export default async function handler(req, res) {
     switch (action) {
       case 'rate-insight':
         result = await generateRateInsight({ item: body.item, context: body.context, preferredProvider, model, uid, ip });
+        break;
+      case 'rate-breakdown':
+        result = await generateRateBreakdown({ item: body.item, context: body.context, preferredProvider, model, uid, ip });
         break;
       case 'project-summary':
         result = await generateProjectSummary({ projectData: body.projectData, preferredProvider, model, uid, ip });
