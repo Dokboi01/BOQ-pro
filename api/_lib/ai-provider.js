@@ -426,6 +426,78 @@ const FALLBACK_MATERIALS = [
   { name: 'Laterite (Filling)', price: 12000, unit: 'm³' },
 ];
 
+const ANCHOR_REGION_COST_PROFILES = {
+  Lagos: { materials: 1, labour: 1, plant: 1, transport: 1, site: 1 },
+  Abuja: { materials: 1.07, labour: 1.15, plant: 1.1, transport: 1.14, site: 1.05 },
+  'Port Harcourt': { materials: 1.05, labour: 1.11, plant: 1.08, transport: 1.15, site: 1.06 },
+  Ibadan: { materials: 0.93, labour: 0.91, plant: 0.94, transport: 0.91, site: 0.96 },
+  Kano: { materials: 0.95, labour: 0.93, plant: 0.96, transport: 0.95, site: 0.98 },
+  Enugu: { materials: 1.02, labour: 1.01, plant: 1.0, transport: 1.03, site: 1.0 },
+};
+
+const STATE_MARKETS = [
+  { name: 'Abia', code: 'AB', zone: 'South East', benchmarkRegion: 'Enugu', factor: 1.01, aliases: ['Umuahia', 'Aba'] },
+  { name: 'Adamawa', code: 'AD', zone: 'North East', benchmarkRegion: 'Abuja', factor: 1.03, aliases: ['Yola'] },
+  { name: 'Akwa Ibom', code: 'AK', zone: 'South South', benchmarkRegion: 'Port Harcourt', factor: 1.01, aliases: ['Uyo'] },
+  { name: 'Anambra', code: 'AN', zone: 'South East', benchmarkRegion: 'Enugu', factor: 1.04, aliases: ['Awka', 'Onitsha', 'Nnewi'] },
+  { name: 'Bauchi', code: 'BA', zone: 'North East', benchmarkRegion: 'Kano', factor: 1.01, aliases: ['Bauchi City'] },
+  { name: 'Bayelsa', code: 'BY', zone: 'South South', benchmarkRegion: 'Port Harcourt', factor: 1.04, aliases: ['Yenagoa'] },
+  { name: 'Benue', code: 'BE', zone: 'North Central', benchmarkRegion: 'Abuja', factor: 0.96, aliases: ['Makurdi'] },
+  { name: 'Borno', code: 'BO', zone: 'North East', benchmarkRegion: 'Kano', factor: 1.05, aliases: ['Maiduguri'] },
+  { name: 'Cross River', code: 'CR', zone: 'South South', benchmarkRegion: 'Port Harcourt', factor: 0.99, aliases: ['Calabar'] },
+  { name: 'Delta', code: 'DE', zone: 'South South', benchmarkRegion: 'Port Harcourt', factor: 1.0, aliases: ['Asaba', 'Warri'] },
+  { name: 'Ebonyi', code: 'EB', zone: 'South East', benchmarkRegion: 'Enugu', factor: 0.97, aliases: ['Abakaliki'] },
+  { name: 'Edo', code: 'ED', zone: 'South South', benchmarkRegion: 'Port Harcourt', factor: 0.98, aliases: ['Benin City'] },
+  { name: 'Ekiti', code: 'EK', zone: 'South West', benchmarkRegion: 'Lagos', factor: 0.95, aliases: ['Ado Ekiti'] },
+  { name: 'Enugu', code: 'EN', zone: 'South East', benchmarkRegion: 'Enugu', factor: 1.0, aliases: ['Coal City'] },
+  { name: 'FCT Abuja', code: 'FC', zone: 'North Central', benchmarkRegion: 'Abuja', factor: 1.0, aliases: ['Abuja', 'FCT', 'Federal Capital Territory'] },
+  { name: 'Gombe', code: 'GO', zone: 'North East', benchmarkRegion: 'Kano', factor: 1.0, aliases: ['Gombe City'] },
+  { name: 'Imo', code: 'IM', zone: 'South East', benchmarkRegion: 'Enugu', factor: 1.02, aliases: ['Owerri'] },
+  { name: 'Jigawa', code: 'JI', zone: 'North West', benchmarkRegion: 'Kano', factor: 0.97, aliases: ['Dutse'] },
+  { name: 'Kaduna', code: 'KD', zone: 'North West', benchmarkRegion: 'Kano', factor: 1.02, aliases: ['Kaduna City', 'Zaria'] },
+  { name: 'Kano', code: 'KN', zone: 'North West', benchmarkRegion: 'Kano', factor: 1.0, aliases: ['Kano City'] },
+  { name: 'Katsina', code: 'KT', zone: 'North West', benchmarkRegion: 'Kano', factor: 0.98, aliases: ['Katsina City'] },
+  { name: 'Kebbi', code: 'KE', zone: 'North West', benchmarkRegion: 'Kano', factor: 0.99, aliases: ['Birnin Kebbi'] },
+  { name: 'Kogi', code: 'KO', zone: 'North Central', benchmarkRegion: 'Abuja', factor: 0.96, aliases: ['Lokoja'] },
+  { name: 'Kwara', code: 'KW', zone: 'North Central', benchmarkRegion: 'Abuja', factor: 0.94, aliases: ['Ilorin'] },
+  { name: 'Lagos', code: 'LA', zone: 'South West', benchmarkRegion: 'Lagos', factor: 1.0, aliases: ['Ikeja', 'Lekki'] },
+  { name: 'Nasarawa', code: 'NA', zone: 'North Central', benchmarkRegion: 'Abuja', factor: 0.97, aliases: ['Lafia'] },
+  { name: 'Niger', code: 'NI', zone: 'North Central', benchmarkRegion: 'Abuja', factor: 0.95, aliases: ['Minna'] },
+  { name: 'Ogun', code: 'OG', zone: 'South West', benchmarkRegion: 'Lagos', factor: 0.97, aliases: ['Abeokuta', 'Sango Ota'] },
+  { name: 'Ondo', code: 'ON', zone: 'South West', benchmarkRegion: 'Lagos', factor: 0.96, aliases: ['Akure'] },
+  { name: 'Osun', code: 'OS', zone: 'South West', benchmarkRegion: 'Lagos', factor: 0.95, aliases: ['Osogbo', 'Ile Ife'] },
+  { name: 'Oyo', code: 'OY', zone: 'South West', benchmarkRegion: 'Ibadan', factor: 1.0, aliases: ['Ibadan', 'Ogbomoso'] },
+  { name: 'Plateau', code: 'PL', zone: 'North Central', benchmarkRegion: 'Abuja', factor: 1.01, aliases: ['Jos'] },
+  { name: 'Rivers', code: 'RI', zone: 'South South', benchmarkRegion: 'Port Harcourt', factor: 1.0, aliases: ['Port Harcourt', 'Port_Harcourt', 'PH'] },
+  { name: 'Sokoto', code: 'SO', zone: 'North West', benchmarkRegion: 'Kano', factor: 1.0, aliases: ['Sokoto City'] },
+  { name: 'Taraba', code: 'TA', zone: 'North East', benchmarkRegion: 'Abuja', factor: 1.02, aliases: ['Jalingo'] },
+  { name: 'Yobe', code: 'YO', zone: 'North East', benchmarkRegion: 'Kano', factor: 1.02, aliases: ['Damaturu'] },
+  { name: 'Zamfara', code: 'ZA', zone: 'North West', benchmarkRegion: 'Kano', factor: 1.01, aliases: ['Gusau'] },
+];
+
+function getRegionalProfileBackend(regionName = 'Lagos') {
+  const norm = String(regionName || 'Lagos').toLowerCase().replace(/[_-]+/g, ' ').trim();
+  let found = STATE_MARKETS.find(s => 
+    s.name.toLowerCase() === norm || 
+    s.aliases?.some(a => a.toLowerCase() === norm) || 
+    s.code.toLowerCase() === norm
+  );
+  if (!found) {
+    found = STATE_MARKETS.find(s => norm.includes(s.name.toLowerCase()) || s.name.toLowerCase().includes(norm));
+  }
+  const benchmarkRegion = found ? found.benchmarkRegion : 'Lagos';
+  const locationFactor = found ? found.factor : 1.0;
+  const anchorProfile = ANCHOR_REGION_COST_PROFILES[benchmarkRegion] || ANCHOR_REGION_COST_PROFILES.Lagos;
+
+  return {
+    materials: anchorProfile.materials * locationFactor,
+    labour: anchorProfile.labour * locationFactor,
+    plant: anchorProfile.plant * locationFactor,
+    transport: anchorProfile.transport * locationFactor,
+    site: anchorProfile.site * locationFactor,
+  };
+}
+
 export async function generateRateBreakdown({ item = {}, context = {}, preferredProvider, model, uid, ip } = {}) {
   const identity = getRequestIdentity({ uid, ip, action: 'rate-breakdown' });
   const limit = checkRateLimit(identity);
@@ -440,6 +512,7 @@ export async function generateRateBreakdown({ item = {}, context = {}, preferred
   const unit = sanitizeText(item.unit || 'm2');
   const region = sanitizeText(context.region || 'Lagos');
   const customConstraints = sanitizeText(context.customConstraints || '');
+  const quantity = Number(item.qty || item.quantity || 1);
 
   if (!description) {
     const err = new Error('Item description is required.');
@@ -466,48 +539,97 @@ export async function generateRateBreakdown({ item = {}, context = {}, preferred
     console.warn('[AI] Failed to load live materials from Firestore:', err.message);
   }
 
+  // Scale standard labor and plant rates dynamically based on the regional profile
+  const standardLaborRates = {
+    'Mason / Blocklayer': 8000,
+    'Concrete Finisher': 7500,
+    'Steel Fixer / Bender': 8500,
+    'Carpenter / Formworker': 8500,
+    'Tiler': 8000,
+    'Painter': 6500,
+    'Plumber': 9000,
+    'Electrician': 9500,
+    'General Labour': 4500,
+    'Plant Operator / Driver': 10000,
+    'Welder': 10000,
+    'Site Surveyor / Engineer': 25000,
+    'Roofing Specialist': 9000
+  };
+
+  const standardPlantRates = {
+    'Concrete Mixer (350L)': 15000,
+    'Poker Vibrator': 5000,
+    'Excavator (0.3m³)': 125000,
+    'Smooth Drum Roller (8T)': 95000,
+    'Motor Grader': 120000,
+    'Dump Truck (10T)': 55000,
+    'Mobile Crane (20T)': 280000,
+    'Generator (25KVA)': 18000,
+    'Scaffolding': 25000,
+    'Steel Formwork (Hire)': 20000
+  };
+
+  const profile = getRegionalProfileBackend(region);
+  const scaledLabor = Object.entries(standardLaborRates).map(([name, baseRate]) => {
+    const rate = Math.round((baseRate * profile.labour) / 100) * 100;
+    return `- ${name}: ${rate}`;
+  }).join('\n');
+
+  const scaledPlant = Object.entries(standardPlantRates).map(([name, baseRate]) => {
+    const rate = Math.round((baseRate * profile.plant) / 100) * 100;
+    return `- ${name}: ${rate}`;
+  }).join('\n');
+
   const systemPrompt = `You are an expert senior quantity surveyor in Nigeria. Your job is to construct a first-principles rate breakdown to produce exactly ONE UNIT of a BOQ work item (e.g. 1 m2, 1 m3, 1 Nr, 1 m).
   
-  Calculation rules:
+  Calculation & Engineering Guidelines:
   1. Material quantities (qty) must represent the exact quantity of material needed to produce exactly ONE UNIT of the finished item (e.g. 1 m2 or 1 m3 or 1 Nr).
-     - Example: If a concrete slab is 150mm thick, the volume of concrete per 1 m2 is 0.15 m3. Therefore, the quantities of cement, sand, and granite must be scaled to make exactly 0.15 m3 of concrete.
-     - Example: For 1 m2 of blockwall, block quantity is typically 10 to 14 blocks.
-     - Example: For 1 m2 of plastering, cement quantity is around 0.15 to 0.4 bags.
+     - DRY-TO-WET CONCRETE YIELD FACTOR: The dry volume of concrete ingredients (cement, sand, granite) combined is roughly 1.54 times the final compacted wet concrete volume.
+     - For 1 m3 of wet concrete:
+       * 1:2:4 mix (Grade C20/C25 structural concrete) requires exactly: 6.5 bags of Cement (50kg), 0.45 m3 of Sand (or 0.82 Tons), and 0.90 m3 of Granite aggregate (or 1.48 Tons).
+       * 1:3:6 mix (Grade C15 concrete for blinding/mass concrete) requires exactly: 4.5 bags of Cement, 0.47 m3 of Sand (or 0.86 Tons), and 0.94 m3 of Granite aggregate (or 1.54 Tons).
+       * 1:1.5:3 mix (Grade C30 concrete for high strength slabs/columns) requires exactly: 8.5 bags of Cement, 0.44 m3 of Sand (or 0.81 Tons), and 0.88 m3 of Granite aggregate (or 1.44 Tons).
+     - SCALE BY THICKNESS for Area (m2) Concrete Items:
+       * If the item is 1 m2 of a slab/blinding of thickness T (in mm), first convert thickness T to meters (T_m = T / 1000). The wet concrete volume required per 1 m2 is exactly T_m m3.
+       * Multiply the per-m3 material requirements above by T_m to get the exact material quantities per 1 m2.
+         Example: 1 m2 of 150mm Grade C25 slab requires 0.15 m3 wet concrete. Cement = 0.15 * 6.5 = 0.975 bags. Sand = 0.15 * 0.45 = 0.0675 m3. Granite = 0.15 * 0.90 = 0.135 m3.
+     - Hollow Sandcrete Blockwork (per 1 m2 of walling):
+       * 9-inch (225mm) blocks: 10.5 blocks (includes 5% cutting waste). Cement for mortar = 0.15 bags. Sand = 0.045 m3 (or 0.08 Tons).
+       * 6-inch (150mm) blocks: 10.5 blocks (includes 5% cutting waste). Cement for mortar = 0.12 bags. Sand = 0.035 m3 (or 0.06 Tons).
+     - Plastering / Rendering (per 1 m2, 12mm-15mm thickness, 1:4 mix):
+       * Cement = 0.15 bags. Plaster Sand = 0.02 m3 (or 0.035 Tons).
+     - Floor Tiling (per 1 m2):
+       * Tiles = 1.05 m2 (includes 5% cutting waste). Cement (or tile adhesive) = 0.18 bags. Sand = 0.02 m3 (or 0.035 Tons).
+     - Painting (per 1 m2, 2-3 coats):
+       * Paint = 0.15 Litres (or 0.0075 Buckets of 20L).
+     - Reinforcement Steel (Rebar) (per 1 kg or 1 Ton):
+       * Steel = 1.05 kg per kg (or 1.05 Tons per Ton, includes 5% bending/cutting waste). Binding wire = 0.015 kg per kg (or 15 kg per Ton).
+
   2. Labor and plant unit costs are crew or plant daily cost divided by daily output.
      - For labor and plant, 'qty' represents the crew size or machine count (e.g. 1 mason, 2 general laborers), and 'output' represents the daily output of that crew/machine in the item's unit (e.g. 10 m2 of blockwork per day).
-  3. The resulting computed rate must represent a highly accurate, realistic market rate for the region (\${region}). Do not make the rates excessively high or generic; adapt to current real-world competitive subcontractor market conditions.
+     - Daily outputs must be highly realistic crew/machine daily outputs:
+       * Excavator daily output: 60 - 80 m3/day for excavation.
+       * Mason crew blockwork daily output: 8 - 12 m2/day of block walling.
+       * Plastering/rendering crew daily output: 12 - 16 m2/day.
+       * Tiling crew daily output: 8 - 12 m2/day.
+       * Concrete crew (with concrete mixer) daily output: 4 - 6 m3/day.
+       * Plant Operator/Machine daily output for roadwork: 150 - 300 m2/day.
+       * Steel fixer daily output: 250 - 350 kg/day.
+       * Carpenter formwork daily output: 6 - 8 m2/day.
+
+  3. The resulting computed rate must represent a highly accurate, realistic market rate for the region (${region}). Do not make the rates excessively high or generic; adapt to current real-world competitive subcontractor market conditions.
   4. Extract key design specifications (like thickness, mix ratio, block size, concrete strength grade, material type, and waste factor) from the description. Add these to a 'specifications' map in the JSON output. If a parameter is not applicable or not mentioned in the description, set its value to null.
   5. If the user provides any custom constraints/instructions, adjust material, labor, plant, or overhead rates/factors accordingly (e.g. if they mention a specific cement brand or note high logistics/difficulty).
+  6. Leverage the total item quantity (${quantity}) to calibrate material rates and overheads. If the quantity is very large (e.g. bulk purchases of thousands of units like concrete m3, rebar kg, blocks), apply a bulk procurement discount of up to 10% to 15% on material rates. If the quantity is tiny (e.g., small repairs of 1-10 units), mark up the rates by 15-25% or include appropriate plant/labor setup allowances to account for mobilization minimums and retail supplier premiums.
   
   Available baseline materials and their current local prices (use regional prices if available):
-  \${JSON.stringify(materialsList, null, 2)}
+  ${JSON.stringify(materialsList, null, 2)}
   
-  Standard labor rates (per day):
-  - Mason / Blocklayer: 8000
-  - Concrete Finisher: 7500
-  - Steel Fixer / Bender: 8500
-  - Carpenter / Formworker: 8500
-  - Tiler: 8000
-  - Painter: 6500
-  - Plumber: 9000
-  - Electrician: 9500
-  - General Labour: 4500
-  - Plant Operator / Driver: 10000
-  - Welder: 10000
-  - Site Surveyor / Engineer: 25000
-  - Roofing Specialist: 9000
+  Standard labor rates (per day) for the region ${region}:
+  ${scaledLabor}
   
-  Standard plant hire rates (per day):
-  - Concrete Mixer (350L): 15000
-  - Poker Vibrator: 5000
-  - Excavator (0.3m³): 125000
-  - Smooth Drum Roller (8T): 95000
-  - Motor Grader: 120000
-  - Dump Truck (10T): 55000
-  - Mobile Crane (20T): 280000
-  - Generator (25KVA): 18000
-  - Scaffolding: 25000
-  - Steel Formwork (Hire): 20000
+  Standard plant hire rates (per day) for the region ${region}:
+  ${scaledPlant}
   
   Your response must be STRICTLY valid JSON with no markdown wrapping other than json code block. The JSON schema:
   {
@@ -535,11 +657,12 @@ export async function generateRateBreakdown({ item = {}, context = {}, preferred
     }
   }`;
 
-  const userPrompt = `Analyze the item description and unit. Generate a first-principles rate breakdown:
-  Description: \${description}
-  Unit: \${unit}
-  Region: \${region}
-  \${customConstraints ? \`Custom Constraints/Instructions: \${customConstraints}\` : ''}`;
+  const userPrompt = `Analyze the item description, unit, and total quantity. Generate a first-principles rate breakdown:
+  Description: ${description}
+  Unit: ${unit}
+  Quantity: ${quantity}
+  Region: ${region}
+  ${customConstraints ? `Custom Constraints/Instructions: ${customConstraints}` : ''}`;
 
   try {
     const result = await runWithFallback({ preferredProvider, model, systemPrompt, userPrompt });
