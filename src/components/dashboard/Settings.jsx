@@ -11,7 +11,9 @@ import {
   Plus,
   Key,
   Database,
-  Zap
+  Zap,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { getSetting, saveSetting } from '../../db/database';
 import { seedMarketData } from '../../db/database';
@@ -25,7 +27,7 @@ const MONEY = new Intl.NumberFormat('en-NG', {
   maximumFractionDigits: 0,
 });
 
-const Settings = ({ user, onUpgrade }) => {
+const Settings = ({ user, onUpgrade, theme, onToggleTheme }) => {
   const [activeTab, setActiveTab] = useState('profile');
   const toast = useToast();
 
@@ -123,6 +125,53 @@ const Settings = ({ user, onUpgrade }) => {
               <div className="form-item">
                 <label>Work Email</label>
                 <input type="email" defaultValue={user?.email} className="settings-input" />
+              </div>
+              <div className="form-item">
+                <label>Appearance (Theme)</label>
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '0.25rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => theme === 'dark' && onToggleTheme()}
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      padding: '0.75rem',
+                      border: '1.5px solid var(--border-medium)',
+                      borderRadius: '10px',
+                      background: theme === 'light' ? 'var(--bg-card-muted)' : 'var(--bg-card)',
+                      borderColor: theme === 'light' ? 'var(--quantra-blue-500)' : 'var(--border-medium)',
+                      color: 'var(--text-primary)',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Sun size={16} style={{ color: theme === 'light' ? 'var(--quantra-blue-500)' : 'var(--text-muted)' }} /> Light Mode
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => theme === 'light' && onToggleTheme()}
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      padding: '0.75rem',
+                      border: '1.5px solid var(--border-medium)',
+                      borderRadius: '10px',
+                      background: theme === 'dark' ? 'var(--bg-card-muted)' : 'var(--bg-card)',
+                      borderColor: theme === 'dark' ? 'var(--quantra-blue-500)' : 'var(--border-medium)',
+                      color: 'var(--text-primary)',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Moon size={16} style={{ color: theme === 'dark' ? 'var(--quantra-blue-500)' : 'var(--text-muted)' }} /> Dark Mode
+                  </button>
+                </div>
               </div>
               <div className="form-actions">
                 <button

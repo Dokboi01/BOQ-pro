@@ -76,7 +76,26 @@ class ErrorBoundary extends React.Component {
 }
 
 function App() {
+  const [theme, setTheme] = React.useState(() => {
+    const saved = localStorage.getItem('quantra-theme');
+    if (saved) return saved;
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  });
 
+  React.useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = React.useCallback(() => {
+    setTheme(prev => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('quantra-theme', next);
+      return next;
+    });
+  }, []);
 
   // Track app load
   React.useEffect(() => {
@@ -321,7 +340,7 @@ function App() {
       case 'reports':
         return <div className="view-fade-in"><Reports user={user} projects={projects} activeProjectId={activeProjectId} onUpgrade={() => { setView('pricing'); }} /></div>;
       case 'settings':
-        return <div className="view-fade-in"><Settings user={user} onUpgrade={() => setView('pricing')} /></div>;
+        return <div className="view-fade-in"><Settings user={user} onUpgrade={() => setView('pricing')} theme={theme} onToggleTheme={toggleTheme} /></div>;
       case 'methodology':
         return <div className="view-fade-in"><CalculationMethodology /></div>;
       default:
@@ -333,7 +352,7 @@ function App() {
 
   return (
     <div className={`app-container ${focusMode ? 'focus-mode' : ''} ${hideWorkspaceChrome ? 'workspace-shell' : ''}`}>
-      {!focusMode && <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={user} onLogout={logout} onViewPlans={() => setView('pricing')} />}
+      {!focusMode && <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={user} onLogout={logout} onViewPlans={() => setView('pricing')} theme={theme} onToggleTheme={toggleTheme} />}
 
       {/* Focus Mode Toggle (appears when sidebar is hidden) */}
       {focusMode && (

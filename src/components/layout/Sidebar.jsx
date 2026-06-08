@@ -13,12 +13,14 @@ import {
   BookOpen,
   HardHat,
   MapPin,
-  Shield
+  Shield,
+  Sun,
+  Moon
 } from 'lucide-react';
 import QuantraIcon from '../ui/QuantraIcon';
 import { getAccessPlanName, isFreeAccessPlan } from '../../utils/subscription';
 
-const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
+const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans, theme, onToggleTheme }) => {
   const [collapsed, setCollapsed] = React.useState(false);
   const planName = getAccessPlanName(user);
   const isFreePlan = isFreeAccessPlan(user);
@@ -88,6 +90,18 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
         <button className="nav-item" onClick={() => setActiveTab('settings')}>
           <Settings size={20} />
           {!collapsed && <span>Settings</span>}
+        </button>
+        <button
+          className="nav-item theme-toggle-btn"
+          onClick={onToggleTheme}
+          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        >
+          {theme === 'dark' ? (
+            <Sun size={20} style={{ color: 'var(--quantra-blue-500)' }} />
+          ) : (
+            <Moon size={20} />
+          )}
+          {!collapsed && <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
         </button>
         <button className="nav-item text-danger" onClick={onLogout}>
           <LogOut size={20} />
@@ -205,16 +219,16 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
         }
 
         .nav-item.active {
-          background: linear-gradient(135deg, #1557cc 0%, #1e6cf7 100%);
+          background: linear-gradient(135deg, var(--quantra-blue-700) 0%, var(--quantra-blue-600) 100%);
           color: white;
-          box-shadow: 0 4px 15px rgba(30, 108, 247, 0.4);
+          box-shadow: 0 4px 15px var(--accent-shadow);
           font-weight: 600;
         }
 
         .upgrade-prompt {
           margin: 1rem 0.75rem;
           padding: 1.25rem;
-          background: linear-gradient(135deg, #1557cc 0%, #1e6cf7 100%);
+          background: linear-gradient(135deg, var(--quantra-blue-700) 0%, var(--quantra-blue-600) 100%);
           border-radius: 12px;
           color: white;
           position: relative;
@@ -276,14 +290,14 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
         .user-avatar {
           width: 36px;
           height: 36px;
-          background: linear-gradient(135deg, #1557cc, #1e6cf7);
+          background: linear-gradient(135deg, var(--quantra-blue-700), var(--quantra-blue-600));
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
           font-weight: 700;
           font-size: 0.875rem;
-          box-shadow: 0 0 0 2px rgba(30, 108, 247, 0.3);
+          box-shadow: 0 0 0 2px var(--avatar-shadow);
           position: relative;
         }
 
