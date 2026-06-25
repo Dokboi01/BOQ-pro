@@ -276,6 +276,42 @@ export async function getProfileDocument(profileId) {
   return fromFirestoreDocument(payload);
 }
 
+export async function getDocumentByPath(path) {
+  const token = await getFirestoreAccessToken();
+  const response = await fetch(getFirestoreDocumentUrl(path), {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (response.status === 404) return null;
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload?.error?.message || `Failed to read document at ${path}.`);
+  }
+
+  return fromFirestoreDocument(payload);
+}
+
+export async function deleteDocumentByPath(path) {
+  const token = await getFirestoreAccessToken();
+  const response = await fetch(getFirestoreDocumentUrl(path), {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (response.status === 404) return;
+
+  if (!response.ok) {
+    const payload = await response.json();
+    throw new Error(payload?.error?.message || `Failed to delete document at ${path}.`);
+  }
+}
+
+
 export async function patchProfileDocument(profileId, updates = {}) {
   const token = await getFirestoreAccessToken();
   const serializedUpdates = {

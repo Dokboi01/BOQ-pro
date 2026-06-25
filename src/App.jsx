@@ -75,6 +75,285 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+function OTPVerificationView({ email, authError, setAuthError, verificationEmailStatus, handleResendCode, handleVerifyCode, handleLogout }) {
+  const [code, setCode] = React.useState(['', '', '', '', '', '']);
+  const [isVerifying, setIsVerifying] = React.useState(false);
+  const [cooldown, setCooldown] = React.useState(0);
+  const inputRefs = React.useRef([]);
+
+  React.useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setTimeout(() => setCooldown(prev => prev - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldown]);
+
+  const handleChange = (index, val) => {
+    if (val && !/^\d+$/.test(val)) return;
+
+    const newCode = [...code];
+    newCode[index] = val.slice(-1);
+    setCode(newCode);
+
+    if (val && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !code[index] && index > 0) {
+      const newCode = [...code];
+      newCode[index - 1] = '';
+      setCode(newCode);
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const pasteData = e.clipboardData.getData('text').trim();
+    if (/^\d{6}$/.test(pasteData)) {
+      const digits = pasteData.split('');
+      setCode(digits);
+      inputRefs.current[5]?.focus();
+    }
+  };
+
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    const fullCode = code.join('');
+    if (fullCode.length !== 6) return;
+
+    setIsVerifying(true);
+    setAuthError(null);
+    try {
+      await handleVerifyCode(fullCode);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleTriggerResend = async () => {
+    if (cooldown > 0) return;
+    setCooldown(60);
+    await handleResendCode();
+  };
+
+  const isCodeComplete = code.every(char => char !== '');
+
+  return (
+    <div className="otp-container">
+      <div className="otp-card glass-card">
+        <div className="otp-icon-wrapper">
+          <Mail size={40} className="otp-icon" />
+        </div>
+
+        <h2>Verify your email</h2>
+        <p className="otp-subtitle">
+          We sent a 6-digit verification code to<br/>
+          <strong>{email}</strong>
+        </p>
+
+        {authError && (
+          <div className="otp-error">
+            <AlertCircle size={16} style={{ flexShrink: 0 }} />
+            <span>{authError}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleVerify}>
+          <div className="otp-inputs">
+            {code.map((digit, index) => (
+              <input
+                key={index}
+                type="text"
+                maxLength={1}
+                pattern="[0-9]*"
+                inputMode="numeric"
+                value={digit}
+                onChange={e => handleChange(index, e.target.value)}
+                onKeyDown={e => handleKeyDown(index, e)}
+                onPaste={handlePaste}
+                ref={el => inputRefs.current[index] = el}
+                disabled={isVerifying}
+                autoFocus={index === 0}
+              />
+            ))}
+          </div>
+
+          <button
+            type="submit"
+            className="otp-submit-btn"
+            disabled={!isCodeComplete || isVerifying}
+          >
+            {isVerifying ? 'Verifying...' : 'Verify Code'}
+          </button>
+        </form>
+
+        <div className="otp-footer">
+          <button
+            onClick={handleTriggerResend}
+            disabled={cooldown > 0 || isVerifying}
+            className="otp-resend-btn"
+          >
+            {cooldown > 0 ? `Resend code in ${cooldown}s` : 'Resend Code'}
+          </button>
+          <span className="divider">•</span>
+          <button onClick={handleLogout} className="otp-logout-btn">
+            Log out
+          </button>
+        </div>
+      </div>
+
+      <style>{`
+        .otp-container {
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #090d16;
+          background-image: radial-gradient(circle at 10% 20%, rgba(245, 158, 11, 0.05) 0%, transparent 40%),
+                            radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
+          padding: 2rem;
+          font-family: 'Inter', system-ui, sans-serif;
+        }
+        .otp-card {
+          width: 100%;
+          max-width: 460px;
+          padding: 3rem 2.5rem;
+          border-radius: 20px;
+          background: rgba(30, 41, 59, 0.4);
+          backdrop-filter: blur(16px);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+          text-align: center;
+        }
+        .otp-icon-wrapper {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          background: rgba(245, 158, 11, 0.1);
+          border: 1px solid rgba(245, 158, 11, 0.2);
+          color: #f59e0b;
+          margin-bottom: 1.5rem;
+        }
+        .otp-card h2 {
+          color: #ffffff;
+          font-size: 1.8rem;
+          font-weight: 800;
+          margin-bottom: 0.75rem;
+        }
+        .otp-subtitle {
+          color: #94a3b8;
+          font-size: 0.95rem;
+          line-height: 1.6;
+          margin-bottom: 2rem;
+        }
+        .otp-subtitle strong {
+          color: #f8fafc;
+        }
+        .otp-error {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.875rem 1rem;
+          border-radius: 12px;
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid rgba(239, 68, 68, 0.2);
+          color: #fca5a5;
+          font-size: 0.875rem;
+          text-align: left;
+          margin-bottom: 1.75rem;
+          line-height: 1.4;
+        }
+        .otp-inputs {
+          display: flex;
+          justify-content: space-between;
+          gap: 0.75rem;
+          margin-bottom: 2rem;
+        }
+        .otp-inputs input {
+          width: 54px;
+          height: 60px;
+          text-align: center;
+          font-size: 1.6rem;
+          font-weight: 700;
+          color: #ffffff;
+          background: rgba(15, 23, 42, 0.6);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+          transition: all 0.2s ease;
+          font-family: monospace;
+        }
+        .otp-inputs input:focus {
+          border-color: #f59e0b;
+          box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+          outline: none;
+          background: rgba(15, 23, 42, 0.8);
+        }
+        .otp-inputs input:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        .otp-submit-btn {
+          width: 100%;
+          padding: 1rem;
+          border-radius: 12px;
+          background: #f59e0b;
+          color: #0f172a;
+          font-size: 1rem;
+          font-weight: 700;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          margin-bottom: 1.5rem;
+        }
+        .otp-submit-btn:hover:not(:disabled) {
+          background: #d97706;
+          transform: translateY(-1px);
+        }
+        .otp-submit-btn:active:not(:disabled) {
+          transform: translateY(0);
+        }
+        .otp-submit-btn:disabled {
+          background: rgba(255, 255, 255, 0.08);
+          color: rgba(255, 255, 255, 0.3);
+          cursor: not-allowed;
+        }
+        .otp-footer {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.75rem;
+          font-size: 0.9rem;
+        }
+        .otp-resend-btn, .otp-logout-btn {
+          background: none;
+          border: none;
+          color: #94a3b8;
+          font-weight: 600;
+          cursor: pointer;
+          transition: color 0.2s ease;
+          padding: 0;
+        }
+        .otp-resend-btn:hover:not(:disabled), .otp-logout-btn:hover {
+          color: #f59e0b;
+        }
+        .otp-resend-btn:disabled {
+          color: #475569;
+          cursor: not-allowed;
+        }
+        .otp-footer .divider {
+          color: #475569;
+        }
+      `}</style>
+    </div>
+  );
+}
+
 function App() {
   const [theme, setTheme] = React.useState(() => {
     const saved = localStorage.getItem('quantra-theme');
@@ -109,7 +388,7 @@ function App() {
   const {
     user, view, setView, authError, setAuthError,
     pendingUser, selectedPlan, verificationEmailStatus,
-    handleLogin, handleSignUp, handleResendCode,
+    handleLogin, handleSignUp, handleResendCode, handleVerifyCode,
     handleOnboardingComplete, handleSendMagicLink, handleSelectPlan, logout,
   } = useAuth();
   const accountPlanName = getAccessPlanName(user);
@@ -267,39 +546,15 @@ function App() {
   />;
   if (view === 'signup') return <SignUp error={authError} selectedPlan={selectedPlan} onSignUp={handleSignUp} onSwitchToLogin={(target) => { setAuthError(null); setView(target); }} onViewTerms={() => setView('terms')} onViewPrivacy={() => setView('privacy')} />;
   if (view === 'verification') return (
-    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)', color: 'var(--text-primary)', flexDirection: 'column', gap: '1.5rem', textAlign: 'center', padding: '2rem' }}>
-      <div style={{ borderRadius: '50%', background: 'rgba(16, 185, 129, 0.16)', padding: '20px', marginBottom: '10px' }}>
-        <Mail size={48} className="text-accent" />
-      </div>
-      <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>
-        {verificationEmailStatus === 'failed' ? 'Verification email not sent yet' : 'Check your inbox'}
-      </h2>
-      <p style={{ color: 'var(--text-muted)', maxWidth: '420px', lineHeight: 1.6 }}>
-        {verificationEmailStatus === 'failed'
-          ? <>Your account was created for <strong style={{ color: 'var(--text-primary)' }}>{pendingUser?.email || user?.email}</strong>, but the verification email did not go out. Use <strong style={{ color: 'var(--text-primary)' }}>Resend Email</strong> to try again.</>
-          : <>We've sent a verification link to<br/><strong style={{ color: 'var(--text-primary)' }}>{pendingUser?.email || user?.email}</strong>. Please click the link to activate your account.</>}
-      </p>
-      {authError && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: '0.75rem',
-          maxWidth: '460px',
-          padding: '0.875rem 1rem',
-          borderRadius: '14px',
-          background: 'rgba(248, 113, 113, 0.12)',
-          border: '1px solid rgba(248, 113, 113, 0.28)',
-          color: '#fecaca'
-        }}>
-          <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
-          <span style={{ textAlign: 'left', lineHeight: 1.5 }}>{authError}</span>
-        </div>
-      )}
-      <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-        <button onClick={handleResendCode} style={{ padding: '0.75rem 1.5rem', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-light)', borderRadius: '12px', fontWeight: 600, cursor: 'pointer' }}>Resend Email</button>
-        <button onClick={() => setView('login')} style={{ padding: '0.75rem 1.5rem', background: 'var(--accent-600)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>Back to Login</button>
-      </div>
-    </div>
+    <OTPVerificationView
+      email={pendingUser?.email || user?.email || 'your email'}
+      authError={authError}
+      setAuthError={setAuthError}
+      verificationEmailStatus={verificationEmailStatus}
+      handleResendCode={handleResendCode}
+      handleVerifyCode={handleVerifyCode}
+      handleLogout={logout}
+    />
   );
   if (view === 'forgot-password') return <PasswordReset onBack={() => setView('login')} />;
   if (view === 'onboarding') return <Onboarding onComplete={handleOnboardingComplete} />;

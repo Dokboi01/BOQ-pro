@@ -103,6 +103,12 @@ export function AuthProvider({ children }) {
                     companyName: fullUser.company_name,
                     email: firebaseUser.email
                 });
+
+                // Check verification state and force verification view if false
+                if (fullUser.is_verified === false) {
+                    setView('verification');
+                }
+
                 // 🛡️ GUARD: Never let a stale Firestore fetch downgrade is_onboarded
                 // If the user completed onboarding locally, preserve that status
                 setUser(prev => {
@@ -111,6 +117,9 @@ export function AuthProvider({ children }) {
                         if (sameRole) {
                             fullUser = { ...fullUser, is_onboarded: true };
                         }
+                    }
+                    if (prev?.is_verified && !fullUser.is_verified) {
+                        fullUser = { ...fullUser, is_verified: true };
                     }
                     const normalizedUser = normalizeUserProfile(fullUser);
                     // 🛡️ GUARD: Skip update if nothing changed (prevents infinite re-render loops)
@@ -154,7 +163,11 @@ export function AuthProvider({ children }) {
                             const normalizedCachedUser = normalizeUserProfile(cachedUser);
                             setUser(normalizedCachedUser);
                             initializationComplete.current = true;
-                            setView(normalizedCachedUser?.is_onboarded === false ? 'onboarding' : 'app');
+                            if (normalizedCachedUser?.is_verified === false) {
+                                setView('verification');
+                            } else {
+                                setView(normalizedCachedUser?.is_onboarded === false ? 'onboarding' : 'app');
+                            }
                             // Silently refresh profile in background
                             hydrateProfile(firebaseUser);
                             return;
@@ -162,7 +175,7 @@ export function AuthProvider({ children }) {
                     } catch { /* ignore bad cache */ }
                 }
 
-                // No cache hit — do a blocking fetch (first-time login is handled optimistically in handleLogin)
+                // No cache hit — do a blocking fetch
                 try {
                     const profile = await getProfile(firebaseUser.uid);
                     const fullUser = normalizeUserProfile({
@@ -186,7 +199,9 @@ export function AuthProvider({ children }) {
                     });
                     initializationComplete.current = true;
 
-                    if (profile && profile.is_onboarded) {
+                    if (profile && profile.is_verified === false) {
+                        setView('verification');
+                    } else if (profile && profile.is_onboarded) {
                         setView('app');
                     } else {
                         setView('onboarding');
@@ -243,7 +258,6 @@ export function AuthProvider({ children }) {
         setAuthError(null);
         const pendingSelection = readPendingSubscription();
 
-
         try {
             const result = await signInWithEmailAndPassword(
                 auth,
@@ -251,25 +265,34 @@ export function AuthProvider({ children }) {
                 credentials.password
             );
 
-
-            // ⚡ Optimistic navigation — go to app IMMEDIATELY with basic data
-            // Don't wait for Firestore profile fetch
-            const optimisticUser = normalizeUserProfile({
+            // Fetch profile to check verification / onboarding status
+            const profile = await getProfile(result.user.uid);
+            const fullUser = normalizeUserProfile({
                 id: result.user.uid,
                 email: result.user.email,
-                full_name: result.user.displayName || 'Practitioner',
-                plan: PLAN_NAMES.STUDENT,
-                is_onboarded: false,
-                company_name: deriveCompanyName({ email: result.user.email }),
-                company_key: buildCompanyKey({ email: result.user.email })
+                ...profile
             });
-            setUser(optimisticUser);
-            localStorage.setItem('quantra_profile', JSON.stringify(optimisticUser));
-            initializationComplete.current = true; // ⚡ IMPORTANT: Prevents the timeout from kicking us out
-            setView(pendingSelection?.plan && isPaidPlan(pendingSelection.plan) ? 'pricing' : 'app');
 
-            // Hydrate full profile in background (non-blocking)
-            hydrateProfile(result.user);
+            setUser(fullUser);
+            localStorage.setItem('quantra_profile', JSON.stringify(fullUser));
+            initializationComplete.current = true;
+
+            if (profile && profile.is_verified === false) {
+                setView('verification');
+                // Automatically send code if unverified
+                const token = await result.user.getIdToken();
+                fetch('/api/send-verification-code', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                }).catch(() => {});
+            } else if (profile && profile.is_onboarded) {
+                setView(pendingSelection?.plan && isPaidPlan(pendingSelection.plan) ? 'pricing' : 'app');
+            } else {
+                setView('onboarding');
+            }
 
             // Track login
             if (analytics) {
@@ -327,7 +350,7 @@ export function AuthProvider({ children }) {
                 displayName: data.fullName
             });
 
-            // Create profile in Firestore (non-blocking — if it fails, user still proceeds)
+            // Create profile in Firestore (non-blocking)
             try {
                 await updateProfile({
                     full_name: data.fullName,
@@ -336,6 +359,7 @@ export function AuthProvider({ children }) {
                     phone_number: data.phoneNumber,
                     email: data.email,
                     is_onboarded: false,
+                    is_verified: false, // New signup starts as unverified
                     ...subscriptionUpdate,
                 });
                 if (!isPendingPaidPlan) {
@@ -352,14 +376,28 @@ export function AuthProvider({ children }) {
             setView('verification');
 
             try {
-                await sendEmailVerification(result.user);
+                // Call Resend verification code API
+                const token = await result.user.getIdToken();
+                const res = await fetch('/api/send-verification-code', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const resData = await res.json();
+                if (!res.ok) {
+                    throw new Error(resData.error || 'Failed to send verification code.');
+                }
+
                 setVerificationEmailStatus('sent');
-                toast.success(`Verification email sent to ${result.user.email}.`);
+                toast.success(`Verification code sent to ${result.user.email}.`);
             } catch (emailErr) {
                 console.warn('⚠️ Verification email failed:', emailErr.message);
                 setVerificationEmailStatus('failed');
-                setAuthError('Your account was created, but we could not send the verification email. Use "Resend Email" and try again in a moment.');
-                toast.error('Account created, but the verification email could not be sent.');
+                setAuthError(emailErr.message || 'Your account was created, but we could not send the verification code. Please click "Resend Code" to try again.');
+                toast.error('Account created, but verification code could not be sent.');
             }
         } catch (error) {
             console.error('❌ Signup failed:', error.message);
@@ -372,21 +410,85 @@ export function AuthProvider({ children }) {
         }
     };
 
-
     const handleResendCode = async () => {
         const targetUser = auth.currentUser || pendingUser;
         if (targetUser) {
             try {
                 setAuthError(null);
-                await sendEmailVerification(targetUser);
+                const token = await targetUser.getIdToken();
+                const res = await fetch('/api/send-verification-code', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await res.json();
+                if (!res.ok) {
+                    setVerificationEmailStatus('failed');
+                    setAuthError(data.error || 'Failed to send verification code.');
+                    toast.error(data.error || 'Verification code could not be sent.');
+                    return;
+                }
+
                 setVerificationEmailStatus('sent');
-                toast.success(`Verification email sent to ${targetUser.email}.`);
+                toast.success(`Verification code sent to ${targetUser.email}.`);
             } catch (err) {
-                console.error('❌ Failed to resend verification email:', err.message);
+                console.error('❌ Failed to resend verification code:', err.message);
                 setVerificationEmailStatus('failed');
-                setAuthError('We could not send the verification email right now. Please try again later.');
-                toast.error('Verification email could not be sent.');
+                setAuthError('We could not send the verification code right now. Please try again later.');
+                toast.error('Verification code could not be sent.');
             }
+        }
+    };
+
+    const handleVerifyCode = async (code) => {
+        setAuthError(null);
+        const targetUser = auth.currentUser || pendingUser;
+        if (!targetUser) {
+            setAuthError('No active authentication session found.');
+            return false;
+        }
+
+        try {
+            const token = await targetUser.getIdToken();
+            const res = await fetch('/api/verify-code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ code })
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                setAuthError(data.error || 'Verification failed.');
+                return false;
+            }
+
+            // Sync successful verification state
+            setUser(prev => {
+                const updated = normalizeUserProfile({ ...prev, is_verified: true });
+                localStorage.setItem('quantra_profile', JSON.stringify(updated));
+                return updated;
+            });
+
+            toast.success('Email verified successfully!');
+            
+            // Redirect to onboarding or app
+            const profile = await getProfile(targetUser.uid);
+            if (profile && profile.is_onboarded) {
+                setView('app');
+            } else {
+                setView('onboarding');
+            }
+            return true;
+        } catch (err) {
+            console.error('❌ Verification failed:', err.message);
+            setAuthError(err.message || 'Verification failed. Please try again.');
+            return false;
         }
     };
 
@@ -530,6 +632,7 @@ export function AuthProvider({ children }) {
         handleLogin,
         handleSignUp,
         handleResendCode,
+        handleVerifyCode,
         handleOnboardingComplete,
         handleSendMagicLink,
         handleSelectPlan,
