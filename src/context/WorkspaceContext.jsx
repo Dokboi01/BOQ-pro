@@ -44,6 +44,7 @@ import {
   stopPresence,
   subscribeToPresence,
   subscribeToActivity,
+  logActivity,
 } from '../db/collaborationService';
 
 // ==========================================
@@ -589,6 +590,16 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
       breakdown: nextBreakdown,
       customPricing: nextCustomPricing
     });
+
+    // Log to activity feed for team visibility
+    if (project?.id && !project.id.startsWith('local_')) {
+      logActivity(project.id, 'rate_changed', {
+        itemDescription: analyzingItem.item?.description || 'Item',
+        rate: sanitizeNonNegativeNumber(rate),
+        source: shouldPreserveCustomPricing ? 'custom' : 'calculated',
+      });
+    }
+
     setAnalyzingItem(null);
   };
 
@@ -606,6 +617,16 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
         savedAt: new Date().toISOString()
       }
     });
+
+    // Log to activity feed
+    if (project?.id && !project.id.startsWith('local_')) {
+      logActivity(project.id, 'rate_changed', {
+        itemDescription: customPricingItem.item?.description || 'Item',
+        rate: sanitizeNonNegativeNumber(rate),
+        source: 'custom-pricing',
+      });
+    }
+
     setCustomPricingItem(null);
   };
 
@@ -620,6 +641,15 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
       useBenchmark: false,
       customPricing: null,
     });
+
+    // Log significant manual rate changes (debounce: only log when a real value is set)
+    if (safeRate > 0 && project?.id && !project.id.startsWith('local_')) {
+      logActivity(project.id, 'rate_changed', {
+        itemDescription: item?.description || 'Item',
+        rate: safeRate,
+        source: 'manual',
+      });
+    }
   };
 
   const handleRateSourceChange = (sectionId, item, nextSource) => {

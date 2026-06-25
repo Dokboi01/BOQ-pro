@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   X,
   Building2,
@@ -59,6 +59,9 @@ const TeamHubPanel = ({ project, presenceUsers = [], activityLog = [], onClose }
   });
   const [isSending, setIsSending] = useState(false);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const messagesEndRef = useRef(null);
+  const lastSeenCountRef = useRef(0);
 
   const isCloudProject = !!project?.id && !project.id.startsWith('local_');
   const shareLink = useMemo(
@@ -77,6 +80,31 @@ const TeamHubPanel = ({ project, presenceUsers = [], activityLog = [], onClose }
       unsubTasks();
     };
   }, [isCloudProject, project?.id]);
+
+  // Auto-scroll messages to bottom on new messages
+  useEffect(() => {
+    if (activeTab === 'messages') {
+      // Mark all as read
+      lastSeenCountRef.current = messages.length;
+      setUnreadCount(0);
+      // Scroll to bottom
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 60);
+    } else {
+      // Count unread when tab is not active
+      const newCount = messages.length - lastSeenCountRef.current;
+      if (newCount > 0) setUnreadCount(newCount);
+    }
+  }, [messages, activeTab]);
+
+  // Clear unread badge when switching to messages tab
+  useEffect(() => {
+    if (activeTab === 'messages') {
+      lastSeenCountRef.current = messages.length;
+      setUnreadCount(0);
+    }
+  }, [activeTab, messages.length]);
 
   const collaborators = project?.collaborators || [];
   const recentActivity = activityLog.slice(0, 6);
@@ -156,7 +184,11 @@ const TeamHubPanel = ({ project, presenceUsers = [], activityLog = [], onClose }
             <ListTodo size={14} /> Tasks
           </button>
           <button className={`hub-tab ${activeTab === 'messages' ? 'active' : ''}`} onClick={() => setActiveTab('messages')}>
-            <MessagesSquare size={14} /> Messages
+            <MessagesSquare size={14} />
+            Messages
+            {unreadCount > 0 && (
+              <span className="hub-unread-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+            )}
           </button>
         </div>
 
@@ -185,13 +217,33 @@ const TeamHubPanel = ({ project, presenceUsers = [], activityLog = [], onClose }
                   </div>
                   <div className="hub-metric">
                     <strong>{collaborators.length}</strong>
-                    <span>extra collaborators</span>
+                    <span>collaborators</span>
                   </div>
                   <div className="hub-metric">
                     <strong>{tasks.length}</strong>
                     <span>tracked tasks</span>
                   </div>
                 </div>
+                {presenceUsers.length > 0 && (
+                  <div className="hub-presence-strip">
+                    <span className="hub-presence-label">🟢 Online now</span>
+                    <div className="hub-presence-avatars">
+                      {presenceUsers.slice(0, 6).map((u, i) => (
+                        <div
+                          key={u.id || u.uid || i}
+                          className="hub-presence-avatar"
+                          style={{ background: ['#2563eb','#7c3aed','#db2777','#ea580c','#16a34a','#0891b2'][i % 6] }}
+                          title={u.displayName || u.email}
+                        >
+                          {(u.displayName || u.email || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
+                        </div>
+                      ))}
+                      {presenceUsers.length > 6 && (
+                        <div className="hub-presence-avatar hub-presence-more">+{presenceUsers.length - 6}</div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </section>
 
               <section className="hub-card">
@@ -323,6 +375,8 @@ const TeamHubPanel = ({ project, presenceUsers = [], activityLog = [], onClose }
                         </div>
                       );
                     })}
+                    {/* Sentinel for auto-scroll */}
+                    <div ref={messagesEndRef} />
                   </div>
                 )}
               </section>
@@ -714,6 +768,78 @@ const TeamHubPanel = ({ project, presenceUsers = [], activityLog = [], onClose }
         .hub-empty {
           font-size: 0.8rem;
           color: #64748b;
+        }
+
+        .hub-unread-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: #ef4444;
+          color: white;
+          font-size: 0.6rem;
+          font-weight: 800;
+          border-radius: 999px;
+          min-width: 16px;
+          height: 16px;
+          padding: 0 0.3rem;
+          line-height: 1;
+          animation: badge-pop 0.2s ease;
+        }
+
+        @keyframes badge-pop {
+          0% { transform: scale(0.5); opacity: 0; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+
+        .hub-presence-strip {
+          margin-top: 1rem;
+          padding-top: 0.85rem;
+          border-top: 1px solid #f1f5f9;
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+        }
+
+        .hub-presence-label {
+          font-size: 0.72rem;
+          font-weight: 700;
+          color: #16a34a;
+          white-space: nowrap;
+        }
+
+        .hub-presence-avatars {
+          display: flex;
+          align-items: center;
+          gap: -4px;
+          flex-wrap: wrap;
+          gap: 0.3rem;
+        }
+
+        .hub-presence-avatar {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.62rem;
+          font-weight: 800;
+          color: white;
+          border: 2px solid white;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+          cursor: default;
+          transition: transform 0.15s;
+        }
+
+        .hub-presence-avatar:hover {
+          transform: scale(1.12);
+          z-index: 1;
+        }
+
+        .hub-presence-more {
+          background: #94a3b8;
+          font-size: 0.6rem;
         }
 
         @media (max-width: 640px) {

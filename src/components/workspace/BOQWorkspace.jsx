@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import RateAnalysisModal from './RateAnalysisModal';
 import CustomPricingModal from './CustomPricingModal';
 import GeometricCalculator from './GeometricCalculator';
 import BidManagerModal from './BidManagerModal';
 import TeamHubPanel from './TeamHubPanel';
+import CollabModal from './CollabModal';
 import StructuralAnalyzer from './StructuralAnalyzer';
 import ProjectNotesAccordion from './ProjectNotesAccordion';
 import BOQFormulaModal from './BOQFormulaModal';
@@ -56,7 +57,8 @@ import {
   Info,
   X,
   Globe,
-  MousePointer2
+  MousePointer2,
+  Users,
 } from 'lucide-react';
 
 const BOQWorkspace = () => {
@@ -109,6 +111,8 @@ const BOQWorkspace = () => {
     getSectionUiMeta, getRateOptionAvailability, isOutlier, getManualRateValue,
     sanitizeNonNegativeNumber, onAddSection, onExport, onDelete,
   } = useWorkspace();
+
+  const [showCollabModal, setShowCollabModal] = useState(false);
 
   const benchmarkWorkspaceHealth = benchmarkSyncState.status === 'error'
     ? { label: 'Benchmark library offline', tone: 'warning' }
@@ -417,6 +421,19 @@ const BOQWorkspace = () => {
                     <button className="ws-head-action" onClick={onAddSection}>
                       <Plus size={13} /> Section
                     </button>
+                    {isCustomWorkspace && (
+                      <button
+                        className="ws-head-action ws-head-action-collab"
+                        onClick={() => setShowCollabModal(true)}
+                        title="Invite collaborators"
+                      >
+                        <Users size={13} />
+                        Invite
+                        {(project?.collaborators || []).length > 0 && (
+                          <span className="ws-collab-count">{(project?.collaborators || []).length}</span>
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1488,6 +1505,15 @@ const BOQWorkspace = () => {
           presenceUsers={presenceUsers}
           activityLog={activityLog}
           onClose={() => setShowTeamHub(false)}
+        />
+      )}
+
+      {showCollabModal && (
+        <CollabModal
+          projectId={project?.id}
+          projectName={project?.name || ''}
+          collaborators={project?.collaborators || []}
+          onClose={() => setShowCollabModal(false)}
         />
       )}
 
@@ -3072,6 +3098,32 @@ const BOQWorkspace = () => {
         .ws-head-action-primary.emerald-button:hover {
           background: linear-gradient(135deg, var(--quantra-blue-500) 0%, var(--quantra-blue-600) 100%);
           box-shadow: 0 6px 18px rgba(30, 108, 247, 0.3);
+        }
+        .ws-head-action-collab {
+          background: rgba(245, 158, 11, 0.08) !important;
+          border-color: rgba(245, 158, 11, 0.35) !important;
+          color: #d97706 !important;
+          gap: 0.35rem;
+        }
+        .ws-head-action-collab:hover {
+          background: rgba(245, 158, 11, 0.16) !important;
+          border-color: #f59e0b !important;
+          color: #b45309 !important;
+          transform: translateY(-1.5px);
+        }
+        .ws-collab-count {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: #f59e0b;
+          color: white;
+          font-size: 0.6rem;
+          font-weight: 800;
+          border-radius: 999px;
+          min-width: 15px;
+          height: 15px;
+          padding: 0 0.3rem;
+          line-height: 1;
         }
         .ws-sheet-tabbar-compact {
           display: flex;
