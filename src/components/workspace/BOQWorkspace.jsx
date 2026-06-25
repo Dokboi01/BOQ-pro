@@ -421,19 +421,17 @@ const BOQWorkspace = () => {
                     <button className="ws-head-action" onClick={onAddSection}>
                       <Plus size={13} /> Section
                     </button>
-                    {isCustomWorkspace && (
-                      <button
-                        className="ws-head-action ws-head-action-collab"
-                        onClick={() => setShowCollabModal(true)}
-                        title="Invite collaborators"
-                      >
-                        <Users size={13} />
-                        Invite
-                        {(project?.collaborators || []).length > 0 && (
-                          <span className="ws-collab-count">{(project?.collaborators || []).length}</span>
-                        )}
-                      </button>
-                    )}
+                    <button
+                      className="ws-head-action ws-head-action-collab"
+                      onClick={() => setShowCollabModal(true)}
+                      title="Invite collaborators"
+                    >
+                      <Users size={13} />
+                      Invite
+                      {(project?.collaborators || []).length > 0 && (
+                        <span className="ws-collab-count">{(project?.collaborators || []).length}</span>
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>
