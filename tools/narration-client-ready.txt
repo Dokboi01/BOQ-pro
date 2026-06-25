@@ -1,0 +1,23 @@
+Welcome to Quantra.
+
+This final walkthrough shows the complete pricing story, from project setup to a defended bill of quantities.
+
+We start by signing in, creating a new building project, and moving into item selection. At this stage, Quantra is not only collecting BOQ descriptions. It is helping the estimator choose items that already have pricing intelligence attached.
+
+The Formula Ready filter is important. A formula-ready item already carries a pricing basis, editable rate inputs, and a worked example before it enters the workspace. That means the BOQ line starts with structure, not guesswork.
+
+After the BOQ is generated, the first key job is quantity. For this concrete item, the unit is cubic metres, so Quantra opens a volume takeoff. The quantity formula is length times width times depth times repeats. In this example, twelve metres by six metres by zero point two five metres, repeated twice, gives the measured volume. Then the allowance percentage is added, and the applied quantity is pushed back into the BOQ row.
+
+The second key job is the formula rate. The formula editor shows the calculated unit rate, the formula logic, and the editable inputs behind the rate. For this plain concrete blinding item, the rate per cubic metre is built from cement, sand, aggregate, water, mixing, placing, levelling, curing, and overhead and profit. When an input changes, Quantra recalculates the unit rate immediately.
+
+At this point, the amount is no longer just a typed figure. The BOQ amount equals the measured quantity multiplied by the calculated unit rate. Quantity and rate are connected, so a change in either one updates the commercial total.
+
+The benchmark option gives the team a market reference. Switching to benchmark pricing replaces the engineered formula rate with a regional market rate, so the estimator can compare the calculated build-up against a live commercial anchor.
+
+For tender pricing, the manual pricing studio gives a deeper build-up. The rate is rebuilt from materials, labour, plant, transport, waste, site difficulty, overheads, and profit. Materials and labour form the direct cost. Waste accounts for loss and handling. Site difficulty adjusts for access and productivity. Overheads cover project running costs, and profit adds the commercial margin.
+
+The detailed rate analysis brings the whole calculation together. The unit rate equals direct cost, plus material waste, plus site adjustment, plus overheads, plus profit. Then the final BOQ amount equals quantity multiplied by that unit rate.
+
+After the rate is defended, the same project continues into the price library, documents and export, calculations guide, settings, and sign out. The workflow starts with measurement, moves through pricing logic, and ends with a BOQ that can be reviewed, explained, and issued.
+
+That is the core value of Quantra: quantity takeoff, formula pricing, benchmark comparison, custom rate build-up, and final rate analysis in one connected workflow.
