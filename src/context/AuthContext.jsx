@@ -118,9 +118,6 @@ export function AuthProvider({ children }) {
                             fullUser = { ...fullUser, is_onboarded: true };
                         }
                     }
-                    if (prev?.is_verified && !fullUser.is_verified) {
-                        fullUser = { ...fullUser, is_verified: true };
-                    }
                     const normalizedUser = normalizeUserProfile(fullUser);
                     // 🛡️ GUARD: Skip update if nothing changed (prevents infinite re-render loops)
                     if (prev && JSON.stringify(prev) === JSON.stringify(normalizedUser)) {

@@ -458,6 +458,12 @@ function App() {
   }, [clearSharedProjectParams, openWorkspace, projects, requestedTab, setActiveProjectId, setActiveTab, setFocusMode, sharedProjectId, user]);
 
   React.useEffect(() => {
+    if (user && user.is_verified === false && view !== 'verification') {
+      setView('verification');
+    }
+  }, [user, view, setView]);
+
+  React.useEffect(() => {
     if (paystackReturn !== 'return' || !user) return;
     setView('pricing');
   }, [paystackReturn, setView, user]);
