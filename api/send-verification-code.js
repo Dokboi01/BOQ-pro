@@ -83,7 +83,7 @@ export default async function handler(req, res) {
       expiresAt,
     });
 
-    const fromAddress = process.env.RESEND_FROM_EMAIL || 'Quantra <onboarding@quantra-estimator.xyz>';
+    const fromAddress = process.env.RESEND_FROM_EMAIL || 'Quantra <onboarding@quantra-extimator.xyz>';
 
     // Send code via Resend
     const { error } = await resend.emails.send({

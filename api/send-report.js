@@ -124,7 +124,7 @@ export default async function handler(req, res) {
       };
     });
 
-    const fromAddress = process.env.RESEND_FROM_EMAIL || 'Quantra <onboarding@quantra-estimator.xyz>';
+    const fromAddress = process.env.RESEND_FROM_EMAIL || 'Quantra <onboarding@quantra-extimator.xyz>';
 
     const { data, error } = await resend.emails.send({
       from: fromAddress,
