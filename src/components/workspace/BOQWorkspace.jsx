@@ -2337,18 +2337,23 @@ const BOQWorkspace = () => {
           align-items: flex-start;
           gap: 0.6rem;
           flex-shrink: 0;
-          flex-wrap: wrap;
+          flex-wrap: nowrap;
           justify-content: flex-end;
           max-width: 52%;
+          overflow-x: auto;
+          scrollbar-width: none;
         }
+        .ws-compact-header-actions::-webkit-scrollbar { display: none; }
         .ws-compact-action-cluster {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          flex-wrap: wrap;
+          flex-wrap: nowrap;
+          flex-shrink: 0;
         }
         .ws-compact-action-cluster-tools {
           justify-content: flex-end;
+          flex-shrink: 0;
         }
 
         .ws-compact-stat.glass-cards-row {
@@ -2426,7 +2431,7 @@ const BOQWorkspace = () => {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          flex-wrap: wrap;
+          flex-wrap: nowrap;
           gap: 0.7rem;
           padding: 0.75rem 1rem;
           background: #ffffff;
@@ -2434,14 +2439,18 @@ const BOQWorkspace = () => {
           position: static;
           top: auto;
           z-index: auto;
+          overflow-x: auto;
+          scrollbar-width: none;
         }
+        .ws-toolbar-clean.glass-panel::-webkit-scrollbar { display: none; }
         .ws-toolbar-left {
           display: flex;
           align-items: center;
           gap: 1.25rem;
           flex: 1;
           min-width: 0;
-          flex-wrap: wrap;
+          flex-wrap: nowrap;
+          flex-shrink: 0;
         }
         .ws-search-box.glass-input {
           position: relative;
@@ -2490,12 +2499,15 @@ const BOQWorkspace = () => {
           display: flex;
           align-items: center;
           gap: 1rem;
-          flex-wrap: wrap;
+          flex-wrap: nowrap;
           justify-content: flex-end;
+          flex-shrink: 0;
         }
         .ws-filter-group {
           display: flex;
           gap: 0.35rem;
+          flex-shrink: 0;
+          flex-wrap: nowrap;
         }
         .ws-filter-pill {
           background: transparent;
@@ -2507,6 +2519,8 @@ const BOQWorkspace = () => {
           color: #64748b;
           cursor: pointer;
           transition: all 0.2s;
+          white-space: nowrap;
+          flex-shrink: 0;
         }
         .ws-filter-pill:hover {
           background: #f8fafc;
@@ -3076,6 +3090,8 @@ const BOQWorkspace = () => {
           font-weight: 700;
           cursor: pointer;
           transition: all var(--duration-fast) var(--ease-premium);
+          white-space: nowrap;
+          flex-shrink: 0;
         }
         .ws-head-action:hover {
           border-color: var(--quantra-blue-400);
@@ -4563,18 +4579,21 @@ const BOQWorkspace = () => {
             justify-content: center;
           }
           .ws-toolbar {
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             align-items: stretch;
             margin: 0;
             padding: 0.65rem;
             gap: 0.55rem;
+            overflow-x: auto;
+            scrollbar-width: none;
           }
+          .ws-toolbar::-webkit-scrollbar { display: none; }
           .ws-toolbar-left,
           .ws-toolbar-right {
             width: 100%;
           }
           .ws-toolbar-left {
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
           }
           .ws-toolbar-center {
             display: flex;
