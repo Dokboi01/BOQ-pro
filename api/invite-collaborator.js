@@ -105,7 +105,7 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Authentication required.' });
     }
 
-    const fromAddress = process.env.RESEND_FROM_EMAIL || 'Quantra <onboarding@quantra.com>';
+    const fromAddress = process.env.RESEND_FROM_EMAIL || 'Quantra <onboarding@quantra-estimator.xyz>';
     const appUrl = 'https://boq-pro.vercel.app';
     const projectUrl = safeProjectId ? `${appUrl}/projects/${safeProjectId}` : appUrl;
     const roleCapitalized = safeRole.charAt(0).toUpperCase() + safeRole.slice(1);
