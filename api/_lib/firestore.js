@@ -64,7 +64,7 @@ function createJwtAssertion({ clientEmail, privateKey }) {
     aud: GOOGLE_TOKEN_URL,
     iat: now,
     exp: now + 3600,
-    scope: 'https://www.googleapis.com/auth/datastore',
+    scope: 'https://www.googleapis.com/auth/datastore https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/firebase',
   }));
 
   const signer = createSign('RSA-SHA256');
@@ -81,7 +81,7 @@ function createJwtAssertion({ clientEmail, privateKey }) {
   return `${header}.${payload}.${signature}`;
 }
 
-async function getFirestoreAccessToken() {
+export async function getFirestoreAccessToken() {
   if (cachedAccessToken && Date.now() < cachedAccessTokenExpiry) {
     return cachedAccessToken;
   }
