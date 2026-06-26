@@ -329,7 +329,7 @@ export const PAYSTACK_MAX_TRANSACTION_KOBO = 10000000; // ₦100,000
 
 export const isPaidPlan = (planName) => {
     const plan = getPlanByName(planName);
-    return plan && plan.priceMonthly !== null && plan.priceMonthly > 0;
+    return plan && plan.label !== PLAN_NAMES.STUDENT;
 };
 
 export const formatKoboToNaira = (amountKobo) => `₦${(Number(amountKobo || 0) / 100).toLocaleString()}`;

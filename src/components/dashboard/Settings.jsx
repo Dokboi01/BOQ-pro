@@ -202,10 +202,12 @@ const Settings = ({ user, onUpgrade, theme, onToggleTheme }) => {
                   {renewalLabel ? ` - Renews ${renewalLabel}` : ''}
                 </span>
               </div>
-              {subscriptionView.isFreePlan ? (
-                <button className="btn-upgrade-glow" onClick={onUpgrade}>Upgrade Now</button>
-              ) : (
-                <button className="btn-secondary-sm" onClick={onUpgrade}>Change Plan</button>
+              {subscriptionView.planName !== 'Enterprise' && (
+                subscriptionView.isFreePlan ? (
+                  <button className="btn-upgrade-glow" onClick={onUpgrade}>Upgrade Now</button>
+                ) : (
+                  <button className="btn-secondary-sm" onClick={onUpgrade}>Change Plan</button>
+                )
               )}
             </div>
 
