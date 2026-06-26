@@ -34,7 +34,7 @@ const matchesItemSearch = (searchName, searchLibrary, normalizedQuery, queryTerm
 };
 
 const formatMoney = (value) => (
-  `N${Number(value || 0).toLocaleString(undefined, {
+  `₦${Number(value || 0).toLocaleString(undefined, {
     maximumFractionDigits: 2,
   })}`
 );

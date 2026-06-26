@@ -1109,9 +1109,9 @@ export const getItemBenchmarkRefreshInsight = (
   } else if (hasMeaningfulChange) {
     title = deltaPercent >= 0 ? 'Market benchmark moved upward' : 'Market benchmark moved downward';
     chip = `${deltaPercent >= 0 ? '+' : ''}${deltaPercent.toFixed(1)}% market shift`;
-    detail = `Latest ${region.replace(/_/g, ' ')} benchmark moved from N${Math.round(currentBenchmarkRate).toLocaleString()} to N${Math.round(latestBenchmarkRate).toLocaleString()} per ${item?.unit || 'unit'}.`;
+    detail = `Latest ${region.replace(/_/g, ' ')} benchmark moved from ₦${Math.round(currentBenchmarkRate).toLocaleString()} to ₦${Math.round(latestBenchmarkRate).toLocaleString()} per ${item?.unit || 'unit'}.`;
   } else if (hasLatestBenchmark) {
-    detail = `Current ${region.replace(/_/g, ' ')} benchmark is N${Math.round(latestBenchmarkRate).toLocaleString()} per ${item?.unit || 'unit'}.`;
+    detail = `Current ${region.replace(/_/g, ' ')} benchmark is ₦${Math.round(latestBenchmarkRate).toLocaleString()} per ${item?.unit || 'unit'}.`;
   } else {
     tone = 'warning';
     title = 'No live benchmark reference';

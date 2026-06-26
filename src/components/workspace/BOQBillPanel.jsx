@@ -1,7 +1,7 @@
 import React from 'react';
 
 const formatMoney = (value) =>
-  `N${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  `₦${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 
 const BOQBillPanel = ({
   sections = [],

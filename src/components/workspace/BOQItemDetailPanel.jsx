@@ -44,7 +44,7 @@ import {
 } from '../../utils/boqFormulas';
 
 const formatCurrency = (value) =>
-  `N${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  `₦${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 
 const CONFIDENCE_COLORS = {
   high: '#059669',

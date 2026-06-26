@@ -751,7 +751,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                     {entry.sourceCount > 0 && <span className="benchmark-evidence">{entry.sourceCount} sources</span>}
                   </div>
                   <div className="history-event-body">
-                    <span>Benchmark: N{Math.round(Number(entry.benchmark) || 0).toLocaleString()}</span>
+                    <span>Benchmark: ₦{Math.round(Number(entry.benchmark) || 0).toLocaleString()}</span>
                     {entry.changeSummary && <span>{entry.changeSummary}</span>}
                     {entry.note && <small>{entry.note}</small>}
                   </div>
@@ -991,7 +991,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                     </div>
                     <div className="history-event-meta">
                       <span className="benchmark-evidence">Version {snapshot.version}</span>
-                      <span className="benchmark-evidence">N{Math.round(Number(snapshot.benchmark) || 0).toLocaleString()} Lagos base</span>
+                      <span className="benchmark-evidence">₦{Math.round(Number(snapshot.benchmark) || 0).toLocaleString()} Lagos base</span>
                       {snapshot.sourceCount > 0 && <span className="benchmark-evidence">{snapshot.sourceCount} sources</span>}
                     </div>
                     <div className="history-event-body">
@@ -1031,7 +1031,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                     {entry.activeRegion && <span className="benchmark-evidence">{entry.activeRegion} focus</span>}
                   </div>
                   <div className="history-event-body">
-                    <span>Benchmark: N{Math.round(Number(entry.benchmark) || 0).toLocaleString()}</span>
+                    <span>Benchmark: ₦{Math.round(Number(entry.benchmark) || 0).toLocaleString()}</span>
                     {entry.changeSummary && <span>{entry.changeSummary}</span>}
                     {entry.note && <small>{entry.note}</small>}
                   </div>
@@ -1050,7 +1050,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                     <span>{source.region}{source.note ? ` - ${source.note}` : ''}</span>
                   </div>
                   <div>
-                    <strong>{source.rate ? `N${Math.round(source.rate).toLocaleString()}` : 'Trace only'}</strong>
+                    <strong>{source.rate ? `₦${Math.round(source.rate).toLocaleString()}` : 'Trace only'}</strong>
                     <span>{source.capturedAt ? new Date(source.capturedAt).toLocaleDateString('en-NG') : 'Recently updated'}</span>
                   </div>
                 </div>
