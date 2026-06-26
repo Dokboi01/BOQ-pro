@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { auth } from '../../db/firebase';
-import { sendPasswordResetEmail } from 'firebase/auth';
 import { Mail, ArrowLeft, CheckCircle2, AlertCircle, KeyRound } from 'lucide-react';
 import QuantraIcon from '../ui/QuantraIcon';
 
@@ -15,15 +13,22 @@ const PasswordReset = ({ onBack }) => {
     setError(null);
     setIsLoading(true);
     try {
-      await sendPasswordResetEmail(auth, email);
+      const res = await fetch('/api/send-password-reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to send password reset link.');
+      }
+
       setSent(true);
     } catch (err) {
-      const messages = {
-        'auth/user-not-found': 'No account found with this email address.',
-        'auth/invalid-email': 'Please enter a valid email address.',
-        'auth/too-many-requests': 'Too many attempts. Please try again later.',
-      };
-      setError(messages[err.code] || err.message);
+      setError(err.message || 'Failed to send password reset link. Please try again.');
     } finally {
       setIsLoading(false);
     }
