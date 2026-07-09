@@ -1460,25 +1460,25 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
           .auth-main {
             grid-template-columns: 1fr;
           }
-
           .auth-panel-wrap {
             position: static;
+            display: flex;
+            justify-content: center;
+          }
+          .auth-panel {
+            max-width: 480px;
+            margin: 0 auto;
           }
         }
-
+ 
         @media (max-width: 820px) {
+          .auth-story {
+            display: none;
+          }
           .auth-nav {
             gap: 1rem;
             align-items: flex-start;
             flex-direction: column;
-          }
-
-          .auth-story h1 {
-            font-size: clamp(2.4rem, 10vw, 3.4rem);
-          }
-
-          .story-preview-grid {
-            grid-template-columns: 1fr;
           }
         }
 

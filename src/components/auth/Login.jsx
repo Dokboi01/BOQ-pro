@@ -1334,21 +1334,22 @@ const Login = ({ error, onLogin, onSSOLogin, onSwitchToSignUp, onForgotPassword,
             grid-template-columns: 1fr 1fr 1fr;
           }
           .auth-panel-wrap {
-            justify-content: stretch;
+            justify-content: center;
           }
           .auth-panel {
-            max-width: none;
+            max-width: 480px;
+            margin: 0 auto;
           }
         }
 
         @media (max-width: 820px) {
+          .auth-story {
+            display: none;
+          }
           .auth-nav {
             gap: 1rem;
             align-items: flex-start;
             flex-direction: column;
-          }
-          .auth-story h1 {
-            font-size: clamp(2.5rem, 12vw, 4rem);
           }
         }
 
