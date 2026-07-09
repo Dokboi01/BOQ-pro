@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Shield,
   Mail,
@@ -10,32 +10,82 @@ import {
   Calculator,
   FileSpreadsheet,
   CheckCircle2,
-  ArrowLeft
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  Check
 } from 'lucide-react';
 import QuantraIcon from '../ui/QuantraIcon';
 
-const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) => {
+const Login = ({ error, onLogin, onSSOLogin, onSwitchToSignUp, onForgotPassword, onBack }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
 
-  const loginBenefits = [
+  const emailValid = useMemo(() => {
+    if (!email) return null;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }, [email]);
+
+  const passwordStrength = useMemo(() => {
+    if (!password) return { level: 0, label: '', color: '' };
+    let score = 0;
+    if (password.length >= 6) score++;
+    if (password.length >= 10) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+    if (score <= 1) return { level: 1, label: 'Weak', color: '#ef4444' };
+    if (score <= 2) return { level: 2, label: 'Fair', color: '#f59e0b' };
+    if (score <= 3) return { level: 3, label: 'Good', color: '#3b82f6' };
+    return { level: 4, label: 'Strong', color: '#22c55e' };
+  }, [password]);
+
+  const carouselSlides = [
     {
-      icon: <Building2 size={18} />,
-      title: 'Company access',
-      copy: 'Keep your projects tied to one company workflow instead of scattered personal files.'
+      icon: <Building2 size={20} />,
+      title: 'Company workspace',
+      copy: 'Keep your projects tied to one company workflow instead of scattered personal files.',
+      stat: '12 teams',
+      statLabel: 'Active this month'
     },
     {
-      icon: <Calculator size={18} />,
-      title: 'Pricing workflow',
-      copy: 'Open straight into quantity takeoff, benchmark pricing, and custom rate build-up.'
+      icon: <Calculator size={20} />,
+      title: 'Pricing studio',
+      copy: 'Open straight into quantity takeoff, benchmark pricing, and custom rate build-up.',
+      stat: '1,840 rates',
+      statLabel: 'In your rate library'
     },
     {
-      icon: <FileSpreadsheet size={18} />,
+      icon: <FileSpreadsheet size={20} />,
       title: 'Submission-ready output',
-      copy: 'Carry the same BOQ through review and exports without rebuilding it elsewhere.'
+      copy: 'Carry the same BOQ through review and exports without rebuilding it elsewhere.',
+      stat: '98% match',
+      statLabel: 'Format compliance'
+    },
+    {
+      icon: <Shield size={20} />,
+      title: 'Enterprise security',
+      copy: 'Role-based access control, audit trails, and encrypted storage for every project.',
+      stat: 'SOC 2',
+      statLabel: 'Compliance ready'
     }
   ];
+
+  const [carouselIndex, setCarouselIndex] = useState(0);
+
+  const nextSlide = useCallback(() => {
+    setCarouselIndex((prev) => (prev + 1) % carouselSlides.length);
+  }, [carouselSlides.length]);
+
+  useEffect(() => {
+    const timer = setInterval(nextSlide, 5000);
+    return () => clearInterval(timer);
+  }, [nextSlide]);
 
   const quickSignals = [
     'Company email login',
@@ -102,36 +152,68 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
             ))}
           </div>
 
-          <div className="story-preview">
-            <span className="preview-tag">Live workspace preview</span>
-            <h2>Current commercial view</h2>
-
-            <div className="story-preview-grid">
-              <div className="story-stat-card">
-                <strong>7 sections</strong>
-                <span>Active on the current BOQ</span>
-              </div>
-              <div className="story-stat-card">
-                <strong>NGN 68.4M</strong>
-                <span>Latest estimate in review</span>
-              </div>
-              <div className="story-stat-card">
-                <strong>Custom + benchmark</strong>
-                <span>Rate workflow preserved</span>
-              </div>
+          {/* Feature Carousel */}
+          <div className="feature-carousel">
+            <div className="carousel-viewport">
+              {carouselSlides.map((slide, i) => (
+                <div
+                  key={slide.title}
+                  className={`carousel-slide ${i === carouselIndex ? 'active' : ''}`}
+                >
+                  <div className="carousel-slide-header">
+                    <div className="carousel-slide-icon">{slide.icon}</div>
+                    <h3>{slide.title}</h3>
+                  </div>
+                  <p>{slide.copy}</p>
+                  <div className="carousel-slide-stat">
+                    <strong>{slide.stat}</strong>
+                    <span>{slide.statLabel}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="carousel-dots">
+              {carouselSlides.map((_, i) => (
+                <button
+                  key={i}
+                  className={`carousel-dot ${i === carouselIndex ? 'active' : ''}`}
+                  onClick={() => setCarouselIndex(i)}
+                  aria-label={`Go to slide ${i + 1}`}
+                />
+              ))}
             </div>
           </div>
 
-          <div className="benefit-grid">
-            {loginBenefits.map(({ icon, title, copy }) => (
-              <article key={title} className="benefit-card">
-                <div className="benefit-icon">{icon}</div>
-                <div>
-                  <h3>{title}</h3>
-                  <p>{copy}</p>
-                </div>
-              </article>
-            ))}
+          {/* Mock Dashboard Widget */}
+          <div className="mock-dashboard">
+            <div className="mock-dash-header">
+              <span className="preview-tag">Live workspace preview</span>
+              <span className="mock-dash-status">● Synced</span>
+            </div>
+            <h2 className="mock-dash-title">Lekki Phase 2 — Commercial Summary</h2>
+            <div className="mock-dash-grid">
+              <div className="mock-dash-card">
+                <span className="mock-dash-label">Sections</span>
+                <strong>7 / 7</strong>
+                <div className="mock-progress"><div className="mock-progress-fill" style={{ width: '100%' }} /></div>
+              </div>
+              <div className="mock-dash-card">
+                <span className="mock-dash-label">Estimate</span>
+                <strong>NGN 68.4M</strong>
+                <div className="mock-progress"><div className="mock-progress-fill accent" style={{ width: '78%' }} /></div>
+              </div>
+              <div className="mock-dash-card">
+                <span className="mock-dash-label">Rate coverage</span>
+                <strong>94%</strong>
+                <div className="mock-progress"><div className="mock-progress-fill green" style={{ width: '94%' }} /></div>
+              </div>
+            </div>
+            <div className="mock-dash-rows">
+              <div className="mock-row"><span>Substructure</span><span className="mock-row-val">NGN 12.1M</span></div>
+              <div className="mock-row"><span>Superstructure</span><span className="mock-row-val">NGN 24.8M</span></div>
+              <div className="mock-row"><span>M&E Services</span><span className="mock-row-val">NGN 18.3M</span></div>
+              <div className="mock-row"><span>External works</span><span className="mock-row-val">NGN 13.2M</span></div>
+            </div>
           </div>
         </section>
 
@@ -152,7 +234,7 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
             <form onSubmit={handleSubmit} className="auth-form">
               <div className="form-group">
                 <label className="form-label">Work email</label>
-                <div className="input-with-icon">
+                <div className={`input-with-icon ${emailTouched && emailValid === true ? 'input-valid' : ''} ${emailTouched && emailValid === false ? 'input-invalid' : ''}`}>
                   <Mail size={18} className="input-icon" />
                   <input
                     type="email"
@@ -160,9 +242,23 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
                     placeholder="name@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    onBlur={() => setEmailTouched(true)}
                     required
                   />
+                  {emailTouched && emailValid === true && (
+                    <span className="input-validation-icon valid">
+                      <Check size={16} />
+                    </span>
+                  )}
+                  {emailTouched && emailValid === false && (
+                    <span className="input-validation-icon invalid">
+                      <AlertCircle size={16} />
+                    </span>
+                  )}
                 </div>
+                {emailTouched && emailValid === false && (
+                  <span className="field-hint error">Please enter a valid email address</span>
+                )}
               </div>
 
               <div className="form-group">
@@ -173,22 +269,105 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
                 <div className="input-with-icon">
                   <Lock size={18} className="input-icon" />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     className="form-input"
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onBlur={() => setPasswordTouched(true)}
                     required
                   />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
+                {passwordTouched && password && (
+                  <div className="password-strength">
+                    <div className="strength-bar">
+                      {[1, 2, 3, 4].map((seg) => (
+                        <div
+                          key={seg}
+                          className={`strength-segment ${passwordStrength.level >= seg ? 'active' : ''}`}
+                          style={{ backgroundColor: passwordStrength.level >= seg ? passwordStrength.color : undefined }}
+                        />
+                      ))}
+                    </div>
+                    <span className="strength-label" style={{ color: passwordStrength.color }}>
+                      {passwordStrength.label}
+                    </span>
+                  </div>
+                )}
               </div>
 
+              <label className="remember-row">
+                <span className={`custom-checkbox ${rememberMe ? 'checked' : ''}`}>
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                  />
+                  {rememberMe && <Check size={12} />}
+                </span>
+                <span className="remember-label">Remember me on this device</span>
+              </label>
+
               <button type="submit" className={`auth-submit ${isLoading ? 'loading' : ''}`} disabled={isLoading}>
-                {isLoading ? 'Signing in...' : 'Sign in to Quantra'}
-                {!isLoading && <ArrowRight size={18} />}
+                {isLoading ? (
+                  <>
+                    <span className="spinner" />
+                    Signing in…
+                  </>
+                ) : (
+                  <>
+                    Sign in to Quantra
+                    <ArrowRight size={18} />
+                  </>
+                )}
               </button>
 
             </form>
+
+            <div className="sso-divider">
+              <span className="sso-divider-line" />
+              <span className="sso-divider-text">or continue with</span>
+              <span className="sso-divider-line" />
+            </div>
+
+            <div className="sso-buttons">
+              <button
+                type="button"
+                className="sso-btn"
+                onClick={() => onSSOLogin?.('google')}
+              >
+                <svg className="sso-icon" viewBox="0 0 24 24" width="20" height="20">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                <span>Google</span>
+              </button>
+
+              <button
+                type="button"
+                className="sso-btn"
+                onClick={() => onSSOLogin?.('microsoft')}
+              >
+                <svg className="sso-icon" viewBox="0 0 23 23" width="20" height="20">
+                  <path fill="#f35325" d="M1 1h10v10H1z"/>
+                  <path fill="#81bc06" d="M12 1h10v10H12z"/>
+                  <path fill="#05a6f0" d="M1 12h10v10H1z"/>
+                  <path fill="#ffba08" d="M12 12h10v10H12z"/>
+                </svg>
+                <span>Microsoft</span>
+              </button>
+            </div>
 
             <div className="auth-note">
               <CheckCircle2 size={16} />
@@ -402,16 +581,6 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
           box-shadow: var(--shadow-sm);
         }
 
-        .story-preview {
-          margin-top: 1.6rem;
-          padding: 1.3rem;
-          border-radius: 28px;
-          border: 1px solid var(--border-light);
-          background: rgba(255, 255, 255, 0.9);
-          box-shadow: var(--shadow-xl);
-          backdrop-filter: blur(14px);
-        }
-
         .preview-tag {
           padding: 0.42rem 0.72rem;
           background: rgba(37, 99, 235, 0.08);
@@ -419,81 +588,199 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
           color: var(--accent-600);
         }
 
-        .story-preview h2 {
-          margin: 0.9rem 0 1rem;
-          font-size: 1.25rem;
-          line-height: 1.2;
-          color: var(--primary-950);
-        }
-
-        .story-preview-grid {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 0.85rem;
-        }
-
-        .story-stat-card {
-          padding: 0.95rem;
-          border-radius: 18px;
-          background: white;
+        /* ── Feature Carousel ── */
+        .feature-carousel {
+          margin-top: 1.6rem;
+          padding: 1.4rem;
+          border-radius: 28px;
           border: 1px solid var(--border-light);
+          background: rgba(255, 255, 255, 0.92);
+          box-shadow: var(--shadow-xl);
+          backdrop-filter: blur(14px);
         }
 
-        .story-stat-card strong {
-          display: block;
-          color: var(--primary-900);
-          font-size: 0.92rem;
-          font-weight: 800;
+        .carousel-viewport {
+          position: relative;
+          min-height: 140px;
         }
 
-        .story-stat-card span {
-          display: block;
-          margin-top: 0.3rem;
-          color: var(--primary-500);
-          font-size: 0.74rem;
-          line-height: 1.5;
+        .carousel-slide {
+          position: absolute;
+          inset: 0;
+          opacity: 0;
+          transform: translateY(8px);
+          transition: opacity 0.5s ease, transform 0.5s ease;
+          pointer-events: none;
+        }
+        .carousel-slide.active {
+          position: relative;
+          opacity: 1;
+          transform: translateY(0);
+          pointer-events: auto;
         }
 
-        .benefit-grid {
-          display: grid;
-          gap: 0.9rem;
-          margin-top: 1.4rem;
+        .carousel-slide-header {
+          display: flex;
+          align-items: center;
+          gap: 0.7rem;
+          margin-bottom: 0.6rem;
         }
-
-        .benefit-card {
-          display: grid;
-          grid-template-columns: auto 1fr;
-          gap: 0.9rem;
-          align-items: start;
-          padding: 1rem 1.05rem;
-          border-radius: 22px;
-          background: white;
-          border: 1px solid var(--border-light);
-          box-shadow: var(--shadow-sm);
-        }
-
-        .benefit-icon {
-          width: 44px;
-          height: 44px;
+        .carousel-slide-icon {
+          width: 40px;
+          height: 40px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          border-radius: 14px;
-          background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(15, 23, 42, 0.06));
+          border-radius: 12px;
+          background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(15, 23, 42, 0.06));
           color: var(--accent-600);
         }
-
-        .benefit-card h3 {
-          margin: 0 0 0.35rem;
-          font-size: 0.98rem;
+        .carousel-slide-header h3 {
+          margin: 0;
+          font-size: 1.05rem;
           color: var(--primary-950);
         }
-
-        .benefit-card p {
+        .carousel-slide p {
           margin: 0;
           color: var(--primary-600);
-          font-size: 0.84rem;
+          font-size: 0.88rem;
           line-height: 1.65;
+        }
+        .carousel-slide-stat {
+          margin-top: 0.9rem;
+          padding: 0.7rem 0.9rem;
+          border-radius: 14px;
+          background: var(--primary-50, #f8fafc);
+          border: 1px solid var(--border-light, #e2e8f0);
+          display: flex;
+          align-items: baseline;
+          gap: 0.5rem;
+        }
+        .carousel-slide-stat strong {
+          font-size: 1.15rem;
+          color: var(--primary-900);
+          font-weight: 800;
+        }
+        .carousel-slide-stat span {
+          font-size: 0.76rem;
+          color: var(--primary-500);
+          font-weight: 600;
+        }
+
+        .carousel-dots {
+          display: flex;
+          justify-content: center;
+          gap: 6px;
+          margin-top: 1rem;
+        }
+        .carousel-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 999px;
+          border: none;
+          background: var(--border-medium, #cbd5e1);
+          cursor: pointer;
+          padding: 0;
+          transition: width 0.35s ease, background 0.35s ease;
+        }
+        .carousel-dot.active {
+          width: 24px;
+          background: var(--accent-600, #2563eb);
+        }
+
+        /* ── Mock Dashboard Widget ── */
+        .mock-dashboard {
+          margin-top: 1.1rem;
+          padding: 1.25rem;
+          border-radius: 24px;
+          border: 1px solid var(--border-light);
+          background: rgba(255, 255, 255, 0.92);
+          box-shadow: var(--shadow-lg, 0 10px 30px rgba(0,0,0,0.06));
+          backdrop-filter: blur(10px);
+        }
+        .mock-dash-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .mock-dash-status {
+          font-size: 0.72rem;
+          font-weight: 700;
+          color: #22c55e;
+          letter-spacing: 0.02em;
+        }
+        .mock-dash-title {
+          margin: 0.75rem 0 0.9rem;
+          font-size: 1.1rem;
+          color: var(--primary-950);
+          font-weight: 800;
+        }
+        .mock-dash-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 0.65rem;
+        }
+        .mock-dash-card {
+          padding: 0.75rem;
+          border-radius: 14px;
+          background: var(--primary-50, #f8fafc);
+          border: 1px solid var(--border-light, #e2e8f0);
+        }
+        .mock-dash-label {
+          display: block;
+          font-size: 0.68rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: var(--primary-400);
+          margin-bottom: 0.25rem;
+        }
+        .mock-dash-card strong {
+          display: block;
+          font-size: 1rem;
+          color: var(--primary-900);
+          font-weight: 800;
+          margin-bottom: 0.45rem;
+        }
+        .mock-progress {
+          height: 4px;
+          border-radius: 999px;
+          background: var(--border-light, #e2e8f0);
+          overflow: hidden;
+        }
+        .mock-progress-fill {
+          height: 100%;
+          border-radius: 999px;
+          background: var(--accent-600, #2563eb);
+          transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .mock-progress-fill.accent {
+          background: #f59e0b;
+        }
+        .mock-progress-fill.green {
+          background: #22c55e;
+        }
+        .mock-dash-rows {
+          margin-top: 0.75rem;
+          display: grid;
+          gap: 0;
+        }
+        .mock-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0.55rem 0;
+          border-top: 1px solid var(--border-light, #e2e8f0);
+          font-size: 0.82rem;
+          color: var(--primary-700);
+        }
+        .mock-row:first-child {
+          border-top: none;
+        }
+        .mock-row-val {
+          font-weight: 700;
+          color: var(--primary-900);
+          font-variant-numeric: tabular-nums;
         }
 
         .auth-panel-wrap {
@@ -594,7 +881,148 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
 
         .form-input:focus {
           border-color: var(--accent-600);
-          box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+          box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+        }
+
+        .input-valid .form-input {
+          border-color: #22c55e;
+        }
+        .input-valid .form-input:focus {
+          box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.10);
+        }
+        .input-invalid .form-input {
+          border-color: #ef4444;
+        }
+        .input-invalid .form-input:focus {
+          box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.10);
+        }
+
+        .input-validation-icon {
+          position: absolute;
+          right: 1rem;
+          top: 50%;
+          transform: translateY(-50%);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .input-validation-icon.valid {
+          background: rgba(34, 197, 94, 0.12);
+          color: #16a34a;
+        }
+        .input-validation-icon.invalid {
+          background: rgba(239, 68, 68, 0.10);
+          color: #dc2626;
+        }
+
+        @keyframes popIn {
+          0% { transform: translateY(-50%) scale(0); opacity: 0; }
+          100% { transform: translateY(-50%) scale(1); opacity: 1; }
+        }
+
+        .field-hint {
+          font-size: 0.76rem;
+          font-weight: 600;
+          animation: slideDown 0.25s ease;
+        }
+        .field-hint.error {
+          color: #dc2626;
+        }
+        @keyframes slideDown {
+          0% { opacity: 0; transform: translateY(-4px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .password-toggle {
+          position: absolute;
+          right: 0.75rem;
+          top: 50%;
+          transform: translateY(-50%);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 34px;
+          height: 34px;
+          border-radius: 10px;
+          border: none;
+          background: transparent;
+          color: var(--primary-400);
+          cursor: pointer;
+          transition: background 0.2s ease, color 0.2s ease;
+        }
+        .password-toggle:hover {
+          background: var(--primary-50, #f1f5f9);
+          color: var(--primary-700);
+        }
+
+        .password-strength {
+          display: flex;
+          align-items: center;
+          gap: 0.65rem;
+          animation: slideDown 0.25s ease;
+        }
+        .strength-bar {
+          display: flex;
+          gap: 4px;
+          flex: 1;
+        }
+        .strength-segment {
+          height: 4px;
+          flex: 1;
+          border-radius: 999px;
+          background: var(--border-light, #e2e8f0);
+          transition: background-color 0.3s ease;
+        }
+        .strength-label {
+          font-size: 0.72rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          white-space: nowrap;
+        }
+
+        .remember-row {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          cursor: pointer;
+          user-select: none;
+        }
+        .custom-checkbox {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 20px;
+          height: 20px;
+          border-radius: 6px;
+          border: 1.5px solid var(--border-medium, #cbd5e1);
+          background: white;
+          transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+          flex-shrink: 0;
+        }
+        .custom-checkbox input {
+          position: absolute;
+          opacity: 0;
+          width: 100%;
+          height: 100%;
+          cursor: pointer;
+          margin: 0;
+        }
+        .custom-checkbox.checked {
+          background: var(--accent-600, #2563eb);
+          border-color: var(--accent-600, #2563eb);
+          color: white;
+          transform: scale(1.05);
+        }
+        .remember-label {
+          font-size: 0.84rem;
+          color: var(--primary-600);
+          font-weight: 600;
         }
 
         .text-link {
@@ -627,15 +1055,104 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
           background: var(--primary-900);
           color: white;
           box-shadow: 0 16px 30px rgba(15, 23, 42, 0.16);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .auth-submit::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.12) 45%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.12) 55%, transparent 60%);
+          transform: translateX(-100%);
+          transition: none;
+        }
+
+        .auth-submit:hover::after {
+          animation: btnShine 0.7s ease forwards;
+        }
+
+        @keyframes btnShine {
+          100% { transform: translateX(100%); }
         }
 
         .auth-submit:hover {
           transform: translateY(-2px);
+          box-shadow: 0 20px 38px rgba(15, 23, 42, 0.22);
         }
 
         .auth-submit.loading {
           pointer-events: none;
-          opacity: 0.7;
+          opacity: 0.85;
+        }
+
+        .spinner {
+          width: 18px;
+          height: 18px;
+          border: 2.5px solid rgba(255, 255, 255, 0.3);
+          border-top-color: white;
+          border-radius: 50%;
+          animation: spin 0.65s linear infinite;
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+
+        .sso-divider {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          margin-top: 1.25rem;
+        }
+        .sso-divider-line {
+          flex: 1;
+          height: 1px;
+          background: var(--border-light, #e2e8f0);
+        }
+        .sso-divider-text {
+          font-size: 0.76rem;
+          font-weight: 700;
+          color: var(--primary-400);
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          white-space: nowrap;
+        }
+
+        .sso-buttons {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0.65rem;
+          margin-top: 0.85rem;
+        }
+
+        .sso-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.55rem;
+          min-height: 48px;
+          padding: 0 1rem;
+          border-radius: 14px;
+          border: 1px solid var(--border-medium, #cbd5e1);
+          background: white;
+          color: var(--primary-800, #1e293b);
+          font-size: 0.88rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+        .sso-btn:hover {
+          transform: translateY(-1px);
+          border-color: var(--primary-300, #94a3b8);
+          box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+          background: var(--primary-50, #f8fafc);
+        }
+        .sso-btn:active {
+          transform: translateY(0);
+        }
+        .sso-icon {
+          flex-shrink: 0;
         }
 
         .auth-note {
@@ -675,15 +1192,15 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
         }
 
         @media (max-width: 1080px) {
-          .auth-main,
-          .story-preview-grid {
+          .auth-main {
             grid-template-columns: 1fr;
           }
-
+          .mock-dash-grid {
+            grid-template-columns: 1fr 1fr 1fr;
+          }
           .auth-panel-wrap {
             justify-content: stretch;
           }
-
           .auth-panel {
             max-width: none;
           }
@@ -695,7 +1212,6 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
             align-items: flex-start;
             flex-direction: column;
           }
-
           .auth-story h1 {
             font-size: clamp(2.5rem, 12vw, 4rem);
           }
@@ -706,7 +1222,6 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
           .auth-main {
             width: min(1220px, calc(100% - 1.25rem));
           }
-
           .auth-nav {
             position: sticky;
             top: 0;
@@ -716,62 +1231,53 @@ const Login = ({ error, onLogin, onSwitchToSignUp, onForgotPassword, onBack }) =
             backdrop-filter: blur(14px);
             border-bottom: 1px solid rgba(203, 213, 225, 0.7);
           }
-
           .nav-actions {
             width: 100%;
             display: grid;
             grid-template-columns: 1fr 1fr;
           }
-
           .brand-copy small {
             display: none;
           }
-
           .auth-main {
             padding-top: 1rem;
             padding-bottom: 3rem;
           }
-
           .auth-story {
             padding-top: 0.4rem;
           }
-
           .section-kicker {
             width: 100%;
             justify-content: center;
             text-align: center;
           }
-
           .auth-story h1 {
             font-size: clamp(2.25rem, 12vw, 3rem);
             line-height: 1.02;
           }
-
           .signal-strip {
             overflow-x: auto;
             flex-wrap: nowrap;
             padding-bottom: 0.2rem;
           }
-
           .signal-strip span {
             white-space: nowrap;
           }
-
-          .story-preview,
-          .benefit-card,
+          .feature-carousel,
+          .mock-dashboard,
           .auth-panel {
             border-radius: 22px;
           }
-
           .auth-panel {
             padding: 1.15rem;
           }
-
-          .benefit-card,
-          .story-preview {
+          .feature-carousel,
+          .mock-dashboard {
             padding: 1rem;
           }
-
+          .mock-dash-grid {
+            grid-template-columns: 1fr;
+          }
           .auth-footer {
             flex-direction: column;
             align-items: flex-start;

@@ -388,7 +388,7 @@ function App() {
   const {
     user, view, setView, authError, setAuthError,
     pendingUser, selectedPlan, verificationEmailStatus,
-    handleLogin, handleSignUp, handleResendCode, handleVerifyCode,
+    handleLogin, handleSSOLogin, handleSignUp, handleResendCode, handleVerifyCode,
     handleOnboardingComplete, handleSendMagicLink, handleSelectPlan, logout,
   } = useAuth();
   const accountPlanName = getAccessPlanName(user);
@@ -545,6 +545,7 @@ function App() {
   if (view === 'login') return <Login
     error={authError}
     onLogin={handleLogin}
+    onSSOLogin={handleSSOLogin}
     onSendMagicLink={handleSendMagicLink}
     onSwitchToSignUp={() => { setAuthError(null); setView('signup'); }}
     onForgotPassword={() => setView('forgot-password')}

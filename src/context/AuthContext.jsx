@@ -8,7 +8,10 @@ import {
     sendEmailVerification,
     updateProfile as updateAuthProfile,
     browserLocalPersistence,
-    setPersistence
+    setPersistence,
+    GoogleAuthProvider,
+    OAuthProvider,
+    signInWithPopup
 } from 'firebase/auth';
 import { analytics } from '../db/firebase';
 import { logEvent as logAnalyticsEvent } from 'firebase/analytics';
@@ -305,6 +308,70 @@ export function AuthProvider({ children }) {
                 'auth/invalid-email': 'Please enter a valid email address.',
             };
             setAuthError(messages[error.code] || error.message);
+        }
+    };
+
+    const handleSSOLogin = async (providerName) => {
+        setAuthError(null);
+        const pendingSelection = readPendingSubscription();
+
+        let provider;
+        if (providerName === 'google') {
+            provider = new GoogleAuthProvider();
+            provider.addScope('email');
+            provider.addScope('profile');
+        } else if (providerName === 'microsoft') {
+            provider = new OAuthProvider('microsoft.com');
+            provider.addScope('User.Read');
+        } else {
+            setAuthError('Unsupported sign-in provider.');
+            return;
+        }
+
+        try {
+            const result = await signInWithPopup(auth, provider);
+
+            // Fetch or bootstrap profile
+            const profile = await getProfile(result.user.uid);
+            const fullUser = normalizeUserProfile({
+                id: result.user.uid,
+                email: result.user.email,
+                displayName: result.user.displayName,
+                ...profile
+            });
+
+            setUser(fullUser);
+            localStorage.setItem('quantra_profile', JSON.stringify(fullUser));
+            initializationComplete.current = true;
+
+            if (profile && profile.is_verified === false) {
+                setView('verification');
+                const token = await result.user.getIdToken();
+                fetch('/api/send-verification-code', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                }).catch(() => {});
+            } else if (profile && profile.is_onboarded) {
+                setView(pendingSelection?.plan && isPaidPlan(pendingSelection.plan) ? 'pricing' : 'app');
+            } else {
+                setView('onboarding');
+            }
+
+            if (analytics) {
+                logAnalyticsEvent(analytics, 'login', { method: providerName });
+            }
+        } catch (error) {
+            console.error(`❌ ${providerName} SSO login failed:`, error.message);
+            if (error.code === 'auth/popup-closed-by-user') return;
+            const messages = {
+                'auth/account-exists-with-different-credential': 'An account already exists with this email using a different sign-in method.',
+                'auth/cancelled-popup-request': 'Sign-in was cancelled.',
+                'auth/popup-blocked': 'Pop-up was blocked by your browser. Please allow pop-ups and try again.',
+            };
+            setAuthError(messages[error.code] || `Unable to sign in with ${providerName === 'google' ? 'Google' : 'Microsoft'}. Please try again.`);
         }
     };
 
@@ -627,6 +694,7 @@ export function AuthProvider({ children }) {
         setAuthError,
         selectedPlan,
         handleLogin,
+        handleSSOLogin,
         handleSignUp,
         handleResendCode,
         handleVerifyCode,
