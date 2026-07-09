@@ -15,9 +15,12 @@ import {
 } from 'lucide-react';
 import QuantraIcon from '../ui/QuantraIcon';
 
-const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, onViewPrivacy }) => {
+const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, onViewPrivacy, onSSOLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -28,23 +31,63 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
     agreeToTerms: false
   });
 
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const [confirmPasswordTouched, setConfirmPasswordTouched] = useState(false);
+
+  const emailValid = useMemo(() => {
+    if (!formData.email) return null;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
+  }, [formData.email]);
+
+  const passwordStrength = useMemo(() => {
+    const password = formData.password;
+    if (!password) return { level: 0, label: '', color: '' };
+    let score = 0;
+    if (password.length >= 8) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+    if (score <= 1) return { level: 1, label: 'Weak', color: '#ef4444' };
+    if (score <= 2) return { level: 2, label: 'Fair', color: '#f59e0b' };
+    if (score <= 3) return { level: 3, label: 'Good', color: '#3b82f6' };
+    return { level: 4, label: 'Strong', color: '#22c55e' };
+  }, [formData.password]);
+
   const signupBenefits = [
     {
-      icon: <Building2 size={18} />,
+      icon: <Building2 size={20} />,
       title: 'Company workspace from day one',
-      copy: 'Create the account around a company identity so projects, pricing, and exports stay tied to one workflow.'
+      copy: 'Create the account around a company identity so projects, pricing, and exports stay tied to one workflow.',
+      stat: 'Multi-User',
+      statLabel: 'Collaboration'
     },
     {
-      icon: <FileSpreadsheet size={18} />,
+      icon: <FileSpreadsheet size={20} />,
       title: 'Real BOQ flow immediately',
-      copy: 'Start with the same benchmark-first, custom-pricing-ready workspace you saw on the welcome and pricing pages.'
+      copy: 'Start with the same benchmark-first, custom-pricing-ready workspace you saw on the welcome and pricing pages.',
+      stat: 'Benchmark pricing',
+      statLabel: 'Built-in library'
     },
     {
-      icon: <CheckCircle2 size={18} />,
+      icon: <CheckCircle2 size={20} />,
       title: 'Ready for rollout later',
-      copy: 'Begin with one user and grow into a team setup without changing the product or retraining around a new interface.'
+      copy: 'Begin with one user and grow into a team setup without changing the product or retraining around a new interface.',
+      stat: 'Instant sync',
+      statLabel: 'Cloud storage'
     }
   ];
+
+  const [carouselIndex, setCarouselIndex] = useState(0);
+
+  const nextSlide = useCallback(() => {
+    setCarouselIndex((prev) => (prev + 1) % signupBenefits.length);
+  }, [signupBenefits.length]);
+
+  useEffect(() => {
+    const timer = setInterval(nextSlide, 5000);
+    return () => clearInterval(timer);
+  }, [nextSlide]);
 
   const quickSignals = [
     selectedPlan ? `${selectedPlan} selected` : 'Pick a plan anytime',
@@ -77,7 +120,11 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
 
   return (
     <div className="auth-shell">
-      <div className="auth-atmosphere" />
+      <div className="auth-atmosphere">
+        <div className="floating-orb orb-1" />
+        <div className="floating-orb orb-2" />
+        <div className="floating-orb orb-3" />
+      </div>
       <div className="auth-grid-overlay" />
 
       <nav className="auth-nav">
@@ -125,36 +172,66 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
             ))}
           </div>
 
-          <div className="story-preview">
-            <span className="preview-tag">What you are creating</span>
-            <h2>New Quantra company workspace</h2>
-
-            <div className="story-preview-grid">
-              <div className="story-stat-card">
-                <strong>Benchmark pricing</strong>
-                <span>Start from market-backed BOQ automation</span>
-              </div>
-              <div className="story-stat-card">
-                <strong>Custom rate build-up</strong>
-                <span>Go deeper when benchmark is not enough</span>
-              </div>
-              <div className="story-stat-card">
-                <strong>Exports + sync</strong>
-                <span>Keep the same job through review and handoff</span>
-              </div>
+          {/* Feature Carousel */}
+          <div className="feature-carousel">
+            <div className="carousel-viewport">
+              {signupBenefits.map((slide, i) => (
+                <div
+                  key={slide.title}
+                  className={`carousel-slide ${i === carouselIndex ? 'active' : ''}`}
+                >
+                  <div className="carousel-slide-header">
+                    <div className="carousel-slide-icon">{slide.icon}</div>
+                    <h3>{slide.title}</h3>
+                  </div>
+                  <p>{slide.copy}</p>
+                  <div className="carousel-slide-stat">
+                    <strong>{slide.stat}</strong>
+                    <span>{slide.statLabel}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="carousel-dots">
+              {signupBenefits.map((_, i) => (
+                <button
+                  key={i}
+                  className={`carousel-dot ${i === carouselIndex ? 'active' : ''}`}
+                  onClick={() => setCarouselIndex(i)}
+                  aria-label={`Go to slide ${i + 1}`}
+                />
+              ))}
             </div>
           </div>
 
-          <div className="benefit-grid">
-            {signupBenefits.map(({ icon, title, copy }) => (
-              <article key={title} className="benefit-card">
-                <div className="benefit-icon">{icon}</div>
-                <div>
-                  <h3>{title}</h3>
-                  <p>{copy}</p>
-                </div>
-              </article>
-            ))}
+          {/* Mock Dashboard Widget */}
+          <div className="mock-dashboard">
+            <div className="mock-dash-header">
+              <span className="preview-tag">What you are creating</span>
+              <span className="mock-dash-status">● Live Setup</span>
+            </div>
+            <h2 className="mock-dash-title">New Quantra company workspace</h2>
+            <div className="mock-dash-grid">
+              <div className="mock-dash-card">
+                <span className="mock-dash-label">Benchmark pricing</span>
+                <strong>Auto-BOQ</strong>
+                <div className="mock-progress"><div className="mock-progress-fill" style={{ width: '100%' }} /></div>
+              </div>
+              <div className="mock-dash-card">
+                <span className="mock-dash-label">Custom rate build-up</span>
+                <strong>Adaptive</strong>
+                <div className="mock-progress"><div className="mock-progress-fill accent" style={{ width: '85%' }} /></div>
+              </div>
+              <div className="mock-dash-card">
+                <span className="mock-dash-label">Exports + sync</span>
+                <strong>Protected</strong>
+                <div className="mock-progress"><div className="mock-progress-fill green" style={{ width: '100%' }} /></div>
+              </div>
+            </div>
+            <div className="mock-dash-rows">
+              <div className="mock-row"><span>Multi-user projects</span><span className="mock-row-val">Enabled</span></div>
+              <div className="mock-row"><span>Secure client handoff</span><span className="mock-row-val">Active</span></div>
+            </div>
           </div>
         </section>
 
@@ -202,7 +279,7 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
 
               <div className="form-group">
                 <label className="form-label">Professional email</label>
-                <div className="input-with-icon">
+                <div className={`input-with-icon ${emailTouched && emailValid === true ? 'input-valid' : ''} ${emailTouched && emailValid === false ? 'input-invalid' : ''}`}>
                   <Mail size={18} className="input-icon" />
                   <input
                     type="email"
@@ -210,9 +287,23 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
                     placeholder="name@company.com"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onBlur={() => setEmailTouched(true)}
                     required
                   />
+                  {emailTouched && emailValid === true && (
+                    <span className="input-validation-icon valid">
+                      <Check size={16} />
+                    </span>
+                  )}
+                  {emailTouched && emailValid === false && (
+                    <span className="input-validation-icon invalid">
+                      <AlertCircle size={16} />
+                    </span>
+                  )}
                 </div>
+                {emailTouched && emailValid === false && (
+                  <span className="field-hint error">Please enter a valid email address</span>
+                )}
               </div>
 
               <div className="form-row">
@@ -253,14 +344,40 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
                   <div className="input-with-icon">
                     <Lock size={18} className="input-icon" />
                     <input
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       className="form-input"
-                      placeholder="Create a secure password"
+                      placeholder="Secure password"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      onBlur={() => setPasswordTouched(true)}
                       required
                     />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowPassword(!showPassword)}
+                      tabIndex={-1}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
                   </div>
+                  {passwordTouched && formData.password && (
+                    <div className="password-strength">
+                      <div className="strength-bar">
+                        {[1, 2, 3, 4].map((seg) => (
+                          <div
+                            key={seg}
+                            className={`strength-segment ${passwordStrength.level >= seg ? 'active' : ''}`}
+                            style={{ backgroundColor: passwordStrength.level >= seg ? passwordStrength.color : undefined }}
+                          />
+                        ))}
+                      </div>
+                      <span className="strength-label" style={{ color: passwordStrength.color }}>
+                        {passwordStrength.label}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -268,35 +385,92 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
                   <div className="input-with-icon">
                     <Lock size={18} className="input-icon" />
                     <input
-                      type="password"
+                      type={showConfirmPassword ? 'text' : 'password'}
                       className="form-input"
-                      placeholder="Repeat your password"
+                      placeholder="Repeat password"
                       value={formData.confirmPassword}
                       onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      onBlur={() => setConfirmPasswordTouched(true)}
                       required
                     />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      tabIndex={-1}
+                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
                   </div>
                 </div>
               </div>
 
-              <div className="form-checkbox">
-                <input
-                  type="checkbox"
-                  id="terms"
-                  required
-                  checked={formData.agreeToTerms}
-                  onChange={(e) => setFormData({ ...formData, agreeToTerms: e.target.checked })}
-                />
-                <label htmlFor="terms">
+              <label className="remember-row">
+                <span className={`custom-checkbox ${formData.agreeToTerms ? 'checked' : ''}`}>
+                  <input
+                    type="checkbox"
+                    checked={formData.agreeToTerms}
+                    onChange={(e) => setFormData({ ...formData, agreeToTerms: e.target.checked })}
+                    required
+                  />
+                  {formData.agreeToTerms && <Check size={12} />}
+                </span>
+                <span className="remember-label terms-label">
                   I agree to the <button type="button" className="text-link" onClick={(e) => { e.preventDefault(); onViewTerms?.(); }}>Terms of Service</button> and <button type="button" className="text-link" onClick={(e) => { e.preventDefault(); onViewPrivacy?.(); }}>Privacy Policy</button>
-                </label>
-              </div>
+                </span>
+              </label>
 
               <button type="submit" className={`auth-submit ${isLoading ? 'loading' : ''}`} disabled={isLoading}>
-                {isLoading ? 'Creating account...' : 'Create your Quantra account'}
-                {!isLoading && <ArrowRight size={18} />}
+                {isLoading ? (
+                  <>
+                    <span className="spinner" />
+                    Creating account…
+                  </>
+                ) : (
+                  <>
+                    Create your Quantra account
+                    <ArrowRight size={18} />
+                  </>
+                )}
               </button>
             </form>
+
+            <div className="sso-divider">
+              <span className="sso-divider-line" />
+              <span className="sso-divider-text">or continue with</span>
+              <span className="sso-divider-line" />
+            </div>
+
+            <div className="sso-buttons">
+              <button
+                type="button"
+                className="sso-btn"
+                onClick={() => onSSOLogin?.('google')}
+              >
+                <svg className="sso-icon" viewBox="0 0 24 24" width="20" height="20">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                <span>Google</span>
+              </button>
+
+              <button
+                type="button"
+                className="sso-btn"
+                onClick={() => onSSOLogin?.('microsoft')}
+              >
+                <svg className="sso-icon" viewBox="0 0 23 23" width="20" height="20">
+                  <path fill="#f35325" d="M1 1h10v10H1z"/>
+                  <path fill="#81bc06" d="M12 1h10v10H12z"/>
+                  <path fill="#05a6f0" d="M1 12h10v10H1z"/>
+                  <path fill="#ffba08" d="M12 12h10v10H12z"/>
+                </svg>
+                <span>Microsoft</span>
+              </button>
+            </div>
 
             <div className="auth-note">
               <CheckCircle2 size={16} />
@@ -326,13 +500,51 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
           font-family: var(--font-main);
         }
 
+        /* ── Floating Orbs ── */
         .auth-atmosphere {
           position: absolute;
           inset: 0;
-          background:
-            radial-gradient(circle at 18% 24%, rgba(30, 108, 247, 0.18), transparent 18%),
-            radial-gradient(circle at 82% 74%, rgba(212, 160, 23, 0.12), transparent 18%);
           pointer-events: none;
+          overflow: hidden;
+        }
+        .floating-orb {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(80px);
+          opacity: 0.55;
+          will-change: transform;
+        }
+        .orb-1 {
+          width: 420px; height: 420px;
+          top: -8%; left: -5%;
+          background: radial-gradient(circle, rgba(59, 130, 246, 0.3), transparent 70%);
+          animation: orbFloat1 18s ease-in-out infinite;
+        }
+        .orb-2 {
+          width: 320px; height: 320px;
+          top: 60%; right: -4%;
+          background: radial-gradient(circle, rgba(212, 160, 23, 0.25), transparent 70%);
+          animation: orbFloat2 22s ease-in-out infinite;
+        }
+        .orb-3 {
+          width: 260px; height: 260px;
+          top: 30%; left: 45%;
+          background: radial-gradient(circle, rgba(139, 92, 246, 0.15), transparent 70%);
+          animation: orbFloat3 25s ease-in-out infinite;
+        }
+        @keyframes orbFloat1 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(40px, 30px) scale(1.08); }
+          66% { transform: translate(-20px, 50px) scale(0.95); }
+        }
+        @keyframes orbFloat2 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(-35px, -40px) scale(1.1); }
+          66% { transform: translate(25px, -20px) scale(0.92); }
+        }
+        @keyframes orbFloat3 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(30px, -35px) scale(1.12); }
         }
 
         .auth-grid-overlay {
@@ -344,6 +556,12 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
           background-size: 64px 64px;
           mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.45), transparent 92%);
           pointer-events: none;
+        }
+
+        /* ── Stagger Entrance Animations ── */
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
 
         .auth-nav,
@@ -359,6 +577,7 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
           align-items: center;
           justify-content: space-between;
           padding: 1.4rem 0 1rem;
+          animation: fadeUp 0.6s ease both;
         }
 
         .brand-mark {
@@ -383,6 +602,11 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
           background: linear-gradient(135deg, var(--primary-900), var(--accent-600));
           box-shadow: 0 18px 35px rgba(30, 108, 247, 0.24);
           color: white;
+          animation: subtlePulse 3s ease-in-out infinite;
+        }
+        @keyframes subtlePulse {
+          0%, 100% { box-shadow: 0 18px 35px rgba(30, 108, 247, 0.24); }
+          50% { box-shadow: 0 18px 45px rgba(30, 108, 247, 0.35); }
         }
 
         .brand-copy {
@@ -434,11 +658,14 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
           box-shadow: 0 14px 28px rgba(15, 23, 42, 0.14);
         }
 
-        .nav-back-btn:hover,
-        .nav-create-btn:hover,
-        .auth-submit:hover,
-        .text-link-strong:hover {
+        .nav-back-btn:hover {
           transform: translateY(-1px);
+          border-color: var(--primary-300, #94a3b8);
+          box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+        }
+        .nav-create-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 18px 36px rgba(15, 23, 42, 0.2);
         }
 
         .auth-main {
@@ -451,6 +678,24 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
 
         .auth-story {
           padding: 1.8rem 0 1rem;
+        }
+        .auth-story .section-kicker {
+          animation: fadeUp 0.5s ease 0.1s both;
+        }
+        .auth-story h1 {
+          animation: fadeUp 0.6s ease 0.2s both;
+        }
+        .auth-story .auth-subtitle {
+          animation: fadeUp 0.6s ease 0.3s both;
+        }
+        .auth-story .signal-strip {
+          animation: fadeUp 0.5s ease 0.4s both;
+        }
+        .auth-story .feature-carousel {
+          animation: fadeUp 0.6s ease 0.5s both;
+        }
+        .auth-story .mock-dashboard {
+          animation: fadeUp 0.6s ease 0.6s both;
         }
 
         .section-kicker,
@@ -511,96 +756,240 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
           font-size: 0.74rem;
           font-weight: 700;
           box-shadow: var(--shadow-sm);
+          transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
         }
-
-        .story-preview {
-          margin-top: 1.6rem;
-          padding: 1.3rem;
-          border-radius: 28px;
-          border: 1px solid var(--border-light);
-          background: rgba(255, 255, 255, 0.9);
-          box-shadow: var(--shadow-xl);
-          backdrop-filter: blur(14px);
+        .signal-strip span:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+          border-color: var(--accent-600, #2563eb);
+          color: var(--accent-600, #2563eb);
         }
 
         .preview-tag {
-          padding: 0.42rem 0.75rem;
-          background: rgba(15, 23, 42, 0.06);
-          color: var(--primary-700);
-        }
-
-        .story-preview h2 {
-          margin: 1rem 0 1.15rem;
-          font-size: 1.35rem;
-          color: var(--primary-950);
-        }
-
-        .story-preview-grid {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 0.85rem;
-        }
-
-        .story-stat-card {
-          padding: 1rem;
-          border-radius: 20px;
-          background: white;
-          border: 1px solid rgba(203, 213, 225, 0.72);
-        }
-
-        .story-stat-card strong {
-          display: block;
-          font-size: 0.98rem;
-          color: var(--primary-900);
-        }
-
-        .story-stat-card span {
-          display: block;
-          margin-top: 0.45rem;
-          color: var(--primary-500);
-          font-size: 0.78rem;
-          line-height: 1.55;
-        }
-
-        .benefit-grid {
-          display: grid;
-          gap: 0.9rem;
-          margin-top: 1.25rem;
-        }
-
-        .benefit-card {
-          display: flex;
-          gap: 0.85rem;
-          padding: 1rem 1.05rem;
-          border-radius: 22px;
-          background: rgba(255, 255, 255, 0.92);
-          border: 1px solid rgba(203, 213, 225, 0.72);
-          box-shadow: 0 14px 26px rgba(15, 23, 42, 0.05);
-        }
-
-        .benefit-icon {
-          width: 40px;
-          height: 40px;
-          flex-shrink: 0;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 14px;
-          background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(15, 23, 42, 0.06));
+          padding: 0.42rem 0.72rem;
+          background: rgba(37, 99, 235, 0.08);
+          border: 1px solid rgba(37, 99, 235, 0.14);
           color: var(--accent-600);
         }
 
-        .benefit-card h3 {
-          margin: 0;
-          font-size: 0.96rem;
-          color: var(--primary-950);
+        /* ── Feature Carousel ── */
+        .feature-carousel {
+          margin-top: 1.6rem;
+          padding: 1.4rem;
+          border-radius: 28px;
+          border: 1px solid var(--border-light);
+          background: rgba(255, 255, 255, 0.92);
+          box-shadow: var(--shadow-xl);
+          backdrop-filter: blur(14px);
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .feature-carousel:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 24px 50px rgba(15, 23, 42, 0.1);
         }
 
-        .benefit-card p {
-          margin: 0.35rem 0 0;
+        .carousel-viewport {
+          position: relative;
+          min-height: 140px;
+        }
+
+        .carousel-slide {
+          position: absolute;
+          inset: 0;
+          opacity: 0;
+          transform: translateY(8px);
+          transition: opacity 0.5s ease, transform 0.5s ease;
+          pointer-events: none;
+        }
+        .carousel-slide.active {
+          position: relative;
+          opacity: 1;
+          transform: translateY(0);
+          pointer-events: auto;
+        }
+
+        .carousel-slide-header {
+          display: flex;
+          align-items: center;
+          gap: 0.7rem;
+          margin-bottom: 0.6rem;
+        }
+        .carousel-slide-icon {
+          width: 40px;
+          height: 40px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 12px;
+          background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(15, 23, 42, 0.06));
+          color: var(--accent-600);
+        }
+        .carousel-slide-header h3 {
+          margin: 0;
+          font-size: 1.05rem;
+          color: var(--primary-950);
+        }
+        .carousel-slide p {
+          margin: 0;
           color: var(--primary-600);
-          font-size: 0.83rem;
+          font-size: 0.88rem;
           line-height: 1.65;
+        }
+        .carousel-slide-stat {
+          margin-top: 0.9rem;
+          padding: 0.7rem 0.9rem;
+          border-radius: 14px;
+          background: var(--primary-50, #f8fafc);
+          border: 1px solid var(--border-light, #e2e8f0);
+          display: flex;
+          align-items: baseline;
+          gap: 0.5rem;
+        }
+        .carousel-slide-stat strong {
+          font-size: 1.15rem;
+          color: var(--primary-900);
+          font-weight: 800;
+        }
+        .carousel-slide-stat span {
+          font-size: 0.76rem;
+          color: var(--primary-500);
+          font-weight: 600;
+        }
+
+        .carousel-dots {
+          display: flex;
+          justify-content: center;
+          gap: 6px;
+          margin-top: 1rem;
+        }
+        .carousel-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 999px;
+          border: none;
+          background: var(--border-medium, #cbd5e1);
+          cursor: pointer;
+          padding: 0;
+          transition: width 0.35s ease, background 0.35s ease;
+        }
+        .carousel-dot.active {
+          width: 24px;
+          background: var(--accent-600, #2563eb);
+        }
+
+        /* ── Mock Dashboard Widget ── */
+        .mock-dashboard {
+          margin-top: 1.1rem;
+          padding: 1.25rem;
+          border-radius: 24px;
+          border: 1px solid var(--border-light);
+          background: rgba(255, 255, 255, 0.92);
+          box-shadow: var(--shadow-lg, 0 10px 30px rgba(0,0,0,0.06));
+          backdrop-filter: blur(10px);
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .mock-dashboard:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
+        }
+        .mock-dash-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .mock-dash-status {
+          font-size: 0.72rem;
+          font-weight: 700;
+          color: #22c55e;
+          letter-spacing: 0.02em;
+          animation: statusPulse 2s ease-in-out infinite;
+        }
+        @keyframes statusPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        .mock-dash-title {
+          margin: 0.75rem 0 0.9rem;
+          font-size: 1.1rem;
+          color: var(--primary-950);
+          font-weight: 800;
+        }
+        .mock-dash-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 0.65rem;
+        }
+        .mock-dash-card {
+          padding: 0.75rem;
+          border-radius: 14px;
+          background: var(--primary-50, #f8fafc);
+          border: 1px solid var(--border-light, #e2e8f0);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .mock-dash-card:hover {
+          transform: translateY(-2px) scale(1.02);
+          box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+        }
+        .mock-dash-label {
+          display: block;
+          font-size: 0.68rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: var(--primary-400);
+          margin-bottom: 0.25rem;
+        }
+        .mock-dash-card strong {
+          display: block;
+          font-size: 1rem;
+          color: var(--primary-900);
+          font-weight: 800;
+          margin-bottom: 0.45rem;
+        }
+        .mock-progress {
+          height: 4px;
+          border-radius: 999px;
+          background: var(--border-light, #e2e8f0);
+          overflow: hidden;
+        }
+        .mock-progress-fill {
+          height: 100%;
+          border-radius: 999px;
+          background: var(--accent-600, #2563eb);
+          transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .mock-progress-fill.accent {
+          background: #f59e0b;
+        }
+        .mock-progress-fill.green {
+          background: #22c55e;
+        }
+        .mock-dash-rows {
+          margin-top: 0.75rem;
+          display: grid;
+          gap: 0;
+        }
+        .mock-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0.55rem 0.5rem;
+          border-top: 1px solid var(--border-light, #e2e8f0);
+          font-size: 0.82rem;
+          color: var(--primary-700);
+          border-radius: 8px;
+          transition: background 0.2s ease;
+        }
+        .mock-row:hover {
+          background: var(--primary-50, #f8fafc);
+        }
+        .mock-row:first-child {
+          border-top: none;
+        }
+        .mock-row-val {
+          font-weight: 700;
+          color: var(--primary-900);
+          font-variant-numeric: tabular-nums;
         }
 
         .auth-panel-wrap {
@@ -609,12 +998,22 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
         }
 
         .auth-panel {
+          width: 100%;
           padding: 1.6rem;
           border-radius: 30px;
           border: 1px solid var(--border-light);
           background: rgba(255, 255, 255, 0.94);
-          box-shadow: 0 22px 46px rgba(15, 23, 42, 0.08);
+          box-shadow: var(--shadow-xl);
           backdrop-filter: blur(14px);
+          animation: fadeUp 0.7s ease 0.35s both;
+          transition: box-shadow 0.4s ease, border-color 0.4s ease;
+        }
+        .auth-panel:hover {
+          box-shadow:
+            0 24px 50px rgba(15, 23, 42, 0.1),
+            0 0 0 1px rgba(59, 130, 246, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+          border-color: rgba(59, 130, 246, 0.18);
         }
 
         .auth-card-header h2 {
@@ -671,28 +1070,41 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
           cursor: pointer;
         }
 
-        .auth-error-banner,
+        .auth-error-banner {
+          display: flex;
+          align-items: flex-start;
+          gap: 0.75rem;
+          margin-top: 1.2rem;
+          padding: 0.9rem 1rem;
+          border-radius: 16px;
+          background: rgba(248, 113, 113, 0.1);
+          border: 1px solid rgba(248, 113, 113, 0.25);
+          color: #dc2626;
+          font-size: 0.88rem;
+          font-weight: 700;
+          line-height: 1.5;
+          animation: shakeIn 0.5s ease;
+        }
+        @keyframes shakeIn {
+          0% { transform: translateX(-8px); opacity: 0; }
+          25% { transform: translateX(6px); }
+          50% { transform: translateX(-4px); }
+          75% { transform: translateX(2px); }
+          100% { transform: translateX(0); opacity: 1; }
+        }
+
         .auth-note {
           display: flex;
           align-items: flex-start;
           gap: 0.7rem;
           margin-top: 1rem;
-          padding: 0.9rem 1rem;
+          padding: 0.95rem 1rem;
           border-radius: 18px;
-          font-size: 0.88rem;
-          line-height: 1.55;
-        }
-
-        .auth-error-banner {
-          background: rgba(248, 113, 113, 0.1);
-          border: 1px solid rgba(248, 113, 113, 0.25);
-          color: #dc2626;
-        }
-
-        .auth-note {
           background: rgba(15, 118, 110, 0.08);
           border: 1px solid rgba(20, 184, 166, 0.16);
           color: #0f766e;
+          font-size: 0.84rem;
+          line-height: 1.55;
         }
 
         .auth-form {
@@ -731,6 +1143,11 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
           top: 50%;
           transform: translateY(-50%);
           color: var(--primary-400);
+          transition: color 0.25s ease;
+        }
+        .form-input:focus ~ .input-icon,
+        .input-with-icon:focus-within .input-icon {
+          color: var(--accent-600);
         }
 
         .form-input {
@@ -747,22 +1164,149 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
         .form-input:focus {
           outline: none;
           border-color: var(--accent-500);
-          box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+          box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
           background: white;
         }
 
-        .form-checkbox {
-          display: flex;
-          align-items: flex-start;
-          gap: 0.75rem;
-          margin-top: 0.15rem;
-          color: var(--primary-600);
-          font-size: 0.86rem;
-          line-height: 1.55;
+        .input-valid .form-input {
+          border-color: #22c55e;
+        }
+        .input-valid .form-input:focus {
+          box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.10);
+        }
+        .input-invalid .form-input {
+          border-color: #ef4444;
+        }
+        .input-invalid .form-input:focus {
+          box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.10);
         }
 
-        .form-checkbox input {
-          margin-top: 0.25rem;
+        .input-validation-icon {
+          position: absolute;
+          right: 1rem;
+          top: 50%;
+          transform: translateY(-50%);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .input-validation-icon.valid {
+          background: rgba(34, 197, 94, 0.12);
+          color: #16a34a;
+        }
+        .input-validation-icon.invalid {
+          background: rgba(239, 68, 68, 0.10);
+          color: #dc2626;
+        }
+
+        @keyframes popIn {
+          0% { transform: translateY(-50%) scale(0); opacity: 0; }
+          100% { transform: translateY(-50%) scale(1); opacity: 1; }
+        }
+
+        .field-hint {
+          font-size: 0.76rem;
+          font-weight: 600;
+          animation: slideDown 0.25s ease;
+        }
+        .field-hint.error {
+          color: #dc2626;
+        }
+        @keyframes slideDown {
+          0% { opacity: 0; transform: translateY(-4px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .password-toggle {
+          position: absolute;
+          right: 0.75rem;
+          top: 50%;
+          transform: translateY(-50%);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 34px;
+          height: 34px;
+          border-radius: 10px;
+          border: none;
+          background: transparent;
+          color: var(--primary-400);
+          cursor: pointer;
+          transition: background 0.2s ease, color 0.2s ease;
+        }
+        .password-toggle:hover {
+          background: var(--primary-50, #f1f5f9);
+          color: var(--primary-700);
+        }
+
+        .password-strength {
+          display: flex;
+          align-items: center;
+          gap: 0.65rem;
+          animation: slideDown 0.25s ease;
+        }
+        .strength-bar {
+          display: flex;
+          gap: 4px;
+          flex: 1;
+        }
+        .strength-segment {
+          height: 4px;
+          flex: 1;
+          border-radius: 999px;
+          background: var(--border-light, #e2e8f0);
+          transition: background-color 0.3s ease;
+        }
+        .strength-label {
+          font-size: 0.72rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          white-space: nowrap;
+        }
+
+        .remember-row {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          cursor: pointer;
+          user-select: none;
+        }
+        .custom-checkbox {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 20px;
+          height: 20px;
+          border-radius: 6px;
+          border: 1.5px solid var(--border-medium, #cbd5e1);
+          background: white;
+          transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+          flex-shrink: 0;
+        }
+        .custom-checkbox input {
+          position: absolute;
+          opacity: 0;
+          width: 100%;
+          height: 100%;
+          cursor: pointer;
+          margin: 0;
+        }
+        .custom-checkbox.checked {
+          background: var(--accent-600, #2563eb);
+          border-color: var(--accent-600, #2563eb);
+          color: white;
+          transform: scale(1.05);
+        }
+        .remember-label {
+          font-size: 0.84rem;
+          color: var(--primary-600);
+          font-weight: 600;
         }
 
         .auth-submit {
@@ -775,18 +1319,108 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
           padding: 1rem 1.2rem;
           border-radius: 18px;
           border: none;
-          background: linear-gradient(135deg, var(--primary-900), #1e3a5f);
+          background: var(--primary-900);
           color: white;
           font-size: 0.96rem;
           font-weight: 800;
           cursor: pointer;
-          box-shadow: 0 18px 32px rgba(15, 23, 42, 0.18);
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          box-shadow: 0 16px 30px rgba(15, 23, 42, 0.16);
+          transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+          position: relative;
+          overflow: hidden;
+        }
+        .auth-submit::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.12) 45%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.12) 55%, transparent 60%);
+          transform: translateX(-100%);
+          transition: none;
+        }
+        .auth-submit:hover::after {
+          animation: btnShine 0.7s ease forwards;
+        }
+        @keyframes btnShine {
+          100% { transform: translateX(100%); }
+        }
+        .auth-submit:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 20px 38px rgba(15, 23, 42, 0.22);
+        }
+        .auth-submit.loading {
+          opacity: 0.85;
+          pointer-events: none;
+        }
+        .spinner {
+          width: 18px;
+          height: 18px;
+          border: 2.5px solid rgba(255, 255, 255, 0.3);
+          border-top-color: white;
+          border-radius: 50%;
+          animation: spin 0.65s linear infinite;
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
 
-        .auth-submit.loading {
-          opacity: 0.8;
-          pointer-events: none;
+        .sso-divider {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          margin-top: 1.25rem;
+        }
+        .sso-divider-line {
+          flex: 1;
+          height: 1px;
+          background: var(--border-light, #e2e8f0);
+        }
+        .sso-divider-text {
+          font-size: 0.76rem;
+          font-weight: 700;
+          color: var(--primary-400);
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          white-space: nowrap;
+        }
+
+        .sso-buttons {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0.65rem;
+          margin-top: 0.85rem;
+        }
+
+        .sso-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.55rem;
+          min-height: 48px;
+          padding: 0 1rem;
+          border-radius: 14px;
+          border: 1px solid var(--border-medium, #cbd5e1);
+          background: white;
+          color: var(--primary-800, #1e293b);
+          font-size: 0.88rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+        .sso-btn:hover {
+          transform: translateY(-1px);
+          border-color: var(--primary-300, #94a3b8);
+          box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+          background: var(--primary-50, #f8fafc);
+        }
+        .sso-btn:active {
+          transform: translateY(0);
+        }
+        .sso-icon {
+          flex-shrink: 0;
+          transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .sso-btn:hover .sso-icon {
+          transform: scale(1.15);
         }
 
         .auth-footer {

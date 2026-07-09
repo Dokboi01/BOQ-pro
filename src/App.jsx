@@ -551,7 +551,7 @@ function App() {
     onForgotPassword={() => setView('forgot-password')}
     onBack={() => setView(user ? 'app' : 'landing')}
   />;
-  if (view === 'signup') return <SignUp error={authError} selectedPlan={selectedPlan} onSignUp={handleSignUp} onSwitchToLogin={(target) => { setAuthError(null); setView(target); }} onViewTerms={() => setView('terms')} onViewPrivacy={() => setView('privacy')} />;
+  if (view === 'signup') return <SignUp error={authError} selectedPlan={selectedPlan} onSignUp={handleSignUp} onSSOLogin={handleSSOLogin} onSwitchToLogin={(target) => { setAuthError(null); setView(target); }} onViewTerms={() => setView('terms')} onViewPrivacy={() => setView('privacy')} />;
   if (view === 'verification') return (
     <OTPVerificationView
       email={pendingUser?.email || user?.email || 'your email'}
