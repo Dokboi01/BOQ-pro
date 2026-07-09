@@ -11,7 +11,10 @@ import {
   Phone,
   Shield,
   Sparkles,
-  User
+  User,
+  Eye,
+  EyeOff,
+  Check
 } from 'lucide-react';
 import QuantraIcon from '../ui/QuantraIcon';
 
