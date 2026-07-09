@@ -1127,7 +1127,7 @@ const BOQSelectionStage = ({
           .boq-selection-btn { width: 100%; }
           .boq-selection-content.staggered-fade-in { padding: 1rem 0.75rem; gap: 1.5rem; }
         }
-      `}</style>e>
+      `}</style>
     </div>
   );
 };
