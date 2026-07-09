@@ -1485,7 +1485,7 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
         @media (max-width: 640px) {
           .auth-nav,
           .auth-main {
-            width: min(1220px, calc(100% - 1.25rem));
+            width: min(1220px, calc(100% - 2rem));
           }
 
           .auth-nav {
@@ -1507,30 +1507,33 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
             justify-content: space-between;
           }
 
-          .section-kicker {
-            width: 100%;
-            justify-content: center;
-            text-align: center;
-          }
-
-          .auth-story,
           .auth-main {
-            padding-top: 1rem;
+            padding-top: 1.5rem;
+            padding-bottom: 3rem;
           }
 
           .form-row {
             grid-template-columns: 1fr;
           }
 
-          .auth-panel,
-          .story-preview,
-          .benefit-card {
-            border-radius: 22px;
+          .auth-panel {
+            border-radius: 24px;
+            padding: 1.5rem 1.2rem;
+            background: white;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 8px 30px rgba(15, 23, 42, 0.03);
+          }
+
+          .sso-buttons {
+            grid-template-columns: 1fr;
+            gap: 0.6rem;
           }
 
           .auth-footer {
             flex-direction: column;
-            align-items: flex-start;
+            align-items: center;
+            gap: 0.5rem;
+            text-align: center;
           }
         }
       `}</style>
