@@ -413,7 +413,8 @@ export function AuthProvider({ children }) {
                 'auth/cancelled-popup-request': 'Sign-in was cancelled.',
                 'auth/popup-blocked': 'Pop-up was blocked by your browser. Please allow pop-ups and try again.',
             };
-            setAuthError(messages[error.code] || `Unable to sign in with ${providerName === 'google' ? 'Google' : 'Microsoft'}. Please try again.`);
+            const errorDetails = error.code ? `[${error.code}]` : `(${error.message})`;
+            setAuthError(messages[error.code] || `Unable to sign in with ${providerName === 'google' ? 'Google' : 'Microsoft'} ${errorDetails}. Please try again.`);
         }
     };
 
