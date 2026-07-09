@@ -314,7 +314,7 @@ export function AuthProvider({ children }) {
     const handleSSOLogin = async (providerName) => {
         setAuthError(null);
         const pendingSelection = readPendingSubscription();
-
+ 
         let provider;
         if (providerName === 'google') {
             provider = new GoogleAuthProvider();
@@ -327,23 +327,65 @@ export function AuthProvider({ children }) {
             setAuthError('Unsupported sign-in provider.');
             return;
         }
-
+ 
         try {
             const result = await signInWithPopup(auth, provider);
-
+ 
             // Fetch or bootstrap profile
-            const profile = await getProfile(result.user.uid);
+            let profile = await getProfile(result.user.uid);
+            
+            if (!profile) {
+                console.log(`Creating new Firestore profile for SSO user ${result.user.uid}`);
+                const company_name = deriveCompanyName({ email: result.user.email });
+                const company_key = buildCompanyKey({ email: result.user.email });
+                const chosenPlan = getNormalizedPlanName(
+                    pendingSelection?.plan || selectedPlan || PLAN_NAMES.STUDENT
+                );
+                const hasVerifiedPendingPayment = pendingSelection?.paystackData?.verified === true;
+                const isPendingPaidPlan = isPaidPlan(chosenPlan) && !hasVerifiedPendingPayment;
+                const subscriptionUpdate = isPendingPaidPlan
+                    ? {
+                        plan: PLAN_NAMES.STUDENT,
+                        pendingSubscriptionSelection: buildPendingSubscriptionSelection({
+                            planName: chosenPlan,
+                            billingCycle: pendingSelection?.billing || 'monthly',
+                        }),
+                    }
+                    : buildSubscriptionProfileUpdate({
+                        planName: chosenPlan,
+                        billingCycle: pendingSelection?.billing || 'monthly',
+                        paystackData: pendingSelection?.paystackData,
+                        existingProfile: { plan: chosenPlan },
+                    });
+
+                profile = {
+                    full_name: result.user.displayName || 'Practitioner',
+                    company_name,
+                    company_key,
+                    email: result.user.email,
+                    is_onboarded: false,
+                    is_verified: true, // OAuth providers have verified emails
+                    ...subscriptionUpdate,
+                };
+
+                await updateProfile(profile);
+                if (!isPendingPaidPlan) {
+                    clearPendingSubscription();
+                    setSelectedPlan(null);
+                }
+            }
+ 
             const fullUser = normalizeUserProfile({
                 id: result.user.uid,
                 email: result.user.email,
                 displayName: result.user.displayName,
                 ...profile
             });
-
+ 
             setUser(fullUser);
             localStorage.setItem('quantra_profile', JSON.stringify(fullUser));
             initializationComplete.current = true;
-
+ 
             if (profile && profile.is_verified === false) {
                 setView('verification');
                 const token = await result.user.getIdToken();
@@ -359,7 +401,7 @@ export function AuthProvider({ children }) {
             } else {
                 setView('onboarding');
             }
-
+ 
             if (analytics) {
                 logAnalyticsEvent(analytics, 'login', { method: providerName });
             }
