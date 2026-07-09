@@ -104,7 +104,11 @@ const Login = ({ error, onLogin, onSSOLogin, onSwitchToSignUp, onForgotPassword,
 
   return (
     <div className="auth-shell">
-      <div className="auth-atmosphere" />
+      <div className="auth-atmosphere">
+        <div className="floating-orb orb-1" />
+        <div className="floating-orb orb-2" />
+        <div className="floating-orb orb-3" />
+      </div>
       <div className="auth-grid-overlay" />
 
       <nav className="auth-nav">
@@ -397,13 +401,51 @@ const Login = ({ error, onLogin, onSSOLogin, onSwitchToSignUp, onForgotPassword,
           font-family: var(--font-main);
         }
 
+        /* ── Floating Orbs ── */
         .auth-atmosphere {
           position: absolute;
           inset: 0;
-          background:
-            radial-gradient(circle at 18% 24%, rgba(30, 108, 247, 0.18), transparent 18%),
-            radial-gradient(circle at 82% 74%, rgba(212, 160, 23, 0.12), transparent 18%);
           pointer-events: none;
+          overflow: hidden;
+        }
+        .floating-orb {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(80px);
+          opacity: 0.55;
+          will-change: transform;
+        }
+        .orb-1 {
+          width: 420px; height: 420px;
+          top: -8%; left: -5%;
+          background: radial-gradient(circle, rgba(59, 130, 246, 0.3), transparent 70%);
+          animation: orbFloat1 18s ease-in-out infinite;
+        }
+        .orb-2 {
+          width: 320px; height: 320px;
+          top: 60%; right: -4%;
+          background: radial-gradient(circle, rgba(212, 160, 23, 0.25), transparent 70%);
+          animation: orbFloat2 22s ease-in-out infinite;
+        }
+        .orb-3 {
+          width: 260px; height: 260px;
+          top: 30%; left: 45%;
+          background: radial-gradient(circle, rgba(139, 92, 246, 0.15), transparent 70%);
+          animation: orbFloat3 25s ease-in-out infinite;
+        }
+        @keyframes orbFloat1 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(40px, 30px) scale(1.08); }
+          66% { transform: translate(-20px, 50px) scale(0.95); }
+        }
+        @keyframes orbFloat2 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(-35px, -40px) scale(1.1); }
+          66% { transform: translate(25px, -20px) scale(0.92); }
+        }
+        @keyframes orbFloat3 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(30px, -35px) scale(1.12); }
         }
 
         .auth-grid-overlay {
@@ -415,6 +457,12 @@ const Login = ({ error, onLogin, onSSOLogin, onSwitchToSignUp, onForgotPassword,
           background-size: 64px 64px;
           mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.45), transparent 92%);
           pointer-events: none;
+        }
+
+        /* ── Stagger Entrance Animations ── */
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
 
         .auth-nav,
@@ -430,6 +478,7 @@ const Login = ({ error, onLogin, onSSOLogin, onSwitchToSignUp, onForgotPassword,
           align-items: center;
           justify-content: space-between;
           padding: 1.4rem 0 1rem;
+          animation: fadeUp 0.6s ease both;
         }
 
         .brand-mark {
@@ -454,6 +503,11 @@ const Login = ({ error, onLogin, onSSOLogin, onSwitchToSignUp, onForgotPassword,
           background: linear-gradient(135deg, var(--primary-900), var(--accent-600));
           box-shadow: 0 18px 35px rgba(30, 108, 247, 0.24);
           color: white;
+          animation: subtlePulse 3s ease-in-out infinite;
+        }
+        @keyframes subtlePulse {
+          0%, 100% { box-shadow: 0 18px 35px rgba(30, 108, 247, 0.24); }
+          50% { box-shadow: 0 18px 45px rgba(30, 108, 247, 0.35); }
         }
 
         .brand-copy {
@@ -505,9 +559,14 @@ const Login = ({ error, onLogin, onSSOLogin, onSwitchToSignUp, onForgotPassword,
           box-shadow: 0 14px 28px rgba(15, 23, 42, 0.14);
         }
 
-        .nav-back-btn:hover,
+        .nav-back-btn:hover {
+          transform: translateY(-1px);
+          border-color: var(--primary-300, #94a3b8);
+          box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+        }
         .nav-create-btn:hover {
           transform: translateY(-1px);
+          box-shadow: 0 18px 36px rgba(15, 23, 42, 0.2);
         }
 
         .auth-main {
@@ -520,6 +579,24 @@ const Login = ({ error, onLogin, onSSOLogin, onSwitchToSignUp, onForgotPassword,
 
         .auth-story {
           padding: 1.8rem 0 1rem;
+        }
+        .auth-story .section-kicker {
+          animation: fadeUp 0.5s ease 0.1s both;
+        }
+        .auth-story h1 {
+          animation: fadeUp 0.6s ease 0.2s both;
+        }
+        .auth-story .auth-subtitle {
+          animation: fadeUp 0.6s ease 0.3s both;
+        }
+        .auth-story .signal-strip {
+          animation: fadeUp 0.5s ease 0.4s both;
+        }
+        .auth-story .feature-carousel {
+          animation: fadeUp 0.6s ease 0.5s both;
+        }
+        .auth-story .mock-dashboard {
+          animation: fadeUp 0.6s ease 0.6s both;
         }
 
         .section-kicker,
@@ -579,6 +656,13 @@ const Login = ({ error, onLogin, onSSOLogin, onSwitchToSignUp, onForgotPassword,
           font-size: 0.74rem;
           font-weight: 700;
           box-shadow: var(--shadow-sm);
+          transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .signal-strip span:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+          border-color: var(--accent-600, #2563eb);
+          color: var(--accent-600, #2563eb);
         }
 
         .preview-tag {
@@ -597,6 +681,11 @@ const Login = ({ error, onLogin, onSSOLogin, onSwitchToSignUp, onForgotPassword,
           background: rgba(255, 255, 255, 0.92);
           box-shadow: var(--shadow-xl);
           backdrop-filter: blur(14px);
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .feature-carousel:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 24px 50px rgba(15, 23, 42, 0.1);
         }
 
         .carousel-viewport {
@@ -697,6 +786,11 @@ const Login = ({ error, onLogin, onSSOLogin, onSwitchToSignUp, onForgotPassword,
           background: rgba(255, 255, 255, 0.92);
           box-shadow: var(--shadow-lg, 0 10px 30px rgba(0,0,0,0.06));
           backdrop-filter: blur(10px);
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .mock-dashboard:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
         }
         .mock-dash-header {
           display: flex;
@@ -708,6 +802,11 @@ const Login = ({ error, onLogin, onSSOLogin, onSwitchToSignUp, onForgotPassword,
           font-weight: 700;
           color: #22c55e;
           letter-spacing: 0.02em;
+          animation: statusPulse 2s ease-in-out infinite;
+        }
+        @keyframes statusPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
         }
         .mock-dash-title {
           margin: 0.75rem 0 0.9rem;
@@ -725,6 +824,11 @@ const Login = ({ error, onLogin, onSSOLogin, onSwitchToSignUp, onForgotPassword,
           border-radius: 14px;
           background: var(--primary-50, #f8fafc);
           border: 1px solid var(--border-light, #e2e8f0);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .mock-dash-card:hover {
+          transform: translateY(-2px) scale(1.02);
+          box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
         }
         .mock-dash-label {
           display: block;
@@ -769,10 +873,15 @@ const Login = ({ error, onLogin, onSSOLogin, onSwitchToSignUp, onForgotPassword,
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 0.55rem 0;
+          padding: 0.55rem 0.5rem;
           border-top: 1px solid var(--border-light, #e2e8f0);
           font-size: 0.82rem;
           color: var(--primary-700);
+          border-radius: 8px;
+          transition: background 0.2s ease;
+        }
+        .mock-row:hover {
+          background: var(--primary-50, #f8fafc);
         }
         .mock-row:first-child {
           border-top: none;
@@ -798,6 +907,15 @@ const Login = ({ error, onLogin, onSSOLogin, onSwitchToSignUp, onForgotPassword,
           border: 1px solid var(--border-light);
           box-shadow: var(--shadow-xl);
           backdrop-filter: blur(14px);
+          animation: fadeUp 0.7s ease 0.35s both;
+          transition: box-shadow 0.4s ease, border-color 0.4s ease;
+        }
+        .auth-panel:hover {
+          box-shadow:
+            0 24px 50px rgba(15, 23, 42, 0.1),
+            0 0 0 1px rgba(59, 130, 246, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+          border-color: rgba(59, 130, 246, 0.18);
         }
 
         .auth-card-header h2 {
@@ -826,6 +944,14 @@ const Login = ({ error, onLogin, onSSOLogin, onSwitchToSignUp, onForgotPassword,
           font-size: 0.88rem;
           font-weight: 700;
           line-height: 1.5;
+          animation: shakeIn 0.5s ease;
+        }
+        @keyframes shakeIn {
+          0% { transform: translateX(-8px); opacity: 0; }
+          25% { transform: translateX(6px); }
+          50% { transform: translateX(-4px); }
+          75% { transform: translateX(2px); }
+          100% { transform: translateX(0); opacity: 1; }
         }
 
         .auth-form {
@@ -864,6 +990,11 @@ const Login = ({ error, onLogin, onSSOLogin, onSwitchToSignUp, onForgotPassword,
           top: 50%;
           transform: translateY(-50%);
           color: var(--primary-400);
+          transition: color 0.25s ease;
+        }
+        .form-input:focus ~ .input-icon,
+        .input-with-icon:focus-within .input-icon {
+          color: var(--accent-600);
         }
 
         .form-input {
@@ -1153,6 +1284,10 @@ const Login = ({ error, onLogin, onSSOLogin, onSwitchToSignUp, onForgotPassword,
         }
         .sso-icon {
           flex-shrink: 0;
+          transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .sso-btn:hover .sso-icon {
+          transform: scale(1.15);
         }
 
         .auth-note {
