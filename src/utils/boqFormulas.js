@@ -45,10 +45,21 @@ export const isFormulaDrivenItem = (item) => (
 
 const SAFE_EXPRESSION_PATTERN = /^[0-9+\-*/().,\sA-Za-z_]+$/;
 const SAFE_IDENTIFIER_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
+// The charset above allows `.` (needed for decimals like `1.5`) and `(`, which
+// together would otherwise let something like `console.log(a)` slip through as
+// "safe" and actually execute — these formulas are meant to be pure arithmetic
+// over the supplied variables, never function calls or property access.
+const FUNCTION_CALL_PATTERN = /[A-Za-z_]\w*\s*\(/;
+const NON_DECIMAL_DOT_PATTERN = /(?<!\d)\.|\.(?!\d)/;
 
 export const evaluateFormulaExpression = (expression, inputMap = {}) => {
   const normalizedExpression = String(expression || '').trim();
-  if (!normalizedExpression || !SAFE_EXPRESSION_PATTERN.test(normalizedExpression)) {
+  if (
+    !normalizedExpression
+    || !SAFE_EXPRESSION_PATTERN.test(normalizedExpression)
+    || FUNCTION_CALL_PATTERN.test(normalizedExpression)
+    || NON_DECIMAL_DOT_PATTERN.test(normalizedExpression)
+  ) {
     return 0;
   }
 
@@ -61,6 +72,31 @@ export const evaluateFormulaExpression = (expression, inputMap = {}) => {
   } catch {
     return 0;
   }
+};
+
+// `evaluateFormulaExpression` treats any identifier missing from `inputMap` as 0
+// rather than throwing, so a typo'd variable name (e.g. `lenght` instead of
+// `length`) silently produces a wrong — often zero — rate with no error
+// anywhere in the UI. This walks the expression's identifier tokens and reports
+// which ones won't resolve to a defined input, so callers can surface a warning
+// instead of quietly trusting a miscalculated number.
+export const getUnresolvedFormulaVariables = (expression, inputMap = {}) => {
+  const normalizedExpression = String(expression || '').trim();
+  if (
+    !normalizedExpression
+    || !SAFE_EXPRESSION_PATTERN.test(normalizedExpression)
+    || FUNCTION_CALL_PATTERN.test(normalizedExpression)
+    || NON_DECIMAL_DOT_PATTERN.test(normalizedExpression)
+  ) {
+    return [];
+  }
+
+  const knownKeys = new Set(Object.keys(inputMap).filter((key) => SAFE_IDENTIFIER_PATTERN.test(key)));
+  const referencedIdentifiers = normalizedExpression.match(/[A-Za-z_][A-Za-z0-9_]*/g) || [];
+
+  return Array.from(new Set(
+    referencedIdentifiers.filter((identifier) => !knownKeys.has(identifier))
+  ));
 };
 
 export const evaluateBoqFormulaRate = (item) => {

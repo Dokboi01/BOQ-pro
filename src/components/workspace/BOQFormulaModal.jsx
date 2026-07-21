@@ -1,8 +1,10 @@
 import React from 'react';
 import { Calculator, X } from 'lucide-react';
 import {
+  editableInputsToValueMap,
   evaluateBoqFormulaRate,
   getFormulaDisplayText,
+  getUnresolvedFormulaVariables,
   getWorkedExamplePreview,
   normalizeEditableInputs,
 } from '../../utils/boqFormulas';
@@ -30,6 +32,12 @@ const BOQFormulaModal = ({ item, sectionTitle, onClose, onSave }) => {
     () => getWorkedExamplePreview({ ...item, editableInputs: inputs }, { preferEditableInputs: true }),
     [inputs, item]
   );
+
+  const unresolvedVariables = React.useMemo(() => {
+    if (item?.defaultFormulaType !== 'expression') return [];
+    const expression = item?.formulaExpression || item?.formulaText;
+    return getUnresolvedFormulaVariables(expression, editableInputsToValueMap(inputs));
+  }, [inputs, item]);
 
   const updateValue = (inputId, nextValue) => {
     setInputs((prev) => prev.map((input) => (
@@ -59,6 +67,17 @@ const BOQFormulaModal = ({ item, sectionTitle, onClose, onSave }) => {
             <strong>{formatMoney(computedRate)}</strong>
             <small>Amount updates automatically as Quantity x Calculated Unit Rate.</small>
           </div>
+
+          {unresolvedVariables.length > 0 && (
+            <div className="boq-formula-panel warning">
+              <span className="boq-formula-label">Formula Warning</span>
+              <p>
+                This formula references {unresolvedVariables.length === 1 ? 'a variable' : 'variables'} with no matching
+                editable input — <strong>{unresolvedVariables.join(', ')}</strong>. It is being treated as 0, so the
+                calculated rate above is likely wrong. Check the formula expression against the input IDs below.
+              </p>
+            </div>
+          )}
 
           <div className="boq-formula-panel">
             <span className="boq-formula-label">Formula Logic</span>
@@ -194,6 +213,19 @@ const BOQFormulaModal = ({ item, sectionTitle, onClose, onSave }) => {
           border-style: dashed;
           background: #fffdf7;
           border-color: #fde68a;
+        }
+
+        .boq-formula-panel.warning {
+          background: #fef2f2;
+          border-color: #fecaca;
+        }
+
+        .boq-formula-panel.warning .boq-formula-label {
+          color: #b91c1c;
+        }
+
+        .boq-formula-panel.warning p {
+          color: #7f1d1d;
         }
 
         .boq-formula-panel.strong small {

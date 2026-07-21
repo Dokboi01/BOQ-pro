@@ -4,6 +4,7 @@ import {
   editableInputsToValueMap,
   isFormulaDrivenItem,
   evaluateFormulaExpression,
+  getUnresolvedFormulaVariables,
   evaluateBoqFormulaRate,
   buildWorkedExampleText,
   getWorkedExamplePreview,
@@ -94,6 +95,20 @@ describe('BOQ formula engine', () => {
       expect(evaluateFormulaExpression('${1+1}', {})).toBe(0);
     });
 
+    it('rejects function calls and property access, even without quotes', () => {
+      // The charset alone allows `.` (for decimals) and `(` (for grouping), which
+      // together would let a bare, quote-free call like `console.log(a)` slip past
+      // the charset check and actually execute. This must be blocked explicitly.
+      expect(evaluateFormulaExpression('console.log(a)', { a: 1 })).toBe(0);
+      expect(evaluateFormulaExpression('Math.random()', {})).toBe(0);
+      expect(evaluateFormulaExpression('a.constructor(b)', { a: 1, b: 2 })).toBe(0);
+    });
+
+    it('still evaluates decimal literals correctly', () => {
+      expect(evaluateFormulaExpression('1.5 * a', { a: 2 })).toBe(3);
+      expect(evaluateFormulaExpression('0.15 * area', { area: 100 })).toBeCloseTo(15);
+    });
+
     it('does not let a malicious variable name leak outside the sandboxed evaluator', () => {
       // Variable names are constrained to safe identifiers, so a poisoned key in
       // inputMap is simply dropped rather than being injected as a function parameter.
@@ -106,6 +121,32 @@ describe('BOQ formula engine', () => {
 
     it('returns 0 instead of throwing on a runtime error (e.g. division producing NaN paths)', () => {
       expect(evaluateFormulaExpression('a / b / (', { a: 1, b: 2 })).toBe(0);
+    });
+  });
+
+  describe('getUnresolvedFormulaVariables', () => {
+    it('returns an empty list when every referenced variable has an input', () => {
+      expect(getUnresolvedFormulaVariables('length * width', { length: 4, width: 3 })).toEqual([]);
+    });
+
+    it('flags a typo\'d variable name so a silent 0 rate is not shipped unexplained', () => {
+      // This is the exact failure mode evaluateFormulaExpression can't catch on its
+      // own: `lenght` silently evaluates as 0 instead of erroring.
+      expect(getUnresolvedFormulaVariables('lenght * width', { length: 4, width: 3 }))
+        .toEqual(['lenght']);
+      expect(evaluateFormulaExpression('lenght * width', { length: 4, width: 3 })).toBe(0);
+    });
+
+    it('lists each unresolved identifier once, in order of first appearance', () => {
+      expect(getUnresolvedFormulaVariables('a + b + a', { b: 1 })).toEqual(['a']);
+      expect(getUnresolvedFormulaVariables('x * y', {})).toEqual(['x', 'y']);
+    });
+
+    it('returns an empty list for blank or unsafe expressions (nothing meaningful to flag)', () => {
+      expect(getUnresolvedFormulaVariables('', { a: 1 })).toEqual([]);
+      // Rejected by the function-call guard, same as evaluateFormulaExpression — an
+      // unsafe expression has no well-defined "variables", so there's nothing to flag.
+      expect(getUnresolvedFormulaVariables('console.log(a)', { a: 1 })).toEqual([]);
     });
   });
 

@@ -19,11 +19,20 @@ describe('Benchmark Self-Updating Engine', () => {
   });
 
   it('drifts indices upward when trend is up', () => {
-    const seedIndices = getSeedMarketIndices();
+    // Indices without an explicit `updatedAt` anchor to the global
+    // MARKET_SYNC_CAPTURED_AT snapshot date (see materialMarketFeed.js), not to
+    // whatever date this test picks. Setting it explicitly here decouples the
+    // test from that constant, so it verifies the drift math itself rather than
+    // incidentally depending on the snapshot date being in the past relative to
+    // the chosen capture/future dates.
+    const captureDate = new Date('2026-05-08T08:00:00.000Z');
+    const seedIndices = getSeedMarketIndices().map((idx) => ({
+      ...idx,
+      updatedAt: captureDate.toISOString(),
+    }));
     const binderIndex = seedIndices.find((idx) => idx.label === 'Binder Index');
     expect(binderIndex).toBeDefined();
 
-    const captureDate = new Date('2026-05-08T08:00:00.000Z');
     const futureDate = new Date(captureDate.getTime() + 4 * 7 * 24 * 60 * 60 * 1000);
 
     const drifted = driftMarketIndices(seedIndices, futureDate);
