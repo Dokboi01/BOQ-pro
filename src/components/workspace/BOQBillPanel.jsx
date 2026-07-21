@@ -1,7 +1,5 @@
 import React from 'react';
-
-const formatMoney = (value) =>
-  `₦${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+import { formatProjectCurrency } from '../../utils/currency';
 
 const BOQBillPanel = ({
   sections = [],
@@ -9,7 +7,9 @@ const BOQBillPanel = ({
   sectionTotalsBySection = {},
   selectionCountsBySection = {},
   onSelectBill,
+  project = null,
 }) => {
+  const formatMoney = (value) => formatProjectCurrency(value, project, { maximumFractionDigits: 2 });
   const totalLines = sections.reduce((sum, section) => sum + ((section.items || []).length || 0), 0);
   const totalSelected = sections.reduce((sum, section) => (
     sum + (selectionCountsBySection?.[section.id] || (section.items || []).length || 0)

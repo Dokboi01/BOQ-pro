@@ -382,6 +382,7 @@ const BOQWorkspace = () => {
             sectionTotalsBySection={sectionTotalsBySection}
             selectionCountsBySection={selectionCountsBySection}
             onSelectBill={scrollToSection}
+            project={project}
           />
           <div className="ws-main-pane">
             {/* â”€â”€ Compact Workspace Header â”€â”€ */}
@@ -1346,6 +1347,7 @@ const BOQWorkspace = () => {
                   onDelete={() => onDelete(project.id, selectedItemContext.section.id, selectedItemContext.item.id)}
                   onAddBelow={() => addItemBelow(selectedItemContext.section.id, selectedItemContext.item.id)}
                   onRefreshBenchmark={() => refreshItemBenchmark(selectedItemContext.section.id, selectedItemContext.item.id)}
+                  project={project}
                 />
               </>
             ) : (
@@ -1453,6 +1455,7 @@ const BOQWorkspace = () => {
             });
             setBiddingItem(null);
           }}
+          project={project}
         />
       )}
       {itemDetailPanelContext && (() => {
@@ -1483,6 +1486,7 @@ const BOQWorkspace = () => {
             onDelete={() => { setItemDetailPanelContext(null); onDelete(project.id, itemDetailPanelContext.sectionId, panelItem.id); }}
             onAddBelow={() => addItemBelow(itemDetailPanelContext.sectionId, panelItem.id)}
             onRefreshBenchmark={() => refreshItemBenchmark(itemDetailPanelContext.sectionId, panelItem.id)}
+            project={project}
           />
         );
       })()}
@@ -1492,6 +1496,7 @@ const BOQWorkspace = () => {
           sectionTitle={sections.find((section) => section.id === formulaItemContext.sectionId)?.title}
           onClose={() => setFormulaItemContext(null)}
           onSave={handleFormulaInputsSave}
+          project={project}
         />
       )}
 

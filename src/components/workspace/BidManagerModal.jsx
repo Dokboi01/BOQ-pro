@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatProjectCurrency } from '../../utils/currency';
 import {
     X,
     Users,
@@ -12,7 +13,8 @@ import {
     Gavel
 } from 'lucide-react';
 
-const BidManagerModal = ({ item, onClose, onSave }) => {
+const BidManagerModal = ({ item, onClose, onSave, project = null }) => {
+    const formatMoney = (value) => formatProjectCurrency(value, project, { maximumFractionDigits: 2 });
     const [bids, setBids] = useState(item.bids || []);
     const [newBid, setNewBid] = useState({ subcontractor: '', rate: 0, notes: '' });
 
@@ -55,7 +57,7 @@ const BidManagerModal = ({ item, onClose, onSave }) => {
                 <div className="modal-body">
                     <div className="benchmark-bar">
                         <span className="label">Project Benchmark (Lagos)</span>
-                        <span className="val">₦{benchmark.toLocaleString()}</span>
+                        <span className="val">{formatMoney(benchmark)}</span>
                     </div>
 
                     <div className="bids-list">
@@ -80,7 +82,7 @@ const BidManagerModal = ({ item, onClose, onSave }) => {
                                                 </button>
                                             </div>
                                             <div className="bid-card-body">
-                                                <div className="bid-rate">₦{bid.rate.toLocaleString()}</div>
+                                                <div className="bid-rate">{formatMoney(bid.rate)}</div>
                                                 <div className={`bid-variance ${isLow ? 'positive' : 'negative'}`}>
                                                     {isLow ? <TrendingDown size={12} /> : <TrendingUp size={12} />}
                                                     {Math.abs(variance)}% vs benchmark

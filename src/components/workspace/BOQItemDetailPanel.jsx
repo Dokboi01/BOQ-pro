@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatProjectCurrency } from '../../utils/currency';
 import {
   X,
   BarChart2,
@@ -42,9 +43,6 @@ import {
   isFormulaDrivenItem,
   normalizeEditableInputs,
 } from '../../utils/boqFormulas';
-
-const formatCurrency = (value) =>
-  `₦${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 
 const CONFIDENCE_COLORS = {
   high: '#059669',
@@ -127,8 +125,11 @@ const BOQItemDetailPanel = ({
   onRefreshBenchmark,
   onExport,
   variant = 'overlay',
+  project = null,
 }) => {
   if (!item) return null;
+
+  const formatCurrency = (value) => formatProjectCurrency(value, project, { maximumFractionDigits: 2 });
 
   const formulaText = getFormulaDisplayText(item);
   const workedExample = getWorkedExamplePreview(item, { preferEditableInputs: true });

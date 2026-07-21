@@ -8,14 +8,10 @@ import {
   getWorkedExamplePreview,
   normalizeEditableInputs,
 } from '../../utils/boqFormulas';
+import { formatProjectCurrency } from '../../utils/currency';
 
-const formatMoney = (value) => (
-  `₦${Number(value || 0).toLocaleString(undefined, {
-    maximumFractionDigits: 2,
-  })}`
-);
-
-const BOQFormulaModal = ({ item, sectionTitle, onClose, onSave }) => {
+const BOQFormulaModal = ({ item, sectionTitle, onClose, onSave, project = null }) => {
+  const formatMoney = (value) => formatProjectCurrency(value, project, { maximumFractionDigits: 2 });
   const [inputs, setInputs] = React.useState(() => normalizeEditableInputs(item?.editableInputs));
 
   const computedRate = React.useMemo(
