@@ -19,6 +19,7 @@ import { getProfile, updateProfile } from '../db/database';
 import AuthContext from './auth-context';
 import { useToast } from '../components/ui/useToast';
 import { buildCompanyKey, deriveCompanyName } from '../utils/companyAccess';
+import { verifyPendingPaystackCheckout } from '../utils/paystack';
 import { PLAN_NAMES } from '../data/plans';
 import {
     buildPendingSubscriptionSelection,
@@ -85,6 +86,22 @@ export function AuthProvider({ children }) {
             setVerificationEmailStatus('idle');
         }
         setView(newView);
+    };
+
+    // After a new account/profile is created for a signup that started from a paid
+    // plan selection, re-verify the Paystack transaction with the server (now that
+    // the user is authenticated). The server applies the plan via firebase-admin,
+    // which is the only path Firestore rules allow to grant a paid plan — the
+    // client is never trusted to write `plan`/`subscription` for itself.
+    const reconcilePendingPaystackCheckout = async () => {
+        try {
+            await verifyPendingPaystackCheckout({ allowPending: true });
+        } catch (err) {
+            console.warn('⚠️ Could not reconcile pending Paystack checkout after signup:', err.message);
+        } finally {
+            clearPendingSubscription();
+            setSelectedPlan(null);
+        }
     };
 
     // Helper: fetch profile in background and hydrate user state
@@ -341,8 +358,12 @@ export function AuthProvider({ children }) {
                 const chosenPlan = getNormalizedPlanName(
                     pendingSelection?.plan || selectedPlan || PLAN_NAMES.STUDENT
                 );
-                const hasVerifiedPendingPayment = pendingSelection?.paystackData?.verified === true;
-                const isPendingPaidPlan = isPaidPlan(chosenPlan) && !hasVerifiedPendingPayment;
+                const isPendingPaidPlan = isPaidPlan(chosenPlan);
+                // A paid plan is never granted from client-trusted local state — Firestore
+                // rules reject a client write that sets `plan`/`subscription` directly. New
+                // profiles always start on Student; a real paid plan is only applied
+                // server-side (via firebase-admin) once we re-verify the Paystack
+                // transaction below, after the account (and profile) exist.
                 const subscriptionUpdate = isPendingPaidPlan
                     ? {
                         plan: PLAN_NAMES.STUDENT,
@@ -351,12 +372,7 @@ export function AuthProvider({ children }) {
                             billingCycle: pendingSelection?.billing || 'monthly',
                         }),
                     }
-                    : buildSubscriptionProfileUpdate({
-                        planName: chosenPlan,
-                        billingCycle: pendingSelection?.billing || 'monthly',
-                        paystackData: pendingSelection?.paystackData,
-                        existingProfile: { plan: chosenPlan },
-                    });
+                    : {};
 
                 profile = {
                     full_name: result.user.displayName || 'Practitioner',
@@ -369,7 +385,9 @@ export function AuthProvider({ children }) {
                 };
 
                 await updateProfile(profile);
-                if (!isPendingPaidPlan) {
+                if (isPendingPaidPlan) {
+                    await reconcilePendingPaystackCheckout();
+                } else {
                     clearPendingSubscription();
                     setSelectedPlan(null);
                 }
@@ -429,8 +447,9 @@ export function AuthProvider({ children }) {
             const chosenPlan = getNormalizedPlanName(
                 pendingSelection?.plan || selectedPlan || PLAN_NAMES.STUDENT
             );
-            const hasVerifiedPendingPayment = pendingSelection?.paystackData?.verified === true;
-            const isPendingPaidPlan = isPaidPlan(chosenPlan) && !hasVerifiedPendingPayment;
+            const isPendingPaidPlan = isPaidPlan(chosenPlan);
+            // See the SSO signup handler above for why a paid plan is never written
+            // from client state directly: it's applied server-side after re-verification.
             const subscriptionUpdate = isPendingPaidPlan
                 ? {
                     plan: PLAN_NAMES.STUDENT,
@@ -439,12 +458,7 @@ export function AuthProvider({ children }) {
                         billingCycle: pendingSelection?.billing || 'monthly',
                     }),
                 }
-                : buildSubscriptionProfileUpdate({
-                    planName: chosenPlan,
-                    billingCycle: pendingSelection?.billing || 'monthly',
-                    paystackData: pendingSelection?.paystackData,
-                    existingProfile: { plan: chosenPlan },
-                });
+                : {};
 
             const result = await createUserWithEmailAndPassword(
                 auth,
@@ -469,7 +483,9 @@ export function AuthProvider({ children }) {
                     is_verified: false, // New signup starts as unverified
                     ...subscriptionUpdate,
                 });
-                if (!isPendingPaidPlan) {
+                if (isPendingPaidPlan) {
+                    await reconcilePendingPaystackCheckout();
+                } else {
                     clearPendingSubscription();
                     setSelectedPlan(null);
                 }

@@ -1,9 +1,25 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Profiles: only the owner can read/write their own profile
+    // Profiles: only the owner can read their own profile.
+    // Subscription state (`plan`, `subscription`) is only ever granted after a
+    // server-verified Paystack transaction, applied via firebase-admin (which
+    // bypasses these rules). The client SDK may create/update its own profile
+    // for non-billing fields, but may never set itself a paid plan or write
+    // to `subscription` directly — that would let anyone unlock paid tiers
+    // for free by calling the client SDK from devtools.
     match /profiles/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      allow create: if request.auth != null && request.auth.uid == userId
+        && (!('plan' in request.resource.data) || request.resource.data.plan == 'Student')
+        && !('subscription' in request.resource.data);
+
+      allow update: if request.auth != null && request.auth.uid == userId
+        && (!('plan' in request.resource.data)
+            || request.resource.data.plan == resource.data.plan
+            || request.resource.data.plan == 'Student')
+        && (!('subscription' in request.resource.data) || request.resource.data.subscription == resource.data.subscription);
     }
 
     // Projects: owner can read/write; collaborators can read; company members can read
