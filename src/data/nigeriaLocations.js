@@ -74,16 +74,37 @@ const normalizeLocationKey = (value = '') => (
     .trim()
 );
 
-const LOCATION_LOOKUP = STATE_MARKETS.reduce((acc, entry) => {
-  const keys = [entry.name, entry.code, ...(entry.aliases || []), entry.benchmarkRegion];
-  keys.forEach((key) => {
-    const normalized = normalizeLocationKey(key);
-    if (normalized) {
-      acc.set(normalized, entry);
+// Built in two passes. Several states share the same `benchmarkRegion` (e.g.
+// Ekiti, Ogun, Ondo and Osun are all benchmarked against "Lagos"), so if every
+// entry's canonical name/code/aliases *and* its benchmarkRegion were registered
+// in a single pass, whichever state happened to be processed last for a given
+// benchmarkRegion string would silently clobber that anchor city's own entry —
+// e.g. "Lagos" would resolve to Osun's record (factor 0.95) instead of Lagos's
+// own (factor 1.0), because Osun is the last state in the array whose
+// benchmarkRegion is "Lagos". Registering canonical identifiers first, then only
+// filling in benchmarkRegion aliases for keys nothing has already claimed,
+// guarantees an anchor city's own record always resolves to itself.
+const LOCATION_LOOKUP = (() => {
+  const map = new Map();
+
+  STATE_MARKETS.forEach((entry) => {
+    [entry.name, entry.code, ...(entry.aliases || [])].forEach((key) => {
+      const normalized = normalizeLocationKey(key);
+      if (normalized) {
+        map.set(normalized, entry);
+      }
+    });
+  });
+
+  STATE_MARKETS.forEach((entry) => {
+    const normalized = normalizeLocationKey(entry.benchmarkRegion);
+    if (normalized && !map.has(normalized)) {
+      map.set(normalized, entry);
     }
   });
-  return acc;
-}, new Map());
+
+  return map;
+})();
 
 export const getNigeriaLocationRecord = (value = '') => {
   const normalized = normalizeLocationKey(value);
