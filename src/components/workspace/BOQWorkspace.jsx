@@ -35,6 +35,7 @@ import {
   getBaseUnitForWorkType,
   normalizeUnit,
 } from '../../utils/pricing';
+import { convertNgnToProjectCurrency, getProjectCurrencySymbol } from '../../utils/currency';
 import {
   Plus,
   Trash2,
@@ -113,6 +114,11 @@ const BOQWorkspace = () => {
   } = useWorkspace();
 
   const [showCollabModal, setShowCollabModal] = useState(false);
+
+  // All rates/totals computed elsewhere (pricing.js, benchmark engine) are NGN
+  // -- convert to the project's display currency only here, at render time.
+  const currencySymbol = getProjectCurrencySymbol(project);
+  const cur = (ngnValue, options) => convertNgnToProjectCurrency(ngnValue, project).toLocaleString(undefined, options);
 
   const benchmarkWorkspaceHealth = benchmarkSyncState.status === 'error'
     ? { label: 'Benchmark library offline', tone: 'warning' }
@@ -245,7 +251,7 @@ const BOQWorkspace = () => {
       return {
         address,
         columnLabel: `${activeColumn.label}${lineReference}`,
-        value: unitRate > 0 ? `₦${unitRate.toLocaleString()}` : '₦0',
+        value: unitRate > 0 ? `${currencySymbol}${cur(unitRate)}` : `${currencySymbol}0`,
         detail: resolveItemRateSource(activeItem) === 'benchmark'
           ? `Benchmark rate from ${marketRegionLabel} market data`
           : (isFormulaDrivenItem(activeItem) && formulaText
@@ -258,7 +264,7 @@ const BOQWorkspace = () => {
       return {
         address,
         columnLabel: `${activeColumn.label}${lineReference}`,
-        value: `₦${itemTotal.toLocaleString()}`,
+        value: `${currencySymbol}${cur(itemTotal)}`,
         detail: amountFormula || 'Amount will generate once both quantity and rate are available',
       };
     }
@@ -307,7 +313,7 @@ const BOQWorkspace = () => {
           const itemCount = (section.items || []).length;
           const meta = mode === 'selection'
             ? `${selectionCount} selected`
-            : `${itemCount} line${itemCount === 1 ? '' : 's'}${sectionTotal > 0 ? ` · ₦${sectionTotal.toLocaleString()}` : ''}`;
+            : `${itemCount} line${itemCount === 1 ? '' : 's'}${sectionTotal > 0 ? ` · ${currencySymbol}${cur(sectionTotal)}` : ''}`;
 
           return (
             <button
@@ -456,7 +462,7 @@ const BOQWorkspace = () => {
                 </div>
                 <div className="ws-compact-stat glass-card ws-compact-stat glass-card-total">
                   <span>Project Total</span>
-                  <strong>₦{calculateGrandTotal.toLocaleString()}</strong>
+                  <strong>{currencySymbol}{cur(calculateGrandTotal)}</strong>
                   <small>{workspaceAnalytics.benchmarkItems} benchmark · {workspaceAnalytics.customItems} custom</small>
                 </div>
               </div>
@@ -557,8 +563,8 @@ const BOQWorkspace = () => {
             <tr>
               <th className="ws-th-desc">Item Description</th>
               <th className="ws-th-qty">Qty</th>
-              <th className="ws-th-rate">Rate (₦)</th>
-              <th className="ws-th-total">Amount (₦)</th>
+              <th className="ws-th-rate">Rate ({currencySymbol})</th>
+              <th className="ws-th-total">Amount ({currencySymbol})</th>
             </tr>
           </thead>
           <tbody>
@@ -625,7 +631,7 @@ const BOQWorkspace = () => {
                           </button>
                         </div>
                         {!section.expanded && (
-                          <span className="ws-section-total">₦{sectionSubtotal.toLocaleString()}</span>
+                          <span className="ws-section-total">{currencySymbol}{cur(sectionSubtotal)}</span>
                         )}
                       </div>
                     </td>
@@ -842,7 +848,7 @@ const BOQWorkspace = () => {
                             )}
                             {hasBenchmarkRate && selectedRateSource !== 'benchmark' && (
                               <span className="ws-rate-chip ws-rate-chip-bm-ref" title="Current market benchmark for this item">
-                                Benchmark: ₦{Math.round(benchmarkRate).toLocaleString()}
+                                Benchmark: {currencySymbol}{cur(benchmarkRate, { maximumFractionDigits: 0 })}
                               </span>
                             )}
                             {benchmarkRefreshMeta?.canApplyRefresh && (
@@ -941,7 +947,7 @@ const BOQWorkspace = () => {
                           className={`ws-total-cell ${isWorkspaceCellSelected(section.id, item.id, 'amount') ? 'ws-cell-selected' : ''}`}
                           onClick={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'amount', itemCode, rowNumber: spreadsheetRowNumber })}
                         >
-                          <strong className="ws-total-main">₦{itemTotal.toLocaleString()}</strong>
+                          <strong className="ws-total-main">{currencySymbol}{cur(itemTotal)}</strong>
                           {amountFormula && <span className="ws-total-formula">{amountFormula}</span>}
                           <span className={`ws-total-status ws-total-status-${automationMeta.tone}`}>{automationMeta.title}</span>
                         </td>
@@ -958,7 +964,7 @@ const BOQWorkspace = () => {
                               </div>
                               <div className="ws-mobile-card-total">
                                 <span>Amount</span>
-                                <strong>₦{itemTotal.toLocaleString()}</strong>
+                                <strong>{currencySymbol}{cur(itemTotal)}</strong>
                                 {amountFormula && <small>{amountFormula}</small>}
                               </div>
                             </div>
@@ -1136,15 +1142,15 @@ const BOQWorkspace = () => {
                               </div>
                               <div className="ws-rate-reference-row ws-rate-reference-row-mobile">
                                 <span className={`ws-rate-ref-pill ${selectedRateSource === 'benchmark' ? 'ws-rate-ref-active' : ''}`}>
-                                  BM ₦{benchmarkRate.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                  BM {currencySymbol}{cur(benchmarkRate, { maximumFractionDigits: 2 })}
                                 </span>
                                 <span className={`ws-rate-ref-pill ws-rate-ref-formula ${selectedRateSource === 'formula' ? 'ws-rate-ref-active' : ''}`}>
                                   {hasFormulaOption
-                                    ? `FX ₦${formulaRate.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+                                    ? `FX ${currencySymbol}${cur(formulaRate, { maximumFractionDigits: 2 })}`
                                     : 'FX Unavailable'}
                                 </span>
                                 <span className={`ws-rate-ref-pill ws-rate-ref-manual ${selectedRateSource === 'manual' ? 'ws-rate-ref-active' : ''}`}>
-                                  MAN ₦{manualRate.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                  MAN {currencySymbol}{cur(manualRate, { maximumFractionDigits: 2 })}
                                 </span>
                               </div>
                               <div className="ws-rate-meta ws-rate-meta-mobile">
@@ -1249,7 +1255,7 @@ const BOQWorkspace = () => {
                       <tr className="ws-subtotal-row">
                         <td colSpan={subtotalLeadingSpan}></td>
                         <td colSpan="2" className="ws-subtotal-val">
-                          Section Total · Qty {sectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })} · Amount ₦{sectionSubtotal.toLocaleString()}
+                          Section Total · Qty {sectionQty.toLocaleString(undefined, { maximumFractionDigits: 2 })} · Amount {currencySymbol}{cur(sectionSubtotal)}
                         </td>
                       </tr>
                       <tr className="ws-add-row">
@@ -1275,7 +1281,7 @@ const BOQWorkspace = () => {
           <tfoot>
             <tr className="ws-grand-total">
               <td colSpan={3}>CONTRACT SUM</td>
-              <td className="ws-grand-val">₦{calculateGrandTotal.toLocaleString()}</td>
+              <td className="ws-grand-val">{currencySymbol}{cur(calculateGrandTotal)}</td>
             </tr>
           </tfoot>
         </table>
@@ -1294,7 +1300,7 @@ const BOQWorkspace = () => {
                     <div className="ws-detail-dock-meta">
                       <span className="ws-detail-meta-pill">{selectedItemContext.section.title}</span>
                       <span className="ws-detail-meta-pill">Qty: {selectedItemContext.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
-                      <span className="ws-detail-meta-pill">Rate: ₦{selectedItemContext.unitRate.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                      <span className="ws-detail-meta-pill">Rate: {currencySymbol}{cur(selectedItemContext.unitRate, { maximumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                   <div className="ws-detail-dock-actions">

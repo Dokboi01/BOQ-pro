@@ -16,6 +16,7 @@ import {
   DEFAULT_NIGERIA_LOCATION,
   groupNigeriaStateOptionsByZone,
 } from '../../data/nigeriaLocations';
+import { DEFAULT_CURRENCY_CODE, SUPPORTED_CURRENCIES } from '../../data/currencies';
 
 const TOTAL_STEPS = 4;
 
@@ -25,6 +26,7 @@ const ProjectWizard = ({ onSelect, onClose }) => {
     name: '',
     clientName: '',
     region: DEFAULT_NIGERIA_LOCATION,
+    currency: DEFAULT_CURRENCY_CODE,
     notes: '',
     assumptions: '',
     exclusions: '',
@@ -71,6 +73,7 @@ const ProjectWizard = ({ onSelect, onClose }) => {
       name: formData.name.trim(),
       clientName: formData.clientName.trim(),
       region: formData.region,
+      currency: formData.currency,
       notes: formData.notes.trim(),
       assumptions: formData.assumptions.trim(),
       exclusions: formData.exclusions.trim(),
@@ -148,6 +151,19 @@ const ProjectWizard = ({ onSelect, onClose }) => {
                       ))}
                     </select>
                   </div>
+                </div>
+                <div className="form-group">
+                  <label>Billing Currency</label>
+                  <select
+                    value={formData.currency}
+                    onChange={(event) => setFormData((prev) => ({ ...prev, currency: event.target.value }))}
+                  >
+                    {SUPPORTED_CURRENCIES.map((currency) => (
+                      <option key={currency.code} value={currency.code}>
+                        {currency.code} ({currency.symbol}) — {currency.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -266,6 +282,7 @@ const ProjectWizard = ({ onSelect, onClose }) => {
                     <div className="summary-row"><span>Name</span><strong>{formData.name}</strong></div>
                     <div className="summary-row"><span>Client</span><strong>{formData.clientName}</strong></div>
                     <div className="summary-row"><span>State / Market</span><strong>{formData.region}</strong></div>
+                    <div className="summary-row"><span>Currency</span><strong>{formData.currency}</strong></div>
                   </div>
                   <div className="summary-group">
                     <h5>BOQ Setup</h5>
