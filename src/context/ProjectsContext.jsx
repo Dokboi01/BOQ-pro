@@ -4,6 +4,7 @@ import {
     getStructureDefinition,
 } from '../data/boqCatalog';
 import { DEFAULT_NIGERIA_LOCATION } from '../data/nigeriaLocations';
+import { DEFAULT_CURRENCY_CODE } from '../data/currencies';
 import { PLAN_LIMITS, PLAN_NAMES } from '../data/plans';
 import { useAuth } from './useAuth';
 import { useToast } from '../components/ui/useToast';
@@ -961,6 +962,7 @@ export function ProjectsProvider({ children }) {
             sections: processedSections,
             date: new Date().toISOString().split('T')[0],
             region: DEFAULT_NIGERIA_LOCATION,
+            currency: DEFAULT_CURRENCY_CODE,
             pricingMode: 'user-entered'
         };
 
@@ -1033,6 +1035,8 @@ export function ProjectsProvider({ children }) {
             sections: processedSections,
             date: new Date().toISOString().split('T')[0],
             region: projectConfig.region || DEFAULT_NIGERIA_LOCATION,
+            currency: projectConfig.currency || DEFAULT_CURRENCY_CODE,
+            fxRateToNgn: Number(projectConfig.fxRateToNgn) || null,
             notes: projectConfig.notes || '',
             assumptions: projectConfig.assumptions || '',
             exclusions: projectConfig.exclusions || '',

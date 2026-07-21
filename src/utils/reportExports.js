@@ -8,8 +8,7 @@ import {
   getReportItemQuantity,
   getSafeReportFileName
 } from './reportRows';
-
-const NAIRA = '\u20A6';
+import { convertNgnToProjectCurrency, formatProjectCurrency, getProjectCurrencySymbol } from './currency';
 
 const getProjectRegion = (projectInfo) => projectInfo?.region || 'Lagos';
 
@@ -22,13 +21,6 @@ const getGrandTotal = (boqData, region) => {
 };
 
 const toDisplayString = (value, fallback) => String(value || fallback);
-
-const formatMoney = (value) => {
-  return `${NAIRA}${Number(value || 0).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })}`;
-};
 
 const downloadBlob = (blob, fileName) => {
   const url = window.URL.createObjectURL(blob);
@@ -46,7 +38,12 @@ const buildProjectMeta = (projectInfo, boqData) => {
   const region = getProjectRegion(projectInfo);
   return {
     region,
+    // grandTotal (and every rate/total computed from pricing.js) is always in
+    // NGN -- the benchmark/pricing engine's source of truth. Convert with
+    // convertNgnToProjectCurrency / formatProjectCurrency at the point of
+    // display, never upstream of this.
     grandTotal: getGrandTotal(boqData, region),
+    currencySymbol: getProjectCurrencySymbol(projectInfo),
     title: toDisplayString(projectInfo?.title, 'Untitled Project'),
     client: toDisplayString(projectInfo?.client, 'Private Client'),
     location: toDisplayString(projectInfo?.location, region),
@@ -94,7 +91,7 @@ export const exportToExcel = async (projectInfo, boqData, isUnpriced) => {
   worksheet.getCell('A4').value = `LOCATION: ${meta.location} | DATE: ${meta.date}`;
   worksheet.getRow(4).border = { bottom: { style: 'medium' } };
 
-  const headerRow = worksheet.addRow(['ITEM', 'DESCRIPTION OF WORK', 'UNIT', 'QTY', `RATE (${NAIRA})`, `AMOUNT (${NAIRA})`]);
+  const headerRow = worksheet.addRow(['ITEM', 'DESCRIPTION OF WORK', 'UNIT', 'QTY', `RATE (${meta.currencySymbol})`, `AMOUNT (${meta.currencySymbol})`]);
   headerRow.height = 25;
   headerRow.eachCell((cell) => {
     cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -111,8 +108,8 @@ export const exportToExcel = async (projectInfo, boqData, isUnpriced) => {
     sectionRow.getCell(2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
 
     (section.items || []).forEach((item, itemIndex) => {
-      const rate = getItemUnitRate(item, meta.region);
-      const total = getItemTotal(item, meta.region);
+      const rate = convertNgnToProjectCurrency(getItemUnitRate(item, meta.region), projectInfo);
+      const total = convertNgnToProjectCurrency(getItemTotal(item, meta.region), projectInfo);
       const row = worksheet.addRow([
         itemIndex + 1,
         getReportItemDescription(item),
@@ -131,21 +128,21 @@ export const exportToExcel = async (projectInfo, boqData, isUnpriced) => {
       });
     });
 
-    const sectionTotal = getSectionTotal(section, meta.region);
+    const sectionTotal = convertNgnToProjectCurrency(getSectionTotal(section, meta.region), projectInfo);
     const subtotalRow = worksheet.addRow(['', `TOTAL FOR ${sectionTitle}`, '', '', '', isUnpriced ? '' : sectionTotal]);
     subtotalRow.font = { bold: true, italic: true };
     if (!isUnpriced) {
-      subtotalRow.getCell(6).numFmt = `"${NAIRA}"#,##0.00`;
+      subtotalRow.getCell(6).numFmt = `"${meta.currencySymbol}"#,##0.00`;
       subtotalRow.getCell(6).border = { bottom: { style: 'medium' } };
     }
   });
 
   worksheet.addRow([]);
-  const grandRow = worksheet.addRow(['', 'GRAND TOTAL (CARRIED TO TENDER)', '', '', '', isUnpriced ? '' : meta.grandTotal]);
+  const grandRow = worksheet.addRow(['', 'GRAND TOTAL (CARRIED TO TENDER)', '', '', '', isUnpriced ? '' : convertNgnToProjectCurrency(meta.grandTotal, projectInfo)]);
   grandRow.height = 25;
   grandRow.font = { bold: true, size: 12 };
   if (!isUnpriced) {
-    grandRow.getCell(6).numFmt = `"${NAIRA}"#,##0.00`;
+    grandRow.getCell(6).numFmt = `"${meta.currencySymbol}"#,##0.00`;
     grandRow.getCell(6).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE68A' } };
   }
 
@@ -258,8 +255,8 @@ export const exportToPDF = (projectInfo, boqData, isUnpriced) => {
     ]);
 
     (section.items || []).forEach((item, itemIndex) => {
-      const rate = getItemUnitRate(item, meta.region);
-      const total = getItemTotal(item, meta.region);
+      const rate = convertNgnToProjectCurrency(getItemUnitRate(item, meta.region), projectInfo);
+      const total = convertNgnToProjectCurrency(getItemTotal(item, meta.region), projectInfo);
       tableData.push([
         { content: `${sectionCode}.${itemIndex + 1}`, styles: { halign: 'center', fontSize: 7 } },
         getReportItemDescription(item),
@@ -274,13 +271,13 @@ export const exportToPDF = (projectInfo, boqData, isUnpriced) => {
     tableData.push([
       { content: '', styles: { fillColor: [255, 255, 255] } },
       { content: `Sub-Total: ${toDisplayString(section?.title, 'Untitled Section')}`, colSpan: 4, styles: { fontStyle: 'bolditalic', halign: 'right', fillColor: [255, 255, 255] } },
-      { content: isUnpriced ? '-' : formatMoney(sectionTotal), styles: { fontStyle: 'bold', fillColor: [255, 255, 255] } }
+      { content: isUnpriced ? '-' : formatProjectCurrency(sectionTotal, projectInfo), styles: { fontStyle: 'bold', fillColor: [255, 255, 255] } }
     ]);
   });
 
   autoTable(doc, {
     startY: 36,
-    head: [['ITEM', 'DESCRIPTION OF WORK', 'UNIT', 'QTY', `RATE (${NAIRA})`, `AMOUNT (${NAIRA})`]],
+    head: [['ITEM', 'DESCRIPTION OF WORK', 'UNIT', 'QTY', `RATE (${meta.currencySymbol})`, `AMOUNT (${meta.currencySymbol})`]],
     body: tableData,
     theme: 'grid',
     headStyles: { fillColor: [15, 23, 42], fontSize: 8, fontStyle: 'bold', halign: 'center', cellPadding: 4 },
@@ -306,13 +303,13 @@ export const exportToPDF = (projectInfo, boqData, isUnpriced) => {
       String.fromCharCode(65 + sectionIndex),
       toDisplayString(section?.title, 'Untitled Section').toUpperCase(),
       (section.items || []).length,
-      isUnpriced ? '-' : formatMoney(sectionTotal)
+      isUnpriced ? '-' : formatProjectCurrency(sectionTotal, projectInfo)
     ];
   });
 
   autoTable(doc, {
     startY: 40,
-    head: [['REF', 'ELEMENT / SECTION DESCRIPTION', 'ITEMS', `AMOUNT (${NAIRA})`]],
+    head: [['REF', 'ELEMENT / SECTION DESCRIPTION', 'ITEMS', `AMOUNT (${meta.currencySymbol})`]],
     body: summaryRows,
     theme: 'grid',
     headStyles: { fillColor: [15, 23, 42], fontSize: 9, fontStyle: 'bold', cellPadding: 5 },
@@ -327,7 +324,7 @@ export const exportToPDF = (projectInfo, boqData, isUnpriced) => {
     doc.setFontSize(10);
     doc.setTextColor(255, 255, 255);
     doc.text('TOTAL ESTIMATED CONTRACT SUM (CARRIED TO FORM OF TENDER)', margin + 8, sumFinalY + 12);
-    doc.text(formatMoney(meta.grandTotal), pageWidth - margin - 8, sumFinalY + 12, { align: 'right' });
+    doc.text(formatProjectCurrency(meta.grandTotal, projectInfo), pageWidth - margin - 8, sumFinalY + 12, { align: 'right' });
   }
 
   doc.addPage();
