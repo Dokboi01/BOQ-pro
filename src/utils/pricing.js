@@ -11,6 +11,7 @@ import {
   normalizeMaterialBenchmarkRecord
 } from './materialBenchmarks';
 import { evaluateBoqFormulaRate, isFormulaDrivenItem } from './boqFormulas';
+import { convertNgnToProjectCurrency, getProjectCurrencySymbol } from './currency';
 import { findCatalogItemByCode } from '../data/boqCatalog';
 
 export const WORK_TYPE_PROFILES = {
@@ -1049,6 +1050,7 @@ export const getItemBenchmarkRefreshInsight = (
     changeTolerance = BENCHMARK_REFRESH_CHANGE_TOLERANCE,
     reviewThreshold = BENCHMARK_REFRESH_REVIEW_THRESHOLD,
     highThreshold = BENCHMARK_REFRESH_HIGH_THRESHOLD,
+    project = null,
   } = {}
 ) => {
   if (!item) return null;
@@ -1109,9 +1111,9 @@ export const getItemBenchmarkRefreshInsight = (
   } else if (hasMeaningfulChange) {
     title = deltaPercent >= 0 ? 'Market benchmark moved upward' : 'Market benchmark moved downward';
     chip = `${deltaPercent >= 0 ? '+' : ''}${deltaPercent.toFixed(1)}% market shift`;
-    detail = `Latest ${region.replace(/_/g, ' ')} benchmark moved from ₦${Math.round(currentBenchmarkRate).toLocaleString()} to ₦${Math.round(latestBenchmarkRate).toLocaleString()} per ${item?.unit || 'unit'}.`;
+    detail = `Latest ${region.replace(/_/g, ' ')} benchmark moved from ${getProjectCurrencySymbol(project)}${Math.round(convertNgnToProjectCurrency(currentBenchmarkRate, project)).toLocaleString()} to ${getProjectCurrencySymbol(project)}${Math.round(convertNgnToProjectCurrency(latestBenchmarkRate, project)).toLocaleString()} per ${item?.unit || 'unit'}.`;
   } else if (hasLatestBenchmark) {
-    detail = `Current ${region.replace(/_/g, ' ')} benchmark is ₦${Math.round(latestBenchmarkRate).toLocaleString()} per ${item?.unit || 'unit'}.`;
+    detail = `Current ${region.replace(/_/g, ' ')} benchmark is ${getProjectCurrencySymbol(project)}${Math.round(convertNgnToProjectCurrency(latestBenchmarkRate, project)).toLocaleString()} per ${item?.unit || 'unit'}.`;
   } else {
     tone = 'warning';
     title = 'No live benchmark reference';

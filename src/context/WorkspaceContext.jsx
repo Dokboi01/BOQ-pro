@@ -872,7 +872,7 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
       const nextItems = (section.items || []).map((item) => {
         if (targetItemId && item.id !== targetItemId) return item;
 
-        const insight = getItemBenchmarkRefreshInsight(item, { structureType, region, materialIndex });
+        const insight = getItemBenchmarkRefreshInsight(item, { structureType, region, materialIndex, project });
         if (!insight?.actionable) return item;
 
         if (insight.needsReviewOnly) {

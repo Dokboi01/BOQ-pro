@@ -11,6 +11,7 @@ import {
   getReportItemQuantity,
   getSafeReportFileName
 } from '../../utils/reportRows';
+import { convertNgnToProjectCurrency, getProjectCurrencySymbol } from '../../utils/currency';
 import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
@@ -35,6 +36,8 @@ const ShareModal = ({ isOpen, onClose, projectInfo, boqData, grandTotal }) => {
   const [isSending, setIsSending] = useState(false);
   const projectRegion = projectInfo?.region || 'Lagos';
   const calculateGrandTotal = () => grandTotal;
+  const currencySymbol = getProjectCurrencySymbol(projectInfo);
+  const toCur = (ngnValue) => convertNgnToProjectCurrency(ngnValue, projectInfo);
 
   if (!isOpen) return null;
 
@@ -102,15 +105,15 @@ const ShareModal = ({ isOpen, onClose, projectInfo, boqData, grandTotal }) => {
               getReportItemDescription(item),
               item.unit,
               formatReportNumber(getReportItemQuantity(item)),
-              formatReportNumber(rate),
-              formatReportNumber(total)
+              formatReportNumber(toCur(rate)),
+              formatReportNumber(toCur(total))
             ]);
           });
         });
 
-        tableData.push([{ content: 'GRAND TOTAL', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } }, { content: `₦${calculateGrandTotal().toLocaleString()}`, styles: { fontStyle: 'bold' } }]);
+        tableData.push([{ content: 'GRAND TOTAL', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } }, { content: `${currencySymbol}${toCur(calculateGrandTotal()).toLocaleString()}`, styles: { fontStyle: 'bold' } }]);
 
-        tableData[tableData.length - 1][1].content = `₦${grandTotal.toLocaleString()}`;
+        tableData[tableData.length - 1][1].content = `${currencySymbol}${toCur(grandTotal).toLocaleString()}`;
 
         autoTable(doc, {
           startY: 40,
