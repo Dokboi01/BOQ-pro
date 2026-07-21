@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useToast } from '../ui/useToast';
+import { convertNgnToProjectCurrency, getProjectCurrencySymbol } from '../../utils/currency';
 import {
   Plus,
   Search,
@@ -97,6 +98,8 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
   const [editingMaterial, setEditingMaterial] = useState(null);
   const toast = useToast();
   const activeRegionLabel = activeProject?.region || 'Lagos';
+  const currencySymbol = getProjectCurrencySymbol(activeProject);
+  const cur = (ngnValue, options) => convertNgnToProjectCurrency(ngnValue, activeProject).toLocaleString(undefined, options);
 
   const getRegionalBenchmark = (material) => Number(
     getMaterialRegionalBenchmark(material, activeRegionLabel)
@@ -751,7 +754,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                     {entry.sourceCount > 0 && <span className="benchmark-evidence">{entry.sourceCount} sources</span>}
                   </div>
                   <div className="history-event-body">
-                    <span>Benchmark: ₦{Math.round(Number(entry.benchmark) || 0).toLocaleString()}</span>
+                    <span>Benchmark: {currencySymbol}{cur(Number(entry.benchmark) || 0, { maximumFractionDigits: 0 })}</span>
                     {entry.changeSummary && <span>{entry.changeSummary}</span>}
                     {entry.note && <small>{entry.note}</small>}
                   </div>
@@ -886,7 +889,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
             <div className="bench-stats">
               <div className="stat-box">
                 <span className="s-label">{activeRegionLabel} Market Benchmark</span>
-                <span className="s-val">₦{getRegionalBenchmark(mat).toLocaleString()}</span>
+                <span className="s-val">{currencySymbol}{cur(getRegionalBenchmark(mat))}</span>
               </div>
               <div className="stat-box">
                 <span className="s-label">Regional Market Spread</span>
@@ -894,7 +897,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                   {mat.regions && Object.entries(mat.regions).map(([r, p]) => (
                     <div key={r} className="regional-item">
                       <span>{r}</span>
-                      <span>₦{p.toLocaleString()}</span>
+                      <span>{currencySymbol}{cur(p)}</span>
                     </div>
                   ))}
                 </div>
@@ -991,7 +994,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                     </div>
                     <div className="history-event-meta">
                       <span className="benchmark-evidence">Version {snapshot.version}</span>
-                      <span className="benchmark-evidence">₦{Math.round(Number(snapshot.benchmark) || 0).toLocaleString()} Lagos base</span>
+                      <span className="benchmark-evidence">{currencySymbol}{cur(Number(snapshot.benchmark) || 0, { maximumFractionDigits: 0 })} Lagos base</span>
                       {snapshot.sourceCount > 0 && <span className="benchmark-evidence">{snapshot.sourceCount} sources</span>}
                     </div>
                     <div className="history-event-body">
@@ -1031,7 +1034,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                     {entry.activeRegion && <span className="benchmark-evidence">{entry.activeRegion} focus</span>}
                   </div>
                   <div className="history-event-body">
-                    <span>Benchmark: ₦{Math.round(Number(entry.benchmark) || 0).toLocaleString()}</span>
+                    <span>Benchmark: {currencySymbol}{cur(Number(entry.benchmark) || 0, { maximumFractionDigits: 0 })}</span>
                     {entry.changeSummary && <span>{entry.changeSummary}</span>}
                     {entry.note && <small>{entry.note}</small>}
                   </div>
@@ -1050,7 +1053,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                     <span>{source.region}{source.note ? ` - ${source.note}` : ''}</span>
                   </div>
                   <div>
-                    <strong>{source.rate ? `₦${Math.round(source.rate).toLocaleString()}` : 'Trace only'}</strong>
+                    <strong>{source.rate ? `${currencySymbol}${cur(source.rate, { maximumFractionDigits: 0 })}` : 'Trace only'}</strong>
                     <span>{source.capturedAt ? new Date(source.capturedAt).toLocaleDateString('en-NG') : 'Recently updated'}</span>
                   </div>
                 </div>
@@ -1095,7 +1098,7 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
                 })
               }));
               onUpdate(activeProject.id, updatedSections);
-              toast.success(`Applied the ${activeRegionLabel} benchmark for ${mat.name} at ₦${benchmarkValue.toLocaleString()} to matching items.`);
+              toast.success(`Applied the ${activeRegionLabel} benchmark for ${mat.name} at ${currencySymbol}${cur(benchmarkValue)} to matching items.`);
               setSelectedMaterial(null);
             }}
           >
@@ -1192,13 +1195,13 @@ const MaterialLibrary = ({ user, activeProject, onUpdate, onUpgrade }) => {
               <div className="mat-price-row">
                 <span className="p-label">Current Market Read</span>
                 <div className="p-val">
-                  <span className="curr">₦</span>
-                  <span className="amount">{mat.price.toLocaleString()}</span>
+                  <span className="curr">{currencySymbol}</span>
+                  <span className="amount">{cur(mat.price)}</span>
                 </div>
               </div>
               <div className="mat-benchmark-row">
                 <span className="p-label">{activeRegionLabel} Market Benchmark</span>
-                <strong className="benchmark-amount">₦{regionalBenchmark.toLocaleString()}</strong>
+                <strong className="benchmark-amount">{currencySymbol}{cur(regionalBenchmark)}</strong>
               </div>
               <div className="mat-support-row">
                 <span className={`benchmark-flag ${governance.approvalTone}`}>{governance.approvalLabel}</span>

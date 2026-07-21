@@ -4,18 +4,24 @@ import {
 } from 'lucide-react';
 import { getItemTotal, getItemUnitRate } from '../../utils/pricing';
 import { formatReportNumber, getReportItemDescription, getReportItemQuantity } from '../../utils/reportRows';
+import { convertNgnToProjectCurrency, getProjectCurrencySymbol } from '../../utils/currency';
 
-const ReportViewer = ({ 
-  activeReport, 
-  projectInfo, 
-  boqData, 
-  summaryData, 
-  ipcStats, 
-  materialData, 
-  projectSummary, 
-  isGeneratingSummary 
+const ReportViewer = ({
+  activeReport,
+  projectInfo,
+  boqData,
+  summaryData,
+  ipcStats,
+  materialData,
+  projectSummary,
+  isGeneratingSummary
 }) => {
   const projectRegion = projectInfo?.region || 'Lagos';
+  // Every value flowing into this file (rates/totals from pricing.js, summaryData,
+  // ipcStats) is NGN -- convert only here, at render time.
+  const currencySymbol = getProjectCurrencySymbol(projectInfo);
+  const toCur = (ngnValue) => convertNgnToProjectCurrency(ngnValue, projectInfo);
+  const cur = (ngnValue, options) => toCur(ngnValue).toLocaleString(undefined, options);
   
   const renderBOQReport = () => (
     <div className="print-document view-fade-in">
@@ -40,8 +46,8 @@ const ReportViewer = ({
             <th>DESCRIPTION OF WORK</th>
             <th className="w-10">UNIT</th>
             <th className="w-15">QTY</th>
-            <th className="w-15">RATE (₦)</th>
-            <th className="w-15">AMOUNT (₦)</th>
+            <th className="w-15">RATE ({currencySymbol})</th>
+            <th className="w-15">AMOUNT ({currencySymbol})</th>
           </tr>
         </thead>
         <tbody>
@@ -60,14 +66,14 @@ const ReportViewer = ({
                     <td className="text-left">{getReportItemDescription(item)}</td>
                     <td>{item.unit}</td>
                     <td>{formatReportNumber(getReportItemQuantity(item))}</td>
-                    <td>{formatReportNumber(rate)}</td>
-                    <td>{formatReportNumber(total)}</td>
+                    <td>{formatReportNumber(toCur(rate))}</td>
+                    <td>{formatReportNumber(toCur(total))}</td>
                   </tr>
                 );
               })}
               <tr className="subtotal-row">
                 <td colSpan="5">SUBTOTAL</td>
-                <td>{section.items.reduce((acc, i) => acc + getItemTotal(i, projectRegion), 0).toLocaleString()}</td>
+                <td>{cur(section.items.reduce((acc, i) => acc + getItemTotal(i, projectRegion), 0))}</td>
               </tr>
             </React.Fragment>
           ))}
@@ -75,7 +81,7 @@ const ReportViewer = ({
         <tfoot>
           <tr className="grand-total-row">
             <td colSpan="5">GRAND SUMMARY (CARRIED TO TENDER)</td>
-            <td>₦ {summaryData.total.toLocaleString()}</td>
+            <td>{currencySymbol} {cur(summaryData.total)}</td>
           </tr>
         </tfoot>
       </table>
@@ -121,11 +127,11 @@ const ReportViewer = ({
         <div className="vo-summary-stats">
           <div className="v-stat-card">
             <span className="v-label">ORIGINAL CONTRACT SUM</span>
-            <span className="v-val">₦{ipcStats.contractSum.toLocaleString()}</span>
+            <span className="v-val">{currencySymbol}{cur(ipcStats.contractSum)}</span>
           </div>
           <div className="v-stat-card highlight">
             <span className="v-label">TOTAL VARIATION VALUE</span>
-            <span className="v-val">₦{ipcStats.voTotal.toLocaleString()}</span>
+            <span className="v-val">{currencySymbol}{cur(ipcStats.voTotal)}</span>
           </div>
         </div>
 
@@ -136,8 +142,8 @@ const ReportViewer = ({
               <th>Description of Variation</th>
               <th>Unit</th>
               <th>Qty</th>
-              <th>Rate (₦)</th>
-              <th>Amount (₦)</th>
+              <th>Rate ({currencySymbol})</th>
+              <th>Amount ({currencySymbol})</th>
             </tr>
           </thead>
           <tbody>
@@ -147,8 +153,8 @@ const ReportViewer = ({
                 <td className="text-bold">{getReportItemDescription(item)}</td>
                 <td>{item.unit}</td>
                 <td>{formatReportNumber(getReportItemQuantity(item))}</td>
-                <td>{formatReportNumber(item.rate)}</td>
-                <td className="text-right">₦{formatReportNumber(getReportItemQuantity(item) * item.rate)}</td>
+                <td>{formatReportNumber(toCur(item.rate))}</td>
+                <td className="text-right">{currencySymbol}{formatReportNumber(toCur(getReportItemQuantity(item) * item.rate))}</td>
               </tr>
             )) : (
               <tr>
@@ -160,7 +166,7 @@ const ReportViewer = ({
             <tfoot>
               <tr className="grand-total-row">
                 <td colSpan="5">NET IMPACT OF VARIATIONS</td>
-                <td className="text-right">₦{ipcStats.voTotal.toLocaleString()}</td>
+                <td className="text-right">{currencySymbol}{cur(ipcStats.voTotal)}</td>
               </tr>
             </tfoot>
           )}
@@ -203,35 +209,35 @@ const ReportViewer = ({
             <div className="accounting-table">
               <div className="account-row main">
                 <span>1.0 CONTRACT SUM</span>
-                <span className="val">₦{ipcStats.contractSum.toLocaleString()}</span>
+                <span className="val">{currencySymbol}{cur(ipcStats.contractSum)}</span>
               </div>
               <div className="account-row divider"></div>
               <div className="account-row indent">
                 <span>2.0 Gross Value of Work Done to Date</span>
-                <span className="val">₦{ipcStats.grossWorkDone.toLocaleString()}</span>
+                <span className="val">{currencySymbol}{cur(ipcStats.grossWorkDone)}</span>
               </div>
               <div className="account-row indent text-danger">
                 <span>3.0 Less Retention (5%)</span>
-                <span className="val">(-) ₦{ipcStats.retentionAmt.toLocaleString()}</span>
+                <span className="val">(-) {currencySymbol}{cur(ipcStats.retentionAmt)}</span>
               </div>
               <div className="account-row indent-2 highlight">
                 <span>4.0 NET VALUE OF WORK DONE TO DATE (2.0 - 3.0)</span>
-                <span className="val">₦{ipcStats.netWorkDone.toLocaleString()}</span>
+                <span className="val">{currencySymbol}{cur(ipcStats.netWorkDone)}</span>
               </div>
               <div className="account-row indent text-warning">
                 <span>5.0 Less Mobilization Advance Recovery</span>
-                <span className="val">(-) ₦{ipcStats.advanceRecovery.toLocaleString()}</span>
+                <span className="val">(-) {currencySymbol}{cur(ipcStats.advanceRecovery)}</span>
               </div>
               <div className="account-row indent">
                 <span>6.0 Less Previous Payments (First Cert)</span>
-                <span className="val">(-) ₦0.00</span>
+                <span className="val">(-) {currencySymbol}0.00</span>
               </div>
               <div className="account-row grand-total">
                 <div className="total-label-box">
                   <span className="main-label">7.0 TOTAL NET AMOUNT DUE FOR PAYMENT</span>
                   <span className="sub-label">Subject to certification by Consultant Engineer</span>
                 </div>
-                <span className="total-val">₦{ipcStats.totalDue.toLocaleString()}</span>
+                <span className="total-val">{currencySymbol}{cur(ipcStats.totalDue)}</span>
               </div>
             </div>
           </div>
@@ -268,7 +274,7 @@ const ReportViewer = ({
       <div className="project-snapshot enterprise-card mb-8">
         <div className="snap-item">
           <span className="snap-label">Project Valuation</span>
-          <span className="snap-val">₦ {summaryData.total.toLocaleString()}</span>
+          <span className="snap-val">{currencySymbol} {cur(summaryData.total)}</span>
         </div>
         <div className="snap-item">
           <span className="snap-label">Status</span>
@@ -280,7 +286,7 @@ const ReportViewer = ({
         <thead>
           <tr>
             <th>SECTION DESCRIPTION</th>
-            <th className="w-20">CONTRACT SUM (₦)</th>
+            <th className="w-20">CONTRACT SUM ({currencySymbol})</th>
             <th className="w-20">DISTRIBUTION (%)</th>
           </tr>
         </thead>
@@ -288,7 +294,7 @@ const ReportViewer = ({
           {summaryData.breakdown.map((item, i) => (
             <tr key={i}>
               <td className="text-left">{item.label}</td>
-              <td>{item.amt.toLocaleString()}</td>
+              <td>{cur(item.amt)}</td>
               <td>{item.percent.toFixed(2)} %</td>
             </tr>
           ))}
@@ -296,7 +302,7 @@ const ReportViewer = ({
         <tfoot>
           <tr className="grand-total-row">
             <td>TOTAL ESTIMATED CONTRACT SUM</td>
-            <td>₦ {summaryData.total.toLocaleString()}</td>
+            <td>{currencySymbol} {cur(summaryData.total)}</td>
             <td>100.00 %</td>
           </tr>
         </tfoot>
