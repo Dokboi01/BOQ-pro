@@ -35,5 +35,14 @@ health app/
 
 # Temporary debug and preview artifacts
 tmp/
+tmp-*
+build_output*
+build_error_output*
+devserver*
+codex-vite.log
+vite-dev*
+audit-report.json
+audit_report.md
+test.txt
 
 .vercel
