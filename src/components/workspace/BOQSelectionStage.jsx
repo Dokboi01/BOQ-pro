@@ -14,6 +14,7 @@ import {
   getWorkedExamplePreview,
 } from '../../utils/boqFormulas';
 import { getBenchmarkCalibrationFactor } from '../../utils/pricing';
+import { convertNgnToProjectCurrency, getProjectCurrencySymbol } from '../../utils/currency';
 
 const FILTER_OPTIONS = [
   { id: 'all', label: 'All Items' },
@@ -64,6 +65,7 @@ const matchesItemSearch = (searchName, searchLibrary, normalizedQuery, queryTerm
 };
 
 const BOQSelectionStage = ({
+  project = null,
   projectName,
   marketRegion,
   structureType,
@@ -234,21 +236,6 @@ const BOQSelectionStage = ({
           <small>{sections.length} active bill{sections.length === 1 ? '' : 's'} in this structure.</small>
         </div>
 
-        <div className="boq-selection-sidebar-search-wrap">
-          <span className="boq-selection-sidebar-search-label">Search Items</span>
-          <div className="boq-selection-search glass-input boq-selection-search-sidebar">
-            <Search size={15} />
-            <input
-              type="text"
-              placeholder="Search items..."
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              autoComplete="off"
-              aria-label="Search items"
-            />
-          </div>
-        </div>
-
         <div className="boq-selection-sidebar glass-panel-list">
           {(sections || []).map((entry, index) => {
             const isActive = activeBillSectionId === entry.id;
@@ -316,27 +303,6 @@ const BOQSelectionStage = ({
             <div className="boq-selection-progress-copy">
               <strong>{selectionProgress}% of this bill curated</strong>
               <span>{currentSectionSelectedCount} of {catalogItems.length} available items selected for BOQ generation.</span>
-            </div>
-          </div>
-        </section>
-
-        <section className="boq-selection-page-header-secondary">
-          <div className="boq-selection-header-copy">
-            <span className="boq-selection-eyebrow emerald-text-gradient">Item Selection Stage</span>
-            <h2>{projectName || 'Project Workbook'}</h2>
-            <p>{structureType || 'Bill of Quantities'} | {marketRegion} market benchmark | Estimate Sheet</p>
-          </div>
-          
-          <div className="boq-selection-header-stats">
-            <div className="boq-selection-stat">
-              <span>Active Bill</span>
-              <strong>{section?.title || 'No Selection'}</strong>
-              <small>{currentSectionSelectedCount} items selected</small>
-            </div>
-            <div className="boq-selection-stat">
-              <span>Subtotal</span>
-              <strong>N0</strong>
-              <small>0 pending pricing review</small>
             </div>
           </div>
         </section>
@@ -525,7 +491,8 @@ const BOQSelectionStage = ({
                 const formulaBasisPreview = Array.isArray(item.formulaBasis) && item.formulaBasis.length > 0
                   ? item.formulaBasis[0]
                   : '';
-                const benchmarkCurrency = item.benchmarkMetadata?.currency || 'NGN';
+                const currencySymbol = getProjectCurrencySymbol(project);
+                const convertedBenchmarkValue = convertNgnToProjectCurrency(benchmarkValue, project);
 
                 return (
                   <button
@@ -569,7 +536,7 @@ const BOQSelectionStage = ({
                     <div className="boq-selection-card glass-card-meta">
                       <span>Unit: {item.unit || 'Nr'}</span>
                       {hasBenchmark && (
-                        <span>{benchmarkCurrency} {benchmarkValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                        <span>{currencySymbol}{convertedBenchmarkValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                       )}
                       {!hasBenchmark && <span>Add benchmark later</span>}
                     </div>

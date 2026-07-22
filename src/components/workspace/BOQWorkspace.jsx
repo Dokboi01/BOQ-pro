@@ -338,6 +338,7 @@ const BOQWorkspace = () => {
     return (
       <div className="ws-container ws-container-selection">
         <BOQSelectionStage
+          project={project}
           projectName={project?.name}
           marketRegion={marketRegionDisplay}
           structureType={projectStructureType}
