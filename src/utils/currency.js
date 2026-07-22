@@ -1,4 +1,5 @@
 import { DEFAULT_CURRENCY_CODE, getCurrencyDefinition } from '../data/currencies';
+import { getLiveFxRateToNgn } from './fxRates';
 
 const clampNumber = (value) => {
   const parsed = Number(value);
@@ -13,13 +14,25 @@ export const getProjectCurrencyCode = (project) => (
 );
 
 /**
- * Resolves the NGN-per-unit exchange rate a project should convert through.
- * Falls back to the currency's seed default if the project hasn't set its own.
+ * Resolves the NGN-per-unit exchange rate a project should convert through,
+ * in priority order:
+ *   1. An explicit rate the user pinned on the project (a deliberate
+ *      manual override -- e.g. locking a tender to the rate quoted on a
+ *      specific date), always wins.
+ *   2. The live rate fetched from fxRates.js, kept fresh automatically in
+ *      the background (see primeLiveFxRates, called once at app startup).
+ *   3. The currency's hardcoded seed default, only as a last-resort
+ *      fallback for the brief window before the first live fetch resolves,
+ *      or if the live fetch fails entirely (e.g. offline).
  */
 export const getProjectFxRateToNgn = (project) => {
   const currencyCode = getProjectCurrencyCode(project);
   const explicitRate = clampNumber(project?.fxRateToNgn);
   if (explicitRate > 0) return explicitRate;
+
+  const liveRate = getLiveFxRateToNgn(currencyCode);
+  if (liveRate > 0) return liveRate;
+
   return getCurrencyDefinition(currencyCode).defaultFxRateToNgn;
 };
 

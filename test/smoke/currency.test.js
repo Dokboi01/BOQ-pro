@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   getProjectCurrencyCode,
   getProjectFxRateToNgn,
@@ -7,6 +7,11 @@ import {
   getProjectCurrencySymbol,
 } from '../../src/utils/currency.js';
 import { getCurrencyDefinition, isSupportedCurrencyCode, SUPPORTED_CURRENCIES } from '../../src/data/currencies.js';
+import { refreshLiveFxRates, __resetFxRatesCacheForTests } from '../../src/utils/fxRates.js';
+
+beforeEach(() => {
+  __resetFxRatesCacheForTests();
+});
 
 describe('Currency conversion', () => {
   describe('getCurrencyDefinition / isSupportedCurrencyCode', () => {
@@ -59,6 +64,42 @@ describe('Currency conversion', () => {
 
     it('NGN projects always convert 1:1', () => {
       expect(getProjectFxRateToNgn({ currency: 'NGN' })).toBe(1);
+    });
+
+    describe('live rate priority', () => {
+      beforeEach(() => {
+        vi.stubGlobal('fetch', vi.fn());
+      });
+
+      afterEach(() => {
+        vi.unstubAllGlobals();
+      });
+
+      it('prefers a live-fetched rate over the seed default', async () => {
+        global.fetch.mockResolvedValue({
+          ok: true,
+          json: async () => ({ ratesToNgn: { USD: 1377.41 }, fetchedAt: '2026-07-22T00:02:31.000Z' }),
+        });
+        await refreshLiveFxRates();
+
+        // 1600 is USD's hardcoded seed default -- the live rate must win.
+        expect(getProjectFxRateToNgn({ currency: 'USD' })).toBe(1377.41);
+      });
+
+      it('still lets an explicit project override win over a live rate', async () => {
+        global.fetch.mockResolvedValue({
+          ok: true,
+          json: async () => ({ ratesToNgn: { USD: 1377.41 }, fetchedAt: '2026-07-22T00:02:31.000Z' }),
+        });
+        await refreshLiveFxRates();
+
+        expect(getProjectFxRateToNgn({ currency: 'USD', fxRateToNgn: 1500 })).toBe(1500);
+      });
+
+      it('falls back to the seed default when the live fetch has not resolved yet', () => {
+        // No refreshLiveFxRates() call in this test -- cache stays empty.
+        expect(getProjectFxRateToNgn({ currency: 'USD' })).toBe(1600);
+      });
     });
   });
 

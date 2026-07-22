@@ -6,6 +6,7 @@ import { ProjectsProvider } from './context/ProjectsContext';
 import { useProjects } from './context/useProjects';
 import { analytics } from './db/firebase';
 import { logEvent } from 'firebase/analytics';
+import { primeLiveFxRates } from './utils/fxRates';
 import LandingLayout from './components/landing/LandingLayout';
 import HomePage from './components/landing/HomePage';
 import FeaturesPage from './components/landing/FeaturesPage';
@@ -367,6 +368,13 @@ function App() {
   React.useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  // Fetch live exchange rates once at startup and keep them refreshing in
+  // the background (see fxRates.js) so project currency conversion tracks
+  // the real-world rate automatically, without a page reload.
+  React.useEffect(() => {
+    primeLiveFxRates();
+  }, []);
 
   // Track app load
   React.useEffect(() => {
