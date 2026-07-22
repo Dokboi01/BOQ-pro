@@ -35,7 +35,7 @@ import {
   getBaseUnitForWorkType,
   normalizeUnit,
 } from '../../utils/pricing';
-import { convertNgnToProjectCurrency, getProjectCurrencySymbol } from '../../utils/currency';
+import { convertNgnToProjectCurrency, convertProjectCurrencyToNgn, getProjectCurrencySymbol } from '../../utils/currency';
 import { useLiveFxRatesTick } from '../../hooks/useLiveFxRatesTick';
 import {
   Plus,
@@ -127,6 +127,18 @@ const BOQWorkspace = () => {
   useLiveFxRatesTick();
   const currencySymbol = getProjectCurrencySymbol(project);
   const cur = (ngnValue, options) => convertNgnToProjectCurrency(ngnValue, project).toLocaleString(undefined, options);
+  // The manual rate <input> stores/edits the raw NGN value directly (see
+  // handleManualRateChange), but must DISPLAY in the project's currency to
+  // stay consistent with every other rate shown in the row and in the
+  // docked item detail panel -- otherwise a non-NGN project shows two
+  // different numbers for the same rate. toDisplayRate/fromDisplayRate
+  // convert at the input boundary so the stored value stays NGN-native.
+  const toDisplayRate = (ngnValue) => (
+    ngnValue === null || ngnValue === undefined || ngnValue === ''
+      ? ''
+      : convertNgnToProjectCurrency(ngnValue, project)
+  );
+  const fromDisplayRate = (displayValue) => convertProjectCurrencyToNgn(displayValue, project);
 
   const benchmarkWorkspaceHealth = benchmarkSyncState.status === 'error'
     ? { label: 'Benchmark library offline', tone: 'warning' }
@@ -756,8 +768,8 @@ const BOQWorkspace = () => {
                             <input
                               type="number"
                               className="ws-input ws-rate-input"
-                              value={selectedRateSource === 'manual' ? (item.manualRate ?? '') : (rate || '')}
-                              onChange={(e) => handleManualRateChange(section.id, item, e.target.value)}
+                              value={toDisplayRate(selectedRateSource === 'manual' ? item.manualRate : rate)}
+                              onChange={(e) => handleManualRateChange(section.id, item, fromDisplayRate(e.target.value))}
                               disabled={!canEditManualRate}
                               onFocus={() => selectWorkspaceCell({ sectionId: section.id, itemId: item.id, columnKey: 'rate', itemCode, rowNumber: spreadsheetRowNumber })}
                             />
@@ -821,15 +833,15 @@ const BOQWorkspace = () => {
                           </div>
                           <div className="ws-rate-reference-row">
                             <span className={`ws-rate-ref-pill ${selectedRateSource === 'benchmark' ? 'ws-rate-ref-active' : ''}`}>
-                              BM N{benchmarkRate.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                              BM {currencySymbol}{cur(benchmarkRate, { maximumFractionDigits: 2 })}
                             </span>
                             <span className={`ws-rate-ref-pill ws-rate-ref-formula ${selectedRateSource === 'formula' ? 'ws-rate-ref-active' : ''}`}>
                               {hasFormulaOption
-                                ? `FX N${formulaRate.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+                                ? `FX ${currencySymbol}${cur(formulaRate, { maximumFractionDigits: 2 })}`
                                 : 'FX Unavailable'}
                             </span>
                             <span className={`ws-rate-ref-pill ws-rate-ref-manual ${selectedRateSource === 'manual' ? 'ws-rate-ref-active' : ''}`}>
-                              MAN N{manualRate.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                              MAN {currencySymbol}{cur(manualRate, { maximumFractionDigits: 2 })}
                             </span>
                           </div>
                           <div className="ws-rate-meta">
@@ -898,16 +910,20 @@ const BOQWorkspace = () => {
                           {selectedRateSource === 'benchmark' && (
                             <div className="ws-benchmark-override">
                               <Pencil size={10} className="ws-benchmark-override-icon" />
-                              <span className="ws-benchmark-override-label">Benchmark (₦):</span>
+                              <span className="ws-benchmark-override-label">Benchmark ({currencySymbol}):</span>
                               <input
                                 type="number"
                                 className="ws-input ws-benchmark-override-input"
-                                value={getEffectiveBenchmarkRate(item, project?.region || 'Lagos') || ''}
+                                value={(() => {
+                                  const currentBenchmarkRate = getEffectiveBenchmarkRate(item, project?.region || 'Lagos');
+                                  return currentBenchmarkRate ? convertNgnToProjectCurrency(currentBenchmarkRate, project) : '';
+                                })()}
                                 min="0"
                                 step="any"
                                 title="Override the benchmark rate with your own market data"
                                 onChange={(e) => {
-                                  const nextBenchmark = sanitizeNonNegativeNumber(e.target.value);
+                                  const enteredDisplayValue = sanitizeNonNegativeNumber(e.target.value);
+                                  const nextBenchmark = fromDisplayRate(enteredDisplayValue);
                                   const nextRegion = project?.region || 'Lagos';
 
                                   const workType = item.customPricing?.workType || inferWorkType(item.description || item.name);
@@ -1121,8 +1137,8 @@ const BOQWorkspace = () => {
                                 <input
                                   type="number"
                                   className="ws-input ws-rate-input"
-                                  value={selectedRateSource === 'manual' ? (item.manualRate ?? '') : (rate || '')}
-                                  onChange={(e) => handleManualRateChange(section.id, item, e.target.value)}
+                                  value={toDisplayRate(selectedRateSource === 'manual' ? item.manualRate : rate)}
+                                  onChange={(e) => handleManualRateChange(section.id, item, fromDisplayRate(e.target.value))}
                                   disabled={!canEditManualRate}
                                 />
                                 {hasFormulaOption && (

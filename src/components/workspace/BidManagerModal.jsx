@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { formatProjectCurrency } from '../../utils/currency';
+import { formatProjectCurrency, convertProjectCurrencyToNgn, getProjectCurrencySymbol } from '../../utils/currency';
 import {
     X,
     Users,
@@ -15,12 +15,21 @@ import {
 
 const BidManagerModal = ({ item, onClose, onSave, project = null }) => {
     const formatMoney = (value) => formatProjectCurrency(value, project, { maximumFractionDigits: 2 });
+    const currencySymbol = getProjectCurrencySymbol(project);
     const [bids, setBids] = useState(item.bids || []);
     const [newBid, setNewBid] = useState({ subcontractor: '', rate: 0, notes: '' });
 
     const addBid = () => {
         if (!newBid.subcontractor || newBid.rate <= 0) return;
-        const bidWithId = { ...newBid, id: Math.random().toString(36).substr(2, 9), selected: false };
+        // newBid.rate is entered/displayed in the project's currency -- bid.rate
+        // is stored NGN-native (same as every other rate field), so convert once
+        // here rather than on every keystroke of the input.
+        const bidWithId = {
+            ...newBid,
+            rate: convertProjectCurrencyToNgn(newBid.rate, project),
+            id: Math.random().toString(36).substr(2, 9),
+            selected: false,
+        };
         setBids([...bids, bidWithId]);
         setNewBid({ subcontractor: '', rate: 0, notes: '' });
     };
@@ -114,7 +123,7 @@ const BidManagerModal = ({ item, onClose, onSave, project = null }) => {
                                 />
                             </div>
                             <div className="input-group">
-                                <label>Quote Rate (₦)</label>
+                                <label>Quote Rate ({currencySymbol})</label>
                                 <input
                                     type="number"
                                     value={newBid.rate}

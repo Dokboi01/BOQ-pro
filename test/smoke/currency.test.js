@@ -3,6 +3,7 @@ import {
   getProjectCurrencyCode,
   getProjectFxRateToNgn,
   convertNgnToProjectCurrency,
+  convertProjectCurrencyToNgn,
   formatProjectCurrency,
   getProjectCurrencySymbol,
 } from '../../src/utils/currency.js';
@@ -115,6 +116,28 @@ describe('Currency conversion', () => {
     it('clamps non-numeric NGN input to 0', () => {
       expect(convertNgnToProjectCurrency('not-a-number', { currency: 'USD' })).toBe(0);
       expect(convertNgnToProjectCurrency(undefined, { currency: 'USD' })).toBe(0);
+    });
+  });
+
+  describe('convertProjectCurrencyToNgn', () => {
+    it('passes display amounts through unchanged for an NGN project', () => {
+      expect(convertProjectCurrencyToNgn(12500, { currency: 'NGN' })).toBe(12500);
+    });
+
+    it('multiplies by the FX rate to convert a display-currency amount back to NGN', () => {
+      expect(convertProjectCurrencyToNgn(100, { currency: 'USD', fxRateToNgn: 1600 })).toBe(160000);
+    });
+
+    it('round-trips with convertNgnToProjectCurrency', () => {
+      const project = { currency: 'GBP', fxRateToNgn: 2000 };
+      const ngnAmount = 500000;
+      const displayAmount = convertNgnToProjectCurrency(ngnAmount, project);
+      expect(convertProjectCurrencyToNgn(displayAmount, project)).toBeCloseTo(ngnAmount);
+    });
+
+    it('clamps non-numeric input to 0', () => {
+      expect(convertProjectCurrencyToNgn('not-a-number', { currency: 'USD' })).toBe(0);
+      expect(convertProjectCurrencyToNgn(undefined, { currency: 'USD' })).toBe(0);
     });
   });
 

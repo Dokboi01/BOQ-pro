@@ -49,6 +49,19 @@ export const convertNgnToProjectCurrency = (ngnAmount, project) => {
 };
 
 /**
+ * Inverse of convertNgnToProjectCurrency -- converts a value entered in the
+ * project's display currency back into NGN. Needed anywhere a user directly
+ * edits a rate in a currency-converted UI (e.g. the workspace's manual rate
+ * input): the value they type must be converted to NGN before it's stored,
+ * since every rate/calibration calculation elsewhere in the app (pricing.js,
+ * benchmark matching) is NGN-native.
+ */
+export const convertProjectCurrencyToNgn = (displayAmount, project) => {
+  const fxRateToNgn = getProjectFxRateToNgn(project);
+  return clampNumber(displayAmount) * fxRateToNgn;
+};
+
+/**
  * Formats an NGN amount as the project's display currency, e.g. "₦12,500.00"
  * or "$7.81". `options` are passed through to toLocaleString.
  */
