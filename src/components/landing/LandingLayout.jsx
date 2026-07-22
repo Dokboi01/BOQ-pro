@@ -79,9 +79,9 @@ const LandingLayout = ({
               The commercial workspace built specifically for Nigerian construction teams — from quantity surveyors and estimators to contractors and project managers.
             </p>
             <div className="footer-social">
-              <a href="#" aria-label="LinkedIn"><Linkedin size={18} /></a>
-              <a href="#" aria-label="Twitter"><Twitter size={18} /></a>
-              <a href="#" aria-label="Instagram"><Instagram size={18} /></a>
+              <a href="https://www.linkedin.com/in/dokun-hassan" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><Linkedin size={18} /></a>
+              <a href="https://x.com/ad3dokun" target="_blank" rel="noopener noreferrer" aria-label="Twitter"><Twitter size={18} /></a>
+              <a href="https://www.instagram.com/ad3dokun" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><Instagram size={18} /></a>
             </div>
           </div>
 

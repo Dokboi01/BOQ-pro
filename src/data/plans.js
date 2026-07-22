@@ -242,8 +242,8 @@ export const PLANS = {
         ],
         popular: false,
         cta: 'Talk to Sales',
-        contactEmail: 'adedokunhassan01@gmail.com',
-        contactPhone: '08151148095'
+        contactEmail: 'hello@quantra.ng',
+        contactPhone: '+234 800 Quantra'
     }
 };
 
