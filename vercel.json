@@ -1,7 +1,7 @@
 {
     "crons": [
         {
-            "path": "/api/cron-material-market-sync",
+            "path": "/api/material-market-sync",
             "schedule": "0 5 * * *"
         }
     ],
@@ -10,5 +10,11 @@
             "source": "/((?!api/).*)",
             "destination": "/"
         }
-    ]
+    ],
+    "build": {
+        "env": {
+            "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD": "1",
+            "ELECTRON_SKIP_BINARY_DOWNLOAD": "1"
+        }
+    }
 }
