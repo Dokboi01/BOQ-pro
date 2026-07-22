@@ -109,6 +109,25 @@
   /* ── Typography ── */
   --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
+  /* ── Type Scale (1/16rem steps below 1rem) ──
+     Components had accumulated 50+ near-duplicate font-size values
+     (0.72rem, 0.75rem, 0.76rem, 0.78rem...) with no consistent step system,
+     which reads as visual noise even when no single value is "wrong". This
+     scale gives every text size a defined, reusable step. */
+  --text-size-3xs: 0.5rem;
+  --text-size-2xs: 0.5625rem;
+  --text-size-xs: 0.625rem;
+  --text-size-sm: 0.6875rem;
+  --text-size-base: 0.75rem;
+  --text-size-md: 0.8125rem;
+  --text-size-lg: 0.875rem;
+  --text-size-xl: 0.9375rem;
+  --text-size-2xl: 1rem;
+  --text-size-3xl: 1.125rem;
+  --text-size-4xl: 1.25rem;
+  --text-size-5xl: 1.375rem;
+  --text-size-6xl: 2rem;
+
   /* ── Shadows (layered for soft premium lift) ── */
   --shadow-xs: 0 1px 2px 0 rgb(15 23 42 / 0.04);
   --shadow-sm:

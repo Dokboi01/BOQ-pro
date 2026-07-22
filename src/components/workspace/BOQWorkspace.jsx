@@ -1565,7 +1565,7 @@ const BOQWorkspace = () => {
         }
         .ws-main-pane::-webkit-scrollbar { width: 7px; }
         .ws-main-pane::-webkit-scrollbar-track { background: transparent; }
-        .ws-main-pane::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+        .ws-main-pane::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: var(--radius-full); }
 
         .ws-detail-dock {
           width: 360px;
@@ -1595,7 +1595,7 @@ const BOQWorkspace = () => {
           gap: 0.4rem;
         }
         .ws-detail-dock-eyebrow {
-          font-size: 0.65rem;
+          font-size: var(--text-size-sm);
           font-weight: 800;
           text-transform: uppercase;
           letter-spacing: 0.1em;
@@ -1603,7 +1603,7 @@ const BOQWorkspace = () => {
         }
         .ws-detail-dock-title {
           margin: 0;
-          font-size: 1.1rem;
+          font-size: var(--text-size-3xl);
           font-weight: 900;
           color: #0f172a;
           line-height: 1.3;
@@ -1614,12 +1614,12 @@ const BOQWorkspace = () => {
           margin-top: 0.25rem;
         }
         .ws-detail-meta-pill {
-          font-size: 0.62rem;
+          font-size: var(--text-size-xs);
           font-weight: 800;
           padding: 0.2rem 0.5rem;
           background: #f1f5f9;
           color: #64748b;
-          border-radius: 4px;
+          border-radius: var(--radius-xs);
         }
         .ws-detail-dock-actions {
           display: flex;
@@ -1632,10 +1632,10 @@ const BOQWorkspace = () => {
           gap: 0.2rem;
           padding: 0.72rem 0.8rem;
           border: 1px solid #dbeafe;
-          border-radius: 14px;
+          border-radius: var(--radius-lg);
           background: linear-gradient(180deg, #eff6ff 0%, #f8fbff 100%);
           color: #1e3a8a;
-          font-size: 0.68rem;
+          font-size: var(--text-size-sm);
           line-height: 1.4;
         }
         .ws-detail-guide span {
@@ -1655,7 +1655,7 @@ const BOQWorkspace = () => {
           border: 1px solid #e2e8f0;
           background: #ffffff;
           color: #64748b;
-          border-radius: 8px;
+          border-radius: var(--radius-md);
           cursor: pointer;
           transition: all 0.2s;
         }
@@ -1692,20 +1692,20 @@ const BOQWorkspace = () => {
           justify-content: center;
           background: #ffffff;
           border: 1px solid #e2e8f0;
-          border-radius: 20px;
+          border-radius: var(--radius-2xl);
           color: #cbd5e1;
           margin-bottom: 1.5rem;
           box-shadow: 0 10px 20px rgba(0,0,0,0.02);
         }
         .ws-detail-empty h3 {
           margin: 0 0 0.5rem 0;
-          font-size: 1rem;
+          font-size: var(--text-size-2xl);
           font-weight: 800;
           color: #1e293b;
         }
         .ws-detail-empty p {
           margin: 0;
-          font-size: 0.82rem;
+          font-size: var(--text-size-md);
           color: #64748b;
           line-height: 1.5;
         }
@@ -1714,12 +1714,12 @@ const BOQWorkspace = () => {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          font-size: 0.72rem;
+          font-size: var(--text-size-base);
           font-weight: 700;
           color: #3b82f6;
           padding: 0.5rem 1rem;
           background: #eff6ff;
-          border-radius: 999px;
+          border-radius: var(--radius-full);
         }
         .ws-summary-strip {
           min-width: 0;
@@ -1728,7 +1728,7 @@ const BOQWorkspace = () => {
           gap: 0.6rem;
           padding: 0;
           border: none;
-          border-radius: 26px;
+          border-radius: var(--radius-2xl);
           background: transparent;
           box-shadow: none;
         }
@@ -1749,14 +1749,14 @@ const BOQWorkspace = () => {
         }
         .ws-summary-title-row h1 {
           margin: 0;
-          font-size: 2rem;
+          font-size: var(--text-size-6xl);
           line-height: 1.02;
           color: #0f172a;
         }
         .ws-summary-headline p {
           margin: 0;
           color: #64748b;
-          font-size: 0.88rem;
+          font-size: var(--text-size-lg);
         }
         .ws-summary-metrics-row {
           display: grid;
@@ -1780,10 +1780,10 @@ const BOQWorkspace = () => {
           display: inline-flex;
           align-items: center;
           padding: 0.16rem 0.46rem;
-          border-radius: 999px;
+          border-radius: var(--radius-full);
           background: #eff6ff;
           color: #1d4ed8;
-          font-size: 0.58rem;
+          font-size: var(--text-size-2xs);
           font-weight: 900;
           text-transform: uppercase;
           letter-spacing: 0.06em;
@@ -1793,21 +1793,21 @@ const BOQWorkspace = () => {
           color: #ffffff;
         }
         .ws-summary-metric > span:not(.ws-summary-badge) {
-          font-size: 0.7rem;
+          font-size: var(--text-size-sm);
           font-weight: 800;
           text-transform: uppercase;
           letter-spacing: 0.08em;
           color: #64748b;
         }
         .ws-summary-metric strong {
-          font-size: 1.24rem;
+          font-size: var(--text-size-4xl);
           color: #0f172a;
           line-height: 1.2;
           padding-right: 1.25rem;
         }
         .ws-summary-metric small {
           color: #64748b;
-          font-size: 0.76rem;
+          font-size: var(--text-size-base);
           line-height: 1.5;
         }
         .ws-summary-metric-secondary {
@@ -1818,7 +1818,7 @@ const BOQWorkspace = () => {
           border-style: dashed;
         }
         .ws-summary-metric-tertiary strong {
-          font-size: 1.05rem;
+          font-size: var(--text-size-2xl);
         }
         .ws-summary-metric-strong {
           background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
@@ -1857,7 +1857,7 @@ const BOQWorkspace = () => {
           align-items: center;
           gap: 1rem;
           padding: 0.9rem 1rem;
-          border-radius: 18px;
+          border-radius: var(--radius-xl);
           border: 1px solid #dbeafe;
           background: #eff6ff;
         }
@@ -1868,11 +1868,11 @@ const BOQWorkspace = () => {
         }
         .ws-analytics-inline-copy strong {
           color: #1e3a8a;
-          font-size: 0.88rem;
+          font-size: var(--text-size-lg);
         }
         .ws-analytics-inline-copy small {
           color: #475569;
-          font-size: 0.76rem;
+          font-size: var(--text-size-base);
         }
         .ws-item-heading-row {
           display: flex;
@@ -1889,7 +1889,7 @@ const BOQWorkspace = () => {
         }
         .ws-item-name {
           display: block;
-          font-size: 0.78rem;
+          font-size: var(--text-size-base);
           font-weight: 800;
           color: #0f172a;
           line-height: 1.2;
@@ -1904,10 +1904,10 @@ const BOQWorkspace = () => {
           align-items: center;
           width: fit-content;
           padding: 0.1rem 0.35rem;
-          border-radius: 999px;
+          border-radius: var(--radius-full);
           background: #eff6ff;
           color: #1d4ed8;
-          font-size: 0.55rem;
+          font-size: var(--text-size-2xs);
           font-weight: 800;
         }
         .ws-item-indicators {
@@ -1919,7 +1919,7 @@ const BOQWorkspace = () => {
         }
         .ws-item-secondary {
           margin-top: 0.1rem;
-          font-size: 0.6rem;
+          font-size: var(--text-size-xs);
           color: #64748b;
           line-height: 1.3;
         }
@@ -1987,10 +1987,10 @@ const BOQWorkspace = () => {
             padding: 0.8rem 0.8rem 0.75rem;
           }
           .ws-compact-title {
-            font-size: 1.08rem;
+            font-size: var(--text-size-3xl);
           }
           .ws-compact-meta-line {
-            font-size: 0.62rem;
+            font-size: var(--text-size-xs);
           }
           .ws-compact-stat.glass-cards-row {
             grid-template-columns: 1fr;
@@ -2007,7 +2007,7 @@ const BOQWorkspace = () => {
             grid-template-columns: 1fr;
           }
           .ws-summary-title-row h1 {
-            font-size: 1.45rem;
+            font-size: var(--text-size-5xl);
           }
         }
         .ws-workbook-metrics-compact {
@@ -2022,8 +2022,8 @@ const BOQWorkspace = () => {
           background: #eff6ff;
           color: #1d4ed8;
           border: 1px solid #bfdbfe;
-          border-radius: 999px;
-          font-size: 0.72rem;
+          border-radius: var(--radius-full);
+          font-size: var(--text-size-base);
           font-weight: 800;
           cursor: pointer;
           transition: all 0.2s;
@@ -2052,9 +2052,9 @@ const BOQWorkspace = () => {
            border: 1px solid rgba(255,255,255,0.2);
            color: white;
            padding: 2px 6px;
-           border-radius: 4px;
+           border-radius: var(--radius-xs);
            outline: none;
-           font-size: 0.65rem;
+           font-size: var(--text-size-sm);
            cursor: pointer;
         }
         .ws-region-sel-compact:hover {
@@ -2069,16 +2069,16 @@ const BOQWorkspace = () => {
            gap: 0.25rem;
            background: rgba(0,0,0,0.15);
            padding: 0.22rem;
-           border-radius: 6px;
+           border-radius: var(--radius-sm);
         }
         .ws-filter-chip-compact {
            background: transparent;
            border: none;
            color: rgba(255,255,255,0.6);
-           font-size: 0.64rem;
+           font-size: var(--text-size-xs);
            font-weight: 800;
            padding: 0.25rem 0.6rem;
-           border-radius: 4px;
+           border-radius: var(--radius-xs);
            cursor: pointer;
            transition: all 0.2s;
         }
@@ -2095,21 +2095,21 @@ const BOQWorkspace = () => {
         }
         .ws-bill-pill {
            padding: 0.25rem 0.5rem;
-           border-radius: 999px;
+           border-radius: var(--radius-full);
            flex-direction: row;
            align-items: center;
            min-width: unset;
         }
         .ws-bill-pill-title {
-           font-size: 0.72rem;
+           font-size: var(--text-size-base);
         }
         .ws-bill-pill-meta {
            display: none;
         }
         .ws-bill-pill-picker {
            padding: 0.15rem 0.45rem;
-           font-size: 0.62rem;
-           border-radius: 999px;
+           font-size: var(--text-size-xs);
+           border-radius: var(--radius-full);
         }
         .ws-bill-nav-hidden {
           display: none !important;
@@ -2142,7 +2142,7 @@ const BOQWorkspace = () => {
         .ws-bill-tab {
           border: 1px solid #dbe3ef;
           background: #ffffff;
-          border-radius: 18px;
+          border-radius: var(--radius-xl);
           padding: 0.8rem 0.9rem;
           display: grid;
           grid-template-columns: 40px minmax(0, 1fr);
@@ -2169,10 +2169,10 @@ const BOQWorkspace = () => {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          border-radius: 12px;
+          border-radius: var(--radius-lg);
           background: #f1f5f9;
           color: #475569;
-          font-size: 0.72rem;
+          font-size: var(--text-size-base);
           font-weight: 800;
         }
         .ws-bill-tab.active .ws-bill-tab-index {
@@ -2186,12 +2186,12 @@ const BOQWorkspace = () => {
           gap: 0.2rem;
         }
         .ws-bill-tab-copy strong {
-          font-size: 0.84rem;
+          font-size: var(--text-size-md);
           color: #0f172a;
           line-height: 1.35;
         }
         .ws-bill-tab-copy small {
-          font-size: 0.72rem;
+          font-size: var(--text-size-base);
           color: #64748b;
           white-space: nowrap;
           overflow: hidden;
@@ -2220,11 +2220,11 @@ const BOQWorkspace = () => {
           display: inline-flex;
           align-items: center;
           padding: 0.45rem 1rem;
-          border-radius: 999px;
+          border-radius: var(--radius-full);
           background: #eff6ff;
           color: #1d4ed8;
           border: 1px solid #bfdbfe;
-          font-size: 0.72rem;
+          font-size: var(--text-size-base);
           font-weight: 800;
         }
         .ws-sheet-tabbar-selection {
@@ -2239,10 +2239,10 @@ const BOQWorkspace = () => {
           color: #0f172a;
         }
         .ws-selection-tabbar-copy strong {
-          font-size: 0.92rem;
+          font-size: var(--text-size-xl);
         }
         .ws-selection-tabbar-copy span {
-          font-size: 0.78rem;
+          font-size: var(--text-size-base);
           line-height: 1.5;
           color: #475569;
         }
@@ -2270,7 +2270,7 @@ const BOQWorkspace = () => {
           flex: 1;
         }
         .ws-compact-eyebrow {
-          font-size: 0.58rem;
+          font-size: var(--text-size-2xs);
           font-weight: 900;
           letter-spacing: 0.12em;
           text-transform: uppercase;
@@ -2284,7 +2284,7 @@ const BOQWorkspace = () => {
         }
         .ws-compact-title {
           margin: 0;
-          font-size: 1.28rem;
+          font-size: var(--text-size-4xl);
           font-weight: 900;
           color: #0f172a;
           letter-spacing: -0.02em;
@@ -2295,8 +2295,8 @@ const BOQWorkspace = () => {
           align-items: center;
           justify-content: center;
           padding: 0.24rem 0.58rem;
-          border-radius: 999px;
-          font-size: 0.58rem;
+          border-radius: var(--radius-full);
+          font-size: var(--text-size-2xs);
           font-weight: 900;
           letter-spacing: 0.04em;
           border: 1px solid #e2e8f0;
@@ -2308,7 +2308,7 @@ const BOQWorkspace = () => {
           gap: 0.5rem;
           flex-wrap: wrap;
           color: #64748b;
-          font-size: 0.68rem;
+          font-size: var(--text-size-sm);
           font-weight: 700;
         }
         .ws-compact-meta-line span {
@@ -2320,16 +2320,16 @@ const BOQWorkspace = () => {
           content: '';
           width: 4px;
           height: 4px;
-          border-radius: 999px;
+          border-radius: var(--radius-full);
           background: #cbd5e1;
         }
         .ws-compact-bill-pill {
           padding: 0.24rem 0.58rem;
-          border-radius: 999px;
+          border-radius: var(--radius-full);
           background: #e0f2fe;
           color: #0369a1;
           border: 1px solid #bae6fd;
-          font-size: 0.62rem;
+          font-size: var(--text-size-xs);
           font-weight: 900;
         }
         .ws-compact-meta-tags {
@@ -2338,14 +2338,14 @@ const BOQWorkspace = () => {
           flex-wrap: wrap;
         }
         .ws-compact-meta-tag {
-          font-size: 0.62rem;
+          font-size: var(--text-size-xs);
           font-weight: 800;
           text-transform: uppercase;
           letter-spacing: 0.05em;
           padding: 0.2rem 0.6rem;
           background: #f1f5f9;
           color: #64748b;
-          border-radius: 999px;
+          border-radius: var(--radius-full);
           border: 1px solid #e2e8f0;
         }
         .ws-compact-meta-tag.ws-compact-health-success { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
@@ -2388,7 +2388,7 @@ const BOQWorkspace = () => {
           gap: 0.15rem;
           padding: 0.55rem 0.75rem;
           background: #f8fafc;
-          border-radius: 12px;
+          border-radius: var(--radius-lg);
           border: 1px solid #f1f5f9;
           transition: all 0.2s;
         }
@@ -2398,20 +2398,20 @@ const BOQWorkspace = () => {
           box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
         }
         .ws-compact-stat.glass-card span {
-          font-size: 0.6rem;
+          font-size: var(--text-size-xs);
           font-weight: 800;
           text-transform: uppercase;
           letter-spacing: 0.08em;
           color: #94a3b8;
         }
         .ws-compact-stat.glass-card strong {
-          font-size: 0.96rem;
+          font-size: var(--text-size-xl);
           font-weight: 900;
           color: #1e293b;
           line-height: 1.2;
         }
         .ws-compact-stat.glass-card small {
-          font-size: 0.62rem;
+          font-size: var(--text-size-xs);
           color: #64748b;
         }
         .ws-compact-progress-track {
@@ -2420,12 +2420,12 @@ const BOQWorkspace = () => {
           height: 6px;
           margin-top: 0.25rem;
           background: #dbeafe;
-          border-radius: 999px;
+          border-radius: var(--radius-full);
           overflow: hidden;
         }
         .ws-compact-progress-fill {
           height: 100%;
-          border-radius: 999px;
+          border-radius: var(--radius-full);
           background: linear-gradient(90deg, #2563eb 0%, #38bdf8 100%);
         }
         .ws-compact-stat.glass-card-total {
@@ -2479,7 +2479,7 @@ const BOQWorkspace = () => {
           width: 320px;
           background: #f1f5f9;
           border: 1px solid #e2e8f0;
-          border-radius: 10px;
+          border-radius: var(--radius-md);
           padding: 0 0.75rem;
           transition: all 0.2s;
         }
@@ -2494,7 +2494,7 @@ const BOQWorkspace = () => {
           border: none;
           background: transparent;
           padding: 0.5rem 0.5rem;
-          font-size: 0.82rem;
+          font-size: var(--text-size-md);
           font-weight: 500;
           color: #1e293b;
           outline: none;
@@ -2510,7 +2510,7 @@ const BOQWorkspace = () => {
         }
         .ws-search-clear:hover { color: #64748b; }
         .ws-search-results {
-          font-size: 0.76rem;
+          font-size: var(--text-size-base);
           font-weight: 600;
           color: #64748b;
         }
@@ -2533,8 +2533,8 @@ const BOQWorkspace = () => {
           background: transparent;
           border: 1px solid #e2e8f0;
           padding: 0.35rem 0.75rem;
-          border-radius: 8px;
-          font-size: 0.7rem;
+          border-radius: var(--radius-md);
+          font-size: var(--text-size-sm);
           font-weight: 700;
           color: #64748b;
           cursor: pointer;
@@ -2563,13 +2563,13 @@ const BOQWorkspace = () => {
           background: #f8fafc;
           border: 1px solid #e2e8f0;
           padding: 0.35rem 0.75rem;
-          border-radius: 8px;
+          border-radius: var(--radius-md);
         }
         .ws-region-selector svg { color: #64748b; }
         .ws-region-selector select {
           background: transparent;
           border: none;
-          font-size: 0.72rem;
+          font-size: var(--text-size-base);
           font-weight: 700;
           color: #1e293b;
           outline: none;
@@ -2589,7 +2589,7 @@ const BOQWorkspace = () => {
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 0.6rem;
+          font-size: var(--text-size-xs);
           font-weight: 800;
           color: #ffffff;
           margin-left: -8px;
@@ -2605,7 +2605,7 @@ const BOQWorkspace = () => {
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 0.55rem;
+          font-size: var(--text-size-2xs);
           font-weight: 800;
           color: #64748b;
           margin-left: -8px;
@@ -2618,11 +2618,11 @@ const BOQWorkspace = () => {
           justify-content: center;
           gap: 0.35rem;
           padding: 0.42rem 0.62rem;
-          border-radius: 10px;
+          border-radius: var(--radius-md);
           border: 1px solid #dbe4ee;
           background: white;
           color: #334155;
-          font-size: 0.61rem;
+          font-size: var(--text-size-xs);
           font-weight: 900;
           cursor: pointer;
           transition: all 0.15s ease;
@@ -2654,7 +2654,7 @@ const BOQWorkspace = () => {
           padding: 0.95rem;
           background: white;
           border: 1px solid #e2e8f0;
-          border-radius: 18px;
+          border-radius: var(--radius-xl);
           box-shadow: 0 18px 32px rgba(15, 23, 42, 0.07);
         }
         .ws-mobile-card-benchmark {
@@ -2688,8 +2688,8 @@ const BOQWorkspace = () => {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          border-radius: 999px;
-          font-size: 0.62rem;
+          border-radius: var(--radius-full);
+          font-size: var(--text-size-xs);
           font-weight: 900;
           padding: 0.28rem 0.55rem;
         }
@@ -2715,20 +2715,20 @@ const BOQWorkspace = () => {
           text-align: right;
         }
         .ws-mobile-card-total span {
-          font-size: 0.56rem;
+          font-size: var(--text-size-2xs);
           font-weight: 800;
           letter-spacing: 0.08em;
           text-transform: uppercase;
           color: #64748b;
         }
         .ws-mobile-card-total strong {
-          font-size: 0.95rem;
+          font-size: var(--text-size-xl);
           font-weight: 900;
           color: #0f172a;
         }
         .ws-mobile-card-total small {
           max-width: 180px;
-          font-size: 0.58rem;
+          font-size: var(--text-size-2xs);
           line-height: 1.35;
           color: #64748b;
         }
@@ -2762,10 +2762,10 @@ const BOQWorkspace = () => {
           justify-content: flex-start;
         }
         .ws-qty-display-mobile .ws-qty-main {
-          font-size: 1rem;
+          font-size: var(--text-size-2xl);
         }
         .ws-mobile-field-block label {
-          font-size: 0.6rem;
+          font-size: var(--text-size-xs);
           font-weight: 900;
           letter-spacing: 0.07em;
           text-transform: uppercase;
@@ -2813,10 +2813,10 @@ const BOQWorkspace = () => {
           min-height: 38px;
           padding: 0.65rem 0.9rem;
           border: 1px solid #dbe4ee;
-          border-radius: 12px;
+          border-radius: var(--radius-lg);
           background: #f8fafc;
           color: #334155;
-          font-size: 0.7rem;
+          font-size: var(--text-size-sm);
           font-weight: 800;
           white-space: nowrap;
           cursor: pointer;
@@ -2866,7 +2866,7 @@ const BOQWorkspace = () => {
           gap: 0.45rem;
           padding: 0.45rem;
           border: 1px solid #dbe3ef;
-          border-radius: 16px;
+          border-radius: var(--radius-xl);
           background: white;
         }
 
@@ -2888,13 +2888,13 @@ const BOQWorkspace = () => {
         }
 
         .ws-bill-pill-title {
-          font-size: 0.84rem;
+          font-size: var(--text-size-md);
           font-weight: 800;
           color: #0f172a;
         }
 
         .ws-bill-pill-meta {
-          font-size: 0.72rem;
+          font-size: var(--text-size-base);
           color: #64748b;
         }
 
@@ -2903,9 +2903,9 @@ const BOQWorkspace = () => {
           border: 1px solid #bfdbfe;
           background: #eff6ff;
           color: #1d4ed8;
-          border-radius: 12px;
+          border-radius: var(--radius-lg);
           padding: 0.55rem 0.7rem;
-          font-size: 0.72rem;
+          font-size: var(--text-size-base);
           font-weight: 800;
           cursor: pointer;
           white-space: nowrap;
@@ -2918,7 +2918,7 @@ const BOQWorkspace = () => {
           background: rgba(255,255,255,0.08);
           border: 1px solid rgba(255,255,255,0.12);
           padding: 0.3rem 0.625rem;
-          border-radius: 6px;
+          border-radius: var(--radius-sm);
           color: white;
           width: 180px;
         }
@@ -2927,7 +2927,7 @@ const BOQWorkspace = () => {
           border: none;
           outline: none;
           color: white;
-          font-size: 0.6875rem;
+          font-size: var(--text-size-sm);
           width: 100%;
         }
         .ws-search input::placeholder { color: rgba(255,255,255,0.4); }
@@ -2938,7 +2938,7 @@ const BOQWorkspace = () => {
           width: 18px;
           height: 18px;
           border: none;
-          border-radius: 999px;
+          border-radius: var(--radius-full);
           background: rgba(255,255,255,0.12);
           color: rgba(255,255,255,0.8);
           cursor: pointer;
@@ -2949,11 +2949,11 @@ const BOQWorkspace = () => {
           color: white;
         }
 
-        .ws-mode-switch { display: flex; background: rgba(255,255,255,0.06); border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+        .ws-mode-switch { display: flex; background: rgba(255,255,255,0.06); border-radius: var(--radius-sm); overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
         .ws-mode-btn {
           display: flex; align-items: center; gap: 0.25rem;
           padding: 0.25rem 0.625rem;
-          font-size: 0.625rem; font-weight: 700;
+          font-size: var(--text-size-xs); font-weight: 700;
           color: rgba(255,255,255,0.5);
           background: none; border: none; cursor: pointer;
           transition: all 0.15s;
@@ -2961,23 +2961,23 @@ const BOQWorkspace = () => {
         .ws-mode-btn.active { background: rgba(255,255,255,0.12); color: white; }
 
         .ws-stat { display: flex; flex-direction: column; align-items: center; gap: 1px; }
-        .ws-stat-label { font-size: 0.5rem; font-weight: 700; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.06em; }
-        .ws-stat-val { font-size: 0.75rem; font-weight: 900; color: white; }
+        .ws-stat-label { font-size: var(--text-size-3xs); font-weight: 700; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.06em; }
+        .ws-stat-val { font-size: var(--text-size-base); font-weight: 900; color: white; }
         .ws-stat-total .ws-stat-val { color: #60a5fa; }
 
         .ws-region-sel {
           background: rgba(255,255,255,0.08);
           border: 1px solid rgba(255,255,255,0.15);
           color: white;
-          font-size: 0.625rem; font-weight: 800;
-          padding: 1px 4px; border-radius: 4px;
+          font-size: var(--text-size-xs); font-weight: 800;
+          padding: 1px 4px; border-radius: var(--radius-xs);
           outline: none; cursor: pointer;
         }
 
         .ws-btn {
           display: flex; align-items: center; gap: 0.35rem;
           padding: 0.38rem 0.75rem; border-radius: var(--radius-md);
-          font-size: 0.68rem; font-weight: 700; cursor: pointer;
+          font-size: var(--text-size-sm); font-weight: 700; cursor: pointer;
           border: 1px solid transparent; transition: all var(--duration-fast) var(--ease-premium);
         }
         .ws-btn:hover {
@@ -3045,7 +3045,7 @@ const BOQWorkspace = () => {
           flex-direction: column;
           gap: 0.35rem;
           padding: 1.25rem 1.5rem;
-          border-radius: 20px;
+          border-radius: var(--radius-2xl);
           border: 1px solid #f1f5f9;
           background: #ffffff;
           box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
@@ -3057,20 +3057,20 @@ const BOQWorkspace = () => {
           border-color: #e2e8f0;
         }
                 .ws-head-stat-card span {
-          font-size: 0.65rem;
+          font-size: var(--text-size-sm);
           font-weight: 800;
           letter-spacing: 0.1em;
           text-transform: uppercase;
           color: #94a3b8;
         }
                 .ws-head-stat-card strong {
-          font-size: 1.25rem;
+          font-size: var(--text-size-4xl);
           font-weight: 900;
           color: #0f172a;
           line-height: 1.1;
         }
                 .ws-head-stat-card small {
-          font-size: 0.75rem;
+          font-size: var(--text-size-base);
           font-weight: 500;
           line-height: 1.5;
           color: #64748b;
@@ -3106,7 +3106,7 @@ const BOQWorkspace = () => {
           border: 1px solid var(--border-light);
           background: var(--bg-card);
           color: var(--text-secondary);
-          font-size: 0.72rem;
+          font-size: var(--text-size-base);
           font-weight: 700;
           cursor: pointer;
           transition: all var(--duration-fast) var(--ease-premium);
@@ -3151,9 +3151,9 @@ const BOQWorkspace = () => {
           justify-content: center;
           background: #f59e0b;
           color: white;
-          font-size: 0.6rem;
+          font-size: var(--text-size-xs);
           font-weight: 800;
-          border-radius: 999px;
+          border-radius: var(--radius-full);
           min-width: 15px;
           height: 15px;
           padding: 0 0.3rem;
@@ -3163,7 +3163,7 @@ const BOQWorkspace = () => {
           display: flex;
           background: var(--border-light);
           padding: 3px;
-          border-radius: 10px;
+          border-radius: var(--radius-md);
           gap: 2px;
           border: 1px solid var(--border-light);
         }
@@ -3172,9 +3172,9 @@ const BOQWorkspace = () => {
           background: transparent;
           color: var(--text-muted);
           font-weight: 700;
-          font-size: 0.72rem;
+          font-size: var(--text-size-base);
           padding: 0.4rem 1rem;
-          border-radius: 8px;
+          border-radius: var(--radius-md);
           cursor: pointer;
           transition: all var(--duration-fast) var(--ease-premium);
           display: inline-flex;
@@ -3196,8 +3196,8 @@ const BOQWorkspace = () => {
         }
         .ws-analytics-toggle {
           padding: 0.72rem 1rem;
-          border-radius: 14px;
-          font-size: 0.78rem;
+          border-radius: var(--radius-lg);
+          font-size: var(--text-size-base);
         }
         .ws-sheet-tabbar {
           padding-top: 0.7rem;
@@ -3214,7 +3214,7 @@ const BOQWorkspace = () => {
           border-bottom: none;
         }
         .ws-cost-card {
-          border-radius: 18px;
+          border-radius: var(--radius-xl);
           padding: 0.95rem 1rem;
         }
         .ws-sheet-tools {
@@ -3223,7 +3223,7 @@ const BOQWorkspace = () => {
           border-bottom: none;
         }
         .ws-formula-bar {
-          border-radius: 18px 18px 0 0;
+          border-radius: var(--radius-xl) var(--radius-xl) 0 0;
           box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
         }
         .ws-helper-strip {
@@ -3231,11 +3231,11 @@ const BOQWorkspace = () => {
           background: rgba(255, 255, 255, 0.94);
           border: 1px solid #dbe4ee;
           border-top: none;
-          border-radius: 0 0 18px 18px;
+          border-radius: 0 0 var(--radius-xl) var(--radius-xl);
           box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
         }
         .ws-analytics-board {
-          border-radius: 22px;
+          border-radius: var(--radius-2xl);
           border: 1px solid #dbe4ee;
           background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
           box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
@@ -3244,7 +3244,7 @@ const BOQWorkspace = () => {
         .ws-toolbar {
           margin: 0.1rem 0 0;
           padding: 0.85rem 1rem;
-          border-radius: 20px;
+          border-radius: var(--radius-2xl);
           border: 1px solid #dbe4ee;
           background: rgba(255, 255, 255, 0.96);
           color: #0f172a;
@@ -3272,20 +3272,20 @@ const BOQWorkspace = () => {
           width: min(360px, 100%);
           background: #f8fafc;
           border: 1px solid #dbe4ee;
-          border-radius: 14px;
+          border-radius: var(--radius-lg);
           padding: 0.72rem 0.85rem;
           color: #0f172a;
         }
         .ws-search input {
           color: #0f172a;
-          font-size: 0.8rem;
+          font-size: var(--text-size-md);
         }
         .ws-search input::placeholder { color: #94a3b8; }
         .ws-search-results {
           background: #eff6ff;
           border: 1px solid #bfdbfe;
           color: #1d4ed8;
-          font-size: 0.62rem;
+          font-size: var(--text-size-xs);
         }
         .ws-stat-label {
           color: #64748b;
@@ -3294,9 +3294,9 @@ const BOQWorkspace = () => {
           background: #ffffff;
           border: 1px solid #dbe4ee;
           color: #0f172a;
-          border-radius: 10px;
+          border-radius: var(--radius-md);
           padding: 0.35rem 0.55rem;
-          font-size: 0.72rem;
+          font-size: var(--text-size-base);
         }
         .ws-region-sel-compact option {
           background: #ffffff;
@@ -3305,14 +3305,14 @@ const BOQWorkspace = () => {
         .ws-filter-group-compact {
           background: #f8fafc;
           border: 1px solid #e2e8f0;
-          border-radius: 12px;
+          border-radius: var(--radius-lg);
           padding: 0.25rem;
           flex-wrap: wrap;
         }
         .ws-filter-chip-compact {
           color: #64748b;
-          font-size: 0.7rem;
-          border-radius: 10px;
+          font-size: var(--text-size-sm);
+          border-radius: var(--radius-md);
           padding: 0.45rem 0.7rem;
         }
         .ws-filter-chip-compact:hover {
@@ -3326,7 +3326,7 @@ const BOQWorkspace = () => {
         .ws-btn {
           padding: 0.55rem 0.8rem;
           border-radius: var(--radius-md);
-          font-size: 0.72rem;
+          font-size: var(--text-size-base);
         }
         .ws-btn-ghost {
           background: var(--bg-card-muted);
@@ -3353,7 +3353,7 @@ const BOQWorkspace = () => {
 
         .ws-table-wrap.glass-panel::-webkit-scrollbar { width: 6px; height: 6px; }
         .ws-table-wrap.glass-panel::-webkit-scrollbar-track { background: #f1f5f9; }
-        .ws-table-wrap.glass-panel::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .ws-table-wrap.glass-panel::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: var(--radius-xs); }
 
         .ws-column-letters {
           display: grid;
@@ -3379,12 +3379,12 @@ const BOQWorkspace = () => {
           border-right: none;
         }
         .ws-column-letter span {
-          font-size: 0.72rem;
+          font-size: var(--text-size-base);
           font-weight: 900;
           color: #0f172a;
         }
         .ws-column-letter small {
-          font-size: 0.52rem;
+          font-size: var(--text-size-2xs);
           font-weight: 800;
           letter-spacing: 0.08em;
           text-transform: uppercase;
@@ -3405,7 +3405,7 @@ const BOQWorkspace = () => {
         .ws-table {
           width: 100%;
           border-collapse: collapse;
-          font-size: 0.82rem;
+          font-size: var(--text-size-md);
           background: white;
           table-layout: fixed;
           min-width: 100%;
@@ -3420,7 +3420,7 @@ const BOQWorkspace = () => {
           background: #f8fafc;
           padding: 0.75rem 1rem;
           text-align: left;
-          font-size: 0.6rem;
+          font-size: var(--text-size-xs);
           font-weight: 800;
           color: #475569;
           text-transform: uppercase;
@@ -3446,7 +3446,7 @@ const BOQWorkspace = () => {
         }
         .ws-th-rate::after,
         .ws-th-total::after {
-          font-size: 0.6rem;
+          font-size: var(--text-size-xs);
           font-weight: 800;
           letter-spacing: 0.08em;
         }
@@ -3472,17 +3472,17 @@ const BOQWorkspace = () => {
           display: inline-flex; align-items: center; justify-content: center;
           width: 20px; height: 20px;
           background: #0f172a; color: white;
-          font-size: 0.6rem; font-weight: 900;
-          border-radius: 4px; flex-shrink: 0;
+          font-size: var(--text-size-xs); font-weight: 900;
+          border-radius: var(--radius-xs); flex-shrink: 0;
         }
         .ws-section-title-input {
           background: none; border: none; outline: none;
-          font-size: 0.875rem; font-weight: 800; color: #0f172a;
+          font-size: var(--text-size-lg); font-weight: 800; color: #0f172a;
           flex: 1; padding: 2px 4px;
           text-transform: uppercase;
           letter-spacing: 0.025em;
         }
-        .ws-section-title-input:focus { background: white; border-radius: 4px; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
+        .ws-section-title-input:focus { background: white; border-radius: var(--radius-xs); box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
         .ws-section-refresh-btn {
           display: inline-flex;
           align-items: center;
@@ -3490,9 +3490,9 @@ const BOQWorkspace = () => {
           border: 1px solid #bfdbfe;
           background: #eff6ff;
           color: #1d4ed8;
-          border-radius: 999px;
+          border-radius: var(--radius-full);
           padding: 0.18rem 0.48rem;
-          font-size: 0.56rem;
+          font-size: var(--text-size-2xs);
           font-weight: 900;
           cursor: pointer;
           transition: all 0.15s ease;
@@ -3508,32 +3508,32 @@ const BOQWorkspace = () => {
           border: 1px solid #fdba74;
           background: #fff7ed;
           color: #c2410c;
-          border-radius: 999px;
+          border-radius: var(--radius-full);
           padding: 0.18rem 0.48rem;
-          font-size: 0.56rem;
+          font-size: var(--text-size-2xs);
           font-weight: 900;
         }
         .ws-section-meta {
-          font-size: 0.58rem;
+          font-size: var(--text-size-2xs);
           font-weight: 800;
           color: #475569;
           background: rgba(148, 163, 184, 0.14);
           padding: 0.16rem 0.42rem;
-          border-radius: 999px;
+          border-radius: var(--radius-full);
           text-transform: uppercase;
           letter-spacing: 0.04em;
         }
         .ws-section-badge {
-          font-size: 0.56rem;
+          font-size: var(--text-size-2xs);
           font-weight: 900;
           background: #0f172a;
           color: white;
           padding: 0.12rem 0.42rem;
-          border-radius: 999px;
+          border-radius: var(--radius-full);
           flex-shrink: 0;
         }
         .ws-section-total {
-          font-size: 0.75rem; font-weight: 900; color: #1d4ed8;
+          font-size: var(--text-size-base); font-weight: 900; color: #1d4ed8;
           margin-left: auto;
         }
         .ws-section-actions {
@@ -3560,7 +3560,7 @@ const BOQWorkspace = () => {
         }
 
         .ws-subcategory-label {
-          font-size: 0.56rem;
+          font-size: var(--text-size-2xs);
           font-weight: 900;
           letter-spacing: 0.08em;
           text-transform: uppercase;
@@ -3568,7 +3568,7 @@ const BOQWorkspace = () => {
         }
 
         .ws-subcategory-title {
-          font-size: 0.78rem;
+          font-size: var(--text-size-base);
           font-weight: 700;
           color: #1e293b;
         }
@@ -3598,7 +3598,7 @@ const BOQWorkspace = () => {
 
         .ws-item-row td {
           padding: 0.75rem 1rem !important;
-          font-size: 0.78rem;
+          font-size: var(--text-size-base);
           color: #334155;
           border-right: 1px solid #e2e8f0;
           vertical-align: top;
@@ -3624,18 +3624,18 @@ const BOQWorkspace = () => {
         }
         .ws-line-code {
           display: block;
-          font-size: 0.65rem;
+          font-size: var(--text-size-sm);
           color: #94a3b8;
           margin-top: 0.1rem;
         }
 
         .ws-row-number {
-          font-size: 0.52rem;
+          font-size: var(--text-size-2xs);
           font-weight: 800;
           color: #94a3b8;
         }
         .ws-line-code {
-          font-size: 0.68rem;
+          font-size: var(--text-size-sm);
           font-weight: 900;
           color: #334155;
         }
@@ -3647,7 +3647,7 @@ const BOQWorkspace = () => {
         }
         .ws-desc-text {
           margin: 0;
-          font-size: 0.68rem;
+          font-size: var(--text-size-sm);
           font-weight: 520;
           color: #64748b;
           line-height: 1.25;
@@ -3677,8 +3677,8 @@ const BOQWorkspace = () => {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          border-radius: 999px;
-          font-size: 0.54rem;
+          border-radius: var(--radius-full);
+          font-size: var(--text-size-2xs);
           font-weight: 900;
           letter-spacing: 0.05em;
           text-transform: uppercase;
@@ -3727,8 +3727,8 @@ const BOQWorkspace = () => {
           align-items: center;
           justify-content: center;
           padding: 0.08rem 0.3rem;
-          border-radius: 999px;
-          font-size: 0.46rem;
+          border-radius: var(--radius-full);
+          font-size: var(--text-size-3xs);
           font-weight: 900;
           letter-spacing: 0.05em;
           text-transform: uppercase;
@@ -3745,8 +3745,8 @@ const BOQWorkspace = () => {
           align-items: center;
           justify-content: center;
           padding: 0.14rem 0.46rem;
-          border-radius: 999px;
-          font-size: 0.55rem;
+          border-radius: var(--radius-full);
+          font-size: var(--text-size-2xs);
           font-weight: 900;
           letter-spacing: 0.05em;
           text-transform: uppercase;
@@ -3764,9 +3764,9 @@ const BOQWorkspace = () => {
           border-color: #bfdbfe;
         }
         .ws-vo {
-          font-size: 0.5rem; font-weight: 900;
+          font-size: var(--text-size-3xs); font-weight: 900;
           background: #fef3c7; color: #92400e;
-          padding: 1px 5px; border-radius: 3px; flex-shrink: 0;
+          padding: 1px 5px; border-radius: var(--radius-xs); flex-shrink: 0;
         }
         .ws-outlier-icon { color: #f59e0b; flex-shrink: 0; }
 
@@ -3779,8 +3779,8 @@ const BOQWorkspace = () => {
           border: 1px solid #e2e8f0;
           background: #ffffff;
           padding: 0.25rem 0.375rem;
-          border-radius: 6px;
-          font-size: 0.8125rem;
+          border-radius: var(--radius-sm);
+          font-size: var(--text-size-md);
           transition: all 0.15s;
           outline: none;
           color: #1e293b;
@@ -3799,21 +3799,21 @@ const BOQWorkspace = () => {
           line-height: 1.4;
           resize: vertical;
           white-space: pre-wrap;
-          font-size: 0.85rem;
+          font-size: var(--text-size-lg);
           overflow-y: auto;
         }
         .ws-meta-input {
           border-color: #e2e8f0;
           background: #f8fafc;
-          font-size: 0.6875rem;
+          font-size: var(--text-size-sm);
           color: #475569;
           padding: 0.22rem 0.35rem;
         }
-        .ws-unit-input { text-align: center; font-weight: 700; text-transform: uppercase; font-size: 0.6875rem; color: #64748b; letter-spacing: 0.04em; }
+        .ws-unit-input { text-align: center; font-weight: 700; text-transform: uppercase; font-size: var(--text-size-sm); color: #64748b; letter-spacing: 0.04em; }
         .ws-qty-input {
           text-align: right;
           font-weight: 700;
-          font-size: 0.88rem;
+          font-size: var(--text-size-lg);
           width: min(100%, 88px);
           margin-left: auto;
         }
@@ -3833,13 +3833,13 @@ const BOQWorkspace = () => {
           gap: 0.15rem;
         }
         .ws-qty-main {
-          font-size: 0.76rem;
+          font-size: var(--text-size-base);
           line-height: 1.1;
           font-weight: 900;
           color: #0f172a;
         }
         .ws-qty-unit-text {
-          font-size: 0.52rem;
+          font-size: var(--text-size-2xs);
           font-weight: 800;
           text-transform: uppercase;
           letter-spacing: 0.05em;
@@ -3855,15 +3855,15 @@ const BOQWorkspace = () => {
           align-items: center;
           justify-content: center;
           padding: 0.08rem 0.3rem;
-          border-radius: 999px;
-          font-size: 0.48rem;
+          border-radius: var(--radius-full);
+          font-size: var(--text-size-3xs);
           font-weight: 800;
           background: #eff6ff;
           color: #1d4ed8;
         }
         .ws-field-feedback {
           margin-top: 0.08rem;
-          font-size: 0.55rem;
+          font-size: var(--text-size-2xs);
           line-height: 1.2;
         }
         .ws-field-feedback-success { color: #15803d; }
@@ -3876,9 +3876,9 @@ const BOQWorkspace = () => {
           display: flex; align-items: center; justify-content: center;
           width: 18px; height: 18px;
           border: none; background: #f1f5f9; color: #64748b;
-          border-radius: 3px; cursor: pointer; flex-shrink: 0;
+          border-radius: var(--radius-xs); cursor: pointer; flex-shrink: 0;
           transition: all 0.15s; opacity: 0;
-          font-size: 0.6rem;
+          font-size: var(--text-size-xs);
         }
         .ws-item-row:hover .ws-geo-btn,
         .ws-item-row:hover .ws-analysis-btn,
@@ -3894,17 +3894,17 @@ const BOQWorkspace = () => {
           justify-content: center;
           background: white;
           border: 1px solid #dbe4ee;
-          border-radius: 999px;
+          border-radius: var(--radius-full);
           padding: 0.18rem;
           box-shadow: inset 0 1px 0 rgba(255,255,255,0.75);
         }
         .ws-strat-btn {
           padding: 0.26rem 0.58rem;
           min-width: 72px;
-          font-size: 0.56rem;
+          font-size: var(--text-size-2xs);
           font-weight: 800;
           border: 1px solid transparent;
-          border-radius: 999px;
+          border-radius: var(--radius-full);
           background: transparent;
           color: #64748b;
           cursor: pointer; transition: all 0.15s;
@@ -3917,18 +3917,18 @@ const BOQWorkspace = () => {
           text-align: right;
           font-weight: 700;
           color: #1e293b;
-          font-size: 0.72rem;
+          font-size: var(--text-size-base);
           white-space: nowrap;
         }
         .ws-total-main {
           display: block;
-          font-size: 0.76rem;
+          font-size: var(--text-size-base);
           line-height: 1.15;
           color: #0f172a;
         }
         .ws-total-formula {
           display: block;
-          font-size: 0.52rem;
+          font-size: var(--text-size-2xs);
           color: #64748b;
           line-height: 1.2;
           margin-top: 0.06rem;
@@ -3938,8 +3938,8 @@ const BOQWorkspace = () => {
           align-items: center;
           justify-content: center;
           padding: 0.08rem 0.3rem;
-          border-radius: 999px;
-          font-size: 0.48rem;
+          border-radius: var(--radius-full);
+          font-size: var(--text-size-3xs);
           font-weight: 900;
           letter-spacing: 0.04em;
           margin-top: 0.08rem;
@@ -3981,8 +3981,8 @@ const BOQWorkspace = () => {
           align-items: center;
           justify-content: center;
           padding: 0.08rem 0.3rem;
-          border-radius: 999px;
-          font-size: 0.5rem;
+          border-radius: var(--radius-full);
+          font-size: var(--text-size-3xs);
           font-weight: 800;
           letter-spacing: 0.02em;
           white-space: nowrap;
@@ -4054,7 +4054,7 @@ const BOQWorkspace = () => {
         .ws-benchmark-evidence {
           margin-top: 0.26rem;
           padding: 0.42rem 0.56rem;
-          border-radius: 10px;
+          border-radius: var(--radius-md);
           border: 1px solid #dbe4ee;
           background: #f8fafc;
           display: flex;
@@ -4063,14 +4063,14 @@ const BOQWorkspace = () => {
           align-items: flex-end;
         }
         .ws-benchmark-evidence strong {
-          font-size: 0.6rem;
+          font-size: var(--text-size-xs);
           font-weight: 900;
           letter-spacing: 0.03em;
           text-transform: uppercase;
         }
         .ws-benchmark-evidence span,
         .ws-benchmark-evidence small {
-          font-size: 0.6rem;
+          font-size: var(--text-size-xs);
           line-height: 1.35;
           color: inherit;
         }
@@ -4100,7 +4100,7 @@ const BOQWorkspace = () => {
         .ws-benchmark-refresh {
           margin-top: 0.26rem;
           padding: 0.42rem 0.56rem;
-          border-radius: 10px;
+          border-radius: var(--radius-md);
           border: 1px solid #dbe4ee;
           background: #f8fafc;
           display: flex;
@@ -4109,14 +4109,14 @@ const BOQWorkspace = () => {
           align-items: flex-end;
         }
         .ws-benchmark-refresh strong {
-          font-size: 0.6rem;
+          font-size: var(--text-size-xs);
           font-weight: 900;
           letter-spacing: 0.03em;
           text-transform: uppercase;
         }
         .ws-benchmark-refresh span,
         .ws-benchmark-refresh small {
-          font-size: 0.6rem;
+          font-size: var(--text-size-xs);
           line-height: 1.35;
           color: inherit;
         }
@@ -4147,7 +4147,7 @@ const BOQWorkspace = () => {
         }
         .ws-rate-note {
           margin-top: 0.22rem;
-          font-size: 0.62rem;
+          font-size: var(--text-size-xs);
           line-height: 1.35;
           display: flex;
           flex-direction: column;
@@ -4155,7 +4155,7 @@ const BOQWorkspace = () => {
           align-items: flex-end;
         }
         .ws-rate-note strong {
-          font-size: 0.6rem;
+          font-size: var(--text-size-xs);
           letter-spacing: 0.03em;
           text-transform: uppercase;
         }
@@ -4173,9 +4173,9 @@ const BOQWorkspace = () => {
           border: none;
           background: #ecfeff;
           color: #0f766e;
-          border-radius: 999px;
+          border-radius: var(--radius-full);
           padding: 0.16rem 0.46rem;
-          font-size: 0.58rem;
+          font-size: var(--text-size-2xs);
           font-weight: 800;
           cursor: pointer;
         }
@@ -4194,15 +4194,15 @@ const BOQWorkspace = () => {
 
         .ws-progress-bar {
           height: 18px; background: #f1f5f9;
-          border-radius: 100px; position: relative;
-          overflow: hidden; font-size: 0.5625rem;
+          border-radius: var(--radius-full); position: relative;
+          overflow: hidden; font-size: var(--text-size-2xs);
           font-weight: 800; display: flex; align-items: center;
           justify-content: center; color: #1e293b;
         }
         .ws-progress-fill {
           position: absolute; top: 0; left: 0; bottom: 0;
           background: linear-gradient(90deg, #2563eb, #3b82f6);
-          border-radius: 100px;
+          border-radius: var(--radius-full);
           transition: width 0.3s;
         }
 
@@ -4247,7 +4247,7 @@ const BOQWorkspace = () => {
         }
 
         .ws-rate-source-current-label {
-          font-size: 0.58rem;
+          font-size: var(--text-size-2xs);
           font-weight: 900;
           letter-spacing: 0.08em;
           text-transform: uppercase;
@@ -4258,8 +4258,8 @@ const BOQWorkspace = () => {
           display: inline-flex;
           align-items: center;
           padding: 0.18rem 0.5rem;
-          border-radius: 999px;
-          font-size: 0.62rem;
+          border-radius: var(--radius-full);
+          font-size: var(--text-size-xs);
           font-weight: 900;
           border: 1px solid transparent;
           white-space: nowrap;
@@ -4285,11 +4285,11 @@ const BOQWorkspace = () => {
 
         .ws-src-btn {
           padding: 0.3rem 0.6rem;
-          border-radius: 8px;
+          border-radius: var(--radius-md);
           border: 1.5px solid #e2e8f0;
           background: #f8fafc;
           color: #64748b;
-          font-size: 0.73rem;
+          font-size: var(--text-size-base);
           font-weight: 600;
           cursor: pointer;
           text-align: left;
@@ -4311,7 +4311,7 @@ const BOQWorkspace = () => {
         .ws-rate-source-help {
           display: block;
           margin-top: 0.08rem;
-          font-size: 0.63rem;
+          font-size: var(--text-size-xs);
           line-height: 1.35;
           color: #64748b;
         }
@@ -4337,11 +4337,11 @@ const BOQWorkspace = () => {
           display: inline-flex;
           align-items: center;
           padding: 0.18rem 0.45rem;
-          border-radius: 999px;
+          border-radius: var(--radius-full);
           background: #f1f5f9;
           border: 1px solid #e2e8f0;
           color: #64748b;
-          font-size: 0.65rem;
+          font-size: var(--text-size-sm);
           font-weight: 600;
         }
 
@@ -4368,21 +4368,21 @@ const BOQWorkspace = () => {
           padding: 2.6rem 2rem;
           background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
           border: 1px dashed #93c5fd;
-          border-radius: 18px;
+          border-radius: var(--radius-xl);
           margin: 1rem;
           text-align: center;
         }
         .ws-empty-section-eyebrow {
-          font-size: 0.64rem;
+          font-size: var(--text-size-xs);
           font-weight: 900;
           letter-spacing: 0.12em;
           text-transform: uppercase;
           color: #1d4ed8;
         }
-        .ws-empty-section-title { font-size: 0.9rem; color: #0f172a; display: block; }
+        .ws-empty-section-title { font-size: var(--text-size-lg); color: #0f172a; display: block; }
         .ws-empty-section-msg {
           margin: 0;
-          font-size: 0.8rem;
+          font-size: var(--text-size-md);
           color: #64748b;
           max-width: 480px;
           line-height: 1.6;
@@ -4400,7 +4400,7 @@ const BOQWorkspace = () => {
         .ws-subtotal-row { background: linear-gradient(180deg, #f8fafc 0%, #eef6ff 100%); }
         .ws-subtotal-val {
           text-align: right !important;
-          font-weight: 900; font-size: 0.78rem;
+          font-weight: 900; font-size: var(--text-size-base);
           color: #1e293b;
           padding: 0.7rem 0.85rem !important;
           border-bottom: 2px solid #bfdbfe;
@@ -4414,8 +4414,8 @@ const BOQWorkspace = () => {
         .ws-add-btn {
           display: flex; align-items: center; gap: 0.25rem;
           background: none; border: 1px dashed #cbd5e1; color: #64748b;
-          padding: 0.25rem 0.75rem; border-radius: 4px;
-          font-size: 0.6875rem; font-weight: 600;
+          padding: 0.25rem 0.75rem; border-radius: var(--radius-xs);
+          font-size: var(--text-size-sm); font-weight: 600;
           cursor: pointer; transition: all 0.15s;
           width: 100%;
           justify-content: center;
@@ -4436,13 +4436,13 @@ const BOQWorkspace = () => {
         .ws-grand-total td {
           padding: 0.75rem 1rem !important;
           font-weight: 900;
-          font-size: 0.75rem;
+          font-size: var(--text-size-base);
           text-transform: uppercase;
           letter-spacing: 0.08em;
         }
         .ws-grand-val {
           text-align: right !important;
-          font-size: 1rem !important;
+          font-size: var(--text-size-2xl) !important;
           color: #60a5fa !important;
         }
 
@@ -4529,7 +4529,7 @@ const BOQWorkspace = () => {
           .ws-head-stat-card,
           .ws-head-stat-card-strong {
             padding: 0.85rem 0.9rem;
-            border-radius: 16px;
+            border-radius: var(--radius-xl);
           }
           .ws-workbook-actions {
             width: 100%;
@@ -4543,7 +4543,7 @@ const BOQWorkspace = () => {
             justify-content: center;
           }
           .ws-workbook-title-row h1 {
-            font-size: 1.15rem;
+            font-size: var(--text-size-3xl);
           }
           .ws-workbook-metrics {
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4556,7 +4556,7 @@ const BOQWorkspace = () => {
             flex-direction: column;
             align-items: stretch;
             padding: 0.85rem 0.9rem 0.95rem;
-            border-radius: 0 0 16px 16px;
+            border-radius: 0 0 var(--radius-xl) var(--radius-xl);
           }
           .ws-helper-actions {
             justify-content: flex-start;
@@ -4577,14 +4577,14 @@ const BOQWorkspace = () => {
           }
           .ws-sheet-tab {
             width: 100%;
-            border-radius: 12px;
+            border-radius: var(--radius-lg);
           }
           .ws-sheet-tools {
             padding: 0.35rem 0.6rem 0;
           }
           .ws-formula-bar {
             grid-template-columns: 68px 30px minmax(0, 1fr);
-            border-radius: 12px;
+            border-radius: var(--radius-lg);
           }
           .ws-refresh-banner {
             flex-direction: column;
@@ -4695,7 +4695,7 @@ const BOQWorkspace = () => {
             display: none;
           }
           .ws-table {
-            font-size: 0.75rem;
+            font-size: var(--text-size-base);
             background: transparent;
           }
           .ws-table thead {
@@ -4794,7 +4794,7 @@ const BOQWorkspace = () => {
           width: 26px; height: 26px;
           border-radius: 50%;
           display: flex; align-items: center; justify-content: center;
-          font-size: 0.5rem; font-weight: 800;
+          font-size: var(--text-size-3xs); font-weight: 800;
           color: white; position: relative;
           border: 2px solid #0f172a;
           margin-left: -6px;
@@ -4809,7 +4809,7 @@ const BOQWorkspace = () => {
         }
         .ws-avatar-more {
           background: #475569;
-          font-size: 0.5rem;
+          font-size: var(--text-size-3xs);
         }
 
         /* â”€â”€ COLLAB MODAL â”€â”€ */
@@ -4821,7 +4821,7 @@ const BOQWorkspace = () => {
         }
         .collab-modal {
           background: white; width: 440px;
-          border-radius: 14px; overflow: hidden;
+          border-radius: var(--radius-lg); overflow: hidden;
           box-shadow: 0 25px 50px rgba(0,0,0,0.25);
         }
         .collab-modal-header {
@@ -4830,10 +4830,10 @@ const BOQWorkspace = () => {
           border-bottom: 1px solid #f1f5f9;
         }
         .collab-title-row { display: flex; align-items: center; gap: 0.5rem; }
-        .collab-title-row h3 { margin: 0; font-size: 1rem; font-weight: 800; }
+        .collab-title-row h3 { margin: 0; font-size: var(--text-size-2xl); font-weight: 800; }
         .collab-close {
           background: none; border: none; color: #94a3b8;
-          cursor: pointer; padding: 4px; border-radius: 6px;
+          cursor: pointer; padding: 4px; border-radius: var(--radius-sm);
         }
         .collab-close:hover { background: #f1f5f9; color: #1e293b; }
         .collab-modal-body { padding: 1.25rem 1.5rem; }
@@ -4843,27 +4843,27 @@ const BOQWorkspace = () => {
         }
         .collab-input {
           flex: 1; padding: 0.625rem 0.75rem;
-          border: 1px solid #e2e8f0; border-radius: 8px;
-          font-size: 0.8125rem; outline: none;
+          border: 1px solid #e2e8f0; border-radius: var(--radius-md);
+          font-size: var(--text-size-md); outline: none;
         }
         .collab-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
         .collab-role-select {
           padding: 0.625rem 0.5rem; border: 1px solid #e2e8f0;
-          border-radius: 8px; font-size: 0.75rem; font-weight: 700;
+          border-radius: var(--radius-md); font-size: var(--text-size-base); font-weight: 700;
           background: white; cursor: pointer; outline: none;
         }
         .collab-invite-btn {
           width: 38px; height: 38px;
           display: flex; align-items: center; justify-content: center;
           background: #2563eb; color: white; border: none;
-          border-radius: 8px; cursor: pointer; flex-shrink: 0;
+          border-radius: var(--radius-md); cursor: pointer; flex-shrink: 0;
         }
         .collab-invite-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .collab-invite-btn:hover:not(:disabled) { background: #1d4ed8; }
 
         .collab-list { margin-top: 1rem; }
         .collab-list-label {
-          font-size: 0.5625rem; font-weight: 800; color: #94a3b8;
+          font-size: var(--text-size-2xs); font-weight: 800; color: #94a3b8;
           text-transform: uppercase; letter-spacing: 0.06em;
           display: block; margin-bottom: 0.5rem;
         }
@@ -4874,17 +4874,17 @@ const BOQWorkspace = () => {
         .collab-person-avatar {
           width: 30px; height: 30px; border-radius: 50%;
           display: flex; align-items: center; justify-content: center;
-          font-size: 0.5625rem; font-weight: 800; color: white; flex-shrink: 0;
+          font-size: var(--text-size-2xs); font-weight: 800; color: white; flex-shrink: 0;
         }
         .collab-person-info { flex: 1; display: flex; flex-direction: column; }
-        .collab-person-email { font-size: 0.8125rem; font-weight: 600; color: #1e293b; }
+        .collab-person-email { font-size: var(--text-size-md); font-weight: 600; color: #1e293b; }
         .collab-person-role {
-          font-size: 0.625rem; font-weight: 700; color: #94a3b8;
+          font-size: var(--text-size-xs); font-weight: 700; color: #94a3b8;
           text-transform: uppercase;
         }
         .collab-remove-btn {
           background: none; border: none; color: #cbd5e1;
-          font-size: 1.125rem; cursor: pointer; padding: 2px 6px; border-radius: 4px;
+          font-size: var(--text-size-3xl); cursor: pointer; padding: 2px 6px; border-radius: var(--radius-xs);
         }
         .collab-remove-btn:hover { background: #fef2f2; color: #ef4444; }
 
@@ -4901,22 +4901,22 @@ const BOQWorkspace = () => {
           border-bottom: 1px solid #f1f5f9;
         }
         .activity-panel-header h4 {
-          margin: 0; font-size: 0.875rem; font-weight: 800;
+          margin: 0; font-size: var(--text-size-lg); font-weight: 800;
           display: flex; align-items: center; gap: 0.5rem; color: #1e293b;
         }
         .activity-list { flex: 1; overflow-y: auto; padding: 0.75rem; }
         .activity-empty {
           text-align: center; color: #94a3b8;
-          font-size: 0.8125rem; padding: 2rem 0;
+          font-size: var(--text-size-md); padding: 2rem 0;
         }
         .activity-entry {
           display: flex; gap: 0.625rem; padding: 0.5rem 0;
           border-bottom: 1px solid #f8fafc;
         }
-        .activity-icon { font-size: 0.875rem; flex-shrink: 0; margin-top: 2px; }
+        .activity-icon { font-size: var(--text-size-lg); flex-shrink: 0; margin-top: 2px; }
         .activity-content { display: flex; flex-direction: column; flex: 1; }
-        .activity-text { font-size: 0.75rem; font-weight: 600; color: #334155; }
-        .activity-meta { font-size: 0.625rem; color: #94a3b8; margin-top: 1px; }
+        .activity-text { font-size: var(--text-size-base); font-weight: 600; color: #334155; }
+        .activity-meta { font-size: var(--text-size-xs); color: #94a3b8; margin-top: 1px; }
         /* Signatures Grid */
         .signatures-grid {
           display: grid;
@@ -4935,7 +4935,7 @@ const BOQWorkspace = () => {
         
         .sig-box span {
           font-weight: 700;
-          font-size: 0.8125rem;
+          font-size: var(--text-size-md);
           color: var(--primary-600);
           white-space: nowrap;
         }
@@ -4945,7 +4945,7 @@ const BOQWorkspace = () => {
           border: none;
           background: transparent;
           font-family: inherit;
-          font-size: 0.875rem;
+          font-size: var(--text-size-lg);
           font-weight: 600;
           color: var(--primary-900);
           border-bottom: 1px solid var(--border-light);
@@ -4978,7 +4978,7 @@ const BOQWorkspace = () => {
         }
 
         .meta-col label {
-          font-size: 0.8125rem;
+          font-size: var(--text-size-md);
           font-weight: 800;
           color: var(--primary-500);
           text-transform: uppercase;
@@ -4990,7 +4990,7 @@ const BOQWorkspace = () => {
           border: 1px solid var(--border-medium);
           border-radius: var(--radius-sm);
           padding: 1rem;
-          font-size: 0.875rem;
+          font-size: var(--text-size-lg);
           color: var(--primary-800);
           resize: vertical;
           background: var(--bg-main);
@@ -5016,7 +5016,7 @@ const BOQWorkspace = () => {
           gap: 0.5rem;
           background: #f8fafc;
           border: 1px solid #e2e8f0;
-          border-radius: 10px;
+          border-radius: var(--radius-md);
           padding: 0.75rem 1rem;
           cursor: pointer;
           transition: background 0.2s, border-color 0.2s;
@@ -5028,7 +5028,7 @@ const BOQWorkspace = () => {
         }
 
         .note-panel-title {
-          font-size: 0.8125rem;
+          font-size: var(--text-size-md);
           font-weight: 800;
           color: var(--primary-500);
           text-transform: uppercase;
@@ -5071,11 +5071,11 @@ const BOQWorkspace = () => {
           align-items: center;
           gap: 0.45rem;
           border: 1px solid #cbd5e1;
-          border-radius: 999px;
+          border-radius: var(--radius-full);
           background: #f8fafc;
           color: #334155;
           padding: 0.45rem 0.8rem;
-          font-size: 0.75rem;
+          font-size: var(--text-size-base);
           font-weight: 700;
           cursor: pointer;
           transition: all 0.2s;
@@ -5095,11 +5095,11 @@ const BOQWorkspace = () => {
 
         .notes-hide-btn {
           border: 1px solid #e2e8f0;
-          border-radius: 8px;
+          border-radius: var(--radius-md);
           background: #ffffff;
           color: #475569;
           padding: 0.35rem 0.65rem;
-          font-size: 0.75rem;
+          font-size: var(--text-size-base);
           font-weight: 700;
           cursor: pointer;
           transition: all 0.2s;
@@ -5114,7 +5114,7 @@ const BOQWorkspace = () => {
         .notes-accordion {
           background: white;
           border: 1px solid #e2e8f0;
-          border-radius: 12px;
+          border-radius: var(--radius-lg);
           margin: 0 1.5rem 1.5rem;
           box-shadow: 0 1px 3px rgba(0,0,0,0.05);
           overflow: hidden;
@@ -5229,7 +5229,7 @@ const BOQWorkspace = () => {
           }
           .ws-summary-headline p {
             margin: 0 !important;
-            font-size: 0.84rem !important;
+            font-size: var(--text-size-md) !important;
             line-height: 1.55 !important;
             color: #64748b !important;
           }
@@ -5238,13 +5238,13 @@ const BOQWorkspace = () => {
           }
           .ws-summary-metric {
             min-height: 122px !important;
-            border-radius: 20px !important;
+            border-radius: var(--radius-2xl) !important;
             padding: 1rem 1rem 0.95rem !important;
             border: 1px solid #e2e8f0 !important;
             box-shadow: 0 10px 22px rgba(15, 23, 42, 0.05) !important;
           }
           .ws-summary-metric strong {
-            font-size: 1.34rem !important;
+            font-size: var(--text-size-5xl) !important;
             padding-right: 1.45rem !important;
           }
           .ws-summary-metric-tertiary {
@@ -5267,7 +5267,7 @@ const BOQWorkspace = () => {
           }
           .ws-sheet-tabbar-compact {
             padding: 0.38rem !important;
-            border-radius: 18px !important;
+            border-radius: var(--radius-xl) !important;
             border: 1px solid #e2e8f0 !important;
             background: #f8fafc !important;
           }
@@ -5279,12 +5279,12 @@ const BOQWorkspace = () => {
           .ws-head-action,
           .ws-analytics-toggle {
             min-height: 42px !important;
-            border-radius: 14px !important;
+            border-radius: var(--radius-lg) !important;
             box-shadow: 0 8px 16px rgba(15, 23, 42, 0.06) !important;
           }
           .ws-detail-dock {
             border: 1px solid #dbe4ee !important;
-            border-radius: 28px !important;
+            border-radius: var(--radius-3xl) !important;
             background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
             box-shadow: 0 20px 46px rgba(15, 23, 42, 0.08) !important;
           }
@@ -5308,7 +5308,7 @@ const BOQWorkspace = () => {
             margin-top: 0.15rem !important;
           }
           .ws-formula-bar {
-            border-radius: 18px 18px 0 0 !important;
+            border-radius: var(--radius-xl) var(--radius-xl) 0 0 !important;
             border-color: #dbe4ee !important;
             box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06) !important;
           }
@@ -5318,25 +5318,25 @@ const BOQWorkspace = () => {
             background: rgba(255, 255, 255, 0.96) !important;
             border: 1px solid #dbe4ee !important;
             border-top: none !important;
-            border-radius: 0 0 18px 18px !important;
+            border-radius: 0 0 var(--radius-xl) var(--radius-xl) !important;
             box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06) !important;
           }
           .ws-helper-copy strong {
-            font-size: 0.98rem !important;
+            font-size: var(--text-size-2xl) !important;
             color: #0f172a !important;
           }
           .ws-helper-copy small {
-            font-size: 0.77rem !important;
+            font-size: var(--text-size-base) !important;
             line-height: 1.55 !important;
           }
           .ws-helper-chip {
             padding: 0.22rem 0.56rem !important;
-            font-size: 0.58rem !important;
-            border-radius: 999px !important;
+            font-size: var(--text-size-2xs) !important;
+            border-radius: var(--radius-full) !important;
           }
           .ws-helper-btn {
             min-height: 34px !important;
-            border-radius: 10px !important;
+            border-radius: var(--radius-md) !important;
             border: 1px solid #dbe4ee !important;
             background: #ffffff !important;
             box-shadow: 0 6px 12px rgba(15, 23, 42, 0.05) !important;
@@ -5350,7 +5350,7 @@ const BOQWorkspace = () => {
             margin-top: 0.2rem !important;
             background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%) !important;
             border: 1px solid #dbe4ee !important;
-            border-radius: 26px !important;
+            border-radius: var(--radius-2xl) !important;
             box-shadow: 0 22px 46px rgba(15, 23, 42, 0.06) !important;
             padding-bottom: 1rem !important;
           }
@@ -5388,16 +5388,16 @@ const BOQWorkspace = () => {
             border-bottom: 1px solid #bfdbfe !important;
           }
           .ws-head-stat-card strong {
-            font-size: 0.95rem;
+            font-size: var(--text-size-xl);
             font-weight: 800;
             color: #0f172a;
           }
           .ws-compact-source-badge {
             margin-top: 0.35rem;
             padding: 0.15rem 0.35rem;
-            font-size: 0.65rem;
+            font-size: var(--text-size-sm);
             font-weight: 800;
-            border-radius: 6px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
             border: 1px solid transparent;
             outline: none;
@@ -5413,15 +5413,15 @@ const BOQWorkspace = () => {
           .ws-compact-source-manual { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
           .ws-availability-pill {
             padding: 0.15rem 0.4rem !important;
-            font-size: 0.62rem !important;
-            border-radius: 999px !important;
+            font-size: var(--text-size-xs) !important;
+            border-radius: var(--radius-full) !important;
             font-weight: 800 !important;
           }
           .ws-empty-section {
             padding: 2.5rem 1rem !important;
             background: #f8fafc !important;
             border: 1px dashed #cbd5e1 !important;
-            border-radius: 16px !important;
+            border-radius: var(--radius-xl) !important;
           }
 
           @media (max-width: 1180px) {
@@ -5433,13 +5433,13 @@ const BOQWorkspace = () => {
 
             .ws-main-pane {
               border: 1px solid #dbe4ee !important;
-              border-radius: 18px !important;
+              border-radius: var(--radius-xl) !important;
               overflow: visible !important;
               background: #f8fafc !important;
             }
 
             .ws-detail-dock {
-              border-radius: 18px !important;
+              border-radius: var(--radius-xl) !important;
               max-height: none !important;
             }
           }
@@ -5457,12 +5457,12 @@ const BOQWorkspace = () => {
             }
 
             .ws-main-pane {
-              border-radius: 14px !important;
+              border-radius: var(--radius-lg) !important;
             }
 
             .ws-compact-header.glass-card {
               padding: 0.75rem !important;
-              border-radius: 14px !important;
+              border-radius: var(--radius-lg) !important;
               gap: 0.55rem !important;
             }
 
@@ -5475,13 +5475,13 @@ const BOQWorkspace = () => {
             }
 
             .ws-compact-title {
-              font-size: 1rem !important;
+              font-size: var(--text-size-2xl) !important;
               line-height: 1.2 !important;
             }
 
             .ws-compact-eyebrow,
             .ws-compact-meta-line {
-              font-size: 0.58rem !important;
+              font-size: var(--text-size-2xs) !important;
             }
 
             .ws-compact-meta-line {
@@ -5492,7 +5492,7 @@ const BOQWorkspace = () => {
             .ws-compact-sync-pill,
             .ws-compact-bill-pill {
               padding: 0.14rem 0.4rem !important;
-              font-size: 0.56rem !important;
+              font-size: var(--text-size-2xs) !important;
             }
 
             .ws-compact-header-actions {
@@ -5511,22 +5511,22 @@ const BOQWorkspace = () => {
               display: grid !important;
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
               padding: 0.25rem !important;
-              border-radius: 12px !important;
+              border-radius: var(--radius-lg) !important;
             }
 
             .ws-sheet-tab {
               width: auto !important;
               min-height: 32px !important;
-              border-radius: 9px !important;
-              font-size: 0.68rem !important;
+              border-radius: var(--radius-md) !important;
+              font-size: var(--text-size-sm) !important;
             }
 
             .ws-head-action {
               width: 100% !important;
               min-height: 34px !important;
               padding: 0.42rem 0.5rem !important;
-              border-radius: 10px !important;
-              font-size: 0.68rem !important;
+              border-radius: var(--radius-md) !important;
+              font-size: var(--text-size-sm) !important;
               gap: 0.32rem !important;
             }
 
@@ -5538,16 +5538,16 @@ const BOQWorkspace = () => {
             .ws-compact-stat.glass-card {
               min-height: auto !important;
               padding: 0.55rem !important;
-              border-radius: 12px !important;
+              border-radius: var(--radius-lg) !important;
               gap: 0.2rem !important;
             }
 
             .ws-compact-stat.glass-card span {
-              font-size: 0.52rem !important;
+              font-size: var(--text-size-2xs) !important;
             }
 
             .ws-compact-stat.glass-card strong {
-              font-size: 0.82rem !important;
+              font-size: var(--text-size-md) !important;
               line-height: 1.15 !important;
             }
 
@@ -5559,7 +5559,7 @@ const BOQWorkspace = () => {
             .ws-toolbar-clean.glass-panel {
               margin: 0.5rem 0 0 !important;
               padding: 0.75rem !important;
-              border-radius: 12px !important;
+              border-radius: var(--radius-lg) !important;
               gap: 0.45rem !important;
             }
 
@@ -5571,12 +5571,12 @@ const BOQWorkspace = () => {
 
             .ws-search-box.glass-input {
               min-height: 34px !important;
-              border-radius: 10px !important;
+              border-radius: var(--radius-md) !important;
               padding: 0 0.5rem !important;
             }
 
             .ws-search-box.glass-input input {
-              font-size: 0.72rem !important;
+              font-size: var(--text-size-base) !important;
             }
 
             .ws-search-results {
@@ -5594,19 +5594,19 @@ const BOQWorkspace = () => {
             .ws-filter-pill {
               min-height: 30px !important;
               padding: 0.32rem 0.28rem !important;
-              border-radius: 9px !important;
-              font-size: 0.58rem !important;
+              border-radius: var(--radius-md) !important;
+              font-size: var(--text-size-2xs) !important;
               white-space: nowrap !important;
             }
 
             .ws-region-selector {
               width: 100% !important;
               min-height: 34px !important;
-              border-radius: 10px !important;
+              border-radius: var(--radius-md) !important;
             }
 
             .ws-region-selector select {
-              font-size: 0.68rem !important;
+              font-size: var(--text-size-sm) !important;
             }
 
             .ws-divider-v,
@@ -5617,7 +5617,7 @@ const BOQWorkspace = () => {
             .ws-table-wrap.glass-panel {
               margin-top: 0.55rem !important;
               min-height: 360px !important;
-              border-radius: 12px !important;
+              border-radius: var(--radius-lg) !important;
               overflow-x: hidden !important;
               padding-bottom: 0.55rem !important;
             }
@@ -5633,11 +5633,11 @@ const BOQWorkspace = () => {
             }
 
             .ws-column-letter span {
-              font-size: 0.62rem !important;
+              font-size: var(--text-size-xs) !important;
             }
 
             .ws-column-letter small {
-              font-size: 0.46rem !important;
+              font-size: var(--text-size-3xs) !important;
             }
 
             .ws-table {
@@ -5645,7 +5645,7 @@ const BOQWorkspace = () => {
               width: 100% !important;
               min-width: 100% !important;
               table-layout: fixed !important;
-              font-size: 0.68rem !important;
+              font-size: var(--text-size-sm) !important;
               background: #ffffff !important;
             }
 
@@ -5655,7 +5655,7 @@ const BOQWorkspace = () => {
 
             .ws-table th {
               padding: 0.42rem 0.38rem !important;
-              font-size: 0.48rem !important;
+              font-size: var(--text-size-3xs) !important;
               letter-spacing: 0.04em !important;
             }
 
@@ -5674,7 +5674,7 @@ const BOQWorkspace = () => {
 
             .ws-item-row td {
               padding: 0.5rem 0.38rem !important;
-              font-size: 0.66rem !important;
+              font-size: var(--text-size-sm) !important;
               line-height: 1.25 !important;
               vertical-align: middle !important;
             }
@@ -5690,12 +5690,12 @@ const BOQWorkspace = () => {
             .ws-simple-item-code,
             .ws-simple-unit-pill,
             .ws-vo {
-              font-size: 0.42rem !important;
+              font-size: var(--text-size-3xs) !important;
               padding: 0.11rem 0.24rem !important;
             }
 
             .ws-item-name {
-              font-size: 0.66rem !important;
+              font-size: var(--text-size-sm) !important;
               line-height: 1.18 !important;
             }
 
@@ -5711,8 +5711,8 @@ const BOQWorkspace = () => {
               height: 28px !important;
               min-height: 28px !important;
               padding: 0.18rem 0.25rem !important;
-              font-size: 0.64rem !important;
-              border-radius: 7px !important;
+              font-size: var(--text-size-xs) !important;
+              border-radius: var(--radius-sm) !important;
             }
 
             .ws-qty-display,
@@ -5725,7 +5725,7 @@ const BOQWorkspace = () => {
             }
 
             .ws-total-main {
-              font-size: 0.66rem !important;
+              font-size: var(--text-size-sm) !important;
               line-height: 1.18 !important;
               overflow: hidden !important;
               text-overflow: ellipsis !important;
@@ -5744,7 +5744,7 @@ const BOQWorkspace = () => {
             }
 
             .ws-section-title-input {
-              font-size: 0.64rem !important;
+              font-size: var(--text-size-xs) !important;
             }
 
             .ws-section-meta,
@@ -5757,12 +5757,12 @@ const BOQWorkspace = () => {
               width: auto !important;
               margin-left: auto !important;
               padding-left: 0 !important;
-              font-size: 0.62rem !important;
+              font-size: var(--text-size-xs) !important;
               white-space: nowrap !important;
             }
 
             .ws-detail-dock {
-              border-radius: 14px !important;
+              border-radius: var(--radius-lg) !important;
             }
 
             .ws-detail-dock-header {
@@ -5771,7 +5771,7 @@ const BOQWorkspace = () => {
             }
 
             .ws-detail-dock-title {
-              font-size: 0.92rem !important;
+              font-size: var(--text-size-xl) !important;
             }
 
             .ws-detail-dock-meta,
