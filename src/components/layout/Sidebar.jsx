@@ -13,14 +13,12 @@ import {
   BookOpen,
   HardHat,
   MapPin,
-  Shield,
-  Sun,
-  Moon
+  Shield
 } from 'lucide-react';
 import QuantraIcon from '../ui/QuantraIcon';
 import { getAccessPlanName, isFreeAccessPlan } from '../../utils/subscription';
 
-const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans, theme, onToggleTheme }) => {
+const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans }) => {
   const [collapsed, setCollapsed] = React.useState(false);
   const planName = getAccessPlanName(user);
   const isFreePlan = isFreeAccessPlan(user);
@@ -91,18 +89,8 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, onViewPlans, theme, 
           <Settings size={20} />
           {!collapsed && <span>Settings</span>}
         </button>
-        <button
-          className="nav-item theme-toggle-btn"
-          onClick={onToggleTheme}
-          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-        >
-          {theme === 'dark' ? (
-            <Sun size={20} style={{ color: 'var(--quantra-blue-500)' }} />
-          ) : (
-            <Moon size={20} />
-          )}
-          {!collapsed && <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
-        </button>
+        {/* Theme toggle hidden: dark mode is force-disabled in App.jsx until
+            components are migrated onto the design-token system. */}
         <button className="nav-item text-danger" onClick={onLogout}>
           <LogOut size={20} />
           {!collapsed && <span>Sign Out</span>}

@@ -355,26 +355,18 @@ function OTPVerificationView({ email, authError, setAuthError, verificationEmail
 }
 
 function App() {
-  const [theme, setTheme] = React.useState(() => {
-    const saved = localStorage.getItem('quantra-theme');
-    if (saved) return saved;
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
-    }
-    return 'light';
-  });
+  // Dark mode is force-disabled: most of the UI (~93% of hardcoded colors
+  // across components) was never wired to the design-token system's dark
+  // overrides, so `data-theme="dark"` currently renders a half-broken mix of
+  // themed and un-themed surfaces. Force 'light' regardless of a stale saved
+  // preference or the visitor's OS dark-mode setting, and hide the toggle UI
+  // (Sidebar.jsx, Settings.jsx) until components are migrated onto the
+  // token system. See git history for the removed toggle implementation.
+  const theme = 'light';
 
   React.useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
-
-  const toggleTheme = React.useCallback(() => {
-    setTheme(prev => {
-      const next = prev === 'dark' ? 'light' : 'dark';
-      localStorage.setItem('quantra-theme', next);
-      return next;
-    });
-  }, []);
 
   // Track app load
   React.useEffect(() => {
@@ -602,7 +594,7 @@ function App() {
       case 'reports':
         return <div className="view-fade-in"><Reports user={user} projects={projects} activeProjectId={activeProjectId} onUpgrade={() => { setView('pricing'); }} /></div>;
       case 'settings':
-        return <div className="view-fade-in"><Settings user={user} onUpgrade={() => setView('pricing')} theme={theme} onToggleTheme={toggleTheme} /></div>;
+        return <div className="view-fade-in"><Settings user={user} onUpgrade={() => setView('pricing')} /></div>;
       case 'methodology':
         return <div className="view-fade-in"><CalculationMethodology /></div>;
       default:
@@ -614,7 +606,7 @@ function App() {
 
   return (
     <div className={`app-container ${focusMode ? 'focus-mode' : ''} ${hideWorkspaceChrome ? 'workspace-shell' : ''}`}>
-      {!focusMode && <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={user} onLogout={logout} onViewPlans={() => setView('pricing')} theme={theme} onToggleTheme={toggleTheme} />}
+      {!focusMode && <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={user} onLogout={logout} onViewPlans={() => setView('pricing')} />}
 
       {/* Focus Mode Toggle (appears when sidebar is hidden) */}
       {focusMode && (
