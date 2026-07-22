@@ -3,6 +3,7 @@ import {
   refreshLiveFxRates,
   getLiveFxRateToNgn,
   getLiveFxRatesFetchedAt,
+  subscribeToFxRateUpdates,
   __resetFxRatesCacheForTests,
 } from '../../src/utils/fxRates.js';
 
@@ -95,6 +96,45 @@ describe('Live FX rates', () => {
       await refreshLiveFxRates();
 
       expect(getLiveFxRateToNgn('GBP')).toBeNull();
+    });
+  });
+
+  describe('subscribeToFxRateUpdates', () => {
+    it('notifies subscribers when a refresh succeeds', async () => {
+      const listener = vi.fn();
+      subscribeToFxRateUpdates(listener);
+
+      global.fetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ ratesToNgn: { USD: 1600 }, fetchedAt: '2026-07-22T00:00:00.000Z' }),
+      });
+      await refreshLiveFxRates();
+
+      expect(listener).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not notify subscribers when a refresh fails', async () => {
+      const listener = vi.fn();
+      subscribeToFxRateUpdates(listener);
+
+      global.fetch.mockResolvedValue({ ok: false, status: 502 });
+      await refreshLiveFxRates();
+
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('stops notifying after unsubscribe', async () => {
+      const listener = vi.fn();
+      const unsubscribe = subscribeToFxRateUpdates(listener);
+      unsubscribe();
+
+      global.fetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ ratesToNgn: { USD: 1600 }, fetchedAt: '2026-07-22T00:00:00.000Z' }),
+      });
+      await refreshLiveFxRates();
+
+      expect(listener).not.toHaveBeenCalled();
     });
   });
 });

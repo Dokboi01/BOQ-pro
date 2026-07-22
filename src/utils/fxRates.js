@@ -16,6 +16,24 @@ const REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000;
 let memoryCache = null;
 let refreshTimer = null;
 let inFlightFetch = null;
+const subscribers = new Set();
+
+const notifySubscribers = () => {
+  subscribers.forEach((callback) => callback());
+};
+
+/**
+ * Registers a callback fired whenever the live rate cache updates (e.g. the
+ * 6h background refresh lands). Returns an unsubscribe function. This is
+ * what lets already-open screens (the BOQ workspace, reports, exports)
+ * pick up a rate change automatically instead of only on their next
+ * unrelated re-render -- see useLiveFxRatesTick() below for the React hook
+ * built on top of this.
+ */
+export const subscribeToFxRateUpdates = (callback) => {
+  subscribers.add(callback);
+  return () => subscribers.delete(callback);
+};
 
 const readCacheFromStorage = () => {
   if (typeof window === 'undefined') return null;
@@ -65,6 +83,7 @@ export const refreshLiveFxRates = async () => {
       };
       memoryCache = cache;
       writeCacheToStorage(cache);
+      notifySubscribers();
       return cache;
     } catch (error) {
       console.warn('⚠️ Could not refresh live exchange rates, using cached/seed rates:', error.message);
@@ -127,4 +146,5 @@ export const __resetFxRatesCacheForTests = () => {
     window.clearInterval(refreshTimer);
   }
   refreshTimer = null;
+  subscribers.clear();
 };

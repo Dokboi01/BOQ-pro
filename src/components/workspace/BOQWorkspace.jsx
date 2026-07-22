@@ -36,6 +36,7 @@ import {
   normalizeUnit,
 } from '../../utils/pricing';
 import { convertNgnToProjectCurrency, getProjectCurrencySymbol } from '../../utils/currency';
+import { useLiveFxRatesTick } from '../../hooks/useLiveFxRatesTick';
 import {
   Plus,
   Trash2,
@@ -117,6 +118,13 @@ const BOQWorkspace = () => {
 
   // All rates/totals computed elsewhere (pricing.js, benchmark engine) are NGN
   // -- convert to the project's display currency only here, at render time.
+  // useLiveFxRatesTick() subscribes this component to the FX rate cache
+  // (fxRates.js), so when the 6h background refresh lands, the workspace
+  // re-renders and every conversion below picks up the new rate immediately
+  // -- without it, an already-open workspace would keep showing whatever
+  // rate was cached when the page first loaded until something unrelated
+  // triggered a re-render.
+  useLiveFxRatesTick();
   const currencySymbol = getProjectCurrencySymbol(project);
   const cur = (ngnValue, options) => convertNgnToProjectCurrency(ngnValue, project).toLocaleString(undefined, options);
 
