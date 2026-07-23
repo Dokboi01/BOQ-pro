@@ -332,13 +332,21 @@ export async function analyzeEngineeringDrawing({ base64Image, contextHint = '',
 
     const parsed = parseJsonResponse(result.content);
     return Array.isArray(parsed) ? parsed : (parsed.items || parsed.elements || parsed.results || []);
-  } catch {
-    return [
-      { id: 'sec-1', title: 'Substructure & Earthworks', confidence: 98, items: 12 },
-      { id: 'sec-2', title: 'Concrete Frame & Superstructure', confidence: 95, items: 24 },
-      { id: 'sec-3', title: 'Internal Finishes & Partitions', confidence: 88, items: 18 },
-      { id: 'sec-4', title: 'Mechanical & Electrical Services', confidence: 82, items: 9 },
-    ];
+  } catch (error) {
+    // Previously fell back to hardcoded fake "results" (same 4 sections every
+    // time, regardless of what was actually uploaded) shaped completely
+    // differently from a real response (title/confidence/items vs. the
+    // documented category/item/description/quantity/structuralDetails) --
+    // silently presenting fabricated data as if it were real analysis of the
+    // user's drawing. Surface the failure instead so the client's existing
+    // error-handling UI (DrawingAnalyzer.jsx) can show it honestly.
+    const err = new Error(
+      error instanceof SyntaxError
+        ? 'AI returned a malformed response. Please try again with a clearer image.'
+        : (error?.message || 'Unable to analyze the drawing. Please try again.')
+    );
+    err.status = error?.status || 502;
+    throw err;
   }
 }
 

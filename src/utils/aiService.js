@@ -104,24 +104,23 @@ export const generateProjectSummary = async (projectData) => {
 export const processEngineeringDrawing = async (base64Image, contextHint = '') => {
   const preferences = await getAiPreferences();
 
-  try {
-    const data = await postAiRequest({
-      action: 'drawing-analysis',
-      base64Image,
-      contextHint,
-      ...preferences,
-    });
+  // Unlike generateAIInsight/generateProjectSummary (which have a sensible
+  // "manual review" fallback when AI is unavailable), a drawing analysis
+  // failure has no honest fallback -- there's no way to approximate "what's
+  // in this specific drawing" without actually analyzing it. This used to
+  // swallow the error and return 4 hardcoded fake "sections" (same content
+  // every time, in a shape that didn't even match a real response), silently
+  // presenting fabricated results as if they were a real read of the user's
+  // drawing. Let the error propagate so DrawingAnalyzer.jsx's existing error
+  // UI can tell the user the analysis actually failed.
+  const data = await postAiRequest({
+    action: 'drawing-analysis',
+    base64Image,
+    contextHint,
+    ...preferences,
+  });
 
-    return data.result || [];
-  } catch (err) {
-    console.error('[AI] Drawing analysis failed:', err.message);
-    return [
-      { id: 'sec-1', title: 'Substructure & Earthworks', confidence: 98, items: 12 },
-      { id: 'sec-2', title: 'Concrete Frame & Superstructure', confidence: 95, items: 24 },
-      { id: 'sec-3', title: 'Internal Finishes & Partitions', confidence: 88, items: 18 },
-      { id: 'sec-4', title: 'Mechanical & Electrical Services', confidence: 82, items: 9 },
-    ];
-  }
+  return data.result || [];
 };
 
 export const processStructuralFile = async (fileContent, fileName = 'structural_design.csv') => {

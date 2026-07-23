@@ -198,39 +198,34 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
       <div className="results-list">
         {identifiedElements.map(el => (
           <div key={el.id} className="identified-card">
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <h4 className="font-semibold text-gray-100">{el.item}</h4>
-                    <span className="text-sm font-medium bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/30">
-                      {el.category}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-400 mb-2">{el.description}</p>
-                  
-                  {el.structuralDetails && (
-                    <div className="grid grid-cols-2 gap-2 mb-2 p-2 bg-white/5 rounded border border-white/10">
-                      {el.structuralDetails.dimensions && (
-                        <div className="text-[11px]">
-                          <span className="text-gray-500 block uppercase tracking-wider">Dimensions</span>
-                          <span className="text-gray-200 font-mono">{el.structuralDetails.dimensions}</span>
-                        </div>
-                      )}
-                      {el.structuralDetails.reinforcement && (
-                        <div className="text-[11px]">
-                          <span className="text-gray-500 block uppercase tracking-wider">Reinforcement</span>
-                          <span className="text-gray-200 font-mono">{el.structuralDetails.reinforcement}</span>
-                        </div>
-                      )}
+            <div className="card-info">
+              <div className="title-row">
+                <h4>{el.item}</h4>
+                {el.category && <span className="category-badge">{el.category}</span>}
+              </div>
+              {el.description && <p className="element-description">{el.description}</p>}
+
+              {el.structuralDetails && (el.structuralDetails.dimensions || el.structuralDetails.reinforcement) && (
+                <div className="structural-details-grid">
+                  {el.structuralDetails.dimensions && (
+                    <div className="detail-cell">
+                      <span className="detail-label">Dimensions</span>
+                      <span className="detail-value">{el.structuralDetails.dimensions}</span>
                     </div>
                   )}
-
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>Quantity Detected: <span className="text-gray-300 font-medium">{el.quantity}</span></span>
-                    <button className="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1">
-                      Add to BOQ <Plus className="w-3 h-3" />
-                    </button>
-                  </div>
+                  {el.structuralDetails.reinforcement && (
+                    <div className="detail-cell">
+                      <span className="detail-label">Reinforcement</span>
+                      <span className="detail-value">{el.structuralDetails.reinforcement}</span>
+                    </div>
+                  )}
                 </div>
+              )}
+
+              <div className="quantity-row">
+                <span>Quantity Detected: <strong>{el.quantity}</strong></span>
+              </div>
+            </div>
           </div>
         ))}
       </div>
@@ -499,6 +494,62 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
           background: rgba(22, 163, 74, 0.1);
           padding: 2px 6px;
           border-radius: 4px;
+        }
+
+        .category-badge {
+          font-size: 0.68rem;
+          font-weight: 700;
+          color: var(--accent-600);
+          background: rgba(37, 99, 235, 0.1);
+          border: 1px solid rgba(37, 99, 235, 0.2);
+          padding: 0.1rem 0.5rem;
+          border-radius: 999px;
+          white-space: nowrap;
+        }
+
+        .element-description {
+          margin: 0 0 0.5rem !important;
+        }
+
+        .structural-details-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.5rem;
+          margin-bottom: 0.5rem;
+          padding: 0.5rem;
+          background: var(--bg-main);
+          border: 1px solid var(--border-light);
+          border-radius: 8px;
+        }
+
+        .detail-cell {
+          display: flex;
+          flex-direction: column;
+          gap: 0.1rem;
+        }
+
+        .detail-label {
+          font-size: 0.62rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          color: var(--primary-400);
+        }
+
+        .detail-value {
+          font-size: 0.75rem;
+          font-family: 'SF Mono', 'Consolas', monospace;
+          color: var(--primary-800);
+        }
+
+        .quantity-row {
+          font-size: 0.75rem;
+          color: var(--primary-500);
+        }
+
+        .quantity-row strong {
+          color: var(--primary-800);
+          font-weight: 700;
         }
 
         .results-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 1rem; }

@@ -724,6 +724,7 @@ function App() {
         {showSelector && <ProjectWizard
           onSelect={handleCompleteWizard}
           onClose={() => setShowSelector(false)}
+          onRequestDrawingAnalysis={() => { setShowSelector(false); setShowAnalyzer(true); }}
         />}
 
         {showAnalyzer && <DrawingAnalyzer

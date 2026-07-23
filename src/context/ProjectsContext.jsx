@@ -1072,22 +1072,56 @@ export function ProjectsProvider({ children }) {
     };
 
     const handleAnalysisComplete = useCallback(async (elements) => {
-        const analyzedSections = elements.map(el => ({
-            id: Math.random().toString(36).substr(2, 9),
-            title: el.title,
-            expanded: true,
-            items: Array.from({ length: 3 }).map((_, idx) => ({
+        // Elements from processEngineeringDrawing are shaped
+        // {category, item, description, quantity, structuralDetails} per the
+        // AI prompt (see api/_lib/ai-provider.js). This previously assumed a
+        // different, hardcoded-fallback-only shape ({title}) and discarded
+        // the real identified data entirely, substituting 3 randomly
+        // generated placeholder items per element -- meaning even a
+        // perfectly correct AI read of the drawing never actually reached
+        // the project. Group by category into sections and use the real
+        // item/quantity data instead.
+        const sectionsByCategory = new Map();
+
+        (elements || []).forEach((el) => {
+            const category = el.category || 'Identified Elements';
+            if (!sectionsByCategory.has(category)) {
+                sectionsByCategory.set(category, {
+                    id: Math.random().toString(36).substr(2, 9),
+                    title: category,
+                    expanded: true,
+                    items: [],
+                });
+            }
+
+            // Quantity from the AI isn't guaranteed to be a bare number (e.g.
+            // could be "12.5 m³") -- extract the leading numeric value and
+            // treat anything left over as the unit, defensively.
+            const quantityText = String(el.quantity ?? '').trim();
+            const quantityMatch = quantityText.match(/-?[\d,]*\.?\d+/);
+            const qty = quantityMatch ? Number(quantityMatch[0].replace(/,/g, '')) : 0;
+            const unitFromQuantity = quantityMatch
+                ? quantityText.slice(quantityMatch.index + quantityMatch[0].length).trim()
+                : '';
+
+            sectionsByCategory.get(category).items.push({
                 id: Math.random().toString(36).substr(2, 9),
-                description: `Identified Component ${idx + 1} from ${el.title}`,
-                subcategory: 'Analyzed Item',
+                description: el.item || el.description || 'Identified element',
+                subcategory: (el.item && el.description) ? el.description : '',
                 materials: [],
-                unit: 'm³',
-                qty: Math.floor(Math.random() * 50) + 10,
+                unit: unitFromQuantity || 'unit',
+                qty: Number.isFinite(qty) ? qty : 0,
                 rate: 0,
                 total: 0,
-                isAnalyzed: true
-            }))
-        }));
+                isAnalyzed: true,
+                takeoffMeta: {
+                    source: 'ai-drawing-analysis',
+                    structuralDetails: el.structuralDetails || null,
+                },
+            });
+        });
+
+        const analyzedSections = Array.from(sectionsByCategory.values());
 
         const projectId = `local_${Date.now()}`;
         const newProj = {
@@ -1097,7 +1131,9 @@ export function ProjectsProvider({ children }) {
             status: 'Draft',
             sections: analyzedSections,
             date: new Date().toISOString().split('T')[0],
-            region: 'Lagos'
+            region: DEFAULT_NIGERIA_LOCATION,
+            currency: DEFAULT_CURRENCY_CODE,
+            pricingMode: 'user-entered'
         };
 
         try {

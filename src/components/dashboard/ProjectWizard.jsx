@@ -7,6 +7,7 @@ import {
   Layers,
   MapPin,
   Save,
+  Sparkles,
 } from 'lucide-react';
 import {
   STRUCTURE_OPTIONS,
@@ -20,7 +21,7 @@ import { DEFAULT_CURRENCY_CODE, SUPPORTED_CURRENCIES } from '../../data/currenci
 
 const TOTAL_STEPS = 4;
 
-const ProjectWizard = ({ onSelect, onClose }) => {
+const ProjectWizard = ({ onSelect, onClose, onRequestDrawingAnalysis = null }) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
@@ -185,10 +186,29 @@ const ProjectWizard = ({ onSelect, onClose }) => {
                 <button className="btn-back" onClick={() => setStep(1)}><ChevronLeft size={16} /> Back</button>
                 <span className="step-number">Step 2 of {TOTAL_STEPS}</span>
                 <h3>Choose Structure Type</h3>
-                <p>Select the structure type so the app can open the correct bill sections for this BOQ.</p>
+                <p>Select the structure type so the app can open the correct bill sections for this BOQ, or let AI draft it from a drawing.</p>
               </div>
 
               <div className="selection-grid">
+                {onRequestDrawingAnalysis && (
+                  <button
+                    type="button"
+                    className="selection-card ai-card"
+                    onClick={onRequestDrawingAnalysis}
+                  >
+                    <div className="card-icon ai-icon">
+                      <Sparkles size={24} />
+                    </div>
+                    <div className="card-body">
+                      <div className="title-row">
+                        <h4>AI Drawing Assistant</h4>
+                        <span className="premium-tag">PREMIUM</span>
+                      </div>
+                      <p>Instant takeoff from blueprints. Upload drawing files to auto-build your BOQ.</p>
+                    </div>
+                    <ChevronRight size={18} className="arrow" />
+                  </button>
+                )}
                 {STRUCTURE_OPTIONS.map((option) => (
                   <button
                     key={option.id}
@@ -556,6 +576,42 @@ const ProjectWizard = ({ onSelect, onClose }) => {
         .arrow {
           color: var(--primary-300);
           margin-top: 0.2rem;
+        }
+
+        .selection-card.ai-card {
+          border-color: var(--quantra-blue-300, #93bdfd);
+          background: linear-gradient(135deg, #eff6ff 0%, #fdf5d1 100%);
+        }
+
+        .selection-card.ai-card:hover {
+          border-color: var(--quantra-blue-500, #3b8af7);
+          box-shadow: 0 12px 30px rgba(59, 138, 247, 0.18);
+        }
+
+        .card-icon.ai-icon {
+          background: var(--quantra-blue-600, #1e6cf7);
+          color: white;
+        }
+
+        .title-row {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin-bottom: 0.35rem;
+        }
+
+        .title-row h4 {
+          margin: 0;
+        }
+
+        .premium-tag {
+          font-size: 0.6rem;
+          font-weight: 800;
+          letter-spacing: 0.06em;
+          padding: 0.15rem 0.45rem;
+          border-radius: 999px;
+          background: var(--quantra-gold-500, #d4a017);
+          color: white;
         }
 
         .section-summary {
