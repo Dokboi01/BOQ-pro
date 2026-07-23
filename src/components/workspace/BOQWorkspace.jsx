@@ -3837,6 +3837,8 @@ const BOQWorkspace = () => {
           text-align: right;
           font-weight: 600;
           width: min(100%, 98px);
+          min-width: 56px;
+          flex-shrink: 1;
           margin-left: auto;
         }
         .ws-sm-input { text-align: center; font-weight: 600; width: 100%; }
@@ -3886,7 +3888,7 @@ const BOQWorkspace = () => {
         .ws-field-feedback-warning { color: #c2410c; }
         .ws-field-feedback-muted { color: #64748b; }
 
-        .ws-qty-wrap, .ws-rate-wrap { display: flex; align-items: center; gap: 0.15rem; justify-content: flex-end; }
+        .ws-qty-wrap, .ws-rate-wrap { display: flex; align-items: center; flex-wrap: wrap; gap: 0.2rem; justify-content: flex-end; row-gap: 0.15rem; }
 
         .ws-geo-btn, .ws-analysis-btn {
           display: flex; align-items: center; justify-content: center;
