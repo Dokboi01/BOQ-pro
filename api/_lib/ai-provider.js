@@ -39,7 +39,18 @@ function sanitizeText(input, maxLength = MAX_TEXT_LENGTH) {
 
 function sanitizeBase64Image(base64Image) {
   if (typeof base64Image !== 'string') return '';
-  return base64Image.length > MAX_IMAGE_LENGTH ? base64Image.slice(0, MAX_IMAGE_LENGTH) : base64Image;
+  // Previously silently truncated oversized images with .slice() -- cutting
+  // off a base64-encoded image mid-stream doesn't produce a smaller valid
+  // image, it produces corrupted bytes that fail to decode (or, worse,
+  // decode into visual noise the model would try to "read" anyway). The
+  // client now validates file size before upload, so this should only ever
+  // trigger if that's bypassed -- reject clearly rather than corrupt silently.
+  if (base64Image.length > MAX_IMAGE_LENGTH) {
+    const err = new Error('Drawing image is too large to analyze. Please upload a smaller image.');
+    err.status = 400;
+    throw err;
+  }
+  return base64Image;
 }
 
 function getRequestIdentity({ uid, ip, action }) {
@@ -110,7 +121,7 @@ async function runGeminiText({ systemPrompt, userPrompt }) {
   return result.response.text();
 }
 
-async function runOpenAIVision({ model, systemPrompt, userPrompt, base64Image }) {
+async function runOpenAIVision({ model, systemPrompt, userPrompt, base64Image, mimeType }) {
   const client = getOpenAIClient();
   if (!client) throw new Error('OpenAI API key is not configured on the server.');
 
@@ -124,7 +135,7 @@ async function runOpenAIVision({ model, systemPrompt, userPrompt, base64Image })
           {
             type: 'image_url',
             image_url: {
-              url: `data:image/png;base64,${sanitizeBase64Image(base64Image)}`,
+              url: `data:${mimeType};base64,${sanitizeBase64Image(base64Image)}`,
             },
           },
         ],
@@ -136,22 +147,31 @@ async function runOpenAIVision({ model, systemPrompt, userPrompt, base64Image })
   return response.choices?.[0]?.message?.content || '';
 }
 
-async function runGeminiVision({ systemPrompt, userPrompt, base64Image }) {
+async function runGeminiVision({ systemPrompt, userPrompt, base64Image, mimeType }) {
   const client = getGeminiClient();
   if (!client) throw new Error('Gemini API key is not configured on the server.');
 
-  const model = client.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  // The OpenAI vision call forces response_format: json_object; without an
+  // equivalent constraint here, Gemini is free to wrap the JSON in prose
+  // ("Here's the analysis:\n\n```json...") which parseJsonResponse's simple
+  // fence-stripping won't fully clean up, failing to parse and (before the
+  // earlier fix) silently falling back to fake data. responseMimeType
+  // forces a clean JSON body the same way OpenAI's json_object mode does.
+  const model = client.getGenerativeModel({
+    model: 'gemini-1.5-flash',
+    generationConfig: { responseMimeType: 'application/json' },
+  });
   const imagePart = {
     inlineData: {
       data: sanitizeBase64Image(base64Image),
-      mimeType: 'image/png',
+      mimeType,
     },
   };
   const result = await model.generateContent([`${systemPrompt}\n\n${userPrompt}`, imagePart]);
   return result.response.text();
 }
 
-async function runWithFallback({ preferredProvider, model, systemPrompt, userPrompt, base64Image = null, vision = false }) {
+async function runWithFallback({ preferredProvider, model, systemPrompt, userPrompt, base64Image = null, mimeType = 'image/png', vision = false }) {
   const provider = normalizeProvider(preferredProvider);
   const candidates = provider === 'openai'
     ? ['openai', 'gemini']
@@ -166,7 +186,7 @@ async function runWithFallback({ preferredProvider, model, systemPrompt, userPro
           provider: 'openai',
           model: normalizeModel(model),
           content: vision
-            ? await runOpenAIVision({ model, systemPrompt, userPrompt, base64Image })
+            ? await runOpenAIVision({ model, systemPrompt, userPrompt, base64Image, mimeType })
             : await runOpenAIText({ model, systemPrompt, userPrompt }),
         };
       }
@@ -175,7 +195,7 @@ async function runWithFallback({ preferredProvider, model, systemPrompt, userPro
         provider: 'gemini',
         model: vision ? 'gemini-1.5-flash' : 'gemini-2.0-flash',
         content: vision
-          ? await runGeminiVision({ systemPrompt, userPrompt, base64Image })
+          ? await runGeminiVision({ systemPrompt, userPrompt, base64Image, mimeType })
           : await runGeminiText({ systemPrompt, userPrompt }),
       };
     } catch (error) {
@@ -294,7 +314,9 @@ export async function generateProjectSummary({ projectData = {}, preferredProvid
   }
 }
 
-export async function analyzeEngineeringDrawing({ base64Image, contextHint = '', preferredProvider, model, uid, ip } = {}) {
+const SUPPORTED_DRAWING_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
+
+export async function analyzeEngineeringDrawing({ base64Image, contextHint = '', mimeType, preferredProvider, model, uid, ip } = {}) {
   const identity = getRequestIdentity({ uid, ip, action: 'drawing-analysis' });
   const limit = checkRateLimit(identity);
   if (!limit.allowed) {
@@ -306,6 +328,20 @@ export async function analyzeEngineeringDrawing({ base64Image, contextHint = '',
 
   if (!base64Image) {
     const err = new Error('Drawing image is required.');
+    err.status = 400;
+    throw err;
+  }
+
+  // The vision APIs need an accurate MIME type to decode the image bytes
+  // correctly -- previously this was hardcoded to image/png regardless of
+  // what was actually uploaded, so a JPEG or WEBP (or anything else the
+  // client's file picker allowed through) would be mislabeled and could
+  // fail to decode or produce garbled reads. Validate server-side too
+  // (not just trusting the client) since this is a real input, not just a
+  // UI hint.
+  const normalizedMimeType = SUPPORTED_DRAWING_MIME_TYPES.has(mimeType) ? mimeType : null;
+  if (!normalizedMimeType) {
+    const err = new Error('Unsupported image type. Please upload a PNG, JPG, or WEBP image.');
     err.status = 400;
     throw err;
   }
@@ -327,6 +363,7 @@ export async function analyzeEngineeringDrawing({ base64Image, contextHint = '',
       systemPrompt,
       userPrompt,
       base64Image,
+      mimeType: normalizedMimeType,
       vision: true,
     });
 

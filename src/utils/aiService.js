@@ -101,7 +101,7 @@ export const generateProjectSummary = async (projectData) => {
   }
 };
 
-export const processEngineeringDrawing = async (base64Image, contextHint = '') => {
+export const processEngineeringDrawing = async (base64Image, contextHint = '', mimeType = 'image/png') => {
   const preferences = await getAiPreferences();
 
   // Unlike generateAIInsight/generateProjectSummary (which have a sensible
@@ -117,6 +117,7 @@ export const processEngineeringDrawing = async (base64Image, contextHint = '') =
     action: 'drawing-analysis',
     base64Image,
     contextHint,
+    mimeType,
     ...preferences,
   });
 

@@ -40,6 +40,7 @@ export default async function handler(req, res) {
         result = await analyzeEngineeringDrawing({
           base64Image: body.base64Image,
           contextHint: body.contextHint,
+          mimeType: body.mimeType,
           preferredProvider,
           model,
           uid,

@@ -53,9 +53,35 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
     });
   };
 
+  // OpenAI/Gemini vision endpoints take a raster image, not a PDF -- there is
+  // no PDF-to-image rendering step anywhere in this pipeline, so a "PDF or
+  // DWG" upload (as the copy used to claim) would silently send raw
+  // PDF/CAD bytes mislabeled as a PNG, producing garbled or failed reads.
+  // Restricting to what the pipeline actually supports.
+  const SUPPORTED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+  // Vercel's serverless function request body limit is ~4.5MB for the whole
+  // JSON payload (base64 inflates raw bytes by ~4/3, plus the JSON wrapper) --
+  // the UI previously claimed "Max file size: 50MB", which would either be
+  // rejected outright by the platform (413) or, worse, silently truncated
+  // into a corrupted image by the server's own base64 length cap. 3MB raw
+  // stays safely under that ceiling.
+  const MAX_FILE_SIZE_BYTES = 3 * 1024 * 1024;
+
   const handleFileUpload = async (e) => {
     const uploadedFile = e.target.files[0];
     if (!uploadedFile) return;
+
+    if (!SUPPORTED_MIME_TYPES.includes(uploadedFile.type)) {
+      setError('Unsupported file type. Please upload a PNG, JPG, or WEBP image of the drawing (PDF/DWG are not supported yet).');
+      e.target.value = '';
+      return;
+    }
+
+    if (uploadedFile.size > MAX_FILE_SIZE_BYTES) {
+      setError(`File is too large (${(uploadedFile.size / (1024 * 1024)).toFixed(1)}MB). Please upload an image under 3MB -- try compressing it or exporting at a lower resolution.`);
+      e.target.value = '';
+      return;
+    }
 
     setFile(uploadedFile);
     setStep('processing');
@@ -77,7 +103,7 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
       setProgress(40);
 
       // 2. Real AI Analysis
-      const results = await processEngineeringDrawing(b64, contextHint);
+      const results = await processEngineeringDrawing(b64, contextHint, uploadedFile.type);
 
       clearInterval(progressInterval);
       setProgress(90);
@@ -109,7 +135,7 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
           <FileSearch className="search-icon" size={24} />
         </div>
         <h3>AI Drafting Assistant</h3>
-        <p>Upload your architectural or structural drawing (PDF, DWG, or PNG) to automatically extract project components.</p>
+        <p>Upload a PNG, JPG, or WEBP image of your architectural or structural drawing to automatically extract project components.</p>
 
         {error && (
           <div className="error-banner">
@@ -123,7 +149,7 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
             type="file"
             id="drawing-upload"
             hidden
-            accept="image/*,.pdf"
+            accept="image/png,image/jpeg,image/webp"
             onChange={handleFileUpload}
           />
           
@@ -141,7 +167,7 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
           <label htmlFor="drawing-upload" className="btn-primary">
             Select Engineering Drawing
           </label>
-          <span className="hint">Max file size: 50MB</span>
+          <span className="hint">PNG, JPG, or WEBP · Max file size: 3MB</span>
         </div>
 
         <div className="analysis-features">
