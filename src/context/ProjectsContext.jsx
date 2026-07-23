@@ -415,7 +415,22 @@ export function ProjectsProvider({ children }) {
         const currentUserId = user?.id || null;
         if (currentUserId === lastUserIdRef.current) return;
 
+        const previousUserId = lastUserIdRef.current;
         lastUserIdRef.current = currentUserId;
+
+        // Only wipe workspace/modal state on a genuine user change -- logging
+        // out (real id -> null) or switching to a different logged-in user
+        // (real id -> a different real id). The transition from "auth still
+        // resolving" (previousUserId === null, e.g. on first mount before
+        // Firebase's onAuthStateChanged/localStorage-cache hydration
+        // resolves) to "logged in" is completely normal on every fresh page
+        // load, and if it landed a moment after the user had already started
+        // interacting with the app -- e.g. opening the New Project wizard and
+        // then the AI Drawing Assistant modal -- this fired mid-interaction
+        // and silently closed everything back to the dashboard, which looked
+        // like the drawing analyzer flashing open and immediately closing.
+        if (previousUserId === null) return;
+
         hasRestoredWorkspaceRef.current = false;
         setActiveProjectId(null);
         setActiveTab('dashboard');
