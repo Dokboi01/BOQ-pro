@@ -202,9 +202,9 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
           <h3>{statusMessage}</h3>
           <p>Extracting structural nodes and material quantities from {file?.name}</p>
           <div className="progress-bar-container">
-            <div className="progress-bar" style={{ width: `${progress}%` }}></div>
+            <div className="progress-bar" style={{ width: `${Math.min(progress, 100)}%` }}></div>
           </div>
-          <span className="percentage">{progress}% Complete</span>
+          <span className="percentage">{Math.round(Math.min(progress, 100))}% Complete</span>
         </div>
       </div>
     </div>
@@ -222,8 +222,8 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
       </header>
 
       <div className="results-list">
-        {identifiedElements.map(el => (
-          <div key={el.id} className="identified-card">
+        {identifiedElements.map((el, idx) => (
+          <div key={el.id || `${el.category || 'element'}-${el.item || idx}-${idx}`} className="identified-card">
             <div className="card-info">
               <div className="title-row">
                 <h4>{el.item}</h4>
