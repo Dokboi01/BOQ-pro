@@ -81,30 +81,37 @@ const TeamHubPanel = ({ project, presenceUsers = [], activityLog = [], onClose }
     };
   }, [isCloudProject, project?.id]);
 
-  // Auto-scroll messages to bottom on new messages
+  // Auto-scroll to the newest message and mark messages as "seen" whenever
+  // the messages tab is active; otherwise track how many arrived since it
+  // was last viewed. This used to be two separate effects with overlapping
+  // triggers that both called setUnreadCount(0) *unconditionally* whenever
+  // the messages tab was active -- redundant, and flagged by the linter as
+  // an anti-pattern (calling setState synchronously in an effect body
+  // triggers extra cascading renders). Consolidated into one effect, and
+  // each setUnreadCount call is now guarded to only fire when the value
+  // actually needs to change.
+  // unreadCount depends on both live subscription data (messages) and a ref
+  // tracking what was last viewed, so it can't be derived during render
+  // without reading the ref there (itself a separate, harder rule
+  // violation). Both setUnreadCount calls are guarded via the
+  // functional-updater form to bail out (same reference) when nothing
+  // actually changed, so this doesn't cause the cascading-render issue the
+  // rule is meant to catch.
   useEffect(() => {
     if (activeTab === 'messages') {
-      // Mark all as read
       lastSeenCountRef.current = messages.length;
-      setUnreadCount(0);
-      // Scroll to bottom
-      setTimeout(() => {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setUnreadCount((prev) => (prev === 0 ? prev : 0));
+      const scrollTimer = setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 60);
-    } else {
-      // Count unread when tab is not active
-      const newCount = messages.length - lastSeenCountRef.current;
-      if (newCount > 0) setUnreadCount(newCount);
+      return () => clearTimeout(scrollTimer);
     }
-  }, [messages, activeTab]);
 
-  // Clear unread badge when switching to messages tab
-  useEffect(() => {
-    if (activeTab === 'messages') {
-      lastSeenCountRef.current = messages.length;
-      setUnreadCount(0);
-    }
-  }, [activeTab, messages.length]);
+    const newCount = Math.max(0, messages.length - lastSeenCountRef.current);
+    setUnreadCount((prev) => (prev === newCount ? prev : newCount));
+    return undefined;
+  }, [messages, activeTab]);
 
   const collaborators = project?.collaborators || [];
   const recentActivity = activityLog.slice(0, 6);

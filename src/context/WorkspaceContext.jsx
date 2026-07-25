@@ -479,7 +479,19 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
         items: [...generatedRows, ...preservedCustomRows],
       };
     })
-  ), [projectStructureType]);
+    // syncBoqItemSnapshot (called above) reads project?.region to resolve
+    // benchmark rates -- this callback's memoization previously only
+    // depended on projectStructureType, so it captured a stale closure over
+    // project.region. If a user changed the project's region without also
+    // changing structure type, then clicked "Generate BOQ", the generated
+    // rows would be priced against the OLD region's benchmark data instead
+    // of the currently selected one. syncBoqItemSnapshot itself is a plain
+    // (non-memoized) function recreated every render, so listing it as a
+    // dep would defeat the memoization entirely -- depending on the
+    // primitive value it actually reads is the same pattern already used
+    // by persistBoqBuilderState/filteredSections below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [projectStructureType, project?.region]);
 
   const updateItem = (sectionId, itemId, fieldOrUpdates, valueOrBreakdown = null, breakdown = null) => {
     const updated = sections.map((section) => {
