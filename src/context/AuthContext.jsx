@@ -34,6 +34,35 @@ import { isPaidPlan } from '../data/plans';
 
 const PUBLIC_VIEWS = new Set(['landing', 'pricing', 'login', 'signup', 'forgot-password', 'terms', 'privacy']);
 
+// ── Dev-only engineering test mode ──────────────────────────────────────
+// Bypasses real Firebase auth entirely with a local mock user, for manually
+// exercising the app during development without real credentials. Gated on
+// import.meta.env.DEV, a Vite BUILD-TIME constant that is `false` (and the
+// branches below dead-code-eliminated) in every production build -- this
+// cannot activate in production regardless of URL, storage, or any other
+// runtime state. Never touches Firebase, never sends/stores a real password.
+// Enable for this session with ?devlogin=1 in the URL (only checked once, on
+// first load) or by running `quantraDevLogin()` from the browser console.
+const DEV_LOGIN_STORAGE_KEY = 'quantra_dev_login_active';
+
+const buildDevMockUser = () => normalizeUserProfile({
+    id: 'dev-test-user',
+    email: 'dev-test@quantra.local',
+    full_name: 'Engineering Test User',
+    company_name: 'Quantra Engineering QA',
+    company_key: 'quantra-engineering-qa',
+    plan: PLAN_NAMES.PROFESSIONAL,
+    is_onboarded: true,
+    is_verified: true,
+    role: 'Quantity Surveyor',
+});
+
+const isDevLoginRequested = () => {
+    if (!import.meta.env.DEV || typeof window === 'undefined') return false;
+    if (new URLSearchParams(window.location.search).get('devlogin') === '1') return true;
+    return window.sessionStorage.getItem(DEV_LOGIN_STORAGE_KEY) === 'true';
+};
+
 // One-time migration from old "boq_pro_" localStorage keys to "quantra_" keys.
 // This ensures existing users don't lose cached profile or pending data after the rebrand.
 if (typeof window !== 'undefined') {
@@ -155,6 +184,21 @@ export function AuthProvider({ children }) {
 
     // Firebase Auth Initialization & State Listener
     useEffect(() => {
+        if (isDevLoginRequested()) {
+            window.sessionStorage.setItem(DEV_LOGIN_STORAGE_KEY, 'true');
+            const mockUser = buildDevMockUser();
+            console.warn(
+                '🧪 Quantra engineering test mode is ACTIVE -- using a local mock user, real Firebase auth is bypassed. ' +
+                'This only works in `npm run dev` and never runs in a production build. ' +
+                'Run quantraDevLogout() in the console to exit.'
+            );
+            setUser(mockUser);
+            localStorage.setItem('quantra_profile', JSON.stringify(mockUser));
+            initializationComplete.current = true;
+            setView('app');
+            return undefined;
+        }
+
         // Set persistence once on mount
         setPersistence(auth, browserLocalPersistence).catch(err => {
             console.warn('⚠️ Persistence setup failed:', err.message);
@@ -270,6 +314,27 @@ export function AuthProvider({ children }) {
             clearTimeout(timer);
         };
     }, []); // Subscribe ONCE on mount — never re-subscribe on user changes
+
+    // Dev-only console helpers for engineering test mode. Defined unconditionally
+    // so the hook order never changes, but the effect body is a no-op outside DEV.
+    useEffect(() => {
+        if (!import.meta.env.DEV || typeof window === 'undefined') return undefined;
+
+        window.quantraDevLogin = () => {
+            window.sessionStorage.setItem(DEV_LOGIN_STORAGE_KEY, 'true');
+            window.location.reload();
+        };
+        window.quantraDevLogout = () => {
+            window.sessionStorage.removeItem(DEV_LOGIN_STORAGE_KEY);
+            localStorage.removeItem('quantra_profile');
+            window.location.reload();
+        };
+
+        return () => {
+            delete window.quantraDevLogin;
+            delete window.quantraDevLogout;
+        };
+    }, []);
 
     const handleLogin = async (credentials) => {
         setAuthError(null);

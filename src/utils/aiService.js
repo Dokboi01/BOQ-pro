@@ -31,7 +31,8 @@ async function getAiPreferences() {
 
 async function postAiRequest(payload) {
   const token = await getCurrentIdToken();
-  const response = await fetch(getApiBaseUrl(), {
+  const apiUrl = getApiBaseUrl();
+  const response = await fetch(apiUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -50,6 +51,10 @@ async function postAiRequest(payload) {
   }
 
   if (!response.ok) {
+    if (response.status === 404 && apiUrl === '/api/ai') {
+      throw new Error('AI backend is not available from local dev. Set VITE_API_BASE_URL to your deployed backend URL, or run the app from the deployed host.');
+    }
+
     throw new Error(data.error || 'AI request failed.');
   }
 

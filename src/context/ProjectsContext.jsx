@@ -625,7 +625,7 @@ export function ProjectsProvider({ children }) {
     }, [projects, activeProjectId]);
 
     useEffect(() => {
-        if (!user?.id || hasRestoredWorkspaceRef.current || !projects.length) return;
+        if (!user?.id || hasRestoredWorkspaceRef.current || !projects.length || showSelector || showAnalyzer) return;
 
         const sharedProjectId = new URLSearchParams(window.location.search).get('project');
         if (sharedProjectId) {
@@ -669,7 +669,7 @@ export function ProjectsProvider({ children }) {
         setActiveTab(nextAppTab);
         setFocusMode(false);
         setWorkspaceIntent(null);
-    }, [cloudWorkspaceReady, cloudWorkspaceState, persistWorkspaceState, projects, readSavedWorkspaceState, user?.id]);
+    }, [cloudWorkspaceReady, cloudWorkspaceState, persistWorkspaceState, projects, readSavedWorkspaceState, showAnalyzer, showSelector, user?.id]);
 
     const hasActiveProject = useMemo(() => (
         !!activeProjectId && projects.some((project) => project.id === activeProjectId)
@@ -797,6 +797,12 @@ export function ProjectsProvider({ children }) {
             projectId,
             nonce: Date.now()
         } : null);
+    }, []);
+
+    const openDrawingAnalyzer = useCallback(() => {
+        hasRestoredWorkspaceRef.current = true;
+        setShowSelector(false);
+        setShowAnalyzer(true);
     }, []);
 
     const buildProjectSections = useCallback((sections = [], { unpriced = true, structureType = null, region = 'Lagos' } = {}) => {
@@ -943,8 +949,7 @@ export function ProjectsProvider({ children }) {
 
     const handleStructureSelect = async (structureId, structureName, manualSections = null) => {
         if (structureId === 'ai-analysis') {
-            setShowSelector(false);
-            setShowAnalyzer(true);
+            openDrawingAnalyzer();
             return;
         }
 
@@ -1377,6 +1382,7 @@ export function ProjectsProvider({ children }) {
         handleCreateProject,
         handleQuickCustomPricingTest,
         openWorkspace,
+        openDrawingAnalyzer,
         handleCompleteWizard,
         handleStructureSelect,
         handleAnalysisComplete,

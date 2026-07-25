@@ -76,7 +76,7 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-function OTPVerificationView({ email, authError, setAuthError, verificationEmailStatus, handleResendCode, handleVerifyCode, handleLogout }) {
+function OTPVerificationView({ email, authError, setAuthError, handleResendCode, handleVerifyCode, handleLogout }) {
   const [code, setCode] = React.useState(['', '', '', '', '', '']);
   const [isVerifying, setIsVerifying] = React.useState(false);
   const [cooldown, setCooldown] = React.useState(0);
@@ -387,7 +387,7 @@ function App() {
   // Consume contexts
   const {
     user, view, setView, authError, setAuthError,
-    pendingUser, selectedPlan, verificationEmailStatus,
+    pendingUser, selectedPlan,
     handleLogin, handleSSOLogin, handleSignUp, handleResendCode, handleVerifyCode,
     handleOnboardingComplete, handleSendMagicLink, handleSelectPlan, logout,
   } = useAuth();
@@ -402,7 +402,7 @@ function App() {
     workspaceIntent, clearWorkspaceIntent,
     calculateTotalValue,
     syncStatus, forceSync,
-    openWorkspace,
+    openWorkspace, openDrawingAnalyzer,
     handleCreateProject, handleQuickCustomPricingTest, handleCompleteWizard, handleAnalysisComplete,
     handleUpdateProject, handleAddSection, handleDeleteSectionOrItem,
     handleDeleteProject,
@@ -557,7 +557,6 @@ function App() {
       email={pendingUser?.email || user?.email || 'your email'}
       authError={authError}
       setAuthError={setAuthError}
-      verificationEmailStatus={verificationEmailStatus}
       handleResendCode={handleResendCode}
       handleVerifyCode={handleVerifyCode}
       handleLogout={logout}
@@ -614,6 +613,27 @@ function App() {
 
   return (
     <div className={`app-container ${focusMode ? 'focus-mode' : ''} ${hideWorkspaceChrome ? 'workspace-shell' : ''}`}>
+      {user?.id === 'dev-test-user' && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 99999,
+            background: '#b91c1c',
+            color: 'white',
+            textAlign: 'center',
+            fontSize: '0.75rem',
+            fontWeight: 800,
+            letterSpacing: '0.04em',
+            padding: '0.3rem',
+            pointerEvents: 'none',
+          }}
+        >
+          🧪 ENGINEERING TEST MODE — mock user, not a real account. Run quantraDevLogout() in the console to exit.
+        </div>
+      )}
       {!focusMode && <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={user} onLogout={logout} onViewPlans={() => setView('pricing')} />}
 
       {/* Focus Mode Toggle (appears when sidebar is hidden) */}
@@ -724,7 +744,7 @@ function App() {
         {showSelector && <ProjectWizard
           onSelect={handleCompleteWizard}
           onClose={() => setShowSelector(false)}
-          onRequestDrawingAnalysis={() => { setShowSelector(false); setShowAnalyzer(true); }}
+          onRequestDrawingAnalysis={openDrawingAnalyzer}
         />}
 
         {showAnalyzer && <DrawingAnalyzer

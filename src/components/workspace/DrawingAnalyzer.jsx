@@ -16,7 +16,7 @@ import {
 import { processEngineeringDrawing } from '../../utils/aiService';
 
 const DrawingAnalyzer = ({ onComplete, onClose }) => {
-  const [step, setStep] = useState('upload'); // upload, processing, results
+  const [step, setStep] = useState('upload'); // upload, processing, results, error
   const [file, setFile] = useState(null);
   const [progress, setProgress] = useState(0);
   const [identifiedElements, setIdentifiedElements] = useState([]);
@@ -120,10 +120,16 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
         setError('Gemini API key is invalid or not configured correctly.');
       } else if (err.message?.includes('unparseable')) {
         setError('AI returned a malformed response. Please try again with a clearer image.');
+      } else if (err.message?.includes('<!doctype') || err.message?.includes('<html')) {
+        setError('The AI backend is not reachable from this local app session. Set VITE_API_BASE_URL to your deployed backend URL, or run from the deployed app.');
+      } else if (err.message?.includes('AI backend is not available')) {
+        setError(err.message);
+      } else if (err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError')) {
+        setError('The AI backend could not be reached. Please check your connection or backend deployment URL.');
       } else {
         setError(`Analysis failed: ${err.message || 'Unknown error'}. Please ensure your API config is correct.`);
       }
-      setStep('upload');
+      setStep('error');
     }
   };
 
@@ -164,9 +170,9 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
             />
           </div>
 
-          <label htmlFor="drawing-upload" className="btn-primary">
-            Select Engineering Drawing
-          </label>
+        <label htmlFor="drawing-upload" className="btn-primary">
+          Select Engineering Drawing
+        </label>
           <span className="hint">PNG, JPG, or WEBP · Max file size: 3MB</span>
         </div>
 
@@ -206,6 +212,31 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
           </div>
           <span className="percentage">{Math.round(Math.min(progress, 100))}% Complete</span>
         </div>
+      </div>
+    </div>
+  );
+
+  const renderError = () => (
+    <div className="analyzer-error view-fade-in">
+      <div className="error-state-icon">
+        <ShieldAlert size={34} />
+      </div>
+      <h3>Drawing Review Stopped</h3>
+      <p>{error || 'The drawing analysis could not be completed.'}</p>
+      <div className="error-actions">
+        <button
+          className="btn-secondary"
+          onClick={() => {
+            setError(null);
+            setProgress(0);
+            setStep('upload');
+          }}
+        >
+          Try Another Drawing
+        </button>
+        <button className="btn-primary" onClick={onClose}>
+          Close Review
+        </button>
       </div>
     </div>
   );
@@ -274,6 +305,7 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
         {step === 'upload' && renderUpload()}
         {step === 'processing' && renderProcessing()}
         {step === 'results' && renderResults()}
+        {step === 'error' && renderError()}
       </div>
 
       <style jsx="true">{`
@@ -328,7 +360,7 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
           z-index: 10;
         }
 
-        .analyzer-upload, .analyzer-processing, .analyzer-results {
+        .analyzer-upload, .analyzer-processing, .analyzer-results, .analyzer-error {
           padding: 3rem;
           flex: 1;
           display: flex;
@@ -369,6 +401,46 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
           gap: 0.5rem;
           font-size: 0.875rem;
           text-align: left;
+        }
+
+        .analyzer-error {
+          align-items: center;
+          text-align: center;
+          gap: 1rem;
+        }
+
+        .error-state-icon {
+          width: 72px;
+          height: 72px;
+          border-radius: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #fef2f2;
+          color: #b91c1c;
+          border: 1px solid #fecaca;
+        }
+
+        .analyzer-error h3 {
+          font-size: 1.35rem;
+          color: var(--primary-950);
+          margin: 0;
+        }
+
+        .analyzer-error p {
+          max-width: 430px;
+          color: var(--primary-600);
+          line-height: 1.6;
+          margin: 0;
+        }
+
+        .error-actions {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0.8rem;
+          width: 100%;
+          max-width: 420px;
+          margin-top: 0.75rem;
         }
 
         .upload-zone h3 { font-size: 1.5rem; margin-bottom: 0.75rem; color: var(--primary-950); }
@@ -581,6 +653,34 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
         .results-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 1rem; }
         .text-success { color: var(--success-600); }
         .text-accent-500 { color: var(--accent-500); }
+
+        @media (max-width: 640px) {
+          .analyzer-overlay {
+            padding: 1rem;
+          }
+
+          .analyzer-modal {
+            border-radius: 18px;
+            min-height: 0;
+            max-height: calc(100vh - 2rem);
+            overflow-y: auto;
+          }
+
+          .analyzer-upload, .analyzer-processing, .analyzer-results, .analyzer-error {
+            padding: 2.5rem 1.25rem 1.5rem;
+          }
+
+          .drop-area {
+            padding: 1.35rem;
+          }
+
+          .analysis-features,
+          .error-actions,
+          .results-actions {
+            grid-template-columns: 1fr;
+            flex-direction: column;
+          }
+        }
       `}</style>
     </div>
   );

@@ -1561,7 +1561,8 @@ const BOQWorkspace = () => {
           grid-template-columns: 280px minmax(0, 1fr) 360px;
           gap: 0; /* Tighten gap for 3-panel feel */
           width: 100%;
-          height: calc(100vh - 56px);
+          height: 100%;
+          min-height: 0;
           overflow: hidden;
           background: #f1f5f9;
         }
@@ -2134,6 +2135,7 @@ const BOQWorkspace = () => {
           display: flex;
           flex-direction: column;
           flex: 1;
+          height: 100%;
           min-height: 0;
           overflow: hidden;
         }
@@ -2456,8 +2458,8 @@ const BOQWorkspace = () => {
         .ws-container {
           display: flex;
           flex-direction: column;
-          height: calc(100vh - 56px);
-          max-height: calc(100vh - 56px);
+          height: 100vh;
+          max-height: 100vh;
           background: #f1f5f9;
           overflow: hidden;
         }
@@ -3456,18 +3458,6 @@ const BOQWorkspace = () => {
         .ws-th-rate { width: 18%; text-align: right; }
         .ws-th-total { width: 20%; text-align: right; }
         .ws-th-act { width: 40px; }
-        .ws-th-rate,
-        .ws-th-total {
-          font-size: 0;
-        }
-        .ws-th-rate::after,
-        .ws-th-total::after {
-          font-size: var(--text-size-xs);
-          font-weight: 800;
-          letter-spacing: 0.08em;
-        }
-        .ws-th-rate::after { content: "Rate"; }
-        .ws-th-total::after { content: "Price"; }
 
         /* â”€â”€ SECTION ROW â”€â”€ */
         .ws-section-row {
@@ -5468,11 +5458,11 @@ const BOQWorkspace = () => {
               gap: 0 !important;
             }
 
-            .ws-workspace-shell.glass-panel {
-              gap: 0.55rem !important;
-              padding: 0.55rem !important;
-              min-height: calc(100vh - 56px) !important;
-            }
+          .ws-workspace-shell.glass-panel {
+            gap: 0.55rem !important;
+            padding: 0.55rem !important;
+            min-height: 100dvh !important;
+          }
 
             .ws-main-pane {
               border-radius: var(--radius-lg) !important;
