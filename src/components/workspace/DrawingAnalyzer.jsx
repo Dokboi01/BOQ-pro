@@ -24,6 +24,7 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
   const [statusMessage, setStatusMessage] = useState('Extracting drawing layers...');
   const [contextHint, setContextHint] = useState('');
 
+
   useEffect(() => {
     const processingMessages = [
       'Extracting structural nodes...',

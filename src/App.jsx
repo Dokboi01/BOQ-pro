@@ -742,12 +742,14 @@ function App() {
         {renderContent()}
 
         {showSelector && <ProjectWizard
+          key="project-wizard"
           onSelect={handleCompleteWizard}
           onClose={() => setShowSelector(false)}
           onRequestDrawingAnalysis={openDrawingAnalyzer}
         />}
 
         {showAnalyzer && <DrawingAnalyzer
+          key="drawing-analyzer"
           onComplete={handleAnalysisComplete}
           onClose={() => setShowAnalyzer(false)}
         />}
