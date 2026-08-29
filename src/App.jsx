@@ -406,12 +406,25 @@ function App() {
     handleCreateProject, handleQuickCustomPricingTest, handleCompleteWizard, handleAnalysisComplete,
     handleUpdateProject, handleAddSection, handleDeleteSectionOrItem,
     handleDeleteProject,
+    pendingWizardConfig, setPendingWizardConfig,
   } = useProjects();
 
   const activeProjectSave = React.useMemo(
     () => getProjectSavePresentation(activeProject, { globalSyncState: syncStatus.state }),
     [activeProject, syncStatus.state]
   );
+
+  const handleCloseSelector = React.useCallback(() => {
+    setShowSelector(false);
+    setPendingWizardConfig(null);
+  }, [setShowSelector, setPendingWizardConfig]);
+
+  const handleCloseAnalyzer = React.useCallback(() => {
+    setShowAnalyzer(false);
+    if (pendingWizardConfig) {
+      setShowSelector(true);
+    }
+  }, [setShowAnalyzer, setShowSelector, pendingWizardConfig]);
   const syncLabel = syncStatus.state === 'pending' && syncStatus.pendingCount > 0
     ? `${syncStatus.pendingCount} Pending`
     : syncStatus.state === 'synced'
@@ -744,14 +757,16 @@ function App() {
         {showSelector && <ProjectWizard
           key="project-wizard"
           onSelect={handleCompleteWizard}
-          onClose={() => setShowSelector(false)}
+          onClose={handleCloseSelector}
           onRequestDrawingAnalysis={openDrawingAnalyzer}
+          initialData={pendingWizardConfig}
+          initialStep={pendingWizardConfig ? 2 : 1}
         />}
 
         {showAnalyzer && <DrawingAnalyzer
           key="drawing-analyzer"
           onComplete={handleAnalysisComplete}
-          onClose={() => setShowAnalyzer(false)}
+          onClose={handleCloseAnalyzer}
         />}
       </main>
 

@@ -21,17 +21,23 @@ import { DEFAULT_CURRENCY_CODE, SUPPORTED_CURRENCIES } from '../../data/currenci
 
 const TOTAL_STEPS = 4;
 
-const ProjectWizard = ({ onSelect, onClose, onRequestDrawingAnalysis = null }) => {
-  const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({
-    name: '',
-    clientName: '',
-    region: DEFAULT_NIGERIA_LOCATION,
-    currency: DEFAULT_CURRENCY_CODE,
-    notes: '',
-    assumptions: '',
-    exclusions: '',
-  });
+const ProjectWizard = ({
+  onSelect,
+  onClose,
+  onRequestDrawingAnalysis = null,
+  initialData = null,
+  initialStep = 1
+}) => {
+  const [step, setStep] = useState(initialStep);
+  const [formData, setFormData] = useState(() => ({
+    name: initialData?.name || '',
+    clientName: initialData?.clientName || '',
+    region: initialData?.region || DEFAULT_NIGERIA_LOCATION,
+    currency: initialData?.currency || DEFAULT_CURRENCY_CODE,
+    notes: initialData?.notes || '',
+    assumptions: initialData?.assumptions || '',
+    exclusions: initialData?.exclusions || '',
+  }));
   const [structureType, setStructureType] = useState('');
   const [selectedSectionIds, setSelectedSectionIds] = useState([]);
 
@@ -194,7 +200,7 @@ const ProjectWizard = ({ onSelect, onClose, onRequestDrawingAnalysis = null }) =
                   <button
                     type="button"
                     className="selection-card ai-card"
-                    onClick={onRequestDrawingAnalysis}
+                    onClick={() => onRequestDrawingAnalysis(formData)}
                   >
                     <div className="card-icon ai-icon">
                       <Sparkles size={24} />

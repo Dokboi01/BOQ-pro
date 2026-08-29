@@ -311,6 +311,7 @@ export function ProjectsProvider({ children }) {
     const [syncStatus, setSyncStatus] = useState({ state: 'synced', pendingCount: 0 });
     const [cloudWorkspaceState, setCloudWorkspaceState] = useState(null);
     const [cloudWorkspaceReady, setCloudWorkspaceReady] = useState(false);
+    const [pendingWizardConfig, setPendingWizardConfig] = useState(null);
     const lastRemoteUpdate = useRef(0);
     const lastUserIdRef = useRef(user?.id || null);
     const hasRestoredWorkspaceRef = useRef(false);
@@ -799,8 +800,9 @@ export function ProjectsProvider({ children }) {
         } : null);
     }, []);
 
-    const openDrawingAnalyzer = useCallback(() => {
+    const openDrawingAnalyzer = useCallback((pendingConfig = null) => {
         hasRestoredWorkspaceRef.current = true;
+        setPendingWizardConfig(pendingConfig);
         setShowSelector(false);
         setShowAnalyzer(true);
     }, []);
@@ -1150,28 +1152,59 @@ export function ProjectsProvider({ children }) {
         const analyzedSections = Array.from(sectionsByCategory.values());
 
         const projectId = `local_${Date.now()}`;
+        const company_name = deriveCompanyName({
+            companyName: user?.company_name,
+            email: user?.email
+        });
+        const company_key = buildCompanyKey({
+            companyKey: user?.company_key,
+            companyName: company_name,
+            email: user?.email
+        });
+
         const newProj = {
             id: projectId,
-            name: `AI Draft: ${new Date().toISOString().split('T')[0]}`,
+            name: pendingWizardConfig?.name || `AI Draft: ${new Date().toISOString().split('T')[0]}`,
+            clientName: pendingWizardConfig?.clientName || '',
             type: 'AI Drawing Analysis',
-            status: 'Draft',
+            structureType: 'AI Drawing Analysis',
+            projectMode: 'structure-based',
+            access_mode: 'private',
+            company_name,
+            company_key,
+            share_enabled: false,
+            collaboration_enabled: false,
+            status: 'Active',
             sections: analyzedSections,
             date: new Date().toISOString().split('T')[0],
-            region: DEFAULT_NIGERIA_LOCATION,
-            currency: DEFAULT_CURRENCY_CODE,
-            pricingMode: 'user-entered'
+            region: pendingWizardConfig?.region || DEFAULT_NIGERIA_LOCATION,
+            currency: pendingWizardConfig?.currency || DEFAULT_CURRENCY_CODE,
+            notes: pendingWizardConfig?.notes || '',
+            assumptions: pendingWizardConfig?.assumptions || '',
+            exclusions: pendingWizardConfig?.exclusions || '',
+            pricingMode: 'user-entered',
+            boqCatalogVersion: 'structure-based-boq-v1',
+            boqBuilder: {
+                stage: 'workspace',
+                activeBillSectionId: analyzedSections[0]?.id || null,
+                selectedCatalogItemIdsBySection: {},
+                generatedAt: new Date().toISOString()
+            },
+            preparedBy: user?.displayName || user?.email || 'Engineer',
+            checkedBy: ''
         };
 
         try {
             const savedProject = await saveLocal(newProj, { source: 'user' });
             setProjects(prev => [savedProject, ...prev]);
             setShowAnalyzer(false);
+            setPendingWizardConfig(null);
             openWorkspace(savedProject.id);
             syncToCloud(savedProject);
         } catch (err) {
             console.error('Error creating project from analysis:', err);
         }
-    }, [openWorkspace, toast]);
+    }, [openWorkspace, toast, pendingWizardConfig, user]);
 
     const handleUpdateProject = async (projectId, updatedSections, region = null, additionalUpdates = {}) => {
         // 1. Optimistic UI update
@@ -1396,6 +1429,8 @@ export function ProjectsProvider({ children }) {
         handleAddSection,
         handleDeleteSectionOrItem,
         handleDeleteProject,
+        pendingWizardConfig,
+        setPendingWizardConfig,
     };
 
     return <ProjectsContext.Provider value={value}>{children}</ProjectsContext.Provider>;
