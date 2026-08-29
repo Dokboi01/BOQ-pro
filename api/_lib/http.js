@@ -65,6 +65,15 @@ export async function readJsonBody(req) {
     return req.body;
   }
 
+  if (typeof req.body === 'string') {
+    return req.body.trim() ? JSON.parse(req.body) : {};
+  }
+
+  if (Buffer.isBuffer(req.body)) {
+    const rawBody = req.body.toString('utf8').trim();
+    return rawBody ? JSON.parse(rawBody) : {};
+  }
+
   const chunks = [];
   for await (const chunk of req) {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));

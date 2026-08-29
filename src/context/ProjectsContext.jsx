@@ -1092,6 +1092,12 @@ export function ProjectsProvider({ children }) {
     };
 
     const handleAnalysisComplete = useCallback(async (elements) => {
+        if (!Array.isArray(elements) || elements.length === 0) {
+            toast.error('No drawing elements were found to create a workspace.');
+            setShowAnalyzer(true);
+            return;
+        }
+
         // Elements from processEngineeringDrawing are shaped
         // {category, item, description, quantity, structuralDetails} per the
         // AI prompt (see api/_lib/ai-provider.js). This previously assumed a
@@ -1165,7 +1171,7 @@ export function ProjectsProvider({ children }) {
         } catch (err) {
             console.error('Error creating project from analysis:', err);
         }
-    }, [openWorkspace]);
+    }, [openWorkspace, toast]);
 
     const handleUpdateProject = async (projectId, updatedSections, region = null, additionalUpdates = {}) => {
         // 1. Optimistic UI update

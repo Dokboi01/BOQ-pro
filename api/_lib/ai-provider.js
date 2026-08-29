@@ -212,8 +212,119 @@ function createTextPrompt(prefix, payload) {
 
 function parseJsonResponse(content) {
   const trimmed = String(content || '').trim();
-  const cleaned = trimmed.replace(/```json|```/g, '').trim();
-  return JSON.parse(cleaned);
+  const cleaned = trimmed
+    .replace(/^```(?:json)?/i, '')
+    .replace(/```$/i, '')
+    .trim();
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (error) {
+    const candidates = [
+      [cleaned.indexOf('{'), cleaned.lastIndexOf('}')],
+      [cleaned.indexOf('['), cleaned.lastIndexOf(']')],
+    ]
+      .filter(([start, end]) => start >= 0 && end > start)
+      .map(([start, end]) => cleaned.slice(start, end + 1));
+
+    for (const candidate of candidates) {
+      try {
+        return JSON.parse(candidate);
+      } catch {
+        // Try the next extractable JSON candidate.
+      }
+    }
+
+    throw error;
+  }
+}
+
+const DRAWING_ELEMENT_KEYS = [
+  'elements',
+  'items',
+  'results',
+  'structuralElements',
+  'boqItems',
+  'lineItems',
+  'components',
+  'quantities',
+];
+
+function isObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function normalizeStructuralDetails(value = {}) {
+  if (isObject(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    return { notes: value.trim() };
+  }
+  return null;
+}
+
+function normalizeDrawingElement(entry, fallbackCategory = 'Identified Elements') {
+  if (!isObject(entry)) return null;
+
+  const rawItem = entry.item || entry.name || entry.title || entry.element || entry.description;
+  const rawDescription = entry.description || entry.scope || entry.notes || rawItem;
+  const item = sanitizeText(String(rawItem || '').trim(), 240);
+  const description = sanitizeText(String(rawDescription || '').trim(), 500);
+
+  if (!item && !description) return null;
+
+  const rawQuantity = entry.quantity ?? entry.qty ?? entry.measurement ?? entry.takeoff ?? entry.count ?? '';
+  const quantity = String(rawQuantity || '').trim() || '1 item';
+  const category = sanitizeText(String(
+    entry.category
+    || entry.section
+    || entry.billSection
+    || entry.trade
+    || fallbackCategory
+  ).trim(), 160) || 'Identified Elements';
+
+  return {
+    category,
+    item: item || description,
+    description: description || item,
+    quantity,
+    structuralDetails: normalizeStructuralDetails(
+      entry.structuralDetails
+      || entry.details
+      || {
+        dimensions: entry.dimensions || null,
+        reinforcement: entry.reinforcement || null,
+        notes: entry.notes || null,
+      }
+    ),
+  };
+}
+
+function collectDrawingElements(payload, fallbackCategory = 'Identified Elements') {
+  if (Array.isArray(payload)) {
+    return payload
+      .map((entry) => normalizeDrawingElement(entry, fallbackCategory))
+      .filter(Boolean);
+  }
+
+  if (!isObject(payload)) return [];
+
+  if (Array.isArray(payload.sections)) {
+    return payload.sections.flatMap((section) => (
+      collectDrawingElements(
+        section.items || section.elements || section.lineItems || [],
+        section.title || section.category || fallbackCategory
+      )
+    ));
+  }
+
+  for (const key of DRAWING_ELEMENT_KEYS) {
+    if (Array.isArray(payload[key])) {
+      return collectDrawingElements(payload[key], fallbackCategory);
+    }
+  }
+
+  const singleElement = normalizeDrawingElement(payload, fallbackCategory);
+  return singleElement ? [singleElement] : [];
 }
 
 export async function generateRateInsight({ item = {}, context = {}, preferredProvider, model, uid, ip } = {}) {
@@ -348,11 +459,11 @@ export async function analyzeEngineeringDrawing({ base64Image, contextHint = '',
 
   const systemPrompt = 'You are a highly experienced senior quantity surveyor and structural engineer.';
   const userPrompt = createTextPrompt(
-    'Analyze this engineering drawing/blueprint and return a valid JSON array of structural elements.',
+    'Analyze this engineering drawing/blueprint and return a valid JSON object of measurable BOQ elements.',
     [
       `USER CONTEXT: ${sanitizeText(contextHint || 'None provided. Use your best professional judgment.')}`,
-      'Return an array of objects with category, item, description, quantity, and structuralDetails.',
-      'Return ONLY valid JSON.',
+      'Return ONLY valid JSON with this shape: {"elements":[{"category":"","item":"","description":"","quantity":"","structuralDetails":{"dimensions":"","reinforcement":""}}]}.',
+      'If the image is not a readable engineering drawing or no measurable construction element can be identified, return {"elements":[]}.',
     ].join('\n')
   );
 
@@ -368,7 +479,15 @@ export async function analyzeEngineeringDrawing({ base64Image, contextHint = '',
     });
 
     const parsed = parseJsonResponse(result.content);
-    return Array.isArray(parsed) ? parsed : (parsed.items || parsed.elements || parsed.results || []);
+    const elements = collectDrawingElements(parsed);
+
+    if (elements.length === 0) {
+      const err = new Error('No measurable BOQ elements were identified in the drawing. Please upload a clearer plan, section, detail, or schedule.');
+      err.status = 422;
+      throw err;
+    }
+
+    return elements;
   } catch (error) {
     // Previously fell back to hardcoded fake "results" (same 4 sections every
     // time, regardless of what was actually uploaded) shaped completely

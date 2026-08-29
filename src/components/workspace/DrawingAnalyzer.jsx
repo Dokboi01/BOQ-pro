@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   FileSearch,
   Upload,
@@ -23,7 +23,16 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
   const [error, setError] = useState(null);
   const [statusMessage, setStatusMessage] = useState('Extracting drawing layers...');
   const [contextHint, setContextHint] = useState('');
+  const fileInputRef = useRef(null);
+  const analysisRunRef = useRef(0);
+  const mountedRef = useRef(true);
 
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      analysisRunRef.current += 1;
+    };
+  }, []);
 
   useEffect(() => {
     const processingMessages = [
@@ -49,9 +58,33 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onload = () => {
+        const result = typeof reader.result === 'string' ? reader.result : '';
+        const [, base64Payload = ''] = result.split(',');
+        if (!base64Payload) {
+          reject(new Error('Could not read the selected drawing image.'));
+          return;
+        }
+        resolve(base64Payload);
+      };
       reader.onerror = (error) => reject(error);
     });
+  };
+
+  const resetUploadInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const resetForUpload = () => {
+    setError(null);
+    setFile(null);
+    setProgress(0);
+    setIdentifiedElements([]);
+    setStatusMessage('Extracting drawing layers...');
+    setStep('upload');
+    resetUploadInput();
   };
 
   // OpenAI/Gemini vision endpoints take a raster image, not a PDF -- there is
@@ -71,16 +104,18 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
   const handleFileUpload = async (e) => {
     const uploadedFile = e.target.files[0];
     if (!uploadedFile) return;
+    const runId = Date.now();
+    analysisRunRef.current = runId;
 
     if (!SUPPORTED_MIME_TYPES.includes(uploadedFile.type)) {
       setError('Unsupported file type. Please upload a PNG, JPG, or WEBP image of the drawing (PDF/DWG are not supported yet).');
-      e.target.value = '';
+      resetUploadInput();
       return;
     }
 
     if (uploadedFile.size > MAX_FILE_SIZE_BYTES) {
       setError(`File is too large (${(uploadedFile.size / (1024 * 1024)).toFixed(1)}MB). Please upload an image under 3MB -- try compressing it or exporting at a lower resolution.`);
-      e.target.value = '';
+      resetUploadInput();
       return;
     }
 
@@ -90,7 +125,7 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
     setError(null);
 
     // Dynamic progress interval to prevent "stalling"
-    let progressInterval = setInterval(() => {
+    const progressInterval = setInterval(() => {
       setProgress(prev => {
         if (prev < 85) return prev + Math.random() * 2;
         if (prev < 95) return prev + Math.random() * 0.5; // Crawl much slower after 85
@@ -105,6 +140,13 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
 
       // 2. Real AI Analysis
       const results = await processEngineeringDrawing(b64, contextHint, uploadedFile.type);
+      if (!mountedRef.current || analysisRunRef.current !== runId) return;
+
+      if (!Array.isArray(results) || results.length === 0) {
+        const invalidDrawingError = new Error('No measurable BOQ elements were identified. Please upload a clearer plan, section, detail, or schedule.');
+        invalidDrawingError.code = 'INVALID_DRAWING';
+        throw invalidDrawingError;
+      }
 
       clearInterval(progressInterval);
       setProgress(90);
@@ -114,11 +156,12 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
       setTimeout(() => setStep('results'), 800);
     } catch (err) {
       clearInterval(progressInterval);
+      if (!mountedRef.current || analysisRunRef.current !== runId) return;
       console.error('Analysis failed:', err);
       if (err.code === 'INVALID_DRAWING') {
         setError(err.message);
       } else if (err.message?.includes('API key')) {
-        setError('Gemini API key is invalid or not configured correctly.');
+        setError('The AI service key is missing or invalid on the server. Please check OPENAI_API_KEY or GEMINI_API_KEY in your deployment settings.');
       } else if (err.message?.includes('unparseable')) {
         setError('AI returned a malformed response. Please try again with a clearer image.');
       } else if (err.message?.includes('<!doctype') || err.message?.includes('<html')) {
@@ -131,6 +174,8 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
         setError(`Analysis failed: ${err.message || 'Unknown error'}. Please ensure your API config is correct.`);
       }
       setStep('error');
+    } finally {
+      resetUploadInput();
     }
   };
 
@@ -153,6 +198,7 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
 
         <div className="drop-area">
           <input
+            ref={fileInputRef}
             type="file"
             id="drawing-upload"
             hidden
@@ -227,11 +273,7 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
       <div className="error-actions">
         <button
           className="btn-secondary"
-          onClick={() => {
-            setError(null);
-            setProgress(0);
-            setStep('upload');
-          }}
+          onClick={resetForUpload}
         >
           Try Another Drawing
         </button>
@@ -289,7 +331,7 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
       </div>
 
       <div className="results-actions">
-        <button className="btn-secondary" onClick={() => setStep('upload')}>Rescan</button>
+        <button className="btn-secondary" onClick={resetForUpload}>Rescan</button>
         <button className="btn-primary" onClick={() => onComplete(identifiedElements)}>
           Construct BOQ Workspace
           <ChevronRight size={18} />

@@ -1,4 +1,4 @@
-import { handleOptions, sendJson } from './_lib/http.js';
+import { handleOptions, readJsonBody, sendJson } from './_lib/http.js';
 import { requireFirebaseAuth } from './_lib/firebase-auth.js';
 import {
   analyzeEngineeringDrawing,
@@ -7,6 +7,14 @@ import {
   generateRateInsight,
   generateRateBreakdown,
 } from './_lib/ai-provider.js';
+
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '5mb',
+    },
+  },
+};
 
 export default async function handler(req, res) {
   if (handleOptions(req, res)) return;
@@ -17,7 +25,7 @@ export default async function handler(req, res) {
 
   try {
     const authClaims = await requireFirebaseAuth(req);
-    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const body = await readJsonBody(req);
     const action = String(body.action || '').trim();
     const preferredProvider = String(body.preferredProvider || '').trim();
     const model = String(body.model || '').trim();

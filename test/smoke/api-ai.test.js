@@ -72,4 +72,34 @@ describe('API Route: /api/ai', () => {
     expect(resData.success).toBe(true);
     expect(resData.result).toEqual({ some: 'data' });
   });
+
+  it('parses string JSON bodies for drawing analysis requests', async () => {
+    vi.mocked(firebaseAuth.requireFirebaseAuth).mockResolvedValue({ user_id: 'test-user' });
+    vi.mocked(aiProvider.analyzeEngineeringDrawing).mockResolvedValue([
+      {
+        category: 'Concrete Works',
+        item: 'Pad footing',
+        quantity: '4 nr'
+      }
+    ]);
+
+    req.body = JSON.stringify({
+      action: 'drawing-analysis',
+      base64Image: 'abc123',
+      mimeType: 'image/png',
+      contextHint: 'foundation layout',
+    });
+
+    await handler(req, res);
+
+    expect(aiProvider.analyzeEngineeringDrawing).toHaveBeenCalledWith(expect.objectContaining({
+      base64Image: 'abc123',
+      mimeType: 'image/png',
+      contextHint: 'foundation layout',
+      uid: 'test-user',
+    }));
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(resData.success).toBe(true);
+    expect(resData.action).toBe('drawing-analysis');
+  });
 });
