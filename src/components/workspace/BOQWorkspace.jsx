@@ -2458,8 +2458,9 @@ const BOQWorkspace = () => {
         .ws-container {
           display: flex;
           flex-direction: column;
-          height: 100vh;
-          max-height: 100vh;
+          flex: 1;
+          height: 100%;
+          min-height: 0;
           background: #f1f5f9;
           overflow: hidden;
         }

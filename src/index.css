@@ -1074,13 +1074,16 @@ button:focus-visible {
 
 .app-container {
   display: flex;
+  height: 100vh;
   min-height: 100vh;
+  overflow: hidden;
   transition: all 0.3s ease;
   background-color: var(--bg-main);
 }
 
 .content-area {
   flex: 1;
+  min-height: 0;
   padding: 1.5rem 2.5rem 3rem;
   overflow-y: auto;
   position: relative;
@@ -1093,6 +1096,10 @@ button:focus-visible {
 .workspace-content-area {
   padding: 0 !important;
   background: var(--obsidian-950) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  overflow: hidden !important;
 }
 
 /* ── Sticky Summary Bar ── */

@@ -593,7 +593,7 @@ function App() {
         />;
       case 'workspace':
         return activeProject ? (
-          <div className="view-fade-in">
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, animation: 'fadeIn 0.45s cubic-bezier(0.16,1,0.3,1) forwards' }}>
             <WorkspaceProvider
               project={activeProject}
               launchIntent={workspaceIntent}
