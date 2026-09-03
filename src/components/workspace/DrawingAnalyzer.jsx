@@ -365,7 +365,8 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
           justify-content: center;
           z-index: 2000;
           padding: 2rem;
-          animation: da-fade 0.25s ease;
+          opacity: 1 !important;
+          animation: da-fade 0.25s ease forwards;
         }
 
         @keyframes da-fade {
@@ -384,7 +385,8 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
           min-height: 500px;
           display: flex;
           flex-direction: column;
-          animation: da-pop 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+          opacity: 1 !important;
+          animation: da-pop 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
 
         @keyframes da-pop {

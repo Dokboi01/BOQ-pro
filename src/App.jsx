@@ -753,22 +753,22 @@ function App() {
         )}
 
         {renderContent()}
-
-        {showSelector && <ProjectWizard
-          key="project-wizard"
-          onSelect={handleCompleteWizard}
-          onClose={handleCloseSelector}
-          onRequestDrawingAnalysis={openDrawingAnalyzer}
-          initialData={pendingWizardConfig}
-          initialStep={pendingWizardConfig ? 2 : 1}
-        />}
-
-        {showAnalyzer && <DrawingAnalyzer
-          key="drawing-analyzer"
-          onComplete={handleAnalysisComplete}
-          onClose={handleCloseAnalyzer}
-        />}
       </main>
+
+      {showSelector && <ProjectWizard
+        key="project-wizard"
+        onSelect={handleCompleteWizard}
+        onClose={handleCloseSelector}
+        onRequestDrawingAnalysis={openDrawingAnalyzer}
+        initialData={pendingWizardConfig}
+        initialStep={pendingWizardConfig ? 2 : 1}
+      />}
+
+      {showAnalyzer && <DrawingAnalyzer
+        key="drawing-analyzer"
+        onComplete={handleAnalysisComplete}
+        onClose={handleCloseAnalyzer}
+      />}
 
 
     </div>
