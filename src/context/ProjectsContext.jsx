@@ -1497,6 +1497,12 @@ export function ProjectsProvider({ children }) {
         }
     }, [openWorkspace, toast]);
 
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            window.loadSampleRoadProject = loadSampleRoadProject;
+        }
+    }, [loadSampleRoadProject]);
+
     const value = {
         projects,
         setProjects,
