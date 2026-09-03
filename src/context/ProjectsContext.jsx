@@ -2,6 +2,8 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import {
     createProjectSectionsFromStructure,
     getStructureDefinition,
+    getStructureSections,
+    cloneCatalogItemToProjectItem,
 } from '../data/boqCatalog';
 import { DEFAULT_NIGERIA_LOCATION } from '../data/nigeriaLocations';
 import { DEFAULT_CURRENCY_CODE } from '../data/currencies';
@@ -1398,6 +1400,103 @@ export function ProjectsProvider({ children }) {
         }
     }, [openWorkspace, projects, toast]);
 
+    const loadSampleRoadProject = useCallback(async () => {
+        const roadSections = getStructureSections('Road');
+        const sections = roadSections.map((entry) => {
+            const items = (entry.availableItems || []).map((catalogItem) => {
+                const projectItem = cloneCatalogItemToProjectItem(catalogItem, {
+                    structureType: 'Road',
+                    billSectionId: entry.id,
+                    billSectionTitle: entry.title,
+                });
+                // Seed items to match Image 1 (Preliminaries priced at ₦29,460,000, 47 items priced)
+                if (catalogItem.code === 'ROD-PREL-001') {
+                    projectItem.qty = 12;
+                    projectItem.quantity = 12;
+                    projectItem.rate = 755000;
+                    projectItem.unitRate = 755000;
+                    projectItem.amount = 9060000;
+                    projectItem.total = 9060000;
+                } else if (catalogItem.code === 'ROD-PREL-008' || catalogItem.name?.includes('Traffic management')) {
+                    projectItem.qty = 12;
+                    projectItem.quantity = 12;
+                    projectItem.rate = 123000;
+                    projectItem.unitRate = 123000;
+                    projectItem.amount = 14760000;
+                    projectItem.total = 14760000;
+                } else if (catalogItem.code === 'ROD-PREL-002' || catalogItem.code === 'ROD-PREL-004') {
+                    projectItem.qty = 1;
+                    projectItem.quantity = 1;
+                    projectItem.rate = 5640000;
+                    projectItem.unitRate = 5640000;
+                    projectItem.amount = 5640000;
+                    projectItem.total = 5640000;
+                } else {
+                    if (!projectItem.qty || projectItem.qty === 0) {
+                        projectItem.qty = 100;
+                        projectItem.quantity = 100;
+                    }
+                    const r = projectItem.rate || projectItem.unitRate || projectItem.benchmarkRate || 125000;
+                    projectItem.rate = r;
+                    projectItem.unitRate = r;
+                    projectItem.amount = projectItem.qty * r;
+                    projectItem.total = projectItem.amount;
+                }
+                return projectItem;
+            });
+
+            return {
+                id: `sec_${entry.id}_demo`,
+                billSectionId: entry.id,
+                code: entry.code,
+                title: entry.title,
+                description: entry.description,
+                isPreliminaries: entry.isPreliminaries === true,
+                trade: entry.trade || entry.title,
+                structureType: 'Road',
+                expanded: true,
+                items,
+            };
+        });
+
+        const selectedCatalogItemIdsBySection = Object.fromEntries(
+            sections.map((s) => [s.id, s.items.map((i) => i.catalogItemId || i.code)])
+        );
+
+        const roadProj = {
+            id: 'road_osun_demo',
+            name: 'Road Infrastructure Project',
+            type: 'Road',
+            structureType: 'Road',
+            status: 'Active',
+            sections,
+            date: new Date().toISOString().split('T')[0],
+            region: 'Osun',
+            currency: 'NGN',
+            pricingMode: 'user-entered',
+            boqBuilder: {
+                stage: 'workspace',
+                activeBillSectionId: sections[0]?.id || null,
+                selectedCatalogItemIdsBySection,
+                generatedAt: new Date().toISOString(),
+            }
+        };
+
+        try {
+            const savedProject = await saveLocal(roadProj, { source: 'user' });
+            setProjects((prev) => {
+                const filtered = prev.filter((p) => p.id !== roadProj.id);
+                return [savedProject, ...filtered];
+            });
+            openWorkspace(savedProject.id);
+            toast.success('Loaded Road Infrastructure Project (Osun)!');
+            return savedProject;
+        } catch (err) {
+            console.error('Error loading sample road project:', err);
+            toast.error('Could not load road project.');
+        }
+    }, [openWorkspace, toast]);
+
     const value = {
         projects,
         setProjects,
@@ -1429,6 +1528,7 @@ export function ProjectsProvider({ children }) {
         handleAddSection,
         handleDeleteSectionOrItem,
         handleDeleteProject,
+        loadSampleRoadProject,
         pendingWizardConfig,
         setPendingWizardConfig,
     };

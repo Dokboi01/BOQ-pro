@@ -54,20 +54,9 @@ const BOQBillPanel = ({
               className={`wbp-item ${isActive ? 'active' : ''}`}
               onClick={() => onSelectBill?.(section.id)}
             >
-              <span className="wbp-index">{String(index + 1).padStart(2, '0')}</span>
-              <span className="wbp-copy">
-                <span className="wbp-title-row">
-                  <strong>{section.title}</strong>
-                  {isActive && <span className="wbp-active-pill">Active</span>}
-                </span>
-                <span className="wbp-meta-row">
-                  <small>{itemCount} line{itemCount === 1 ? '' : 's'}</small>
-                  <small>{selectedCount} selected</small>
-                </span>
-              </span>
-              <span className="wbp-total-block">
-                <span className="wbp-total-label">Subtotal</span>
-                <span className="wbp-total">{formatMoney(subtotal)}</span>
+              <span className="wbp-title-row">
+                <strong>{section.title}</strong>
+                {isActive && <span className="wbp-active-pill">ACTIVE</span>}
               </span>
             </button>
           );
@@ -191,82 +180,68 @@ const BOQBillPanel = ({
         }
 
         .wbp-item {
-          display: grid;
-          grid-template-columns: 36px minmax(0, 1fr) auto;
+          display: flex;
           align-items: center;
-          gap: 0.75rem;
-          padding: 0.75rem 0.85rem;
-          border-radius: 12px;
-          border: 1px solid var(--border-light);
-          background: var(--bg-card);
+          justify-content: space-between;
+          padding: 0.6rem 1.1rem;
+          border-radius: 9999px;
+          border: 1px solid #e2e8f0;
+          background: #ffffff;
           text-align: left;
           cursor: pointer;
           position: relative;
-          overflow: hidden;
-          transition: transform var(--duration-fast) var(--ease-premium),
-                      border-color var(--duration-fast) var(--ease-standard),
-                      box-shadow var(--duration-fast) var(--ease-premium),
-                      background var(--duration-fast) var(--ease-standard);
-          box-shadow: var(--shadow-xs);
-        }
-
-        .wbp-item::before {
-          content: '';
-          position: absolute;
-          inset: 8px auto 8px 0;
-          width: 3px;
-          border-radius: 0 999px 999px 0;
-          background: transparent;
-          transition: background var(--duration-fast) var(--ease-standard);
+          transition: all var(--duration-fast) var(--ease-standard);
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
         }
 
         .wbp-item:hover {
           transform: translateY(-1px);
-          border-color: var(--quantra-blue-300);
-          box-shadow: var(--shadow-sm);
+          border-color: #cbd5e1;
+          box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
         }
 
         .wbp-item.active {
-          border-color: var(--quantra-blue-500);
-          box-shadow: var(--shadow-md);
-          background: linear-gradient(180deg, var(--quantra-blue-50) 0%, var(--bg-card) 100%);
-        }
-
-        .wbp-item.active::before {
-          background: linear-gradient(180deg, var(--quantra-blue-500) 0%, var(--quantra-blue-700) 100%);
-        }
-
-        .wbp-index {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 36px;
-          height: 36px;
-          border-radius: 8px;
-          background: var(--quantra-blue-50);
-          color: var(--quantra-blue-700);
-          font-size: 0.76rem;
-          font-weight: 800;
-        }
-
-        .wbp-item.active .wbp-index {
-          background: linear-gradient(180deg, var(--quantra-blue-600) 0%, var(--quantra-blue-700) 100%);
-          color: #ffffff;
-          box-shadow: var(--shadow-sm);
-        }
-
-        .wbp-copy {
-          min-width: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 0.25rem;
+          border-color: #0f172a;
+          box-shadow: 0 4px 12px rgba(15, 23, 42, 0.22);
+          background: #0f172a;
         }
 
         .wbp-title-row {
           display: flex;
           align-items: center;
-          gap: 0.4rem;
+          justify-content: space-between;
+          width: 100%;
+          gap: 0.5rem;
           min-width: 0;
+        }
+
+        .wbp-title-row strong {
+          font-size: 0.82rem;
+          color: #1e293b;
+          line-height: 1.35;
+          font-weight: 700;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .wbp-item.active .wbp-title-row strong {
+          color: #ffffff;
+        }
+
+        .wbp-active-pill {
+          display: inline-flex;
+          align-items: center;
+          padding: 0.16rem 0.48rem;
+          border-radius: 9999px;
+          background: #38bdf8;
+          color: #0f172a;
+          font-size: 0.56rem;
+          font-weight: 900;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          white-space: nowrap;
+          flex-shrink: 0;
         }
 
         .wbp-copy strong {
@@ -282,64 +257,6 @@ const BOQBillPanel = ({
           gap: 0.3rem;
         }
 
-        .wbp-copy small {
-          display: inline-flex;
-          align-items: center;
-          padding: 0.15rem 0.38rem;
-          border-radius: 999px;
-          background: var(--bg-card-muted);
-          border: 1px solid var(--border-light);
-          font-size: 0.64rem;
-          color: var(--text-muted);
-          line-height: 1.3;
-          white-space: nowrap;
-        }
-
-        .wbp-active-pill {
-          display: inline-flex;
-          align-items: center;
-          padding: 0.14rem 0.4rem;
-          border-radius: 999px;
-          background: var(--quantra-blue-100);
-          color: var(--quantra-blue-700);
-          font-size: 0.58rem;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-          white-space: nowrap;
-        }
-
-        .wbp-total-block {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 0.15rem;
-          min-width: 88px;
-          padding-left: 0.25rem;
-        }
-
-        .wbp-total-label {
-          font-size: 0.56rem;
-          font-weight: 800;
-          letter-spacing: 0.06em;
-          text-transform: uppercase;
-          color: var(--text-muted);
-        }
-
-        .wbp-total {
-          font-size: 0.76rem;
-          font-weight: 800;
-          color: var(--text-primary);
-          white-space: nowrap;
-        }
-
-        .wbp-item.active .wbp-total {
-          color: var(--quantra-blue-700);
-        }
-
-        .wbp-item.active .wbp-total-label {
-          color: var(--quantra-blue-500);
-        }
 
         @media (max-width: 1180px) {
           .wbp-panel {
@@ -428,54 +345,18 @@ const BOQBillPanel = ({
           }
 
           .wbp-item {
-            min-width: 200px;
-            grid-template-columns: 28px minmax(0, 1fr);
-            gap: 0.45rem;
-            padding: 0.5rem 0.65rem;
-            border-radius: 10px;
+            min-width: 180px;
+            padding: 0.45rem 0.8rem;
+            border-radius: 9999px;
           }
 
-          .wbp-index {
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
-            font-size: 0.6rem;
+          .wbp-title-row strong {
+            font-size: 0.72rem;
           }
 
-          .wbp-copy {
-            gap: 0.18rem;
-          }
-
-          .wbp-copy strong {
-            font-size: 0.7rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-
-          .wbp-copy small,
           .wbp-active-pill {
-            font-size: 0.46rem;
-            padding: 0.08rem 0.24rem;
-          }
-
-          .wbp-total-block {
-            grid-column: 1 / -1;
-            flex-direction: row;
-            align-items: center;
-            justify-content: space-between;
-            min-width: 0;
-            padding-left: 0;
-            padding-top: 0.15rem;
-            border-top: 1px solid var(--border-light);
-          }
-
-          .wbp-total-label {
-            font-size: 0.44rem;
-          }
-
-          .wbp-total {
-            font-size: 0.6rem;
+            font-size: 0.48rem;
+            padding: 0.1rem 0.28rem;
           }
         }
       `}</style>

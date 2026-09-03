@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useWorkspace } from '../../context/WorkspaceContext';
+import { useProjects } from '../../context/useProjects';
 import RateAnalysisModal from './RateAnalysisModal';
 import CustomPricingModal from './CustomPricingModal';
 import GeometricCalculator from './GeometricCalculator';
@@ -64,6 +65,7 @@ import {
 } from 'lucide-react';
 
 const BOQWorkspace = () => {
+  const { loadSampleRoadProject } = useProjects();
   const {
     sections,
     analyzingItem, setAnalyzingItem,
@@ -440,6 +442,11 @@ const BOQWorkspace = () => {
                     <button className="ws-head-action ws-head-action-primary emerald-button" onClick={() => enterSelectionStage(activeBillSectionId || sections[0]?.id)}>
                       <Plus size={13} /> Edit Selection
                     </button>
+                    {project?.structureType !== 'Road' && typeof loadSampleRoadProject === 'function' && (
+                      <button className="ws-head-action" onClick={loadSampleRoadProject} title="Load Road Project (Image 1)">
+                        <Globe size={13} /> Road Project
+                      </button>
+                    )}
                     <button className="ws-head-action" onClick={refreshBenchmarks}>
                       <RefreshCcw size={13} /> Refresh
                     </button>
@@ -489,9 +496,9 @@ const BOQWorkspace = () => {
                 </div>
               </div>
             </div>
-      {/* â”€â”€ Search & Filter Toolbar â”€â”€ */}
+      {/* ── Search & Filter Toolbar ── */}
       <div className="ws-toolbar-clean glass-panel">
-        <div className="ws-toolbar-left">
+        <div className="ws-toolbar-search-row">
           <div className="ws-search-box glass-input">
             <Search size={16} />
             <input
@@ -505,15 +512,15 @@ const BOQWorkspace = () => {
                 <X size={14} />
               </button>
             )}
+            <span className="ws-search-results-pill">
+              {isFilteredView
+                ? `${filteredItemCount} visible items`
+                : `${totalItems} total items`}
+            </span>
           </div>
-          <span className="ws-search-results">
-            {isFilteredView
-              ? `${filteredItemCount} visible items`
-              : `${totalItems} total items`}
-          </span>
         </div>
 
-        <div className="ws-toolbar-right">
+        <div className="ws-toolbar-filters-row">
           <div className="ws-filter-group">
             {workspaceFilterOptions.map((filterOption) => (
               <button
@@ -526,40 +533,40 @@ const BOQWorkspace = () => {
             ))}
           </div>
 
-          <div className="ws-divider-v" />
-
-          <div className="ws-region-selector">
-            <Globe size={14} />
-            <select value={marketRegionLabel || DEFAULT_NIGERIA_LOCATION} onChange={(e) => handleRegionChange(e.target.value)}>
-              {groupedStateOptions.map((group) => (
-                <optgroup key={group.zone} label={group.zone}>
-                  {group.states.map((state) => (
-                    <option key={state.value} value={state.value}>
-                      {state.label}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </div>
-
-          {isCustomWorkspace && presenceUsers.length > 0 && (
-            <div className="ws-presence-avatars">
-              {presenceUsers.slice(0, 3).map((u, i) => (
-                <div
-                  key={u.id}
-                  className="ws-avatar-circle"
-                  style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}
-                  title={u.displayName || u.email}
-                >
-                  {getInitials(u.displayName || u.email)}
-                </div>
-              ))}
-              {presenceUsers.length > 3 && (
-                <div className="ws-avatar-more">+{presenceUsers.length - 3}</div>
-              )}
+          <div className="ws-toolbar-filters-right">
+            <div className="ws-region-selector">
+              <Globe size={14} />
+              <select value={marketRegionLabel || DEFAULT_NIGERIA_LOCATION} onChange={(e) => handleRegionChange(e.target.value)}>
+                {groupedStateOptions.map((group) => (
+                  <optgroup key={group.zone} label={group.zone}>
+                    {group.states.map((state) => (
+                      <option key={state.value} value={state.value}>
+                        {state.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
             </div>
-          )}
+
+            {isCustomWorkspace && presenceUsers.length > 0 && (
+              <div className="ws-presence-avatars">
+                {presenceUsers.slice(0, 3).map((u, i) => (
+                  <div
+                    key={u.id}
+                    className="ws-avatar-circle"
+                    style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}
+                    title={u.displayName || u.email}
+                  >
+                    {getInitials(u.displayName || u.email)}
+                  </div>
+                ))}
+                {presenceUsers.length > 3 && (
+                  <div className="ws-avatar-more">+{presenceUsers.length - 3}</div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -2465,58 +2472,59 @@ const BOQWorkspace = () => {
           overflow: hidden;
         }
 
-        /* --- CLEAN TOOLBAR --- */
+        /* --- CLEAN 2-TIER TOOLBAR MATCHING IMAGE 1 --- */
         .ws-toolbar-clean.glass-panel {
           display: flex;
-          justify-content: space-between;
-          align-items: center;
-          flex-wrap: nowrap;
-          gap: 0.7rem;
+          flex-direction: column;
+          gap: 0.65rem;
           padding: 0.75rem 1rem;
-          background: #ffffff;
-          border-bottom: 1px solid #e2e8f0;
+          background: #334155 !important;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
           position: static;
           top: auto;
           z-index: auto;
-          overflow-x: auto;
-          scrollbar-width: none;
+          box-sizing: border-box;
+          width: 100%;
         }
-        .ws-toolbar-clean.glass-panel::-webkit-scrollbar { display: none; }
-        .ws-toolbar-left {
+        .ws-toolbar-search-row {
+          width: 100%;
           display: flex;
           align-items: center;
-          gap: 1.25rem;
-          flex: 1;
-          min-width: 0;
-          flex-wrap: nowrap;
-          flex-shrink: 0;
         }
         .ws-search-box.glass-input {
           position: relative;
           display: flex;
           align-items: center;
-          width: 320px;
-          background: #f1f5f9;
-          border: 1px solid #e2e8f0;
+          width: 100%;
+          background: #1e293b;
+          border: 1px solid #475569;
           border-radius: var(--radius-md);
           padding: 0 0.75rem;
           transition: all 0.2s;
+          min-height: 38px;
+          box-sizing: border-box;
         }
         .ws-search-box.glass-input:focus-within {
-          background: #ffffff;
+          background: #0f172a;
           border-color: #3b82f6;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
         }
-        .ws-search-box.glass-input svg { color: #94a3b8; }
+        .ws-search-box.glass-input svg {
+          color: #94a3b8;
+          flex-shrink: 0;
+        }
         .ws-search-box.glass-input input {
           width: 100%;
           border: none;
           background: transparent;
-          padding: 0.5rem 0.5rem;
-          font-size: var(--text-size-md);
+          padding: 0.5rem 0.65rem;
+          font-size: var(--text-size-base);
           font-weight: 500;
-          color: #1e293b;
+          color: #f8fafc;
           outline: none;
+        }
+        .ws-search-box.glass-input input::placeholder {
+          color: #94a3b8;
         }
         .ws-search-clear {
           background: transparent;
@@ -2526,70 +2534,93 @@ const BOQWorkspace = () => {
           padding: 0.25rem;
           display: flex;
           align-items: center;
+          flex-shrink: 0;
         }
-        .ws-search-clear:hover { color: #64748b; }
-        .ws-search-results {
-          font-size: var(--text-size-base);
-          font-weight: 600;
-          color: #64748b;
+        .ws-search-clear:hover { color: #f8fafc; }
+        .ws-search-results-pill {
+          display: inline-flex;
+          align-items: center;
+          padding: 0.2rem 0.6rem;
+          background: #dbeafe;
+          color: #1d4ed8;
+          font-size: 0.72rem;
+          font-weight: 800;
+          border-radius: 9999px;
+          white-space: nowrap;
+          flex-shrink: 0;
+          margin-left: 0.5rem;
         }
 
-        .ws-toolbar-right {
+        .ws-toolbar-filters-row {
           display: flex;
           align-items: center;
-          gap: 1rem;
-          flex-wrap: nowrap;
-          justify-content: flex-end;
-          flex-shrink: 0;
+          justify-content: space-between;
+          gap: 0.75rem;
+          width: 100%;
+          overflow-x: auto;
+          scrollbar-width: none;
         }
+        .ws-toolbar-filters-row::-webkit-scrollbar { display: none; }
+
         .ws-filter-group {
           display: flex;
-          gap: 0.35rem;
+          align-items: center;
+          gap: 0.4rem;
           flex-shrink: 0;
-          flex-wrap: nowrap;
+          overflow-x: auto;
+          scrollbar-width: none;
         }
+        .ws-filter-group::-webkit-scrollbar { display: none; }
+
         .ws-filter-pill {
-          background: transparent;
-          border: 1px solid #e2e8f0;
-          padding: 0.35rem 0.75rem;
-          border-radius: var(--radius-md);
-          font-size: var(--text-size-sm);
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          padding: 0.35rem 0.85rem;
+          border-radius: 9999px;
+          font-size: var(--text-size-xs);
           font-weight: 700;
-          color: #64748b;
+          color: #cbd5e1;
           cursor: pointer;
           transition: all 0.2s;
           white-space: nowrap;
           flex-shrink: 0;
         }
         .ws-filter-pill:hover {
-          background: #f8fafc;
-          color: #1e293b;
+          background: rgba(255, 255, 255, 0.15);
+          color: #ffffff;
         }
         .ws-filter-pill.active {
-          background: #eff6ff;
-          color: #1d4ed8;
-          border-color: #bfdbfe;
+          background: #ffffff;
+          color: #0f172a;
+          border-color: #ffffff;
+          font-weight: 800;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
         }
-        .ws-divider-v {
-          width: 1px;
-          height: 20px;
-          background: #e2e8f0;
+
+        .ws-toolbar-filters-right {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          flex-shrink: 0;
+          margin-left: auto;
         }
+
         .ws-region-selector {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
-          background: #f8fafc;
+          gap: 0.45rem;
+          background: #ffffff;
           border: 1px solid #e2e8f0;
           padding: 0.35rem 0.75rem;
-          border-radius: var(--radius-md);
+          border-radius: 9999px;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
         }
         .ws-region-selector svg { color: #64748b; }
         .ws-region-selector select {
           background: transparent;
           border: none;
-          font-size: var(--text-size-base);
-          font-weight: 700;
+          font-size: var(--text-size-xs);
+          font-weight: 800;
           color: #1e293b;
           outline: none;
           cursor: pointer;
