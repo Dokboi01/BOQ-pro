@@ -5,7 +5,7 @@ import { getAnalytics } from 'firebase/analytics';
 
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAuTB4STtOhff4ZZrjTy_iw-Z19Ij_hrLg",
-    authDomain: "boq-pro-72332.web.app",
+    authDomain: "boq-pro-72332.firebaseapp.com",
     projectId: "boq-pro-72332",
     storageBucket: "boq-pro-72332.firebasestorage.app",
     messagingSenderId: "609638637070",

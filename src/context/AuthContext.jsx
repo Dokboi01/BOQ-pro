@@ -5,13 +5,14 @@ import {
     createUserWithEmailAndPassword,
     signOut,
     onAuthStateChanged,
-    sendEmailVerification,
     updateProfile as updateAuthProfile,
     browserLocalPersistence,
     setPersistence,
     GoogleAuthProvider,
     OAuthProvider,
-    signInWithPopup
+    getRedirectResult,
+    signInWithPopup,
+    signInWithRedirect
 } from 'firebase/auth';
 import { analytics } from '../db/firebase';
 import { logEvent as logAnalyticsEvent } from 'firebase/analytics';
@@ -33,6 +34,62 @@ import {
 import { isPaidPlan } from '../data/plans';
 
 const PUBLIC_VIEWS = new Set(['landing', 'pricing', 'login', 'signup', 'forgot-password', 'terms', 'privacy']);
+const SSO_PROVIDER_STORAGE_KEY = 'quantra_sso_provider';
+
+const buildSSOProvider = (providerName) => {
+    if (providerName === 'google') {
+        const provider = new GoogleAuthProvider();
+        provider.addScope('email');
+        provider.addScope('profile');
+        provider.setCustomParameters({ prompt: 'select_account' });
+        return provider;
+    }
+
+    if (providerName === 'microsoft') {
+        const provider = new OAuthProvider('microsoft.com');
+        provider.addScope('User.Read');
+        provider.setCustomParameters({ prompt: 'select_account' });
+        return provider;
+    }
+
+    return null;
+};
+
+const getSSOProviderLabel = (providerName) => providerName === 'google' ? 'Google' : 'Microsoft';
+
+const getSSOProviderFromResult = (result) => {
+    const providerId = result?.providerId || result?.user?.providerData?.[0]?.providerId || '';
+    if (providerId.includes('google')) return 'google';
+    if (providerId.includes('microsoft')) return 'microsoft';
+
+    if (typeof window !== 'undefined') {
+        return window.sessionStorage.getItem(SSO_PROVIDER_STORAGE_KEY) || 'google';
+    }
+
+    return 'google';
+};
+
+const shouldRedirectAfterPopupFailure = (error) => {
+    return [
+        'auth/popup-blocked',
+        'auth/popup-closed-by-user',
+        'auth/cancelled-popup-request',
+    ].includes(error?.code);
+};
+
+const getSSOErrorMessage = (error, providerName) => {
+    const providerLabel = getSSOProviderLabel(providerName);
+    const messages = {
+        'auth/account-exists-with-different-credential': 'An account already exists with this email using a different sign-in method.',
+        'auth/cancelled-popup-request': `${providerLabel} sign-in was cancelled before it could finish.`,
+        'auth/operation-not-allowed': `${providerLabel} sign-in is not enabled in Firebase Authentication. Enable the provider in Firebase Console, then try again.`,
+        'auth/popup-blocked': `${providerLabel} sign-in pop-up was blocked. We will try the full-page sign-in instead.`,
+        'auth/popup-closed-by-user': `${providerLabel} sign-in closed before it finished. We will try the full-page sign-in instead.`,
+        'auth/unauthorized-domain': 'This site domain is not authorized in Firebase Authentication. Add it under Authentication > Settings > Authorized domains.',
+    };
+    const errorDetails = error?.code ? `[${error.code}]` : `(${error?.message || 'unknown error'})`;
+    return messages[error?.code] || `Unable to sign in with ${providerLabel} ${errorDetails}. Please try again.`;
+};
 
 // ── Dev-only engineering test mode ──────────────────────────────────────
 // Bypasses real Firebase auth entirely with a local mock user, for manually
@@ -103,6 +160,7 @@ export function AuthProvider({ children }) {
     const [verificationEmailStatus, setVerificationEmailStatus] = useState('idle');
     const initializationComplete = useRef(false);
     const userRef = useRef(initialUser);
+    const completeSSOLoginRef = useRef(null);
 
     useEffect(() => {
         userRef.current = user;
@@ -182,6 +240,96 @@ export function AuthProvider({ children }) {
         }
     };
 
+    const completeSSOLogin = async (result, providerName, pendingSelection = readPendingSubscription()) => {
+        const providerLabel = getSSOProviderLabel(providerName);
+
+        if (!result?.user) {
+            throw new Error(`${providerLabel} did not return a signed-in user.`);
+        }
+
+        // Fetch or bootstrap profile
+        let profile = await getProfile(result.user.uid);
+
+        if (!profile) {
+            console.log(`Creating new Firestore profile for SSO user ${result.user.uid}`);
+            const company_name = deriveCompanyName({ email: result.user.email });
+            const company_key = buildCompanyKey({ email: result.user.email });
+            const chosenPlan = getNormalizedPlanName(
+                pendingSelection?.plan || selectedPlan || PLAN_NAMES.STUDENT
+            );
+            const isPendingPaidPlan = isPaidPlan(chosenPlan);
+            // A paid plan is never granted from client-trusted local state — Firestore
+            // rules reject a client write that sets `plan`/`subscription` directly. New
+            // profiles always start on Student; a real paid plan is only applied
+            // server-side (via firebase-admin) once we re-verify the Paystack
+            // transaction below, after the account (and profile) exist.
+            const subscriptionUpdate = isPendingPaidPlan
+                ? {
+                    plan: PLAN_NAMES.STUDENT,
+                    pendingSubscriptionSelection: buildPendingSubscriptionSelection({
+                        planName: chosenPlan,
+                        billingCycle: pendingSelection?.billing || 'monthly',
+                    }),
+                }
+                : {};
+
+            profile = {
+                full_name: result.user.displayName || 'Practitioner',
+                company_name,
+                company_key,
+                email: result.user.email,
+                is_onboarded: false,
+                is_verified: true, // OAuth providers have verified emails
+                ...subscriptionUpdate,
+            };
+
+            const savedProfile = await updateProfile(profile);
+            profile = savedProfile || profile;
+            if (isPendingPaidPlan) {
+                await reconcilePendingPaystackCheckout();
+            } else {
+                clearPendingSubscription();
+                setSelectedPlan(null);
+            }
+        }
+
+        const fullUser = normalizeUserProfile({
+            id: result.user.uid,
+            email: result.user.email,
+            displayName: result.user.displayName,
+            ...profile
+        });
+
+        setUser(fullUser);
+        localStorage.setItem('quantra_profile', JSON.stringify(fullUser));
+        initializationComplete.current = true;
+
+        if (profile && profile.is_verified === false) {
+            setView('verification');
+            const token = await result.user.getIdToken();
+            fetch('/api/send-verification-code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            }).catch(() => {});
+        } else if (profile && profile.is_onboarded) {
+            setView(pendingSelection?.plan && isPaidPlan(pendingSelection.plan) ? 'pricing' : 'app');
+        } else {
+            setView('onboarding');
+        }
+
+        if (typeof window !== 'undefined') {
+            window.sessionStorage.removeItem(SSO_PROVIDER_STORAGE_KEY);
+        }
+
+        if (analytics) {
+            logAnalyticsEvent(analytics, 'login', { method: providerName });
+        }
+    };
+    completeSSOLoginRef.current = completeSSOLogin;
+
     // Firebase Auth Initialization & State Listener
     useEffect(() => {
         if (isDevLoginRequested()) {
@@ -202,6 +350,23 @@ export function AuthProvider({ children }) {
         // Set persistence once on mount
         setPersistence(auth, browserLocalPersistence).catch(err => {
             console.warn('⚠️ Persistence setup failed:', err.message);
+        });
+
+        getRedirectResult(auth).then(async (redirectResult) => {
+            if (!redirectResult) return;
+            const providerName = getSSOProviderFromResult(redirectResult);
+            await completeSSOLoginRef.current?.(redirectResult, providerName);
+        }).catch(error => {
+            const providerName = typeof window !== 'undefined'
+                ? window.sessionStorage.getItem(SSO_PROVIDER_STORAGE_KEY) || 'google'
+                : 'google';
+            console.error(`❌ ${providerName} redirect SSO login failed:`, error.message);
+            if (typeof window !== 'undefined') {
+                window.sessionStorage.removeItem(SSO_PROVIDER_STORAGE_KEY);
+            }
+            setAuthError(getSSOErrorMessage(error, providerName));
+            initializationComplete.current = true;
+            setView('login');
         });
 
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -396,108 +561,38 @@ export function AuthProvider({ children }) {
     const handleSSOLogin = async (providerName) => {
         setAuthError(null);
         const pendingSelection = readPendingSubscription();
- 
-        let provider;
-        if (providerName === 'google') {
-            provider = new GoogleAuthProvider();
-            provider.addScope('email');
-            provider.addScope('profile');
-        } else if (providerName === 'microsoft') {
-            provider = new OAuthProvider('microsoft.com');
-            provider.addScope('User.Read');
-        } else {
+
+        const provider = buildSSOProvider(providerName);
+        if (!provider) {
             setAuthError('Unsupported sign-in provider.');
             return;
         }
- 
+
         try {
             const result = await signInWithPopup(auth, provider);
- 
-            // Fetch or bootstrap profile
-            let profile = await getProfile(result.user.uid);
-            
-            if (!profile) {
-                console.log(`Creating new Firestore profile for SSO user ${result.user.uid}`);
-                const company_name = deriveCompanyName({ email: result.user.email });
-                const company_key = buildCompanyKey({ email: result.user.email });
-                const chosenPlan = getNormalizedPlanName(
-                    pendingSelection?.plan || selectedPlan || PLAN_NAMES.STUDENT
-                );
-                const isPendingPaidPlan = isPaidPlan(chosenPlan);
-                // A paid plan is never granted from client-trusted local state — Firestore
-                // rules reject a client write that sets `plan`/`subscription` directly. New
-                // profiles always start on Student; a real paid plan is only applied
-                // server-side (via firebase-admin) once we re-verify the Paystack
-                // transaction below, after the account (and profile) exist.
-                const subscriptionUpdate = isPendingPaidPlan
-                    ? {
-                        plan: PLAN_NAMES.STUDENT,
-                        pendingSubscriptionSelection: buildPendingSubscriptionSelection({
-                            planName: chosenPlan,
-                            billingCycle: pendingSelection?.billing || 'monthly',
-                        }),
-                    }
-                    : {};
-
-                profile = {
-                    full_name: result.user.displayName || 'Practitioner',
-                    company_name,
-                    company_key,
-                    email: result.user.email,
-                    is_onboarded: false,
-                    is_verified: true, // OAuth providers have verified emails
-                    ...subscriptionUpdate,
-                };
-
-                await updateProfile(profile);
-                if (isPendingPaidPlan) {
-                    await reconcilePendingPaystackCheckout();
-                } else {
-                    clearPendingSubscription();
-                    setSelectedPlan(null);
-                }
-            }
- 
-            const fullUser = normalizeUserProfile({
-                id: result.user.uid,
-                email: result.user.email,
-                displayName: result.user.displayName,
-                ...profile
-            });
- 
-            setUser(fullUser);
-            localStorage.setItem('quantra_profile', JSON.stringify(fullUser));
-            initializationComplete.current = true;
- 
-            if (profile && profile.is_verified === false) {
-                setView('verification');
-                const token = await result.user.getIdToken();
-                fetch('/api/send-verification-code', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    }
-                }).catch(() => {});
-            } else if (profile && profile.is_onboarded) {
-                setView(pendingSelection?.plan && isPaidPlan(pendingSelection.plan) ? 'pricing' : 'app');
-            } else {
-                setView('onboarding');
-            }
- 
-            if (analytics) {
-                logAnalyticsEvent(analytics, 'login', { method: providerName });
-            }
+            await completeSSOLogin(result, providerName, pendingSelection);
         } catch (error) {
             console.error(`❌ ${providerName} SSO login failed:`, error.message);
-            if (error.code === 'auth/popup-closed-by-user') return;
-            const messages = {
-                'auth/account-exists-with-different-credential': 'An account already exists with this email using a different sign-in method.',
-                'auth/cancelled-popup-request': 'Sign-in was cancelled.',
-                'auth/popup-blocked': 'Pop-up was blocked by your browser. Please allow pop-ups and try again.',
-            };
-            const errorDetails = error.code ? `[${error.code}]` : `(${error.message})`;
-            setAuthError(messages[error.code] || `Unable to sign in with ${providerName === 'google' ? 'Google' : 'Microsoft'} ${errorDetails}. Please try again.`);
+
+            if (shouldRedirectAfterPopupFailure(error)) {
+                try {
+                    if (typeof window !== 'undefined') {
+                        window.sessionStorage.setItem(SSO_PROVIDER_STORAGE_KEY, providerName);
+                    }
+                    setAuthError(`${getSSOProviderLabel(providerName)} pop-up could not finish. Opening full-page sign-in...`);
+                    await signInWithRedirect(auth, provider);
+                    return;
+                } catch (redirectError) {
+                    console.error(`❌ ${providerName} redirect fallback failed:`, redirectError.message);
+                    if (typeof window !== 'undefined') {
+                        window.sessionStorage.removeItem(SSO_PROVIDER_STORAGE_KEY);
+                    }
+                    setAuthError(getSSOErrorMessage(redirectError, providerName));
+                    return;
+                }
+            }
+
+            setAuthError(getSSOErrorMessage(error, providerName));
         }
     };
 
