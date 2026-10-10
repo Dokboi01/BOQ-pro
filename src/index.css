@@ -1664,3 +1664,274 @@ button:focus-visible {
 :root[data-theme='dark'] .project-grid-card p {
   color: var(--text-secondary) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   ULTRAWIDE & LARGE DISPLAY OPTIMIZATIONS (1440px, 1800px, 2400px+)
+   ═══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 1440px) {
+  /* Expand global app & dashboard content area padding gracefully */
+  .content-area {
+    padding: 2rem 3.5rem 4rem;
+  }
+
+  .sticky-summary-bar {
+    margin: 0 -3.5rem 2.5rem;
+    padding: 1rem 3.5rem;
+    gap: 3.5rem;
+  }
+
+  /* Make dashboard project grid and stats expand smoothly */
+  .stats-grid,
+  .portfolio-grid,
+  .metric-grid,
+  .intel-grid {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+    gap: 1.25rem !important;
+  }
+
+  .project-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
+    gap: 1.25rem !important;
+  }
+
+  /* Landing layout expansions */
+  .landing-nav-inner,
+  .landing-main-v2,
+  .footer-inner,
+  .auth-nav,
+  .auth-main {
+    width: min(1560px, calc(100% - 4rem)) !important;
+  }
+}
+
+@media (min-width: 1800px) {
+  /* 2K / 1440p / Ultrawide Displays */
+  .content-area {
+    padding: 2.5rem 4.5rem 5rem;
+  }
+
+  .sticky-summary-bar {
+    margin: 0 -4.5rem 2.5rem;
+    padding: 1.2rem 4.5rem;
+    gap: 4rem;
+  }
+
+  .sidebar {
+    width: 290px !important;
+  }
+
+  .sidebar.collapsed {
+    width: 80px !important;
+  }
+
+  .stats-grid,
+  .portfolio-grid,
+  .metric-grid,
+  .intel-grid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+    gap: 1.5rem !important;
+  }
+
+  .project-grid {
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)) !important;
+    gap: 1.5rem !important;
+  }
+
+  /* Expand landing and auth containers wider */
+  .landing-nav-inner,
+  .landing-main-v2,
+  .footer-inner,
+  .auth-nav,
+  .auth-main {
+    width: min(1780px, calc(100% - 6rem)) !important;
+  }
+
+  .footer-inner {
+    grid-template-columns: 420px 1fr !important;
+    gap: 6rem !important;
+  }
+
+  /* Give table spreadsheet cells breathing room on ultrawide */
+  .ws-spreadsheet-table th,
+  .ws-spreadsheet-table td {
+    padding-top: 0.85rem !important;
+    padding-bottom: 0.85rem !important;
+  }
+}
+
+@media (min-width: 2200px) {
+  /* 4K Displays */
+  .content-area {
+    padding: 3rem 6rem 6rem;
+  }
+
+  .sticky-summary-bar {
+    margin: 0 -6rem 3rem;
+    padding: 1.4rem 6rem;
+    gap: 5rem;
+  }
+
+  .sidebar {
+    width: 320px !important;
+  }
+
+  .sidebar.collapsed {
+    width: 88px !important;
+  }
+
+  .landing-nav-inner,
+  .landing-main-v2,
+  .footer-inner,
+  .auth-nav,
+  .auth-main {
+    width: min(2180px, calc(100% - 8rem)) !important;
+  }
+
+  .stats-grid,
+  .portfolio-grid,
+  .metric-grid,
+  .intel-grid {
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)) !important;
+    gap: 1.75rem !important;
+  }
+
+  .project-grid {
+    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)) !important;
+    gap: 1.75rem !important;
+  }
+}
+
+
+/* ── Landing Page Large Displays ── */
+@media (min-width: 1440px) {
+  .hp-hero-content {
+    padding: 5rem 2rem !important;
+    grid-template-columns: minmax(0, 1.2fr) minmax(420px, 0.95fr) !important;
+    gap: 4rem !important;
+  }
+  .hp-hero-copy h1 {
+    font-size: clamp(3.2rem, 4.5vw, 4.8rem) !important;
+    max-width: 14ch !important;
+  }
+  .hp-subtitle {
+    max-width: 680px !important;
+    font-size: 1.15rem !important;
+  }
+  .hp-capabilities,
+  .hp-os-grid {
+    gap: 1.75rem !important;
+  }
+  .hp-gallery-grid {
+    height: 560px !important;
+    gap: 1.5rem !important;
+  }
+}
+
+@media (min-width: 1800px) {
+  .hp-hero-content {
+    padding: 6.5rem 3rem !important;
+    grid-template-columns: minmax(0, 1.3fr) minmax(480px, 1fr) !important;
+    gap: 5rem !important;
+  }
+  .hp-hero-copy h1 {
+    font-size: 5.2rem !important;
+    max-width: 15ch !important;
+  }
+  .hp-subtitle {
+    max-width: 760px !important;
+    font-size: 1.25rem !important;
+  }
+  .hp-cap-card,
+  .hp-os-card {
+    padding: 2.2rem !important;
+  }
+  .hp-cap-card h3,
+  .hp-os-card h3 {
+    font-size: 1.25rem !important;
+  }
+  .hp-cap-card p,
+  .hp-os-card p {
+    font-size: 0.98rem !important;
+  }
+  .hp-gallery-grid {
+    height: 640px !important;
+    gap: 2rem !important;
+  }
+  .hp-cta-content {
+    max-width: 800px !important;
+    padding: 4.5rem !important;
+  }
+  .hp-cta-content h2 {
+    font-size: 3.2rem !important;
+  }
+  .hp-cta-content p {
+    font-size: 1.2rem !important;
+  }
+}
+
+@media (min-width: 2200px) {
+  .hp-hero-content {
+    padding: 8rem 4rem !important;
+    gap: 6rem !important;
+  }
+  .hp-hero-copy h1 {
+    font-size: 6rem !important;
+  }
+  .hp-gallery-grid {
+    height: 740px !important;
+  }
+}
+
+/* ── Auth Screen Large Displays ── */
+@media (min-width: 1440px) {
+  .auth-main {
+    grid-template-columns: minmax(0, 1.15fr) minmax(460px, 0.85fr) !important;
+    gap: 3.5rem !important;
+    padding: 3rem 0 5rem !important;
+  }
+  .auth-story h1 {
+    font-size: clamp(3.2rem, 5vw, 5.2rem) !important;
+  }
+  .auth-subtitle {
+    max-width: 800px !important;
+    font-size: 1.15rem !important;
+  }
+  .auth-panel {
+    padding: 2.5rem !important;
+  }
+}
+
+@media (min-width: 1800px) {
+  .auth-main {
+    grid-template-columns: minmax(0, 1.2fr) minmax(520px, 0.8fr) !important;
+    gap: 5rem !important;
+    padding: 4rem 0 6rem !important;
+  }
+  .auth-story h1 {
+    font-size: 5.6rem !important;
+  }
+  .auth-subtitle {
+    max-width: 900px !important;
+    font-size: 1.25rem !important;
+  }
+  .auth-panel {
+    padding: 3rem !important;
+  }
+}
+
+/* ── BOQ Workspace Large Displays ── */
+@media (min-width: 1600px) {
+  .ws-workspace-shell {
+    grid-template-columns: 320px minmax(0, 1fr) 420px !important;
+  }
+  .ws-summary-metrics-row {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (min-width: 2000px) {
+  .ws-workspace-shell {
+    grid-template-columns: 360px minmax(0, 1fr) 480px !important;
+  }
+}
