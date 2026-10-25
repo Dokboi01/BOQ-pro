@@ -865,6 +865,28 @@ export const getBenchmarkCalibrationFactor = (item = {}) => {
 };
 
 export const getEffectiveBenchmarkRate = (item, region = 'Lagos') => {
+  const benchmarkSourceType = String(item?.benchmarkMetadata?.sourceType || '').toLowerCase();
+  const benchmarkMatchSource = String(item?.benchmarkMatchSource || item?.benchmarkEvidence?.matchSource || '').toLowerCase();
+  const hasLegacyFormulaBenchmark = benchmarkSourceType === 'formula-market-derived'
+    || benchmarkMatchSource === 'formula-build'
+    || item?.benchmarkEvidence?.mode === 'formula-derived';
+
+  // Older saved BOQ rows contain a benchmark that was populated from the
+  // formula editor. Rebuild those rows using the standard market breakdown
+  // path so their benchmark remains independent of the selected rate formula.
+  if (hasLegacyFormulaBenchmark) {
+    const marketRate = buildAutoRateResult({
+      ...item,
+      benchmark: 0,
+      benchmarkRate: 0,
+      benchmarkRegionalRates: {},
+      benchmarkMetadata: { ...(item?.benchmarkMetadata || {}), sourceType: 'market-library-derived' },
+      benchmarkEvidence: null,
+      benchmarkMatchSource: null,
+    }, { structureType: item?.structureType, region }).rate;
+    return clampNumber(marketRate);
+  }
+
   const exactRegionalRate = getExactMaterialRegionalBenchmark({
     benchmark: item?.benchmark,
     regionRates: item?.benchmarkRegionalRates || {}
@@ -883,15 +905,6 @@ export const getEffectiveBenchmarkRate = (item, region = 'Lagos') => {
   }
   const unit = normalizeUnit(item?.unit);
   const scaleFactor = getUnitScaleFactor(item?.description || item?.name, workType, fromUnit, unit);
-
-  if (isFormulaDrivenItem(item)) {
-    const formulaRate = evaluateBoqFormulaRate(item);
-    if (formulaRate != null && formulaRate > 0) {
-      const regionalFactor = getBenchmarkRegionalFactor(item, region);
-      const calibrationFactor = getBenchmarkCalibrationFactor(item);
-      return formulaRate * regionalFactor * calibrationFactor * scaleFactor;
-    }
-  }
 
   if (exactRegionalRate > 0) return exactRegionalRate * scaleFactor;
 

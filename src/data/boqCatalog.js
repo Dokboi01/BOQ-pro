@@ -263,33 +263,7 @@ const calculateCatalogBreakdownBenchmark = (breakdown = {}) => {
   return primeCost + overheadValue + profitValue;
 };
 
-const getCatalogFormulaBenchmarkRate = (item = {}) => {
-  const editableInputs = Array.isArray(item.editableInputs) && item.editableInputs.length > 0
-    ? item.editableInputs
-    : (Array.isArray(item.exampleInputs) ? item.exampleInputs : []);
-
-  if (!editableInputs.length) return 0;
-  if (!item.defaultFormulaType && !item.formulaExpression) return 0;
-
-  return clampCatalogNumber(evaluateBoqFormulaRate({
-    ...item,
-    editableInputs,
-  }));
-};
-
 const deriveCatalogBenchmark = (item = {}, structureType = '') => {
-  const formulaRate = getCatalogFormulaBenchmarkRate(item);
-  if (formulaRate > 0) {
-    return {
-      rate: formulaRate,
-      sourceType: 'formula-market-derived',
-      sourceNote: 'Benchmark resolved from the catalog formula build-up using current Quantra benchmark inputs.',
-      confidenceLevel: 'medium',
-      calibrationFactor: MARKET_LIBRARY_BENCHMARK_FACTOR,
-      matchSource: 'formula-build',
-    };
-  }
-
   const breakdown = getBreakdownForItem(item.description || item.name || '', structureType);
   const breakdownRate = clampCatalogNumber(calculateCatalogBreakdownBenchmark(breakdown));
   if (breakdownRate > 0) {
@@ -316,20 +290,18 @@ const ensureCatalogItemBenchmark = (item = {}, structureType = '') => {
     ?? item.benchmark
   );
 
-  if (explicitBenchmarkRate > 0) {
-    const hasFormulaBenchmark = getCatalogFormulaBenchmarkRate(item) > 0;
-    const currentMetadata = item.benchmarkMetadata || {};
-    const currentSourceType = String(currentMetadata.sourceType || '').toLowerCase();
-    const useFormulaDerivedMetadata = hasFormulaBenchmark
-      && (!currentSourceType || currentSourceType === 'seed' || currentSourceType === 'seed-placeholder' || currentSourceType === 'catalog');
+  const currentMetadata = item.benchmarkMetadata || {};
+  const currentSourceType = String(currentMetadata.sourceType || '').toLowerCase();
+  const hasLegacyFormulaBenchmark = currentSourceType === 'formula-market-derived'
+    || String(item.benchmarkMatchSource || item.benchmarkEvidence?.matchSource || '').toLowerCase() === 'formula-build'
+    || item.benchmarkEvidence?.mode === 'formula-derived';
+
+  if (explicitBenchmarkRate > 0 && !hasLegacyFormulaBenchmark) {
     const benchmarkRegionalRates = Object.keys(item.benchmarkRegionalRates || {}).length > 0
       ? item.benchmarkRegionalRates
       : buildCatalogRegionalBenchmarkRates(explicitBenchmarkRate);
-    const benchmarkSourceType = useFormulaDerivedMetadata
-      ? 'formula-market-derived'
-      : (currentMetadata.sourceType || 'catalog');
-    const benchmarkMatchSource = item.benchmarkMatchSource
-      || (useFormulaDerivedMetadata ? 'formula-build' : 'catalog');
+    const benchmarkSourceType = currentMetadata.sourceType || 'catalog';
+    const benchmarkMatchSource = item.benchmarkMatchSource || 'catalog';
 
     return {
       ...item,
@@ -350,22 +322,35 @@ const ensureCatalogItemBenchmark = (item = {}, structureType = '') => {
         currency: currentMetadata.currency || 'NGN',
         region: currentMetadata.region || 'Nigeria',
         sourceType: benchmarkSourceType,
-        sourceNote: useFormulaDerivedMetadata
-          ? 'Benchmark resolved from the catalog formula build-up using current Quantra benchmark inputs.'
-          : (currentMetadata.sourceNote || DEFAULT_CATALOG_BENCHMARK_NOTE),
+        sourceNote: currentMetadata.sourceNote || DEFAULT_CATALOG_BENCHMARK_NOTE,
         dateCaptured: currentMetadata.dateCaptured || MARKET_LIBRARY_BENCHMARK_DATE,
-        confidenceLevel: useFormulaDerivedMetadata
-          ? 'medium'
-          : (currentMetadata.confidenceLevel || 'medium'),
-        calibrationFactor: useFormulaDerivedMetadata
-          ? MARKET_LIBRARY_BENCHMARK_FACTOR
-          : (currentMetadata.calibrationFactor || null),
+        confidenceLevel: currentMetadata.confidenceLevel || 'medium',
+        calibrationFactor: currentMetadata.calibrationFactor || null,
       }),
     };
   }
 
   const derivedBenchmark = deriveCatalogBenchmark(item, structureType);
-  if (!derivedBenchmark?.rate) return item;
+  if (!derivedBenchmark?.rate) {
+    if (!hasLegacyFormulaBenchmark) return item;
+    return {
+      ...item,
+      benchmarkRate: 0,
+      benchmark: 0,
+      benchmarkRegionalRates: {},
+      benchmarkMatchSource: null,
+      benchmarkEvidence: null,
+      benchmarkMetadata: buildBenchmarkMetadata({
+        rate: 0,
+        currency: currentMetadata.currency || 'NGN',
+        region: currentMetadata.region || 'Nigeria',
+        sourceType: 'market-reference-unavailable',
+        sourceNote: 'No independent market breakdown is available for this benchmark.',
+        dateCaptured: currentMetadata.dateCaptured || MARKET_LIBRARY_BENCHMARK_DATE,
+        confidenceLevel: 'low',
+      }),
+    };
+  }
   const benchmarkRegionalRates = buildCatalogRegionalBenchmarkRates(derivedBenchmark.rate);
 
   return {
@@ -562,12 +547,9 @@ const formulaRateItem = ({
   rateSourceOptions = DEFAULT_RATE_SOURCE_OPTIONS,
   selectedRateSource = null,
 }) => {
-  const computedBenchmarkRate = evaluateBoqFormulaRate({
-    defaultFormulaType: 'expression',
-    formulaExpression,
-    editableInputs: inputs,
-  });
-  const resolvedBenchmarkRate = Number(benchmarkRate ?? computedBenchmarkRate) || 0;
+  // Formula inputs define the selectable calculated rate. When no separate
+  // benchmark is supplied, catalogSection derives one from the market library.
+  const resolvedBenchmarkRate = Number(benchmarkRate) || 0;
 
   return baseCatalogItem({
     id,
@@ -680,11 +662,9 @@ const roadFormulaItem = ({
     unit === 'Month' ? 'Monthly rate' : unit === 'Sum' ? 'Lump sum' : 'Unit rate',
     components
   );
-  const resolvedBenchmarkRate = Number(benchmarkRate ?? evaluateBoqFormulaRate({
-    defaultFormulaType: 'expression',
-    formulaExpression: resolvedFormulaExpression,
-    editableInputs: inputs,
-  })) || 0;
+  // Keep the formula calculation independent from the benchmark reference.
+  // The catalog section resolves an omitted benchmark from market breakdowns.
+  const resolvedBenchmarkRate = Number(benchmarkRate) || 0;
 
   return formulaRateItem({
     id: code,
