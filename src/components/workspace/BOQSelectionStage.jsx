@@ -14,6 +14,12 @@ import {
   getWorkedExamplePreview,
 } from '../../utils/boqFormulas';
 import { getBenchmarkCalibrationFactor } from '../../utils/pricing';
+import {
+  getBuildingStoreyConfig,
+  isItemStoreyRecommended,
+  getItemStoreyHint,
+  getStoreySectionBadge,
+} from '../../data/buildingStories';
 import { convertNgnToProjectCurrency, getProjectCurrencySymbol } from '../../utils/currency';
 
 const FILTER_OPTIONS = [
@@ -90,6 +96,25 @@ const BOQSelectionStage = ({
   hasNextSection = false,
   onSelectBill = null,
 }) => {
+  const buildingStories = project?.buildingStories
+    ? Number(project.buildingStories)
+    : (project?.subtype && project.subtype.match(/(\d+)-Storey/i)
+      ? Number(project.subtype.match(/(\d+)-Storey/i)[1])
+      : (structureType === 'Building' && project?.stories ? Number(project.stories) : null));
+
+  const storeyConfig = React.useMemo(() => (
+    buildingStories ? getBuildingStoreyConfig(buildingStories) : null
+  ), [buildingStories]);
+
+  const filterOptions = React.useMemo(() => [
+    { id: 'all', label: 'All Items' },
+    { id: 'selected', label: 'Selected' },
+    ...(buildingStories ? [{ id: 'storey', label: `${buildingStories}-Storey Focus` }] : []),
+    { id: 'recommended', label: 'Recommended' },
+    { id: 'formula', label: 'Formula Ready' },
+    { id: 'benchmark', label: 'Benchmark Ready' },
+  ], [buildingStories]);
+
   const [query, setQuery] = React.useState('');
   const [activeFilter, setActiveFilter] = React.useState('all');
   const [activeCategory, setActiveCategory] = React.useState('all');
@@ -128,6 +153,8 @@ const BOQSelectionStage = ({
         switch (activeFilter) {
           case 'selected':
             return isSelected;
+          case 'storey':
+            return isItemStoreyRecommended(item, buildingStories);
           case 'recommended':
             return item.isRecommended === true;
           case 'formula':
@@ -231,7 +258,7 @@ const BOQSelectionStage = ({
     <div className="boq-selection-shell obsidian-surface">
       <aside className="boq-selection-sidebar glass-panel">
         <div className="boq-selection-sidebar glass-panel-head">
-          <span className="boq-selection-eyebrow emerald-text-gradient">BOQ Bills</span>
+          <span className="boq-selection-eyebrow emerald-text-gradient">{buildingStories ? `${buildingStories}-Storey ${storeyConfig?.badge || "Building"}` : "BOQ Bills"}</span>
           <strong>Bill Navigator</strong>
           <small>{sections.length} active bill{sections.length === 1 ? '' : 's'} in this structure.</small>
         </div>
@@ -296,6 +323,11 @@ const BOQSelectionStage = ({
               <span>{projectName || 'Current Project'}</span>
               <span>{marketRegion || 'Market region'}</span>
               <span>{catalogItems.length} library items</span>
+              {buildingStories && (
+                <span className="boq-selection-tag-stories">
+                  🏢 {buildingStories} Storey{buildingStories === 1 ? '' : 's'} ({storeyConfig?.badge || 'Building'})
+                </span>
+              )}
             </div>
           </div>
 
@@ -330,7 +362,7 @@ const BOQSelectionStage = ({
                 <ListFilter size={14} /> Quick Filters
               </span>
               <div className="boq-selection-chip glass-card-grid">
-                {FILTER_OPTIONS.map((filter) => (
+                {filterOptions.map((filter) => (
                   <button
                     key={filter.id}
                     type="button"
@@ -442,7 +474,7 @@ const BOQSelectionStage = ({
             <div className="boq-selection-results-badges">
               <span>{section?.title || 'Current bill'}</span>
               <span>{activeCategory === 'all' ? 'All categories' : activeCategory}</span>
-              <span>{activeFilter === 'all' ? 'All items' : FILTER_OPTIONS.find((entry) => entry.id === activeFilter)?.label}</span>
+              <span>{activeFilter === 'all' ? 'All items' : filterOptions.find((entry) => entry.id === activeFilter)?.label}</span>
             </div>
           </div>
           <div className="boq-selection-results-toolbar">
@@ -528,6 +560,11 @@ const BOQSelectionStage = ({
                       <span className={`boq-selection-flag ${hasBenchmark ? 'ready' : 'pending'}`}>
                         {hasBenchmark ? 'Benchmark ready' : 'Benchmark pending'}
                       </span>
+                      {buildingStories && isItemStoreyRecommended(item, buildingStories) && (
+                        <span className="boq-selection-flag boq-selection-flag-storey">
+                          🏢 {buildingStories}-Storey Key
+                        </span>
+                      )}
                       {item.isRecommended && (
                         <span className="boq-selection-flag boq-selection-flag-recommended">Recommended</span>
                       )}
@@ -543,6 +580,11 @@ const BOQSelectionStage = ({
 
                     {item.pickerHint && (
                       <div className="boq-selection-hint">{item.pickerHint}</div>
+                    )}
+                    {buildingStories && getItemStoreyHint(item, buildingStories) && (
+                      <div className="boq-selection-hint boq-selection-hint-storey">
+                        ℹ️ {getItemStoreyHint(item, buildingStories)}
+                      </div>
                     )}
 
                     {formulaBasisPreview && (
@@ -1019,6 +1061,27 @@ const BOQSelectionStage = ({
 
         .boq-selection-flag { display: inline-flex; align-items: center; border-radius: 8px; padding: 0.22rem 0.55rem; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 0.6rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.02em; transition: all 0.2s; }
         .boq-selection-flag.ready { border-color: #bfdbfe; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); color: #1d4ed8; }
+        .boq-selection-tag-stories {
+          background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
+          color: #1d4ed8 !important;
+          border-color: #bfdbfe !important;
+          font-weight: 800 !important;
+        }
+
+        .boq-selection-flag-storey {
+          background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%);
+          color: #0369a1;
+          border-color: #7dd3fc;
+          font-weight: 800;
+        }
+
+        .boq-selection-hint-storey {
+          background: #f0fdf4 !important;
+          color: #166534 !important;
+          border: 1px solid #bbf7d0 !important;
+          font-weight: 600;
+        }
+
         .boq-selection-flag-recommended { border-color: #fde68a !important; background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important; color: #b45309 !important; }
 
         .boq-selection-hint { border-radius: 10px; border: 1px solid #e2e8f0; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 0.6rem 0.75rem; font-size: 0.72rem; color: #64748b; line-height: 1.55; font-weight: 500; }

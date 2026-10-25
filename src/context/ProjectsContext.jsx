@@ -1049,6 +1049,7 @@ export function ProjectsProvider({ children }) {
             type: structureTypeLabel,
             structureType: structureTypeLabel,
             subtype: projectConfig.subtype,
+            buildingStories: projectConfig.buildingStories ? Number(projectConfig.buildingStories) : (structureTypeLabel === 'Building' ? 1 : null),
             projectMode: projectConfig.projectMode || 'default',
             access_mode: isCustomMode ? 'company' : 'private',
             company_name,

@@ -23,3 +23,4 @@ export * from './fixtures';
 export * from './externalWorks';
 export * from './commissioning';
 export * from './closeout';
+export * from './verticalTransportation';

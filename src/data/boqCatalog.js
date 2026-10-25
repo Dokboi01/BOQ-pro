@@ -2964,6 +2964,16 @@ const BUILDING_SECTIONS = [
       keywords: ['building', 'final cleaning', 'handover', 'snagging', 'documentation', 'closeout'],
     }
   ),
+  buildingBillSection(
+    'vertical_transportation',
+    'Vertical Transportation (Lifts & Elevators)',
+    'Passenger lifts, elevator shafts, machinery, emergency lowering systems, and vertical transit installations for multi-storey buildings.',
+    BuildingCatalog.BUILDING_VERTICAL_TRANSPORTATION_ITEMS,
+    {
+      trade: 'Vertical Transportation',
+      keywords: ['building', 'lift', 'elevator', 'passenger lift', 'hoist', 'escalator', 'shaft', 'vertical transport', 'multi-storey'],
+    }
+  ),
 ];
 
 const ROAD_SECTIONS = [

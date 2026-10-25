@@ -422,7 +422,11 @@ const BOQWorkspace = () => {
                   <div className="ws-compact-meta-line">
                     <span className="ws-compact-bill-pill">{activeProjectSection?.title || 'No active bill'}</span>
                     <span>{activeSheetLabel}</span>
-                    <span>{projectStructureType || 'General Works'}</span>
+                    <span>
+                      {project?.buildingStories
+                        ? `🏢 ${project.buildingStories}-Storey ${project?.subtype || 'Building'}`
+                        : (projectStructureType || 'General Works')}
+                    </span>
                     <span>{marketRegionDisplay}</span>
                     <span>
                       {activeSectionPendingItems > 0

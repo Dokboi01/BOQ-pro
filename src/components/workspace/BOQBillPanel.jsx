@@ -20,9 +20,15 @@ const BOQBillPanel = ({
   return (
     <aside className="wbp-panel">
       <div className="wbp-header">
-        <span className="wbp-eyebrow">BOQ Bills</span>
+        <span className="wbp-eyebrow">
+          {project?.buildingStories ? `🏢 ${project.buildingStories}-Storey Building` : 'BOQ Bills'}
+        </span>
         <strong>Bill Navigator</strong>
-        <small>{sections.length} active bill{sections.length === 1 ? '' : 's'} in this workbook.</small>
+        <small>
+          {project?.buildingStories
+            ? `${project.buildingStories}-storey ${project.subtype || 'structure'} • ${sections.length} bills`
+            : `${sections.length} active bill${sections.length === 1 ? '' : 's'} in this workbook.`}
+        </small>
         <div className="wbp-header-stats">
           <div className="wbp-header-stat">
             <span>Lines</span>
