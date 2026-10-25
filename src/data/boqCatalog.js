@@ -114,7 +114,7 @@ const buildRateInputs = ({
     numericInput('plant', 'Plant', plant, '₦/unit'),
     numericInput('transport', 'Transport', transport, '₦/unit'),
     numericInput('overhead', 'Overheads', overhead, '₦/unit'),
-  ].filter((input) => input.value > 0)
+  ]
 );
 
 const expressionText = 'Unit rate = Materials + Labour + Plant + Transport + Overheads';
@@ -588,7 +588,7 @@ const lumpSumInputs = ({
     numericInput('demobilization', 'Demobilization', demobilization, '₦'),
     numericInput('logistics', 'Logistics', logistics, '₦'),
     numericInput('permits', 'Permits / Fees', permits, '₦'),
-  ].filter((input) => input.value > 0)
+  ]
 );
 
 const monthInputs = ({
@@ -602,7 +602,7 @@ const monthInputs = ({
     numericInput('utilities', 'Utilities', utilities, '₦/month'),
     numericInput('staffing', 'Staffing', staffing, '₦/month'),
     numericInput('support', 'Support Costs', support, '₦/month'),
-  ].filter((input) => input.value > 0)
+  ]
 );
 
 const buildComponentInputs = (components = [], unit = 'NGN') => (

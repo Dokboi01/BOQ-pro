@@ -38,7 +38,7 @@ export const buildRateInputs = ({
     numericInput('plant', 'Plant', plant, '₦/unit'),
     numericInput('transport', 'Transport', transport, '₦/unit'),
     numericInput('overhead', 'Overheads', overhead, '₦/unit'),
-  ].filter((input) => input.value > 0)
+  ]
 );
 
 const expressionText = 'Unit rate = Materials + Labour + Plant + Transport + Overheads';
