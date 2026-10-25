@@ -18,7 +18,7 @@ import { seedMarketData } from '../../db/database';
 import { Loader2 } from 'lucide-react';
 import { getPlanByName } from '../../data/plans';
 import { getSubscriptionSnapshot } from '../../utils/subscription';
-import { getAiProviderStatus } from '../../utils/aiService';
+import { getAiProviderStatus, testAiProviderConnection } from '../../utils/aiService';
 
 const MONEY = new Intl.NumberFormat('en-NG', {
   style: 'currency',
@@ -42,6 +42,9 @@ const Settings = ({ user, onUpgrade }) => {
   const [aiProvider, setAiProvider] = useState('openai');
   const [isSeeding, setIsSeeding] = useState(false);
   const [isSavingPrefs, setIsSavingPrefs] = useState(false);
+  const [isTestingAi, setIsTestingAi] = useState(false);
+  const [aiTestMessage, setAiTestMessage] = useState('');
+  const [aiTestOk, setAiTestOk] = useState(false);
   const [aiProviderStatus, setAiProviderStatus] = useState({ openaiConfigured: false, geminiConfigured: false });
   const geminiConnected = aiProviderStatus.geminiConfigured;
   const openaiConnected = aiProviderStatus.openaiConfigured;
@@ -88,6 +91,21 @@ const Settings = ({ user, onUpgrade }) => {
     await saveSetting('preferred_ai_provider', aiProvider);
     setIsSavingPrefs(false);
     toast.success('AI preferences saved.');
+  };
+
+  const handleTestAiConnection = async () => {
+    setIsTestingAi(true);
+    setAiTestMessage('');
+    try {
+      const result = await testAiProviderConnection(aiProvider, openaiModel);
+      setAiTestOk(true);
+      setAiTestMessage(`${result.provider === 'gemini' ? 'Gemini' : 'OpenAI'} connection successful. Drawing analysis should be able to reach this provider.`);
+    } catch (error) {
+      setAiTestOk(false);
+      setAiTestMessage(error.message || 'Connection test failed.');
+    } finally {
+      setIsTestingAi(false);
+    }
   };
 
   const renderContent = () => {
@@ -341,7 +359,19 @@ const Settings = ({ user, onUpgrade }) => {
                   >
                     {isSavingPrefs ? 'Saving…' : 'Save AI Preferences'}
                   </button>
+                  <button
+                    className="btn-secondary-sm"
+                    onClick={handleTestAiConnection}
+                    disabled={isTestingAi}
+                  >
+                    {isTestingAi ? 'Testing…' : 'Test AI Connection'}
+                  </button>
                 </div>
+                {aiTestMessage && (
+                  <p role="status" style={{ marginTop: '0.75rem', color: aiTestOk ? '#15803d' : '#b91c1c', lineHeight: 1.5 }}>
+                    {aiTestMessage}
+                  </p>
+                )}
               </div>
 
               {/* ── Firebase ── */}

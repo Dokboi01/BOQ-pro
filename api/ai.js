@@ -3,6 +3,7 @@ import { requireFirebaseAuth } from './_lib/firebase-auth.js';
 import {
   analyzeEngineeringDrawing,
   analyzeStructuralFile,
+  testAiProvider,
   generateProjectSummary,
   generateRateInsight,
   generateRateBreakdown,
@@ -40,6 +41,9 @@ export default async function handler(req, res) {
           openaiConfigured: Boolean(process.env.OPENAI_API_KEY?.trim()),
           geminiConfigured: Boolean(process.env.GEMINI_API_KEY?.trim()),
         };
+        break;
+      case 'provider-test':
+        result = await testAiProvider({ preferredProvider, model });
         break;
       case 'rate-insight':
         result = await generateRateInsight({ item: body.item, context: body.context, preferredProvider, model, uid, ip });

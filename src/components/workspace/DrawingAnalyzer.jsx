@@ -195,8 +195,8 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
       console.error('Analysis failed:', err);
       if (err.code === 'INVALID_DRAWING') {
         setError(err.message);
-      } else if (err.message?.includes('API key')) {
-        setError('The AI service key is missing or invalid on the server. Please check OPENAI_API_KEY or GEMINI_API_KEY in your deployment settings.');
+      } else if (/api key|connection failed|401|unauthorized|insufficient_quota/i.test(err.message || '')) {
+        setError(`AI provider error: ${err.message}. In Vercel, check the selected provider's key and API billing, then redeploy.`);
       } else if (err.message?.includes('unparseable')) {
         setError('AI returned a malformed response. Please try again with a clearer image.');
       } else if (err.message?.includes('<!doctype') || err.message?.includes('<html')) {

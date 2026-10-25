@@ -66,6 +66,15 @@ export const getAiProviderStatus = async () => {
   return data.result || { openaiConfigured: false, geminiConfigured: false };
 };
 
+export const testAiProviderConnection = async (preferredProvider = 'openai', model = DEFAULT_AI_MODEL) => {
+  const data = await postAiRequest({
+    action: 'provider-test',
+    preferredProvider,
+    model,
+  });
+  return data.result;
+};
+
 function demoInsight(item = {}) {
   return {
     summary: 'Unable to reach AI engine. Please check your internet connection.',

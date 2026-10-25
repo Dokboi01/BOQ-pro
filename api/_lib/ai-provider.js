@@ -37,6 +37,13 @@ function sanitizeText(input, maxLength = MAX_TEXT_LENGTH) {
   return output.trim();
 }
 
+function getSafeProviderError(error) {
+  return String(error?.message || 'Provider request failed.')
+    .replace(/sk-[A-Za-z0-9_-]{12,}/g, '[redacted API key]')
+    .replace(/AIza[0-9A-Za-z_-]{20,}/g, '[redacted API key]')
+    .slice(0, 500);
+}
+
 function sanitizeBase64Image(base64Image) {
   if (typeof base64Image !== 'string') return '';
   // Previously silently truncated oversized images with .slice() -- cutting
@@ -177,9 +184,20 @@ async function runWithFallback({ preferredProvider, model, systemPrompt, userPro
     ? ['openai', 'gemini']
     : ['gemini', 'openai'];
 
-  let lastError = null;
+  const providerKeyIsConfigured = {
+    openai: Boolean(process.env.OPENAI_API_KEY?.trim()),
+    gemini: Boolean(process.env.GEMINI_API_KEY?.trim()),
+  };
+  const availableCandidates = candidates.filter((candidate) => providerKeyIsConfigured[candidate]);
+  if (availableCandidates.length === 0) {
+    const err = new Error('No AI provider key is configured on the server. Add OPENAI_API_KEY or GEMINI_API_KEY to the deployment environment, then redeploy.');
+    err.status = 503;
+    throw err;
+  }
 
-  for (const candidate of candidates) {
+  const failures = [];
+
+  for (const candidate of availableCandidates) {
     try {
       if (candidate === 'openai') {
         return {
@@ -199,11 +217,13 @@ async function runWithFallback({ preferredProvider, model, systemPrompt, userPro
           : await runGeminiText({ systemPrompt, userPrompt }),
       };
     } catch (error) {
-      lastError = error;
+      failures.push(`${candidate === 'openai' ? 'OpenAI' : 'Gemini'}: ${getSafeProviderError(error)}`);
     }
   }
 
-  throw lastError || new Error('No AI provider is configured on the server.');
+  const err = new Error(failures.join(' | ') || 'AI providers could not complete the request.');
+  err.status = 502;
+  throw err;
 }
 
 function createTextPrompt(prefix, payload) {
@@ -510,6 +530,36 @@ export async function analyzeEngineeringDrawing({ base64Image, contextHint = '',
         ? 'AI returned a malformed response. Please try again with a clearer image.'
         : (error?.message || 'Unable to analyze the drawing. Please try again.')
     );
+    err.status = error?.status || 502;
+    throw err;
+  }
+}
+
+export async function testAiProvider({ preferredProvider = 'openai', model } = {}) {
+  const provider = normalizeProvider(preferredProvider);
+  const configured = provider === 'gemini' ? process.env.GEMINI_API_KEY?.trim() : process.env.OPENAI_API_KEY?.trim();
+  if (!configured) {
+    const err = new Error(`${provider === 'gemini' ? 'GEMINI_API_KEY' : 'OPENAI_API_KEY'} is not configured for this deployment environment.`);
+    err.status = 503;
+    throw err;
+  }
+
+  try {
+    if (provider === 'gemini') {
+      await runGeminiText({
+        systemPrompt: 'You are a connection test. Reply only with the word OK.',
+        userPrompt: 'Reply OK.',
+      });
+    } else {
+      await runOpenAIText({
+        model,
+        systemPrompt: 'You are a connection test. Reply only with the word OK.',
+        userPrompt: 'Reply OK.',
+      });
+    }
+    return { provider, ok: true };
+  } catch (error) {
+    const err = new Error(`${provider === 'gemini' ? 'Gemini' : 'OpenAI'} connection failed: ${getSafeProviderError(error)}`);
     err.status = error?.status || 502;
     throw err;
   }
