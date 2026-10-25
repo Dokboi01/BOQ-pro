@@ -14,6 +14,9 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { processEngineeringDrawing } from '../../utils/aiService';
+import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
+
+GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
 
 const DrawingAnalyzer = ({ onComplete, onClose }) => {
   const [step, setStep] = useState('upload'); // upload, processing, results, error
@@ -22,6 +25,7 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
   const [identifiedElements, setIdentifiedElements] = useState([]);
   const [error, setError] = useState(null);
   const [statusMessage, setStatusMessage] = useState('Extracting drawing layers...');
+  const [analysisNotice, setAnalysisNotice] = useState('');
   const [contextHint, setContextHint] = useState('');
   const fileInputRef = useRef(null);
   const analysisRunRef = useRef(0);
@@ -62,7 +66,7 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
         const result = typeof reader.result === 'string' ? reader.result : '';
         const [, base64Payload = ''] = result.split(',');
         if (!base64Payload) {
-          reject(new Error('Could not read the selected drawing image.'));
+          reject(new Error('Could not read the selected drawing page.'));
           return;
         }
         resolve(base64Payload);
@@ -82,24 +86,21 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
     setFile(null);
     setProgress(0);
     setIdentifiedElements([]);
+    setAnalysisNotice('');
     setStatusMessage('Extracting drawing layers...');
     setStep('upload');
     resetUploadInput();
   };
 
-  // OpenAI/Gemini vision endpoints take a raster image, not a PDF -- there is
-  // no PDF-to-image rendering step anywhere in this pipeline, so a "PDF or
-  // DWG" upload (as the copy used to claim) would silently send raw
-  // PDF/CAD bytes mislabeled as a PNG, producing garbled or failed reads.
-  // Restricting to what the pipeline actually supports.
-  const SUPPORTED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+  const SUPPORTED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'application/pdf'];
   // Vercel's serverless function request body limit is ~4.5MB for the whole
   // JSON payload (base64 inflates raw bytes by ~4/3, plus the JSON wrapper) --
   // the UI previously claimed "Max file size: 50MB", which would either be
   // rejected outright by the platform (413) or, worse, silently truncated
   // into a corrupted image by the server's own base64 length cap. 3MB raw
   // stays safely under that ceiling.
-  const MAX_FILE_SIZE_BYTES = 3 * 1024 * 1024;
+  const MAX_IMAGE_SIZE_BYTES = 3 * 1024 * 1024;
+  const MAX_PDF_SIZE_BYTES = 20 * 1024 * 1024;
 
   const handleFileUpload = async (e) => {
     const uploadedFile = e.target.files[0];
@@ -107,14 +108,16 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
     const runId = Date.now();
     analysisRunRef.current = runId;
 
-    if (!SUPPORTED_MIME_TYPES.includes(uploadedFile.type)) {
-      setError('Unsupported file type. Please upload a PNG, JPG, or WEBP image of the drawing (PDF/DWG are not supported yet).');
+    const fileType = uploadedFile.type || (uploadedFile.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : '');
+    if (!SUPPORTED_MIME_TYPES.includes(fileType)) {
+      setError('Unsupported file type. Upload a PDF, PNG, JPG, or WEBP drawing.');
       resetUploadInput();
       return;
     }
 
-    if (uploadedFile.size > MAX_FILE_SIZE_BYTES) {
-      setError(`File is too large (${(uploadedFile.size / (1024 * 1024)).toFixed(1)}MB). Please upload an image under 3MB -- try compressing it or exporting at a lower resolution.`);
+    const maxSize = fileType === 'application/pdf' ? MAX_PDF_SIZE_BYTES : MAX_IMAGE_SIZE_BYTES;
+    if (uploadedFile.size > maxSize) {
+      setError(`File is too large (${(uploadedFile.size / (1024 * 1024)).toFixed(1)}MB). Maximum size is ${fileType === 'application/pdf' ? '20MB for PDFs' : '3MB for images'}.`);
       resetUploadInput();
       return;
     }
@@ -134,12 +137,44 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
     }, 500);
 
     try {
-      // 1. Convert to Base64
-      const b64 = await fileToBase64(uploadedFile);
-      setProgress(40);
-
-      // 2. Real AI Analysis
-      const results = await processEngineeringDrawing(b64, contextHint, uploadedFile.type);
+      let results = [];
+      if (fileType === 'application/pdf') {
+        const pdf = await getDocument({ data: new Uint8Array(await uploadedFile.arrayBuffer()) }).promise;
+        const pagesToRead = Math.min(pdf.numPages, 8);
+        for (let pageNumber = 1; pageNumber <= pagesToRead; pageNumber += 1) {
+          if (!mountedRef.current || analysisRunRef.current !== runId) return;
+          setStatusMessage(`Reading PDF page ${pageNumber} of ${pagesToRead}...`);
+          const page = await pdf.getPage(pageNumber);
+          const textContent = await page.getTextContent();
+          const extractedText = textContent.items.map((item) => item.str).filter(Boolean).join(' ').slice(0, 5000);
+          const initialViewport = page.getViewport({ scale: 1 });
+          const scale = Math.max(0.5, Math.min(2, 2200 / Math.max(initialViewport.width, initialViewport.height)));
+          const viewport = page.getViewport({ scale });
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.ceil(viewport.width);
+          canvas.height = Math.ceil(viewport.height);
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+          const pageBlob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.88));
+          if (!pageBlob) throw new Error(`Could not render PDF page ${pageNumber}.`);
+          if (pageBlob.size > MAX_IMAGE_SIZE_BYTES) throw new Error(`PDF page ${pageNumber} renders too large. Export the PDF at a lower resolution and try again.`);
+          const pageFile = new File([pageBlob], `page-${pageNumber}.jpg`, { type: 'image/jpeg' });
+          const pageBase64 = await fileToBase64(pageFile);
+          const pageHint = [contextHint, `Source PDF page ${pageNumber} of ${pdf.numPages}.`, extractedText ? `Text extracted from this page (verify against drawing): ${extractedText}` : 'No selectable text found; read the rendered page.'].filter(Boolean).join('\n');
+          const pageElements = await processEngineeringDrawing(pageBase64, pageHint, 'image/jpeg');
+          results.push(...pageElements.map((element) => ({ ...element, drawingReference: element.drawingReference || `PDF page ${pageNumber}` })));
+          setProgress(25 + (pageNumber / pagesToRead) * 60);
+          canvas.width = 0;
+          canvas.height = 0;
+          page.cleanup();
+        }
+        if (pdf.numPages > 8) {
+          setAnalysisNotice(`This draft covers pages 1–8 of ${pdf.numPages}. Upload the remaining pages separately for a complete takeoff.`);
+        }
+      } else {
+        const b64 = await fileToBase64(uploadedFile);
+        setProgress(40);
+        results = await processEngineeringDrawing(b64, contextHint, fileType);
+      }
       if (!mountedRef.current || analysisRunRef.current !== runId) return;
 
       if (!Array.isArray(results) || results.length === 0) {
@@ -187,7 +222,7 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
           <FileSearch className="search-icon" size={24} />
         </div>
         <h3>AI Drafting Assistant</h3>
-        <p>Upload a PNG, JPG, or WEBP image of your architectural or structural drawing to automatically extract project components.</p>
+        <p>Upload structural plans, sections, schedules, or details as a PDF or image. AI will draft measurable quantities and flag items that need verification.</p>
 
         {error && (
           <div className="error-banner">
@@ -202,7 +237,7 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
             type="file"
             id="drawing-upload"
             hidden
-            accept="image/png,image/jpeg,image/webp"
+            accept="application/pdf,.pdf,image/png,image/jpeg,image/webp"
             onChange={handleFileUpload}
           />
           
@@ -218,9 +253,9 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
           </div>
 
         <label htmlFor="drawing-upload" className="btn-primary">
-          Select Engineering Drawing
+          Select Drawing PDF or Image
         </label>
-          <span className="hint">PNG, JPG, or WEBP · Max file size: 3MB</span>
+          <span className="hint">PDF (up to 8 pages per review, 20MB) · PNG/JPG/WEBP (3MB)</span>
         </div>
 
         <div className="analysis-features">
@@ -292,7 +327,8 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
           <span>{file?.name}</span>
         </div>
         <h3>Analysis Complete</h3>
-        <p>We've identified {identifiedElements.length} major structural sections.</p>
+        <p>We've drafted {identifiedElements.length} BOQ lines. Review quantities, evidence, and assumptions before using them.</p>
+        {analysisNotice && <p className="analysis-notice">{analysisNotice}</p>}
       </header>
 
       <div className="results-list">
@@ -323,8 +359,13 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
               )}
 
               <div className="quantity-row">
-                <span>Quantity Detected: <strong>{el.quantity}</strong></span>
+                <span>Draft quantity: <strong>{el.quantity} {el.unit || ''}</strong></span>
+                {el.confidence && <span>Confidence: <strong>{el.confidence}</strong></span>}
+                {el.drawingReference && <span>Reference: <strong>{el.drawingReference}</strong></span>}
               </div>
+              {el.calculation && <p className="element-description"><strong>Takeoff basis:</strong> {el.calculation}</p>}
+              {el.evidence && <p className="element-description"><strong>Drawing evidence:</strong> {el.evidence}</p>}
+              {el.assumptions && <p className="element-description"><strong>Assumptions / checks:</strong> {el.assumptions}</p>}
             </div>
           </div>
         ))}
@@ -604,6 +645,7 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
 
         .results-header { text-align: center; margin-bottom: 2rem; }
         .results-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2.5rem; max-height: 300px; overflow-y: auto; padding-right: 0.5rem; }
+        .analysis-notice { color: #92400e; background: #fffbeb; border: 1px solid #fde68a; padding: 0.65rem 0.8rem; border-radius: 9px; font-size: 0.8rem; }
 
         .identified-card {
           display: flex;
@@ -688,6 +730,9 @@ const DrawingAnalyzer = ({ onComplete, onClose }) => {
         .quantity-row {
           font-size: 0.75rem;
           color: var(--primary-500);
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.6rem;
         }
 
         .quantity-row strong {

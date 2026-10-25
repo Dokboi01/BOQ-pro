@@ -18,6 +18,7 @@ import { seedMarketData } from '../../db/database';
 import { Loader2 } from 'lucide-react';
 import { getPlanByName } from '../../data/plans';
 import { getSubscriptionSnapshot } from '../../utils/subscription';
+import { getAiProviderStatus } from '../../utils/aiService';
 
 const MONEY = new Intl.NumberFormat('en-NG', {
   style: 'currency',
@@ -41,8 +42,9 @@ const Settings = ({ user, onUpgrade }) => {
   const [aiProvider, setAiProvider] = useState('openai');
   const [isSeeding, setIsSeeding] = useState(false);
   const [isSavingPrefs, setIsSavingPrefs] = useState(false);
-  const geminiConnected = false;
-  const openaiConnected = false;
+  const [aiProviderStatus, setAiProviderStatus] = useState({ openaiConfigured: false, geminiConfigured: false });
+  const geminiConnected = aiProviderStatus.geminiConfigured;
+  const openaiConnected = aiProviderStatus.openaiConfigured;
   const subscriptionView = getSubscriptionSnapshot(user);
   const currentPlan = getPlanByName(subscriptionView.planName);
   const currentBillingLabel = subscriptionView.billingCycle === 'annual'
@@ -75,6 +77,9 @@ const Settings = ({ user, onUpgrade }) => {
       else setAiProvider('openai');
     };
     loadSettings();
+    getAiProviderStatus().then(setAiProviderStatus).catch(() => {
+      setAiProviderStatus({ openaiConfigured: false, geminiConfigured: false });
+    });
   }, []);
 
   const handleSavePreferences = async () => {
@@ -261,7 +266,7 @@ const Settings = ({ user, onUpgrade }) => {
                       background: geminiConnected ? '#16a34a' : '#94a3b8',
                       color: 'white'
                     }}>
-                      {geminiConnected ? '✓ Active' : 'Not Configured'}
+                      {geminiConnected ? '✓ Configured' : 'Not Configured'}
                     </span>
                   </div>
                 </div>
@@ -291,7 +296,7 @@ const Settings = ({ user, onUpgrade }) => {
                       background: openaiConnected ? '#0284c7' : '#94a3b8',
                       color: 'white'
                     }}>
-                      {openaiConnected ? '✓ Active' : 'Not Configured'}
+                      {openaiConnected ? '✓ Configured' : 'Not Configured'}
                     </span>
                   </div>
                 </div>

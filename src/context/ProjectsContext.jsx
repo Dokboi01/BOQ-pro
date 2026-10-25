@@ -1140,7 +1140,7 @@ export function ProjectsProvider({ children }) {
                 description: el.item || el.description || 'Identified element',
                 subcategory: (el.item && el.description) ? el.description : '',
                 materials: [],
-                unit: unitFromQuantity || 'unit',
+                unit: el.unit || unitFromQuantity || 'unit',
                 qty: Number.isFinite(qty) ? qty : 0,
                 rate: 0,
                 total: 0,
@@ -1148,6 +1148,11 @@ export function ProjectsProvider({ children }) {
                 takeoffMeta: {
                     source: 'ai-drawing-analysis',
                     structuralDetails: el.structuralDetails || null,
+                    calculation: el.calculation || '',
+                    evidence: el.evidence || '',
+                    confidence: el.confidence || 'unrated',
+                    drawingReference: el.drawingReference || '',
+                    assumptions: el.assumptions || '',
                 },
             });
         });

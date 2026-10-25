@@ -34,6 +34,7 @@
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.563.0",
     "openai": "^6.31.0",
+    "pdfjs-dist": "^6.4.299",
     "protobufjs": "^8.5.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -84,7 +85,15 @@
     "type": "git",
     "url": "git+https://github.com/Dokboi01/BOQ-pro.git"
   },
-  "keywords": ["BOQ", "bill-of-quantities", "quantity-surveyor", "construction", "Nigeria", "rate-analysis", "engineering"],
+  "keywords": [
+    "BOQ",
+    "bill-of-quantities",
+    "quantity-surveyor",
+    "construction",
+    "Nigeria",
+    "rate-analysis",
+    "engineering"
+  ],
   "author": "Quantra Engineering",
   "license": "ISC",
   "bugs": {

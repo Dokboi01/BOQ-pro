@@ -31,9 +31,9 @@ This application is set up for GitHub to Vercel deployment. OpenAI is the defaul
 
 ### Vercel Environment Variables
 
-- `OPENAI_API_KEY` - Required. Primary AI provider for BOQ analysis and drawing workflows.
+- `OPENAI_API_KEY` - Required for OpenAI. Server-side provider for BOQ analysis and drawing workflows.
 - `OPENAI_MODEL` - Optional. Defaults to `gpt-4o`.
-- `GEMINI_API_KEY` - Optional. Used only as a fallback if OpenAI is unavailable.
+- `GEMINI_API_KEY` - Optional alternative/fallback provider. Configure at least one AI provider key.
 - `RESEND_API_KEY` - Required if you want report emails from the `/api/send-report` endpoint.
 - `RESEND_FROM_EMAIL` - Optional sender address for Resend.
 - `VITE_PAYSTACK_PUBLIC_KEY` - Frontend Paystack public key used to enable the checkout flow.
@@ -51,8 +51,11 @@ This application is set up for GitHub to Vercel deployment. OpenAI is the defaul
 ### Vercel Setup
 
 1. Import the GitHub repository into Vercel.
-2. Add the environment variables above in the Vercel project settings.
-3. Redeploy the project so the new server-side AI defaults are available in production.
+2. In **Vercel → Project → Settings → Environment Variables**, add `OPENAI_API_KEY` or `GEMINI_API_KEY` for the Production environment (and Preview too if you test preview deployments).
+3. Save the key and redeploy the latest deployment; Vercel does not apply new environment variables to an already running deployment.
+4. In Quantra, open **Settings → Professional API**. The provider cards show whether a server-side key is configured. They report presence only, not whether a provider accepts the key.
+
+Never put AI keys in `VITE_*` variables, browser code, Firestore, or a committed `.env` file. The checked-in `.env.example` contains placeholders only.
 
 ## Material Benchmark Sync
 

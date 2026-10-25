@@ -35,6 +35,12 @@ export default async function handler(req, res) {
     let result;
 
     switch (action) {
+      case 'provider-status':
+        result = {
+          openaiConfigured: Boolean(process.env.OPENAI_API_KEY?.trim()),
+          geminiConfigured: Boolean(process.env.GEMINI_API_KEY?.trim()),
+        };
+        break;
       case 'rate-insight':
         result = await generateRateInsight({ item: body.item, context: body.context, preferredProvider, model, uid, ip });
         break;

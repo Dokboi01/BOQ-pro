@@ -116,7 +116,7 @@ async function runGeminiText({ systemPrompt, userPrompt }) {
   const client = getGeminiClient();
   if (!client) throw new Error('Gemini API key is not configured on the server.');
 
-  const model = client.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  const model = client.getGenerativeModel({ model: 'gemini-3.8-flash' });
   const result = await model.generateContent(`${systemPrompt}\n\n---\n\n${userPrompt}`);
   return result.response.text();
 }
@@ -158,7 +158,7 @@ async function runGeminiVision({ systemPrompt, userPrompt, base64Image, mimeType
   // earlier fix) silently falling back to fake data. responseMimeType
   // forces a clean JSON body the same way OpenAI's json_object mode does.
   const model = client.getGenerativeModel({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-3.8-flash',
     generationConfig: { responseMimeType: 'application/json' },
   });
   const imagePart = {
@@ -193,7 +193,7 @@ async function runWithFallback({ preferredProvider, model, systemPrompt, userPro
 
       return {
         provider: 'gemini',
-        model: vision ? 'gemini-1.5-flash' : 'gemini-2.0-flash',
+        model: 'gemini-3.8-flash',
         content: vision
           ? await runGeminiVision({ systemPrompt, userPrompt, base64Image, mimeType })
           : await runGeminiText({ systemPrompt, userPrompt }),
@@ -273,7 +273,7 @@ function normalizeDrawingElement(entry, fallbackCategory = 'Identified Elements'
   if (!item && !description) return null;
 
   const rawQuantity = entry.quantity ?? entry.qty ?? entry.measurement ?? entry.takeoff ?? entry.count ?? '';
-  const quantity = String(rawQuantity || '').trim() || '1 item';
+  const quantity = String(rawQuantity || '').trim();
   const category = sanitizeText(String(
     entry.category
     || entry.section
@@ -287,6 +287,12 @@ function normalizeDrawingElement(entry, fallbackCategory = 'Identified Elements'
     item: item || description,
     description: description || item,
     quantity,
+    unit: sanitizeText(String(entry.unit || '').trim(), 24),
+    calculation: sanitizeText(String(entry.calculation || entry.quantityBasis || entry.takeoffBasis || '').trim(), 1000),
+    evidence: sanitizeText(String(entry.evidence || entry.drawingEvidence || '').trim(), 700),
+    confidence: sanitizeText(String(entry.confidence || '').trim(), 40),
+    drawingReference: sanitizeText(String(entry.drawingReference || entry.reference || entry.sheet || '').trim(), 120),
+    assumptions: sanitizeText(String(entry.assumptions || entry.checks || '').trim(), 700),
     structuralDetails: normalizeStructuralDetails(
       entry.structuralDetails
       || entry.details
@@ -459,10 +465,13 @@ export async function analyzeEngineeringDrawing({ base64Image, contextHint = '',
 
   const systemPrompt = 'You are a highly experienced senior quantity surveyor and structural engineer.';
   const userPrompt = createTextPrompt(
-    'Analyze this engineering drawing/blueprint and return a valid JSON object of measurable BOQ elements.',
+    'Act as a senior structural quantity surveyor. Read the uploaded drawing carefully and create a detailed, auditable draft takeoff.',
     [
       `USER CONTEXT: ${sanitizeText(contextHint || 'None provided. Use your best professional judgment.')}`,
-      'Return ONLY valid JSON with this shape: {"elements":[{"category":"","item":"","description":"","quantity":"","structuralDetails":{"dimensions":"","reinforcement":""}}]}.',
+      'Return ONLY valid JSON: {"elements":[{"category":"","item":"","description":"","quantity":"","unit":"","calculation":"","evidence":"","confidence":"high|medium|low","drawingReference":"","assumptions":"","structuralDetails":{"dimensions":"","reinforcement":"","notes":""}}]}.',
+      'Extract every legible dimension, grid/axis, member mark, count, level, thickness, material and reinforcement callout relevant to measurable work. Group sensible BOQ lines by work section and separate distinct trades (excavation, blinding, concrete, formwork, reinforcement, masonry, etc.) where drawing information supports it.',
+      'For each quantity show the arithmetic and units in calculation (for example: 6 columns × 0.225 m × 0.225 m × 3.0 m = 0.342 m³). Do not invent heights, grades, member sizes, reinforcement, foundation details, or missing dimensions. If a quantity cannot be calculated, leave quantity empty and state precisely what is missing in assumptions. Distinguish explicitly read dimensions from inferred ones, cite sheet/page/grid/member evidence where possible, and assign low confidence to unclear handwriting or photo distortion.',
+      'Count only visible, unambiguous elements. Avoid double counting shared edges, repeated views of the same member, or dimensions already included in an overall dimension chain. Use metric units and state measurement conventions or deductions in assumptions.',
       'If the image is not a readable engineering drawing or no measurable construction element can be identified, return {"elements":[]}.',
     ].join('\n')
   );
