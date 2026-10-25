@@ -9,7 +9,6 @@ import {
   Check,
   ChevronRight,
   Plus,
-  Key,
   Database,
   Zap
 } from 'lucide-react';
@@ -33,7 +32,6 @@ const Settings = ({ user, onUpgrade }) => {
   const tabs = [
     { id: 'profile', label: 'My Profile', icon: User },
     { id: 'subscription', label: 'Subscription', icon: CreditCard },
-    { id: 'advanced', label: 'Professional API', icon: Key },
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'notifications', label: 'Notifications', icon: Bell },
   ];
