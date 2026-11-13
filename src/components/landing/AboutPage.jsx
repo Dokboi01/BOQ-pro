@@ -1,38 +1,29 @@
 import React from 'react';
 import {
-  Shield, MapPin, Users, Award, Target, Heart,
-  Building2, TrendingUp, ArrowRight, CheckCircle2
+  Calculator, Users, FileSpreadsheet, ArrowRight
 } from 'lucide-react';
 
 const values = [
   {
-    icon: <Target size={20} />,
-    title: 'Accuracy First',
-    desc: 'We believe every rate should be traceable, defensible, and grounded in real market data.',
+    icon: <Calculator size={20} />,
+    title: 'Rate build-up',
+    desc: 'Create custom rates from materials, labour, plant, transport, overheads, and profit.',
   },
   {
     icon: <Users size={20} />,
-    title: 'Built For Teams',
-    desc: 'Construction is a team sport. Quantra is designed for collaboration, not solo spreadsheets.',
+    title: 'Team workspace',
+    desc: 'Organize projects and review pricing with other members of a company workspace.',
   },
   {
-    icon: <MapPin size={20} />,
-    title: 'Nigeria-Focused',
-    desc: 'Generic tools don\'t understand Nigerian markets. We do — because we built this for them.',
+    icon: <FileSpreadsheet size={20} />,
+    title: 'Project exports',
+    desc: 'Export bills of quantities and project schedules to PDF or Excel.',
   },
   {
-    icon: <Heart size={20} />,
-    title: 'QS-Owned',
-    desc: 'Created by people who have priced real Nigerian construction jobs, not just written software.',
+    icon: <FileSpreadsheet size={20} />,
+    title: 'Benchmark or custom rates',
+    desc: 'Use an available benchmark rate or enter your own project rate.',
   },
-];
-
-const milestones = [
-  { year: '2023', title: 'Idea Born', desc: 'Frustrated with spreadsheet chaos on live Lagos projects.' },
-  { year: '2024', title: 'First Workspace', desc: 'Built the core BOQ engine with custom rate build-up.' },
-  { year: '2024', title: 'Team Pricing', desc: 'Added real-time collaboration and project sharing.' },
-  { year: '2025', title: 'Drawing Tools', desc: 'Drawing analysis and annotation features launched.' },
-  { year: '2026', title: 'Nationwide', desc: 'Regional benchmarks for 5 Nigerian cities, 46+ materials.' },
 ];
 
 const AboutPage = ({ onGetStarted }) => {
@@ -42,11 +33,10 @@ const AboutPage = ({ onGetStarted }) => {
       <section className="ap-hero">
         <div className="ap-hero-content">
           <span className="ap-kicker">About Us</span>
-          <h1>Built by Nigerian construction people, for Nigerian construction people.</h1>
+          <h1>About Quantra</h1>
           <p>
-            Quantra was born out of frustration. Frustration with spreadsheets that break,
-            rates that can\'t be defended, and teams that lose track of pricing decisions
-            in WhatsApp threads. We set out to build something better.
+            Quantra is a construction pricing workspace for preparing bills of quantities,
+            building or reviewing rates, collaborating on projects, and exporting schedules.
           </p>
         </div>
       </section>
@@ -56,15 +46,9 @@ const AboutPage = ({ onGetStarted }) => {
         <div className="ap-mission-card">
           <h2>Our Mission</h2>
           <p>
-            To make construction pricing in Nigeria more accurate, more transparent, and more collaborative.
-            We believe that when estimators and quantity surveyors have the right tools, the entire industry wins —
-            from contractors to clients to the workers on site.
+            The workspace brings quantity takeoff, benchmark and custom rate entry, project review,
+            and PDF or Excel exports together for construction teams.
           </p>
-          <div className="ap-mission-stats">
-            <div><strong>5</strong><span>Cities covered</span></div>
-            <div><strong>46+</strong><span>Materials tracked</span></div>
-            <div><strong>24h</strong><span>Typical tender turnaround</span></div>
-          </div>
         </div>
       </section>
 
@@ -85,52 +69,30 @@ const AboutPage = ({ onGetStarted }) => {
         </div>
       </section>
 
-      {/* Timeline */}
-      <section className="ap-timeline">
-        <div className="ap-section-heading">
-          <h2>Our journey</h2>
-          <p>From a simple idea to a platform serving Nigerian construction teams.</p>
-        </div>
-        <div className="ap-timeline-list">
-          {milestones.map((m) => (
-            <div key={m.year} className="ap-timeline-item">
-              <span className="ap-timeline-year">{m.year}</span>
-              <div className="ap-timeline-dot" />
-              <div className="ap-timeline-body">
-                <h4>{m.title}</h4>
-                <p>{m.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* Nigerian Focus */}
       <section className="ap-nigeria">
         <div className="ap-nigeria-content">
           <h2>Why Nigeria?</h2>
           <p>
-            Nigeria\'s construction industry is one of the largest in Africa, yet it has been underserved by
-            modern pricing technology. Most teams still rely on Excel templates that don\'t understand local
-            material costs, labour rates, or regional variations.
+            Quantra supports construction pricing work in Nigeria with NGN amounts, benchmark rates,
+            and custom pricing for project-specific assumptions.
           </p>
           <p>
-            We built Quantra to change that. With real benchmarks for Lagos, Abuja, Port Harcourt, Ibadan, and Kano,
-            we\'re giving Nigerian construction professionals the tools they deserve.
+            Teams can review the available rate basis, adjust project pricing, and export their bill of quantities.
           </p>
           <div className="ap-nigeria-badges">
-            <span><CheckCircle2 size={14} /> NIQS-aligned workflows</span>
-            <span><CheckCircle2 size={14} /> QSRBN-compliant exports</span>
-            <span><CheckCircle2 size={14} /> NGN-native billing</span>
-            <span><CheckCircle2 size={14} /> Local support</span>
+            <span>NGN amounts</span>
+            <span>Benchmark rates</span>
+            <span>Custom pricing</span>
+            <span>PDF and Excel exports</span>
           </div>
         </div>
       </section>
 
       {/* CTA */}
       <section className="ap-cta">
-        <h2>Join the team pricing better.</h2>
-        <p>Be part of the movement to professionalise Nigerian construction estimating.</p>
+        <h2>Explore the pricing workspace.</h2>
+        <p>Create an account to use the BOQ, rate build-up, and export workflows.</p>
         <button className="ap-btn-primary" onClick={onGetStarted}>
           Start free <ArrowRight size={18} />
         </button>
@@ -381,7 +343,7 @@ const AboutPage = ({ onGetStarted }) => {
           align-items: center;
           gap: 0.6rem;
           padding: 0.95rem 1.4rem;
-          border-radius: 16px;
+          border-radius: 6px;
           border: none;
           background: var(--primary-900);
           color: white;

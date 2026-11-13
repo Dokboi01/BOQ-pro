@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import QuantraIcon from '../ui/QuantraIcon';
 
-const EFFECTIVE_DATE = 'April 5, 2026';
+const EFFECTIVE_DATE = 'November 13, 2026';
 
 const TERMS_SECTIONS = [
   {
@@ -129,7 +129,7 @@ const TERMS_SECTIONS = [
   {
     title: '16. Contact',
     body: [
-      'For legal, billing, or account questions about these Terms, use the official Quantra support or commercial contact channel made available inside the app, on your pricing page, or through your subscription or onboarding communications.'
+      'A verified legal contact address must be added before these Terms are published.'
     ]
   }
 ];
@@ -153,8 +153,7 @@ const PRIVACY_SECTIONS = [
   {
     title: 'Your choices',
     body: [
-      'Depending on applicable law and your subscription setup, you may have rights relating to access, correction, deletion, or restriction of personal data. You can start those requests through Quantra support.',
-      'Privacy-related details should be reviewed and supplemented with your final legal and operational contact information before public release.'
+      'Depending on applicable law, you may have rights to request access to, correction of, or deletion of personal data. A verified privacy contact address must be published before users can submit those requests.'
     ]
   }
 ];
@@ -255,10 +254,9 @@ const LegalPage = ({ mode = 'terms', onBack }) => {
             </div>
 
             <div className="sidebar-card muted">
-              <span className="sidebar-label">Publishing note</span>
+              <span className="sidebar-label">Questions</span>
               <p>
-                Review these legal pages with your lawyer before public release, especially for
-                final billing, refund, tax, company identity, and contact details.
+                Add a verified legal and privacy contact address before publishing these pages.
               </p>
             </div>
           </aside>
@@ -363,7 +361,7 @@ const LegalPage = ({ mode = 'terms', onBack }) => {
           display: inline-flex;
           align-items: center;
           gap: 0.45rem;
-          border-radius: 999px;
+          border-radius: 6px;
           border: 1px solid rgba(148, 163, 184, 0.28);
           background: rgba(255, 255, 255, 0.84);
           color: var(--primary-900);

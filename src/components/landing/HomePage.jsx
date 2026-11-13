@@ -1,31 +1,15 @@
 import React from 'react';
 import {
-  ArrowRight, Sparkles, Shield, Calculator, FileSpreadsheet,
-  MessagesSquare, MapPin, HardHat, Layers3, BarChart3,
-  CheckCircle2, TrendingUp, Building2, ClipboardCheck,
-  FileText, Users, Award, Clock, ChevronRight,
-  Construction, Wrench, Ruler
+  ArrowRight, Calculator, FileSpreadsheet,
+  MessagesSquare, Layers3,
+  CheckCircle2, Building2, ClipboardCheck,
+  FileText, Users, ChevronRight,
 } from 'lucide-react';
-
-/* ── Nigerian construction imagery ── */
-const IMAGES = {
-  hero: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1400&q=80',
-  skyline: 'https://images.unsplash.com/photo-1618828665011-0abd973f7bb8?w=1200&q=80',
-  site: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=1200&q=80',
-  workers: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=1200&q=80',
-  concrete: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=1200&q=80',
-};
-
-const headlineStats = [
-  { value: '24 hrs', label: 'Typical tender turnaround' },
-  { value: '36 states + FCT', label: 'State-aware benchmark coverage' },
-  { value: '1 workspace', label: 'Pricing, notes, reports, handoff' },
-];
 
 const capabilityCards = [
   {
     icon: <Calculator size={20} />,
-    title: 'Custom Pricing That Feels Defendable',
+    title: 'Build custom rates',
     copy: 'Build rates from materials, labour, plant, transport, overheads, and profit instead of guessing a final number.',
   },
   {
@@ -38,25 +22,6 @@ const capabilityCards = [
     title: 'Exports Ready For Real Submission',
     copy: 'Move from internal pricing to PDF and Excel outputs without rebuilding the job in another tool.',
   },
-];
-
-const trustSignals = [
-  'Built for Quantity Surveyors',
-  'Built for Contractors',
-  'Built for Pre-con Teams',
-  'Built for Company Rollout',
-];
-
-const projectSnapshot = [
-  { section: 'Substructure', items: 12, rate: 'NGN 22.8M', state: 'Aligned' },
-  { section: 'Blockwork', items: 19, rate: 'NGN 14.6M', state: 'Custom' },
-  { section: 'Roofing', items: 8, rate: 'NGN 9.4M', state: 'Benchmark' },
-];
-
-const activityFeed = [
-  'Custom pricing updated for backyard entrance gate',
-  'Rates benchmarked against the active state market',
-  'BOQ export prepared for review',
 ];
 
 const operatingLanes = [
@@ -87,47 +52,26 @@ const workflowSteps = [
   'Export client-ready BOQ schedules and reports',
 ];
 
-const outcomeStrip = [
-  { value: '1 source', label: 'No duplicate pricing sheets' },
-  { value: 'Live rates', label: 'Benchmark and custom in one flow' },
-  { value: 'Team-ready', label: 'Built for company rollout, not solo spreadsheets' },
-];
-
-const nigerianRegions = [
-  { city: 'Lagos', stat: 'NGN 45K/m²', label: 'Average building cost' },
-  { city: 'Abuja', stat: 'NGN 52K/m²', label: 'Average building cost' },
-  { city: 'Port Harcourt', stat: 'NGN 48K/m²', label: 'Average building cost' },
-  { city: 'Ibadan', stat: 'NGN 38K/m²', label: 'Average building cost' },
-  { city: 'Kano', stat: 'NGN 35K/m²', label: 'Average building cost' },
-];
-
 const HomePage = ({ onGetStarted, onLogin }) => {
   return (
     <div className="home-page">
       {/* ═══════ HERO SECTION ═══════ */}
       <section className="hp-hero">
-        <div className="hp-hero-visual">
-          <img src={IMAGES.hero} alt="Nigerian construction site" className="hp-hero-img" loading="eager" />
-          <div className="hp-hero-overlay" />
-        </div>
+        <div className="hp-hero-visual" />
 
         <div className="hp-hero-content">
           <div className="hp-hero-copy">
             <div className="hp-kicker">
-              <Sparkles size={14} />
               BOQ workspace for estimators, QS teams, and contractors
             </div>
 
             <h1>
-              From rough scope
-              <span> to priced BOQ</span>
-              without the usual chaos.
+              From project scope to a priced bill of quantities.
             </h1>
 
             <p className="hp-subtitle">
-              Quantra brings quantity takeoff, benchmark pricing, custom rate build-up, collaboration,
-              and exports into one construction-focused workspace your team can actually use on live jobs
-              across Nigeria.
+              Prepare quantities, build or review rates, collaborate on project pricing, and export BOQs
+              in PDF or Excel from one workspace.
             </p>
 
             <div className="hp-actions">
@@ -140,93 +84,20 @@ const HomePage = ({ onGetStarted, onLogin }) => {
               </button>
             </div>
 
-            <div className="hp-stats">
-              {headlineStats.map((stat) => (
-                <div key={stat.label} className="hp-stat-card">
-                  <strong>{stat.value}</strong>
-                  <span>{stat.label}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="hp-trust">
-              {trustSignals.map((signal) => (
-                <span key={signal}>{signal}</span>
-              ))}
-            </div>
+            <p className="hp-audience">For quantity surveyors, estimators, contractors, and construction teams.</p>
           </div>
 
-          <div className="hp-hero-cards">
-            <div className="hp-workspace-card hp-ws-main">
-              <div className="hp-ws-header">
-                <div>
-                  <span className="hp-ws-tag"><HardHat size={12} /> Live project view</span>
-                  <h3>3 Bedroom Duplex, Lekki</h3>
-                </div>
-                <span className="hp-ws-location">
-                  <MapPin size={12} /> Lagos
-                </span>
-              </div>
-              <div className="hp-ws-badges">
-                <span><Layers3 size={12} /> 7 Sections</span>
-                <span><BarChart3 size={12} /> NGN 68.4M Estimate</span>
-                <span><Users size={12} /> Team pricing active</span>
-              </div>
-              <div className="hp-snapshot">
-                {projectSnapshot.map((row) => (
-                  <div key={row.section} className="hp-snap-row">
-                    <div>
-                      <strong>{row.section}</strong>
-                      <small>{row.items} priced items</small>
-                    </div>
-                    <div className="hp-snap-meta">
-                      <strong>{row.rate}</strong>
-                      <span className={`hp-state-${row.state.toLowerCase()}`}>{row.state}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="hp-activity">
-                <div className="hp-activity-title"><Users size={13} /> Recent team activity</div>
-                {activityFeed.map((item) => (
-                  <div key={item} className="hp-activity-row">
-                    <CheckCircle2 size={12} />
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="hp-workspace-card hp-ws-side">
-              <span className="hp-ws-tag"><Calculator size={12} /> Custom pricing studio</span>
-              <h4>Rate build-up</h4>
-              <div className="hp-metric"><span>Direct cost</span><strong>NGN 142,000</strong></div>
-              <div className="hp-metric"><span>Commercial allowances</span><strong>18%</strong></div>
-              <div className="hp-metric"><span>Final custom rate</span><strong>NGN 185,000</strong></div>
-              <button className="hp-side-action" onClick={onGetStarted}>
-                Try custom pricing <ArrowRight size={12} />
-              </button>
-            </div>
+          <div className="hp-hero-features">
+            {[
+              { icon: <Calculator size={20} />, title: 'Build and review rates', detail: 'Use market benchmarks or enter a custom rate with its cost basis.' },
+              { icon: <Layers3 size={20} />, title: 'Organize BOQ items', detail: 'Structure project sections and connect measured quantities to items.' },
+              { icon: <FileSpreadsheet size={20} />, title: 'Export project schedules', detail: 'Generate PDF and Excel outputs from the working bill of quantities.' },
+            ].map(({ icon, title, detail }) => (
+              <article className="hp-hero-feature" key={title}>
+                <span>{icon}</span><div><h2>{title}</h2><p>{detail}</p></div>
+              </article>
+            ))}
           </div>
-        </div>
-      </section>
-
-      {/* ═══════ NIGERIAN REGIONS STRIP ═══════ */}
-      <section className="hp-regions">
-        <div className="hp-regions-heading">
-          <span className="hp-section-kicker">Regional benchmarks</span>
-          <h2>Priced for all 36 states plus FCT</h2>
-          <p>Quantra uses anchor market rates and state adjustments so projects can be priced anywhere in Nigeria.</p>
-        </div>
-        <div className="hp-regions-grid">
-          {nigerianRegions.map((r) => (
-            <div key={r.city} className="hp-region-card">
-              <MapPin size={18} className="hp-region-icon" />
-              <strong>{r.city}</strong>
-              <span className="hp-region-stat">{r.stat}</span>
-              <span className="hp-region-label">{r.label}</span>
-            </div>
-          ))}
         </div>
       </section>
 
@@ -245,10 +116,10 @@ const HomePage = ({ onGetStarted, onLogin }) => {
       <section className="hp-os">
         <div className="hp-os-heading">
           <span className="hp-section-kicker">Inside the app</span>
-          <h2>A system built around how Nigerian construction teams work.</h2>
+          <h2>Manage quantities, rates, reviews, and exports in one workspace.</h2>
           <p>
-            Quantra is designed to carry a job from early measurement to final review
-            without making the team jump across multiple tools.
+            Create a project, add BOQ items and quantities, choose benchmark or custom rates,
+            then review and export the schedule.
           </p>
         </div>
         <div className="hp-os-grid">
@@ -272,14 +143,6 @@ const HomePage = ({ onGetStarted, onLogin }) => {
             </article>
           ))}
         </div>
-        <div className="hp-outcomes">
-          {outcomeStrip.map(({ value, label }) => (
-            <div key={label} className="hp-outcome">
-              <TrendingUp size={18} />
-              <div><strong>{value}</strong><span>{label}</span></div>
-            </div>
-          ))}
-        </div>
       </section>
 
       {/* ═══════ WORKFLOW STEPS ═══════ */}
@@ -301,43 +164,13 @@ const HomePage = ({ onGetStarted, onLogin }) => {
         </div>
       </section>
 
-      {/* ═══════ NIGERIAN CONSTRUCTION IMAGERY BAND ═══════ */}
-      <section className="hp-gallery">
-        <div className="hp-gallery-grid">
-          <div className="hp-gallery-item hp-gallery-large">
-            <img src={IMAGES.skyline} alt="Nigerian city skyline" loading="lazy" />
-            <div className="hp-gallery-caption">
-              <strong>City-scale projects</strong>
-              <span>From Lekki to Maitama — priced with local benchmarks</span>
-            </div>
-          </div>
-          <div className="hp-gallery-item">
-            <img src={IMAGES.workers} alt="Construction workers on site" loading="lazy" />
-            <div className="hp-gallery-caption">
-              <strong>Site reality</strong>
-              <span>Labour, plant, and logistics — all in the rate</span>
-            </div>
-          </div>
-          <div className="hp-gallery-item">
-            <img src={IMAGES.concrete} alt="Concrete pouring" loading="lazy" />
-            <div className="hp-gallery-caption">
-              <strong>Material accuracy</strong>
-              <span>Real-time material pricing across Nigeria</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* ═══════ CLOSING CTA ═══════ */}
       <section className="hp-cta">
-        <div className="hp-cta-bg">
-          <img src={IMAGES.site} alt="Construction site" loading="lazy" />
-          <div className="hp-cta-overlay" />
-        </div>
+        <div className="hp-cta-bg" />
         <div className="hp-cta-content">
-          <span className="hp-section-kicker">Ready to test it?</span>
-          <h2>Start with one company account and one real project.</h2>
-          <p>Use Quantra to price one job properly, pressure-test the workflow, and grow from there.</p>
+          <span className="hp-section-kicker">Start a BOQ project</span>
+          <h2>Prepare a bill of quantities with Quantra.</h2>
+          <p>Create a project to try quantity entry, rate build-up, review, and export workflows.</p>
           <div className="hp-cta-actions">
             <button className="hp-btn-primary" onClick={onGetStarted}>
               Get started free <ArrowRight size={18} />
@@ -371,27 +204,9 @@ const HomePage = ({ onGetStarted, onLogin }) => {
           height: 100%;
           margin: 0;
           padding: 0;
+          background: #0f172a;
         }
 
-        .hp-hero-img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          display: block;
-          margin: 0;
-          padding: 0;
-        }
-
-        .hp-hero-overlay {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(
-            135deg,
-            rgba(10, 15, 26, 0.92) 0%,
-            rgba(10, 15, 26, 0.78) 45%,
-            rgba(10, 15, 26, 0.55) 100%
-          );
-        }
 
         .hp-hero-content {
           position: relative;
@@ -405,6 +220,11 @@ const HomePage = ({ onGetStarted, onLogin }) => {
         }
 
         .hp-hero-copy { color: white; }
+        .hp-hero-features { display: grid; gap: 0.85rem; }
+        .hp-hero-feature { display: flex; align-items: flex-start; gap: 0.9rem; padding: 1rem; color: white; border: 1px solid rgba(255, 255, 255, 0.18); background: rgba(255, 255, 255, 0.06); }
+        .hp-hero-feature > span { color: var(--accent-300); }
+        .hp-hero-feature h2 { margin: 0; font-size: 1rem; color: white; }
+        .hp-hero-feature p { margin: 0.35rem 0 0; color: rgba(255, 255, 255, 0.72); font-size: 0.85rem; line-height: 1.55; }
 
         .hp-kicker {
           display: inline-flex;
@@ -456,7 +276,7 @@ const HomePage = ({ onGetStarted, onLogin }) => {
           align-items: center;
           gap: 0.6rem;
           padding: 1rem 1.4rem;
-          border-radius: 16px;
+          border-radius: 6px;
           border: none;
           background: var(--accent-600);
           color: white;
@@ -475,7 +295,7 @@ const HomePage = ({ onGetStarted, onLogin }) => {
 
         .hp-btn-secondary {
           padding: 1rem 1.3rem;
-          border-radius: 16px;
+          border-radius: 6px;
           border: 1px solid rgba(255, 255, 255, 0.2);
           background: rgba(255, 255, 255, 0.08);
           color: white;
@@ -999,19 +819,7 @@ const HomePage = ({ onGetStarted, onLogin }) => {
           position: absolute;
           inset: 0;
           z-index: 0;
-        }
-
-        .hp-cta-bg img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          display: block;
-        }
-
-        .hp-cta-overlay {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(135deg, rgba(10,15,26,0.88), rgba(10,15,26,0.72));
+          background: #0f172a;
         }
 
         .hp-cta-content {
@@ -1045,7 +853,7 @@ const HomePage = ({ onGetStarted, onLogin }) => {
         /* ── Responsive ── */
         @media (max-width: 1024px) {
           .hp-hero-content { grid-template-columns: 1fr; padding: 3rem 1rem; }
-          .hp-hero-cards { display: none; }
+          .hp-hero-features { display: grid; }
           .hp-regions-grid { grid-template-columns: repeat(3, 1fr); }
           .hp-capabilities { grid-template-columns: repeat(2, 1fr); }
           .hp-os-grid { grid-template-columns: repeat(2, 1fr); }

@@ -1,168 +1,46 @@
-import React, { useState } from 'react';
-import {
-  Mail, Phone, MapPin, Clock, Send, CheckCircle2,
-  ArrowRight, MessageSquare, Building2, User, Mail as MailIcon
-} from 'lucide-react';
-
-const offices = [
-  {
-    city: 'Lagos',
-    address: '12B Adeola Odeku Street, Victoria Island',
-    phone: '+234 800 123 4567',
-    hours: 'Mon – Fri, 8am – 6pm WAT',
-  },
-  {
-    city: 'Abuja',
-    address: '45 Constitution Avenue, Central Business District',
-    phone: '+234 800 987 6543',
-    hours: 'Mon – Fri, 8am – 6pm WAT',
-  },
-  {
-    city: 'Port Harcourt',
-    address: '22 Aba Road, Trans Amadi',
-    phone: '+234 800 456 7890',
-    hours: 'Mon – Fri, 8am – 5pm WAT',
-  },
-];
+import React from 'react';
+import { ArrowRight, FileSpreadsheet } from 'lucide-react';
 
 const faqs = [
   {
     q: 'How quickly can I get started?',
-    a: 'Most teams are pricing their first project within 10 minutes of signing up. The onboarding wizard walks you through creating your first BOQ.',
+    a: 'Create an account, then create a project or import an existing bill of quantities.',
   },
   {
     q: 'Is my data secure?',
-    a: 'Absolutely. We use Firebase for authentication and Firestore for encrypted cloud storage. All payments are processed securely via Paystack with 256-bit SSL.',
+    a: 'The Privacy Policy page describes the data handled by Quantra and its service providers.',
   },
   {
     q: 'Can I export to Excel and PDF?',
-    a: 'Yes — both formats are supported. PDF exports are professionally formatted for tender submission, and Excel exports retain formulas for further analysis.',
-  },
-  {
-    q: 'Do you offer training for teams?',
-    a: 'We offer onboarding sessions for Business and Corporate plans. Enterprise clients get dedicated account management and custom training.',
+    a: 'Quantra supports PDF and Excel exports for project schedules.',
   },
 ];
 
 const ContactPage = ({ onGetStarted }) => {
-  const [form, setForm] = useState({ name: '', email: '', company: '', message: '' });
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 4000);
-  };
-
   return (
     <div className="contact-page">
       {/* Hero */}
       <section className="cp-hero">
         <div className="cp-hero-content">
           <span className="cp-kicker">Contact</span>
-          <h1>Let\'s talk about your next project.</h1>
+          <h1>Contact Quantra</h1>
           <p>
-            Whether you\'re a solo QS or a full construction firm, we\'re here to help you
-            price better, faster, and more accurately.
+            For product, account, billing, or privacy questions, use the verified contact details published at launch.
           </p>
         </div>
       </section>
 
       <div className="cp-grid">
-        {/* Contact Form */}
+        {/* Contact channel status */}
         <section className="cp-form-section">
-          <h2>Send us a message</h2>
-          {submitted ? (
-            <div className="cp-success">
-              <CheckCircle2 size={40} className="cp-success-icon" />
-              <h3>Message sent!</h3>
-              <p>We\'ll get back to you within 24 hours.</p>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="cp-form">
-              <div className="cp-field">
-                <label><User size={14} /> Full name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Your name"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                />
-              </div>
-              <div className="cp-field">
-                <label><MailIcon size={14} /> Email address</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="you@company.com"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                />
-              </div>
-              <div className="cp-field">
-                <label><Building2 size={14} /> Company (optional)</label>
-                <input
-                  type="text"
-                  placeholder="Your firm name"
-                  value={form.company}
-                  onChange={(e) => setForm({ ...form, company: e.target.value })}
-                />
-              </div>
-              <div className="cp-field">
-                <label><MessageSquare size={14} /> Message</label>
-                <textarea
-                  required
-                  rows={5}
-                  placeholder="Tell us about your project or question..."
-                  value={form.message}
-                  onChange={(e) => setForm({ ...form, message: e.target.value })}
-                />
-              </div>
-              <button type="submit" className="cp-submit">
-                <Send size={16} /> Send message
-              </button>
-            </form>
-          )}
+          <h2>Contact details</h2>
+          <p>The support email address has not been configured yet.</p>
         </section>
 
-        {/* Office Cards */}
+        {/* Product information */}
         <section className="cp-offices">
-          <h2>Our offices</h2>
-          <div className="cp-office-list">
-            {offices.map((office) => (
-              <div key={office.city} className="cp-office-card">
-                <div className="cp-office-header">
-                  <MapPin size={18} />
-                  <strong>{office.city}</strong>
-                </div>
-                <div className="cp-office-detail">
-                  <Building2 size={14} />
-                  <span>{office.address}</span>
-                </div>
-                <div className="cp-office-detail">
-                  <Phone size={14} />
-                  <span>{office.phone}</span>
-                </div>
-                <div className="cp-office-detail">
-                  <Clock size={14} />
-                  <span>{office.hours}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="cp-direct">
-            <h3>Direct contact</h3>
-            <div className="cp-direct-row">
-              <Mail size={14} />
-              <span>hello@quantra.ng</span>
-            </div>
-            <div className="cp-direct-row">
-              <Phone size={14} />
-              <span>+234 800 Quantra</span>
-            </div>
-          </div>
+          <h2>Project exports</h2>
+          <p><FileSpreadsheet size={16} /> Export project schedules as PDF or Excel.</p>
         </section>
       </div>
 
@@ -170,7 +48,7 @@ const ContactPage = ({ onGetStarted }) => {
       <section className="cp-faq">
         <div className="cp-section-heading">
           <h2>Frequently asked questions</h2>
-          <p>Quick answers to common questions. For anything else, reach out above.</p>
+          <p>For other questions, check this page again after the support address is configured.</p>
         </div>
         <div className="cp-faq-grid">
           {faqs.map((faq) => (
@@ -297,7 +175,7 @@ const ContactPage = ({ onGetStarted }) => {
           justify-content: center;
           gap: 0.5rem;
           padding: 0.9rem 1.4rem;
-          border-radius: 14px;
+          border-radius: 6px;
           border: none;
           background: var(--primary-900);
           color: white;
@@ -445,7 +323,7 @@ const ContactPage = ({ onGetStarted }) => {
           align-items: center;
           gap: 0.6rem;
           padding: 0.95rem 1.4rem;
-          border-radius: 16px;
+          border-radius: 6px;
           border: none;
           background: var(--accent-600);
           color: white;

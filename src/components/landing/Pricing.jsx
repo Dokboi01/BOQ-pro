@@ -14,9 +14,7 @@ import {
   Crown,
   Rocket,
   Sparkles,
-  Layers3,
-  Mail,
-  Phone
+  Layers3
 } from 'lucide-react';
 import QuantraIcon from '../ui/QuantraIcon';
 import { PLANS, PLAN_NAMES, PLAN_TIER_ORDER, FEATURE_COMPARISON, getPaystackCheckoutSupport, isPaidPlan } from '../../data/plans';
@@ -40,18 +38,11 @@ const PLAN_TONES = {
   [PLAN_NAMES.ENTERPRISE]: 'enterprise',
 };
 
-const TRUST_SIGNALS = [
-  'Built for Nigerian QS Firms',
-  'Built for Contractors Across Nigeria',
-  'Built for Regional Estimators',
-  'Built for Company Rollout'
-];
-
 const VALUE_CARDS = [
   {
     icon: Layers3,
     title: 'Nigerian Construction Workspace',
-    copy: 'Pricing built for Lagos, Abuja, Port Harcourt, Ibadan, and Kano markets — with regional benchmarks and NGN-native billing.'
+    copy: 'Pricing plans use NGN billing and provide access to the same BOQ workspace.'
   },
   {
     icon: Zap,
@@ -136,7 +127,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
     const plan = PLANS[planName];
     if (!plan) return;
 
-    // Free plan — go straight to signup
+    // Free plan , go straight to signup
     if (!isPaidPlan(planName)) {
       setLoadingPlan(planName);
       await onSelectPlan(planName);
@@ -144,7 +135,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
       return;
     }
 
-    // Enterprise — mailto (handled in JSX)
+    // Enterprise , mailto (handled in JSX)
     if (planName === PLAN_NAMES.ENTERPRISE) return;
 
     const checkoutSupport = getPaystackCheckoutSupport(planName, billing);
@@ -153,7 +144,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
       return;
     }
 
-    // Paid plan — signed-out users first create/login to a real account
+    // Paid plan , signed-out users first create/login to a real account
     if (!userEmail || !userId) {
       setLoadingPlan(planName);
       await onSelectPlan(planName, { billing });
@@ -161,7 +152,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
       return;
     }
 
-    // Paid plan — secure Paystack checkout
+    // Paid plan , secure Paystack checkout
     setLoadingPlan(planName);
     try {
       await paystackCheckout({
@@ -229,12 +220,11 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
               Nigerian construction pricing, simplified
             </div>
             <h1>
-              Plans built for
-              <span> Nigerian QS professionals.</span>
+              Plans for QS professionals
+              <span> and construction teams.</span>
             </h1>
             <p className="pricing-subtitle">
-              From student QS in Lagos to estimating teams in Abuja and full-scale firms across Nigeria —
-              every plan includes the same BOQ engine, regional benchmarks, and NGN-native billing.
+              Compare plan limits and features for individual QS work or company teams. All plans use NGN billing.
             </p>
 
             {displayError && (
@@ -276,26 +266,6 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
               </div>
             </div>
 
-            <div className="hero-stats">
-              <div className="hero-stat-card">
-                <strong>6 tiers</strong>
-                <span>From student to enterprise rollout</span>
-              </div>
-              <div className="hero-stat-card">
-                <strong>17%</strong>
-                <span>Typical annual savings</span>
-              </div>
-              <div className="hero-stat-card">
-                <strong>1 workspace</strong>
-                <span>Same BOQ engine across every plan</span>
-              </div>
-            </div>
-
-            <div className="trust-strip">
-              {TRUST_SIGNALS.map((signal) => (
-                <span key={signal}>{signal}</span>
-              ))}
-            </div>
           </div>
 
           <div className="pricing-hero-visual">
@@ -303,7 +273,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
               <div className="preview-card-head">
                 <div>
                   <span className="preview-tag">Plan guide</span>
-                  <h2>How teams usually grow with Quantra</h2>
+                  <h2>Compare available plans</h2>
                 </div>
                 <span className="preview-mode">
                   <Sparkles size={14} />
@@ -356,11 +326,11 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
             </div>
 
             <div className="preview-card preview-card-side">
-              <span className="preview-tag">Recommended lane</span>
+              <span className="preview-tag">Plan details</span>
               <h3>{PLANS[PLAN_NAMES.PROFESSIONAL].label}</h3>
               <div className="side-metric">
-                <span>Best fit for</span>
-                <strong>Live QS and estimating work</strong>
+                <span>Plan for</span>
+                <strong>QS and estimating workflows</strong>
               </div>
               <div className="side-metric">
                 <span>{billing === 'annual' ? 'Annual price' : 'Monthly price'}</span>
@@ -394,8 +364,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
             <span className="section-kicker">Plan options</span>
             <h2>Pick the tier that matches how your firm prices today.</h2>
             <p>
-              From student QS in Lagos to enterprise firms across Nigeria — every plan includes the same BOQ engine,
-              regional benchmarks, and NGN-native billing through Paystack.
+              Every plan includes the BOQ workspace, with features and usage limits based on the selected plan.
             </p>
           </div>
 
@@ -461,13 +430,8 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
 
                 {isEnterprise ? (
                   <div className="enterprise-actions">
-                    <a href={`mailto:${plan.contactEmail}`} className="plan-cta plan-cta-outline">
-                      {plan.cta}
-                      <ArrowRight size={16} />
-                    </a>
                     <div className="enterprise-contact-meta">
-                      <span><Mail size={14} /> {plan.contactEmail}</span>
-                      <span><Phone size={14} /> {plan.contactPhone}</span>
+                      <span>Enterprise contact details are not configured.</span>
                     </div>
                   </div>
                 ) : (
@@ -509,9 +473,9 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
           <section className="comparison-section view-fade-in">
             <div className="plans-heading comparison-heading">
               <span className="section-kicker">Comparison table</span>
-              <h2>See exactly what each Nigerian QS tier includes.</h2>
+              <h2>Compare plan features and usage limits.</h2>
               <p>
-                From student access to enterprise rollout — compare features across all six plans to find the right fit for your firm.
+                Compare features and usage limits across the available plans.
               </p>
             </div>
             <div className="comparison-table-wrapper">
@@ -555,10 +519,9 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
         <section className="closing-cta">
           <div>
             <span className="section-kicker">Ready to move?</span>
-            <h2>Start with the plan that matches your firm and grow inside the same Nigerian construction workspace.</h2>
+            <h2>Choose a plan to start using Quantra.</h2>
             <p>
-              From student QS in Lagos to enterprise firms across Nigeria — every plan includes the same BOQ engine,
-              regional benchmarks, and NGN-native billing through Paystack.
+              Every plan includes the BOQ workspace, with features and usage limits based on the selected plan.
             </p>
           </div>
           <div className="closing-actions">
@@ -592,7 +555,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
 
       <style jsx="true">{`
         /* ═══════════════════════════════════════════════
-           PRICING PAGE — PREMIUM DARK-LIGHT HYBRID
+           PRICING PAGE , PREMIUM DARK-LIGHT HYBRID
            ═══════════════════════════════════════════════ */
 
         .pricing-shell {
@@ -694,7 +657,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
           align-items: center;
           gap: 0.45rem;
           border: 1px solid var(--border-medium);
-          border-radius: 999px;
+          border-radius: 6px;
           padding: 0.75rem 1rem;
           background: rgba(255, 255, 255, 0.78);
           color: var(--primary-700);
@@ -715,7 +678,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
           align-items: center;
           justify-content: center;
           border: none;
-          border-radius: 999px;
+          border-radius: 6px;
           padding: 0.78rem 1.1rem;
           background: var(--primary-900);
           color: white;
@@ -837,7 +800,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
           align-items: center;
           justify-content: center;
           gap: 0.55rem;
-          border-radius: 18px;
+          border-radius: 6px;
           padding: 1rem 1.25rem;
           border: none;
           cursor: pointer;
@@ -896,7 +859,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
           gap: 0;
           margin-top: 0;
           padding: 5px;
-          border-radius: 999px;
+          border-radius: 6px;
           background: var(--primary-100);
           border: 1px solid var(--border-light);
           box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
@@ -907,7 +870,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
           align-items: center;
           gap: 0.5rem;
           padding: 0.65rem 1.4rem;
-          border-radius: 999px;
+          border-radius: 4px;
           border: none;
           font-size: 0.88rem;
           font-weight: 700;
@@ -1126,8 +1089,8 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
         }
 
         .preview-pill.state-business {
-          background: rgba(124, 58, 237, 0.1);
-          color: #7c3aed;
+          background: rgba(30, 108, 247, 0.1);
+          color: #1e6cf7;
         }
 
         .preview-activity {
@@ -1312,7 +1275,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
         .tone-student .plan-icon-container { background: rgba(15, 23, 42, 0.06); color: var(--primary-800); }
         .tone-starter .plan-icon-container { background: rgba(16, 185, 129, 0.1); color: #059669; }
         .tone-professional .plan-icon-container { background: rgba(16, 185, 129, 0.1); color: var(--accent-600); }
-        .tone-business .plan-icon-container { background: rgba(124, 58, 237, 0.1); color: #7c3aed; }
+        .tone-business .plan-icon-container { background: rgba(30, 108, 247, 0.1); color: #1e6cf7; }
         .tone-corporate .plan-icon-container { background: rgba(217, 119, 6, 0.1); color: #b45309; }
         .tone-enterprise .plan-icon-container { background: rgba(15, 23, 42, 0.08); color: var(--primary-700); }
 
@@ -1446,7 +1409,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
           width: 100%;
           margin-top: auto;
           padding: 0.85rem 1rem;
-          border-radius: 14px;
+          border-radius: 6px;
           border: 1px solid transparent;
           font-size: 0.88rem;
           font-weight: 800;
@@ -1546,7 +1509,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
           align-items: center;
           gap: 0.5rem;
           padding: 0.85rem 1.6rem;
-          border-radius: 999px;
+          border-radius: 6px;
           border: 1px solid var(--border-medium);
           background: white;
           color: var(--primary-700);
@@ -1698,7 +1661,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
 
         .mobile-dock-btn {
           border: none;
-          border-radius: 18px;
+          border-radius: 6px;
           padding: 0.95rem 1rem;
           font-size: 0.92rem;
           font-weight: 800;

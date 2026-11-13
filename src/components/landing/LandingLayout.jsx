@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Shield, ArrowRight, Mail, Phone, MapPin,
+  Shield, ArrowRight,
   Linkedin, Twitter, Instagram, ChevronRight
 } from 'lucide-react';
 import QuantraIcon from '../ui/QuantraIcon';
@@ -76,7 +76,7 @@ const LandingLayout = ({
               <strong>Quantra</strong>
             </div>
             <p className="footer-brand-copy">
-              The commercial workspace built specifically for Nigerian construction teams — from quantity surveyors and estimators to contractors and project managers.
+              Prepare bills of quantities, review rates, collaborate on projects, and export schedules.
             </p>
             <div className="footer-social">
               <a href="https://www.linkedin.com/in/dokun-hassan" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><Linkedin size={18} /></a>
@@ -107,16 +107,7 @@ const LandingLayout = ({
             <div className="footer-col">
               <h4>Contact</h4>
               <div className="footer-contact-row">
-                <Mail size={14} />
-                <span>hello@quantra.ng</span>
-              </div>
-              <div className="footer-contact-row">
-                <Phone size={14} />
-                <span>+234 800 Quantra</span>
-              </div>
-              <div className="footer-contact-row">
-                <MapPin size={14} />
-                <span>Lagos · Abuja · Port Harcourt</span>
+                <span>Contact channel not configured</span>
               </div>
             </div>
           </div>
@@ -204,7 +195,7 @@ const LandingLayout = ({
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          border-radius: 12px;
+          border-radius: 6px;
           background: linear-gradient(135deg, var(--primary-900), var(--accent-600));
           box-shadow: 0 12px 28px rgba(30, 108, 247, 0.22);
           color: white;

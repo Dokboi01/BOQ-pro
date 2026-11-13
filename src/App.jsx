@@ -499,7 +499,7 @@ function App() {
   if (view === 'loading') return (
     <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)', color: 'var(--text-primary)', flexDirection: 'column', gap: '0.75rem' }}>
       <div className="loading-spinner"></div>
-      <div style={{ marginLeft: '10px', fontWeight: 700 }}>Quantra — Loading workspace...</div>
+      <div style={{ marginLeft: '10px', fontWeight: 700 }}>Quantra | Loading workspace...</div>
       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Professional Bill of Quantities Management</div>
     </div>
 
@@ -553,8 +553,8 @@ function App() {
       />
     </LandingLayout>
   );
-  if (view === 'terms') return <LegalPage mode="terms" onBack={() => setView(user ? 'app' : 'signup')} />;
-  if (view === 'privacy') return <LegalPage mode="privacy" onBack={() => setView(user ? 'app' : 'signup')} />;
+  if (view === 'terms') return <LegalPage mode="terms" onBack={() => setView(user ? 'app' : 'landing')} />;
+  if (view === 'privacy') return <LegalPage mode="privacy" onBack={() => setView(user ? 'app' : 'landing')} />;
   if (view === 'login') return <Login
     error={authError}
     onLogin={handleLogin}
@@ -644,7 +644,7 @@ function App() {
             pointerEvents: 'none',
           }}
         >
-          🧪 ENGINEERING TEST MODE — mock user, not a real account. Run quantraDevLogout() in the console to exit.
+          ENGINEERING TEST MODE: mock user, not a real account. Run quantraDevLogout() in the console to exit.
         </div>
       )}
       {!focusMode && <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={user} onLogout={logout} onViewPlans={() => setView('pricing')} />}

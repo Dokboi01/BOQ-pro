@@ -13,8 +13,8 @@ const featureGroups = [
     description: 'The core pricing engine where estimates come to life. Built for the way Nigerian construction teams actually work.',
     features: [
       { name: 'Custom Rate Build-Up', desc: 'Materials + labour + plant + transport + overheads + profit = defendable rates.' },
-      { name: 'Benchmark Pricing', desc: 'Pre-loaded anchor benchmarks calibrated for all 36 Nigerian states plus FCT Abuja.' },
-      { name: 'Quantity Takeoff', desc: 'Measure directly against BOQ line items with proper unit tracking.' },
+      { name: 'Benchmark Pricing', desc: 'Select an available benchmark rate for the project location. Coverage depends on the item and market.' },
+      { name: 'Quantity Takeoff', desc: 'Enter measured quantities against BOQ line items with unit tracking.' },
       { name: 'Section Management', desc: 'Organise by substructure, superstructure, finishes, MEP, and custom sections.' },
     ],
   },
@@ -32,11 +32,11 @@ const featureGroups = [
   {
     icon: <MessagesSquare size={22} />,
     title: 'Team Collaboration',
-    description: 'Keep everyone on the same page — literally. No more scattered WhatsApp pricing threads.',
+    description: 'Keep everyone on the same page , literally. No more scattered WhatsApp pricing threads.',
     features: [
       { name: 'Shared Projects', desc: 'Team members access the same BOQ with real-time updates.' },
       { name: 'Pricing Notes', desc: 'Attach commercial rationale to every line item.' },
-      { name: 'Activity Feed', desc: 'See who changed what and when — full audit trail.' },
+      { name: 'Activity Feed', desc: 'See who changed what and when , full audit trail.' },
       { name: 'Role-Based Access', desc: 'Estimator, reviewer, and admin permissions built in.' },
     ],
   },
@@ -45,8 +45,8 @@ const featureGroups = [
     title: 'Material Library',
     description: 'A living database of Nigerian construction materials with real market pricing.',
     features: [
-      { name: '46+ Materials', desc: 'Cement, reinforcement, roofing, tiles, paint, and more.' },
-      { name: 'Market Indices', desc: 'Track price movements across 8 key material categories.' },
+      { name: 'Material Library', desc: 'Browse construction materials and available rates.' },
+      { name: 'Market Indices', desc: 'Review available material price indices.' },
       { name: 'Custom Materials', desc: 'Add your own suppliers and rates to the library.' },
       { name: 'Regional Pricing', desc: 'Materials and BOQ items adjust by active state market, not one flat national rate.' },
     ],
@@ -54,21 +54,14 @@ const featureGroups = [
   {
     icon: <Shield size={22} />,
     title: 'Security & Compliance',
-    description: 'Enterprise-grade security with Nigerian data sovereignty in mind.',
+    description: 'Account authentication and workspace access controls.',
     features: [
       { name: 'Firebase Auth', desc: 'Secure email/password + magic link authentication.' },
-      { name: 'Firestore Database', desc: 'Encrypted cloud storage with role-based access rules.' },
-      { name: 'Paystack Billing', desc: 'NGN-native billing with 256-bit SSL encryption.' },
+      { name: 'Firestore Database', desc: 'Cloud database access is controlled by workspace rules.' },
+      { name: 'Paystack Billing', desc: 'Checkout for paid plans through Paystack.' },
       { name: 'Audit Logging', desc: 'Every action logged for compliance and dispute resolution.' },
     ],
   },
-];
-
-const stats = [
-  { value: '37', label: 'Nigerian state markets supported' },
-  { value: '46+', label: 'Materials in the library' },
-  { value: '3', label: 'Export formats (PDF, Excel, JSON)' },
-  { value: '24h', label: 'Average tender turnaround' },
 ];
 
 const FeaturesPage = ({ onGetStarted }) => {
@@ -78,25 +71,15 @@ const FeaturesPage = ({ onGetStarted }) => {
       <section className="fp-hero">
         <div className="fp-hero-content">
           <span className="fp-kicker">Features</span>
-          <h1>Everything you need to price Nigerian construction properly.</h1>
+          <h1>Tools for bills of quantities, rate building, and project review.</h1>
           <p>
-            From first measurement to final handover — Quantra gives you the tools
-            that quantity surveyors, estimators, and contractors actually use on live jobs.
+            Prepare quantities, build or select rates, collaborate on project pricing, and export
+            bills of quantities from one workspace.
           </p>
           <button className="fp-btn-primary" onClick={onGetStarted}>
             Start pricing free <ArrowRight size={18} />
           </button>
         </div>
-      </section>
-
-      {/* Stats */}
-      <section className="fp-stats">
-        {stats.map((s) => (
-          <div key={s.label} className="fp-stat">
-            <strong>{s.value}</strong>
-            <span>{s.label}</span>
-          </div>
-        ))}
       </section>
 
       {/* Feature Groups */}
@@ -127,8 +110,8 @@ const FeaturesPage = ({ onGetStarted }) => {
 
       {/* Bottom CTA */}
       <section className="fp-bottom-cta">
-        <h2>Ready to see it in action?</h2>
-        <p>Create a free account and price your first project in under 10 minutes.</p>
+        <h2>Explore the BOQ and rate workflows.</h2>
+        <p>Create an account to explore the BOQ and pricing workflows.</p>
         <button className="fp-btn-primary" onClick={onGetStarted}>
           Get started free <ArrowRight size={18} />
         </button>
@@ -180,7 +163,7 @@ const FeaturesPage = ({ onGetStarted }) => {
           align-items: center;
           gap: 0.6rem;
           padding: 0.95rem 1.4rem;
-          border-radius: 16px;
+          border-radius: 6px;
           border: none;
           background: var(--primary-900);
           color: white;

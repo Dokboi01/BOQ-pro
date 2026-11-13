@@ -241,9 +241,7 @@ export const PLANS = {
             'Dedicated infrastructure'
         ],
         popular: false,
-        cta: 'Talk to Sales',
-        contactEmail: 'hello@quantra.ng',
-        contactPhone: '+234 800 Quantra'
+        cta: 'Talk to Sales'
     }
 };
 
