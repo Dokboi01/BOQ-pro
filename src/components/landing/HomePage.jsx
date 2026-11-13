@@ -57,7 +57,15 @@ const HomePage = ({ onGetStarted, onLogin }) => {
     <div className="home-page">
       {/* ═══════ HERO SECTION ═══════ */}
       <section className="hp-hero">
-        <div className="hp-hero-visual" />
+        <div className="hp-hero-visual" aria-hidden="true">
+          <svg className="hp-blueprint" viewBox="0 0 680 600" fill="none">
+            <path d="M83 92H585V502H83z" stroke="currentColor" strokeWidth="2" />
+            <path d="M83 242h184v-150m0 150v260m0-260h318M267 92h180v138h138M447 92v138M267 364h128v138M395 364h190M395 364V230" stroke="currentColor" strokeWidth="2" />
+            <path d="M83 268h184m-184 68h184M295 92v150m24-150v150m-52 148h128m-104 24v138m128-220h190m-190 24h190" stroke="currentColor" strokeWidth="1" strokeDasharray="5 7" />
+            <path d="M83 75V45h30m442 0h30v30M83 519v30h30m442 0h30v-30M83 567h502M83 560v14m502-14v14" stroke="currentColor" strokeWidth="1" />
+          </svg>
+          <div className="hp-plan-note"><span>PROJECT DOCUMENTS</span><strong>Scope → quantities → rates</strong></div>
+        </div>
 
         <div className="hp-hero-content">
           <div className="hp-hero-copy">
@@ -188,7 +196,7 @@ const HomePage = ({ onGetStarted, onLogin }) => {
         /* ── Hero ── */
         .hp-hero {
           position: relative;
-          min-height: 92vh;
+          min-height: 760px;
           display: flex;
           align-items: center;
           width: 100%;
@@ -204,9 +212,15 @@ const HomePage = ({ onGetStarted, onLogin }) => {
           height: 100%;
           margin: 0;
           padding: 0;
-          background: #0f172a;
+          background: #111b23;
+          background-image: linear-gradient(90deg, transparent 49.9%, rgba(255,255,255,.035) 50%, transparent 50.1%);
         }
 
+
+        .hp-blueprint { position: absolute; width: min(54vw, 660px); right: 2%; top: 50%; transform: translateY(-50%); color: rgba(191, 216, 198, .22); }
+        .hp-plan-note { position: absolute; right: 8%; bottom: 13%; display: grid; gap: .4rem; padding: .8rem 1rem; border-left: 2px solid var(--accent-400); color: white; background: rgba(17,27,35,.86); }
+        .hp-plan-note span { color: var(--accent-300); font-size: .65rem; letter-spacing: .13em; }
+        .hp-plan-note strong { font-size: .85rem; font-weight: 600; }
 
         .hp-hero-content {
           position: relative;
@@ -231,7 +245,7 @@ const HomePage = ({ onGetStarted, onLogin }) => {
           align-items: center;
           gap: 0.45rem;
           padding: 0.5rem 0.9rem;
-          border-radius: 999px;
+          border-radius: 2px;
           font-size: 0.74rem;
           font-weight: 800;
           text-transform: uppercase;
@@ -248,7 +262,8 @@ const HomePage = ({ onGetStarted, onLogin }) => {
           line-height: 1.05;
           letter-spacing: -0.04em;
           color: white;
-          max-width: 12ch;
+          max-width: 13ch;
+          font-weight: 650;
         }
 
         .hp-hero-copy h1 span {
@@ -350,7 +365,7 @@ const HomePage = ({ onGetStarted, onLogin }) => {
 
         .hp-trust span {
           padding: 0.4rem 0.75rem;
-          border-radius: 999px;
+          border-radius: 2px;
           background: rgba(255, 255, 255, 0.06);
           border: 1px solid rgba(255, 255, 255, 0.1);
           color: rgba(255, 255, 255, 0.65);
@@ -390,7 +405,7 @@ const HomePage = ({ onGetStarted, onLogin }) => {
           align-items: center;
           gap: 0.3rem;
           padding: 0.35rem 0.65rem;
-          border-radius: 999px;
+          border-radius: 2px;
           font-size: 0.68rem;
           font-weight: 800;
           text-transform: uppercase;
@@ -467,7 +482,7 @@ const HomePage = ({ onGetStarted, onLogin }) => {
           align-items: center;
           margin-top: 0.25rem;
           padding: 0.25rem 0.5rem;
-          border-radius: 999px;
+          border-radius: 2px;
           font-size: 0.62rem;
           font-weight: 800;
           text-transform: uppercase;
@@ -557,7 +572,7 @@ const HomePage = ({ onGetStarted, onLogin }) => {
           align-items: center;
           gap: 0.4rem;
           padding: 0.45rem 0.85rem;
-          border-radius: 999px;
+          border-radius: 2px;
           font-size: 0.72rem;
           font-weight: 800;
           text-transform: uppercase;
@@ -615,24 +630,19 @@ const HomePage = ({ onGetStarted, onLogin }) => {
         .hp-capabilities {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 1.2rem;
-          margin: 3rem 0;
+          gap: 0;
+          margin: 0 0 5rem;
+          border-top: 1px solid var(--border-light);
+          border-bottom: 1px solid var(--border-light);
         }
 
         .hp-cap-card {
-          padding: 1.8rem;
-          border-radius: 24px;
-          background: white;
-          border: 1px solid var(--border-light);
-          box-shadow: var(--shadow-sm);
-          transition: all 0.25s ease;
+          padding: 2rem 1.7rem;
+          border-right: 1px solid var(--border-light);
+          background: transparent;
         }
 
-        .hp-cap-card:hover {
-          transform: translateY(-4px);
-          box-shadow: var(--shadow-lg);
-          border-color: var(--border-medium);
-        }
+        .hp-cap-card:last-child { border-right: 0; }
 
         .hp-cap-icon {
           width: 48px;
@@ -641,7 +651,7 @@ const HomePage = ({ onGetStarted, onLogin }) => {
           align-items: center;
           justify-content: center;
           border-radius: 14px;
-          background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(15, 23, 42, 0.06));
+          background: rgba(16, 185, 129, 0.08);
           color: var(--accent-600);
         }
 
@@ -741,7 +751,7 @@ const HomePage = ({ onGetStarted, onLogin }) => {
           width: 40px;
           height: 40px;
           border-radius: 12px;
-          background: linear-gradient(135deg, var(--primary-900), var(--accent-600));
+          background: var(--primary-900);
           color: white;
           font-size: 0.9rem;
           font-weight: 800;
@@ -805,7 +815,7 @@ const HomePage = ({ onGetStarted, onLogin }) => {
         /* ── CTA ── */
         .hp-cta {
           position: relative;
-          border-radius: 32px;
+          border-radius: 4px;
           overflow: hidden;
           min-height: 420px;
           display: flex;
@@ -819,7 +829,8 @@ const HomePage = ({ onGetStarted, onLogin }) => {
           position: absolute;
           inset: 0;
           z-index: 0;
-          background: #0f172a;
+          background: #111b23;
+          background-image: linear-gradient(90deg, transparent 49.9%, rgba(255,255,255,.035) 50%, transparent 50.1%);
         }
 
         .hp-cta-content {
@@ -852,7 +863,10 @@ const HomePage = ({ onGetStarted, onLogin }) => {
 
         /* ── Responsive ── */
         @media (max-width: 1024px) {
-          .hp-hero-content { grid-template-columns: 1fr; padding: 3rem 1rem; }
+          .hp-hero { min-height: 0; }
+          .hp-blueprint { width: min(85vw, 620px); right: -15%; top: 32%; }
+          .hp-plan-note { right: 5%; bottom: 5%; }
+          .hp-hero-content { grid-template-columns: 1fr; padding: 7rem 1.5rem 4rem; }
           .hp-hero-features { display: grid; }
           .hp-regions-grid { grid-template-columns: repeat(3, 1fr); }
           .hp-capabilities { grid-template-columns: repeat(2, 1fr); }
@@ -866,6 +880,8 @@ const HomePage = ({ onGetStarted, onLogin }) => {
           .hp-stats { grid-template-columns: 1fr; }
           .hp-regions-grid { grid-template-columns: 1fr 1fr; }
           .hp-capabilities { grid-template-columns: 1fr; }
+          .hp-cap-card { border-right: 0; border-bottom: 1px solid var(--border-light); }
+          .hp-cap-card:last-child { border-bottom: 0; }
           .hp-os-grid { grid-template-columns: 1fr; }
           .hp-workflow-grid { grid-template-columns: 1fr; }
           .hp-wf-connector { display: none; }
