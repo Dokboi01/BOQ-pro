@@ -25,7 +25,7 @@ const ContactPage = ({ onGetStarted }) => {
           <span className="cp-kicker">Contact</span>
           <h1>Contact Quantra</h1>
           <p>
-            For product, account, billing, or privacy questions, use the verified contact details published at launch.
+            For product, account, billing, or privacy questions, contact us by email or phone.
           </p>
         </div>
       </section>
@@ -34,7 +34,7 @@ const ContactPage = ({ onGetStarted }) => {
         {/* Contact channel status */}
         <section className="cp-form-section">
           <h2>Contact details</h2>
-          <p>The support email address has not been configured yet.</p>
+          <p>Email <a href="mailto:adeokunhassan01@icloud.com">adeokunhassan01@icloud.com</a> or call <a href="tel:+2348151148095">08151148095</a>.</p>
         </section>
 
         {/* Product information */}
@@ -48,7 +48,7 @@ const ContactPage = ({ onGetStarted }) => {
       <section className="cp-faq">
         <div className="cp-section-heading">
           <h2>Frequently asked questions</h2>
-          <p>For other questions, check this page again after the support address is configured.</p>
+          <p>For other questions, email adeokunhassan01@icloud.com or call 08151148095.</p>
         </div>
         <div className="cp-faq-grid">
           {faqs.map((faq) => (

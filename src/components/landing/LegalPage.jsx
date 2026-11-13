@@ -129,7 +129,7 @@ const TERMS_SECTIONS = [
   {
     title: '16. Contact',
     body: [
-      'A verified legal contact address must be added before these Terms are published.'
+      'For questions about these Terms, contact us at adeokunhassan01@icloud.com or call 08151148095.'
     ]
   }
 ];
@@ -153,7 +153,7 @@ const PRIVACY_SECTIONS = [
   {
     title: 'Your choices',
     body: [
-      'Depending on applicable law, you may have rights to request access to, correction of, or deletion of personal data. A verified privacy contact address must be published before users can submit those requests.'
+      'Depending on applicable law, you may have rights to request access to, correction of, or deletion of personal data. To make a privacy request, email adeokunhassan01@icloud.com or call 08151148095.'
     ]
   }
 ];
@@ -256,7 +256,7 @@ const LegalPage = ({ mode = 'terms', onBack }) => {
             <div className="sidebar-card muted">
               <span className="sidebar-label">Questions</span>
               <p>
-                Add a verified legal and privacy contact address before publishing these pages.
+                For legal or privacy questions, email adeokunhassan01@icloud.com or call 08151148095.
               </p>
             </div>
           </aside>

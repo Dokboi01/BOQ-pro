@@ -431,7 +431,7 @@ const PricingPage = ({ onSelectPlan, onBack, onLogin, error, userEmail, userId }
                 {isEnterprise ? (
                   <div className="enterprise-actions">
                     <div className="enterprise-contact-meta">
-                      <span>Enterprise contact details are not configured.</span>
+                      <span>For enterprise pricing, email <a href="mailto:adeokunhassan01@icloud.com">adeokunhassan01@icloud.com</a> or call <a href="tel:+2348151148095">08151148095</a>.</span>
                     </div>
                   </div>
                 ) : (

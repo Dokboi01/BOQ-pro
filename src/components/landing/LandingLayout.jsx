@@ -107,7 +107,7 @@ const LandingLayout = ({
             <div className="footer-col">
               <h4>Contact</h4>
               <div className="footer-contact-row">
-                <span>Contact channel not configured</span>
+                <a href="mailto:adeokunhassan01@icloud.com">adeokunhassan01@icloud.com</a><a href="tel:+2348151148095">08151148095</a>
               </div>
             </div>
           </div>
