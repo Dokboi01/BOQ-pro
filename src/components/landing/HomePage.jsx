@@ -57,15 +57,8 @@ const HomePage = ({ onGetStarted, onLogin }) => {
     <div className="home-page">
       {/* ═══════ HERO SECTION ═══════ */}
       <section className="hp-hero">
-        <div className="hp-hero-visual" aria-hidden="true">
-          <svg className="hp-blueprint" viewBox="0 0 680 600" fill="none">
-            <path d="M83 92H585V502H83z" stroke="currentColor" strokeWidth="2" />
-            <path d="M83 242h184v-150m0 150v260m0-260h318M267 92h180v138h138M447 92v138M267 364h128v138M395 364h190M395 364V230" stroke="currentColor" strokeWidth="2" />
-            <path d="M83 268h184m-184 68h184M295 92v150m24-150v150m-52 148h128m-104 24v138m128-220h190m-190 24h190" stroke="currentColor" strokeWidth="1" strokeDasharray="5 7" />
-            <path d="M83 75V45h30m442 0h30v30M83 519v30h30m442 0h30v-30M83 567h502M83 560v14m502-14v14" stroke="currentColor" strokeWidth="1" />
-          </svg>
-          <div className="hp-plan-note"><span>PROJECT DOCUMENTS</span><strong>Scope → quantities → rates</strong></div>
-        </div>
+        {/* Photo: SMKN 1 Gantar, Unsplash. Free under the Unsplash License. */}
+        <div className="hp-hero-visual" aria-hidden="true" />
 
         <div className="hp-hero-content">
           <div className="hp-hero-copy">
@@ -212,15 +205,13 @@ const HomePage = ({ onGetStarted, onLogin }) => {
           height: 100%;
           margin: 0;
           padding: 0;
-          background: #111b23;
-          background-image: linear-gradient(90deg, transparent 49.9%, rgba(255,255,255,.035) 50%, transparent 50.1%);
+          background-color: #111b23;
+          background-image: linear-gradient(90deg, rgba(17, 27, 35, .98) 0%, rgba(17, 27, 35, .90) 38%, rgba(17, 27, 35, .58) 70%, rgba(17, 27, 35, .42) 100%), url("/images/civil-engineer-site.jpg");
+          background-position: center, center 43%;
+          background-size: cover;
+          background-repeat: no-repeat;
         }
 
-
-        .hp-blueprint { position: absolute; width: min(54vw, 660px); right: 2%; top: 50%; transform: translateY(-50%); color: rgba(191, 216, 198, .22); }
-        .hp-plan-note { position: absolute; right: 8%; bottom: 13%; display: grid; gap: .4rem; padding: .8rem 1rem; border-left: 2px solid var(--accent-400); color: white; background: rgba(17,27,35,.86); }
-        .hp-plan-note span { color: var(--accent-300); font-size: .65rem; letter-spacing: .13em; }
-        .hp-plan-note strong { font-size: .85rem; font-weight: 600; }
 
         .hp-hero-content {
           position: relative;
@@ -829,8 +820,11 @@ const HomePage = ({ onGetStarted, onLogin }) => {
           position: absolute;
           inset: 0;
           z-index: 0;
-          background: #111b23;
-          background-image: linear-gradient(90deg, transparent 49.9%, rgba(255,255,255,.035) 50%, transparent 50.1%);
+          background-color: #111b23;
+          background-image: linear-gradient(90deg, rgba(17, 27, 35, .98) 0%, rgba(17, 27, 35, .90) 38%, rgba(17, 27, 35, .58) 70%, rgba(17, 27, 35, .42) 100%), url("/images/civil-engineer-site.jpg");
+          background-position: center, center 43%;
+          background-size: cover;
+          background-repeat: no-repeat;
         }
 
         .hp-cta-content {
@@ -864,8 +858,6 @@ const HomePage = ({ onGetStarted, onLogin }) => {
         /* ── Responsive ── */
         @media (max-width: 1024px) {
           .hp-hero { min-height: 0; }
-          .hp-blueprint { width: min(85vw, 620px); right: -15%; top: 32%; }
-          .hp-plan-note { right: 5%; bottom: 5%; }
           .hp-hero-content { grid-template-columns: 1fr; padding: 7rem 1.5rem 4rem; }
           .hp-hero-features { display: grid; }
           .hp-regions-grid { grid-template-columns: repeat(3, 1fr); }
