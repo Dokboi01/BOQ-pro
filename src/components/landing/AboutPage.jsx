@@ -46,8 +46,8 @@ const AboutPage = ({ onGetStarted }) => {
         <div className="ap-mission-card">
           <h2>Our Mission</h2>
           <p>
-            The workspace brings quantity takeoff, benchmark and custom rate entry, project review,
-            and PDF or Excel exports together for construction teams.
+            Created as a project by Hassan Adedokun AbdulMuiz, Quantra aims to improve how
+            construction teams prepare, review, and manage BOQ and BEME documents.
           </p>
         </div>
       </section>

@@ -120,7 +120,7 @@ const LandingLayout = ({
           </span>
         </div>
         <div className="footer-student">
-          <span>A final year project by <strong>Hassan Adedokun AbdulMuiz</strong> · Civil Engineering · Adeleke University</span>
+          <span>A project by <strong>Hassan Adedokun AbdulMuiz</strong> · Civil Engineering · Adeleke University</span>
         </div>
       </footer>
 
