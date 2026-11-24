@@ -7,27 +7,27 @@ import { useProjects } from './context/useProjects';
 import { analytics } from './db/firebase';
 import { logEvent } from 'firebase/analytics';
 import { primeLiveFxRates } from './utils/fxRates';
-import LandingLayout from './components/landing/LandingLayout';
-import HomePage from './components/landing/HomePage';
-import FeaturesPage from './components/landing/FeaturesPage';
-import AboutPage from './components/landing/AboutPage';
-import ContactPage from './components/landing/ContactPage';
-import PricingPage from './components/landing/Pricing';
-import LegalPage from './components/landing/LegalPage';
-import Login from './components/auth/Login';
-import SignUp from './components/auth/SignUp';
-import PasswordReset from './components/auth/PasswordReset';
-import Onboarding from './components/onboarding/Onboarding';
-import Sidebar from './components/layout/Sidebar';
-import ProjectDashboard from './components/dashboard/ProjectDashboard';
-import BOQWorkspace from './components/workspace/BOQWorkspace';
-import MaterialLibrary from './components/workspace/MaterialLibrary';
-import FirebaseActionHandler from './components/auth/FirebaseActionHandler';
-import Reports from './components/workspace/Reports';
-import Settings from './components/dashboard/Settings';
-import ProjectWizard from './components/dashboard/ProjectWizard';
-import DrawingAnalyzer from './components/workspace/DrawingAnalyzer';
-import CalculationMethodology from './components/workspace/CalculationMethodology';
+const LandingLayout = React.lazy(() => import('./components/landing/LandingLayout'));
+const HomePage = React.lazy(() => import('./components/landing/HomePage'));
+const FeaturesPage = React.lazy(() => import('./components/landing/FeaturesPage'));
+const AboutPage = React.lazy(() => import('./components/landing/AboutPage'));
+const ContactPage = React.lazy(() => import('./components/landing/ContactPage'));
+const PricingPage = React.lazy(() => import('./components/landing/Pricing'));
+const LegalPage = React.lazy(() => import('./components/landing/LegalPage'));
+const Login = React.lazy(() => import('./components/auth/Login'));
+const SignUp = React.lazy(() => import('./components/auth/SignUp'));
+const PasswordReset = React.lazy(() => import('./components/auth/PasswordReset'));
+const Onboarding = React.lazy(() => import('./components/onboarding/Onboarding'));
+const Sidebar = React.lazy(() => import('./components/layout/Sidebar'));
+const ProjectDashboard = React.lazy(() => import('./components/dashboard/ProjectDashboard'));
+const BOQWorkspace = React.lazy(() => import('./components/workspace/BOQWorkspace'));
+const MaterialLibrary = React.lazy(() => import('./components/workspace/MaterialLibrary'));
+const FirebaseActionHandler = React.lazy(() => import('./components/auth/FirebaseActionHandler'));
+const Reports = React.lazy(() => import('./components/workspace/Reports'));
+const Settings = React.lazy(() => import('./components/dashboard/Settings'));
+const ProjectWizard = React.lazy(() => import('./components/dashboard/ProjectWizard'));
+const DrawingAnalyzer = React.lazy(() => import('./components/workspace/DrawingAnalyzer'));
+const CalculationMethodology = React.lazy(() => import('./components/workspace/CalculationMethodology'));
 import { getProjectSavePresentation } from './utils/projectSaveState';
 import { WorkspaceProvider } from './context/WorkspaceContext';
 
@@ -781,7 +781,9 @@ export default function SafeApp() {
       <ToastProvider>
         <AuthProvider>
           <ProjectsProvider>
-            <App />
+            <React.Suspense fallback={<div className="loading-spinner" role="status" aria-label="Loading page" />}>
+              <App />
+            </React.Suspense>
           </ProjectsProvider>
         </AuthProvider>
       </ToastProvider>

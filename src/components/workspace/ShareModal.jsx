@@ -12,9 +12,6 @@ import {
   getSafeReportFileName
 } from '../../utils/reportRows';
 import { convertNgnToProjectCurrency, getProjectCurrencySymbol } from '../../utils/currency';
-import ExcelJS from 'exceljs';
-import { jsPDF } from 'jspdf';
-import { autoTable } from 'jspdf-autotable';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -86,6 +83,7 @@ const ShareModal = ({ isOpen, onClose, projectInfo, boqData, grandTotal }) => {
       const safeProjectTitle = getSafeReportFileName(projectInfo.title);
 
       if (emailConfig.includePDF) {
+        const [{ jsPDF }, { autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')]);
         const doc = new jsPDF();
         doc.setFontSize(20);
         doc.text('BILL OF QUANTITIES', 105, 15, { align: 'center' });
@@ -133,6 +131,7 @@ const ShareModal = ({ isOpen, onClose, projectInfo, boqData, grandTotal }) => {
       }
 
       if (emailConfig.includeExcel) {
+        const { default: ExcelJS } = await import('exceljs');
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('BOQ Report');
         worksheet.addRow(['Description', 'Unit', 'Qty', 'Rate', 'Total']).font = { bold: true };

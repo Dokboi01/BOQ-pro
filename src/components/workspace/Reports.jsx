@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 
 import {
   FileText,
@@ -21,8 +21,9 @@ import { exportToExcel, exportToPDF, exportMaterialsToPDF } from '../../utils/re
 import { getItemTotal, getItemUnitRate } from '../../utils/pricing';
 import { getReportItemQuantity } from '../../utils/reportRows';
 import { useToast } from '../ui/useToast';
-import ShareModal from './ShareModal';
 import ReportViewer from './ReportViewer';
+
+const ShareModal = lazy(() => import('./ShareModal'));
 
 const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
 
@@ -202,9 +203,9 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
     }
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     try {
-      exportToPDF(projectInfo, boqData, isUnpriced);
+      await exportToPDF(projectInfo, boqData, isUnpriced);
       toast.success('PDF report exported successfully.');
     } catch (error) {
       console.error('PDF export failed:', error);
@@ -212,9 +213,9 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
     }
   };
 
-  const handleExportMaterialsPDF = () => {
+  const handleExportMaterialsPDF = async () => {
     try {
-      exportMaterialsToPDF(projectInfo, materialData);
+      await exportMaterialsToPDF(projectInfo, materialData);
       toast.success('Material PDF exported successfully.');
     } catch (error) {
       console.error('Material PDF export failed:', error);
@@ -317,13 +318,13 @@ const Reports = ({ user, projects, activeProjectId, onUpgrade }) => {
         </div>
       )}
 
-      <ShareModal 
+      {isShareModalOpen && <Suspense fallback={null}><ShareModal
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
         projectInfo={projectInfo}
         boqData={boqData}
         grandTotal={grandTotal}
-      />
+      /></Suspense>}
 
 
       <style jsx="true">{`

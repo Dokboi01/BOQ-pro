@@ -157,7 +157,7 @@ const detectUnitFamilies = (unit = '') => {
   if (hasToken('month')) families.add('month');
   if (hasToken('nr', 'no', 'nos', 'pcs', 'pc', 'item', 'set', 'test')) families.add('nr');
 
-  return families.size > 0 ? Array.from(families) : ['nr'];
+  return Array.from(families);
 };
 
 const buildItemHaystack = (item = {}) => normalizeText([

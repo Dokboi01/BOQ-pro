@@ -1,6 +1,7 @@
 /* global process */
 import { Resend } from 'resend';
 import { requireFirebaseAuth } from './_lib/firebase-auth.js';
+import { getDocumentByPath } from './_lib/firestore.js';
 
 export const config = { api: { bodyParser: true } };
 
@@ -58,7 +59,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
+  const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     return res.status(500).json({
       error: 'Email service not configured. Add RESEND_API_KEY to your Vercel environment variables.'
@@ -105,9 +106,18 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Authentication required.' });
     }
 
+    if (!safeProjectId || !/^[A-Za-z0-9_-]{1,150}$/.test(safeProjectId)) {
+      return res.status(400).json({ error: 'A valid project ID is required.' });
+    }
+
+    const project = await getDocumentByPath(`projects/${safeProjectId}`);
+    if (!project || project.user_id !== uid) {
+      return res.status(403).json({ error: 'You do not have permission to invite collaborators to this project.' });
+    }
+
     const fromAddress = process.env.RESEND_FROM_EMAIL || 'Quantra <onboarding@quantra-extimator.xyz>';
     const appUrl = 'https://boq-pro.vercel.app';
-    const projectUrl = safeProjectId ? `${appUrl}/projects/${safeProjectId}` : appUrl;
+    const projectUrl = `${appUrl}/projects/${encodeURIComponent(safeProjectId)}`;
     const roleCapitalized = safeRole.charAt(0).toUpperCase() + safeRole.slice(1);
 
     const { data, error } = await resend.emails.send({

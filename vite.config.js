@@ -64,8 +64,7 @@ export default defineConfig(({ mode }) => {
           manualChunks: (id) => {
             if (id.includes('node_modules')) {
               if (id.includes('lucide-react')) return 'vendor-icons';
-              if (id.includes('react')) return 'vendor-react';
-              return 'vendor'; // all other package dependencies
+              if (/node_modules[\\/](@?react|react-dom|scheduler)[\\/]/.test(id)) return 'vendor-react';
             }
             if (id.includes('src/data/')) {
               return 'engineering-data';

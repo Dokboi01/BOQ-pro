@@ -36,7 +36,6 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
 
   const [emailTouched, setEmailTouched] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
-  const [confirmPasswordTouched, setConfirmPasswordTouched] = useState(false);
 
   const emailValid = useMemo(() => {
     if (!formData.email) return null;
@@ -393,7 +392,6 @@ const SignUp = ({ error, selectedPlan, onSignUp, onSwitchToLogin, onViewTerms, o
                       placeholder="Repeat password"
                       value={formData.confirmPassword}
                       onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                      onBlur={() => setConfirmPasswordTouched(true)}
                       required
                     />
                     <button

@@ -1,21 +1,32 @@
 import { describe, it, expect } from 'vitest';
 import {
   getUnitScaleFactor,
-  getBaseUnitForWorkType,
   getEffectiveBenchmarkRate,
   normalizeBreakdownForItem,
   calculateBreakdownSummary,
-  buildAutoRateResult
+  getItemUnitRate,
+  getItemTotal,
+  normalizeUnit
 } from '../../src/utils/pricing.js';
 
 describe('Unit Pricing Calibration', () => {
+  it('rejects unknown units and keeps formula rates separate from market rates', () => {
+    expect(normalizeUnit('unlisted custom unit')).toBe('');
+    expect(getItemUnitRate({ selectedRateSource: 'formula', defaultFormulaType: 'expression', formulaExpression: 'length / width', editableInputs: [
+      { id: 'length', label: 'Length', value: 2 }, { id: 'width', label: 'Width', value: 0 },
+    ], benchmark: 900, unitRate: 900 })).toBe(0);
+  });
+
+  it('multiplies a finite quantity by the selected unit rate', () => {
+    expect(getItemTotal({ quantity: 2, selectedRateSource: 'manual', manualRate: 12.5 })).toBe(25);
+  });
   describe('getUnitScaleFactor', () => {
     it('handles identical units', () => {
       expect(getUnitScaleFactor('Slab', 'concrete', 'm3', 'm3')).toBe(1);
     });
 
-    it('concrete m3 to m2: default thickness', () => {
-      expect(getUnitScaleFactor('Concrete blinding', 'concrete', 'm3', 'm2')).toBe(0.15);
+    it('refuses concrete m3 to m2 conversion when thickness is not stated', () => {
+      expect(getUnitScaleFactor('Concrete blinding', 'concrete', 'm3', 'm2')).toBeNull();
     });
 
     it('concrete m3 to m2: parsed mm thickness', () => {
@@ -29,15 +40,15 @@ describe('Unit Pricing Calibration', () => {
       expect(getUnitScaleFactor('Concrete 15 cm blinding', 'concrete', 'm3', 'm2')).toBe(0.15);
     });
 
-    it('masonry m2 to m3: default thickness', () => {
-      expect(getUnitScaleFactor('Blockwork', 'masonry', 'm2', 'm3')).toBe(1 / 0.225);
+    it('refuses masonry m2 to m3 conversion when thickness is not stated', () => {
+      expect(getUnitScaleFactor('Blockwork', 'masonry', 'm2', 'm3')).toBeNull();
     });
 
     it('masonry m2 to m3: parsed thickness', () => {
       expect(getUnitScaleFactor('150mm block wall', 'masonry', 'm2', 'm3')).toBe(1 / 0.15);
-      expect(getUnitScaleFactor('6-inch block wall', 'masonry', 'm2', 'm3')).toBe(1 / 0.15);
+      expect(getUnitScaleFactor('6-inch block wall', 'masonry', 'm2', 'm3')).toBeCloseTo(1 / 0.1524);
       expect(getUnitScaleFactor('225mm wall', 'masonry', 'm2', 'm3')).toBe(1 / 0.225);
-      expect(getUnitScaleFactor('9 inch blockwork', 'masonry', 'm2', 'm3')).toBe(1 / 0.225);
+      expect(getUnitScaleFactor('9 inch blockwork', 'masonry', 'm2', 'm3')).toBeCloseTo(1 / 0.2286);
     });
 
     it('reinforcement kg to ton', () => {
@@ -47,7 +58,12 @@ describe('Unit Pricing Calibration', () => {
 
     it('daily to monthly preliminaries', () => {
       expect(getUnitScaleFactor('Office hire', 'general', 'day', 'month')).toBe(30);
-      expect(getUnitScaleFactor('Site supervision', 'general', 'nr', 'month')).toBe(22);
+      expect(getUnitScaleFactor('Site supervision', 'general', 'nr', 'month')).toBeNull();
+    });
+
+    it('requires an explicit cross-section when converting volume rates to length rates', () => {
+      expect(getUnitScaleFactor('Concrete beam 200x300mm', 'concrete', 'm3', 'm')).toBeCloseTo(.06);
+      expect(getUnitScaleFactor('Concrete beam', 'concrete', 'm3', 'm')).toBeNull();
     });
   });
 

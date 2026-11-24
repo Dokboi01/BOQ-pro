@@ -5485,7 +5485,7 @@ export const cloneCatalogItemToProjectItem = (catalogItem, { structureType, bill
         ? 'formula'
         : 'manual';
   const resolvedUnitRate = initialSelectedSource === 'formula'
-    ? (formulaCalculatedRate || catalogBenchmarkRate)
+    ? formulaCalculatedRate
     : initialSelectedSource === 'benchmark'
       ? catalogBenchmarkRate
       : 0;

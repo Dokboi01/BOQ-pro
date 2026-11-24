@@ -64,7 +64,7 @@ export default async function handler(req, res) {
     });
   }
 
-  const apiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
+  const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     return res.status(500).json({
       error: 'Email service not configured. Add RESEND_API_KEY to your environment variables.'
@@ -97,7 +97,10 @@ export default async function handler(req, res) {
     if (!response.ok) {
       const errMsg = data.error?.message;
       if (errMsg === 'EMAIL_NOT_FOUND' || errMsg === 'USER_NOT_FOUND') {
-        return res.status(404).json({ error: 'No account found with this email address.' });
+        return res.status(200).json({
+          success: true,
+          message: 'If an account exists for this email address, password reset instructions have been sent.',
+        });
       }
       throw new Error(data.error?.message || 'Failed to generate reset link.');
     }
@@ -162,7 +165,10 @@ export default async function handler(req, res) {
       throw new Error(resendErr.message || 'Failed to dispatch reset email.');
     }
 
-    return res.status(200).json({ success: true, message: 'Password reset link sent successfully.' });
+    return res.status(200).json({
+      success: true,
+      message: 'If an account exists for this email address, password reset instructions have been sent.',
+    });
   } catch (err) {
     console.error('❌ Send reset link error:', err.message);
     return res.status(500).json({ error: err.message || 'Failed to process request.' });

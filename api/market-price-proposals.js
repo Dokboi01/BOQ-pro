@@ -1,4 +1,3 @@
-/* global process */
 
 /**
  * market-price-proposals.js  (Vercel API route)
@@ -13,8 +12,6 @@ import { requireFirebaseAuth } from './_lib/firebase-auth.js';
 import {
   listCollectionDocuments,
   patchDocumentByPath,
-  createDocument,
-  listDocumentsByField,
 } from './_lib/firestore.js';
 import { buildMaterialBenchmarkPayload } from '../src/utils/materialBenchmarks.js';
 
@@ -40,11 +37,11 @@ export default async function handler(req, res) {
   try {
     claims = await requireFirebaseAuth(req);
   } catch (err) {
-    return sendJson(res, 401, { error: err.message || 'Unauthorized.' });
+    return sendJson(req, res, 401, { error: err.message || 'Unauthorized.' });
   }
 
   if (!isAdmin(claims)) {
-    return sendJson(res, 403, { error: 'Admin access required.' });
+    return sendJson(req, res, 403, { error: 'Admin access required.' });
   }
 
   // ── GET — List proposals ──────────────────────────────────────────────────
@@ -63,9 +60,9 @@ export default async function handler(req, res) {
         return (b.proposedAt || '').localeCompare(a.proposedAt || '');
       });
 
-      return sendJson(res, 200, { proposals: filtered, total: filtered.length });
+      return sendJson(req, res, 200, { proposals: filtered, total: filtered.length });
     } catch (err) {
-      return sendJson(res, 500, { error: err.message || 'Failed to list proposals.' });
+      return sendJson(req, res, 500, { error: err.message || 'Failed to list proposals.' });
     }
   }
 
@@ -75,13 +72,13 @@ export default async function handler(req, res) {
     try {
       body = await readJsonBody(req);
     } catch {
-      return sendJson(res, 400, { error: 'Invalid JSON body.' });
+      return sendJson(req, res, 400, { error: 'Invalid JSON body.' });
     }
 
     const { proposalId, action, overrides } = body || {};
 
     if (!proposalId || !['approve', 'reject', 'edit'].includes(action)) {
-      return sendJson(res, 400, { error: 'proposalId and action (approve|reject|edit) are required.' });
+      return sendJson(req, res, 400, { error: 'proposalId and action (approve|reject|edit) are required.' });
     }
 
     try {
@@ -157,7 +154,7 @@ export default async function handler(req, res) {
           });
         }
 
-        return sendJson(res, 200, {
+        return sendJson(req, res, 200, {
           success: true,
           action,
           proposalId,
@@ -165,12 +162,12 @@ export default async function handler(req, res) {
         });
       }
 
-      return sendJson(res, 200, { success: true, action, proposalId });
+      return sendJson(req, res, 200, { success: true, action, proposalId });
     } catch (err) {
       console.error('[market-price-proposals] PATCH failed:', err);
-      return sendJson(res, 500, { error: err.message || 'Failed to update proposal.' });
+      return sendJson(req, res, 500, { error: err.message || 'Failed to update proposal.' });
     }
   }
 
-  return sendJson(res, 405, { error: 'Method not allowed.' });
+  return sendJson(req, res, 405, { error: 'Method not allowed.' });
 }

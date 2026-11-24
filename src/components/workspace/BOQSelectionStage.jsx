@@ -18,7 +18,6 @@ import {
   getBuildingStoreyConfig,
   isItemStoreyRecommended,
   getItemStoreyHint,
-  getStoreySectionBadge,
 } from '../../data/buildingStories';
 import { convertNgnToProjectCurrency, getProjectCurrencySymbol } from '../../utils/currency';
 
@@ -216,7 +215,7 @@ const BOQSelectionStage = ({
 
       return leftName.localeCompare(rightName);
     });
-  }, [activeCategory, activeFilter, activeSort, query, searchableItems, selectedCodeSet]);
+  }, [activeCategory, activeFilter, activeSort, buildingStories, query, searchableItems, selectedCodeSet]);
 
   const metrics = React.useMemo(() => ({
     recommended: (catalogItems || []).filter((item) => item.isRecommended === true).length,

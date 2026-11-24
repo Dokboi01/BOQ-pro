@@ -26,7 +26,7 @@ import {
 } from '../db/syncEngine';
 import { subscribeToProject } from '../db/realtimeSync';
 import { logActivity } from '../db/collaborationService';
-import { getWorkspaceState as getCloudWorkspaceState, saveWorkspaceState as saveCloudWorkspaceState } from '../db/database';
+import { getProjectById, getProjects, getWorkspaceState as getCloudWorkspaceState, saveWorkspaceState as saveCloudWorkspaceState } from '../db/database';
 import ProjectsContext from './projects-context';
 import { buildCompanyKey, canAccessCompanyProject, deriveCompanyName } from '../utils/companyAccess';
 import {
@@ -390,7 +390,7 @@ export function ProjectsProvider({ children }) {
 
             return false;
         }));
-    }, [user?.id]);
+    }, [user]);
 
     const ensureSharedProjectVisible = useCallback(async (incomingProjects = []) => {
         const sharedProjectId = new URLSearchParams(window.location.search).get('project');
@@ -400,7 +400,6 @@ export function ProjectsProvider({ children }) {
         }
 
         try {
-            const { getProjectById } = await import('../db/database');
             const sharedProject = await getProjectById(sharedProjectId);
             if (!sharedProject || !canAccessCompanyProject(user, sharedProject)) {
                 return incomingProjects;
@@ -412,7 +411,7 @@ export function ProjectsProvider({ children }) {
             console.warn('Shared project link recovery failed:', err?.message || err);
             return incomingProjects;
         }
-    }, [user?.id]);
+    }, [user]);
 
     useEffect(() => {
         const currentUserId = user?.id || null;
@@ -490,7 +489,6 @@ export function ProjectsProvider({ children }) {
             } else if (!cancelled && visibleLocalProjects.length === 0) {
                 // If no local data and pull failed, we still load from local (empty)
                 // but also try loading from cloud directly for first-time users
-                const { getProjects } = await import('../db/database');
                 try {
                     const cloudData = await getProjects();
                     const visibleCloudData = await ensureSharedProjectVisible(
@@ -519,7 +517,7 @@ export function ProjectsProvider({ children }) {
             cancelled = true;
             stopAutoSync();
         };
-    }, [ensureSharedProjectVisible, filterVisibleProjects, user?.id]);
+    }, [ensureSharedProjectVisible, filterVisibleProjects, user]);
 
     useEffect(() => {
         if (!user?.id) return;
@@ -737,7 +735,7 @@ export function ProjectsProvider({ children }) {
                 setFocusMode(false);
             }
         }
-    }, [activeProjectId, activeTab, cloudWorkspaceState, focusMode, persistWorkspaceState, projects, readSavedWorkspaceState, user?.id]);
+    }, [activeProjectId, activeTab, cloudWorkspaceState, focusMode, persistWorkspaceState, projects, readSavedWorkspaceState, user]);
 
     const calculateTotalValue = useMemo(() => {
         const sumProjectTotal = (project) => {
@@ -853,7 +851,7 @@ export function ProjectsProvider({ children }) {
                 const seededRate = templateRate || Number(fallbackAutoRate?.rate) || 0;
                 const isFormulaDriven = (item.defaultFormulaType || 'manual') !== 'manual' && editableInputs.length > 0;
                 const selectedRateSource = resolveItemRateSource(item);
-                const formulaCalculatedRate = Number(item.formulaCalculatedRate ?? formulaRate) || 0;
+                const formulaCalculatedRate = formulaRate == null ? 0 : formulaRate;
                 const manualRate = Number(
                     item.manualRate
                     ?? (
@@ -871,7 +869,7 @@ export function ProjectsProvider({ children }) {
                 const resolvedUnitRate = selectedRateSource === 'benchmark'
                     ? (Number(effectiveBenchmarkRate) || seededBenchmark)
                     : selectedRateSource === 'formula'
-                        ? (formulaCalculatedRate || seededBenchmark)
+                        ? formulaCalculatedRate
                         : manualRate;
                 const amount = qty * resolvedUnitRate;
                 const progressPercent = qty > 0

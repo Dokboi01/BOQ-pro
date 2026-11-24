@@ -77,7 +77,7 @@ describe('Currency conversion', () => {
       });
 
       it('prefers a live-fetched rate over the seed default', async () => {
-        global.fetch.mockResolvedValue({
+        globalThis.fetch.mockResolvedValue({
           ok: true,
           json: async () => ({ ratesToNgn: { USD: 1377.41 }, fetchedAt: '2026-07-22T00:02:31.000Z' }),
         });
@@ -88,7 +88,7 @@ describe('Currency conversion', () => {
       });
 
       it('still lets an explicit project override win over a live rate', async () => {
-        global.fetch.mockResolvedValue({
+        globalThis.fetch.mockResolvedValue({
           ok: true,
           json: async () => ({ ratesToNgn: { USD: 1377.41 }, fetchedAt: '2026-07-22T00:02:31.000Z' }),
         });

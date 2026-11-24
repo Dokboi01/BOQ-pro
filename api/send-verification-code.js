@@ -1,4 +1,5 @@
 /* global process */
+import { randomInt } from 'node:crypto';
 import { Resend } from 'resend';
 import { requireFirebaseAuth } from './_lib/firebase-auth.js';
 import { patchDocumentByPath } from './_lib/firestore.js';
@@ -41,7 +42,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
+  const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     return res.status(500).json({
       error: 'Email service not configured. Add RESEND_API_KEY to your Vercel environment variables.'
@@ -72,7 +73,7 @@ export default async function handler(req, res) {
     }
 
     // Generate 6-digit random code
-    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const code = String(randomInt(100000, 1000000));
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 mins expiry
 
     // Save code to Firestore (will create/overwrite document at `verification_codes/{email}`)
@@ -81,6 +82,7 @@ export default async function handler(req, res) {
       email,
       uid,
       expiresAt,
+      attempts: 0,
     });
 
     const fromAddress = process.env.RESEND_FROM_EMAIL || 'Quantra <onboarding@quantra-extimator.xyz>';

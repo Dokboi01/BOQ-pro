@@ -13,6 +13,7 @@ import {
 import { evaluateBoqFormulaRate, isFormulaDrivenItem } from './boqFormulas';
 import { convertNgnToProjectCurrency, getProjectCurrencySymbol } from './currency';
 import { findCatalogItemByCode } from '../data/boqCatalog';
+import { convertMeasurement, normalizeMeasurementUnit } from './units';
 
 export const WORK_TYPE_PROFILES = {
   concrete: { shares: { materials: 0.58, labour: 0.18, plant: 0.14, transport: 0.10 }, waste: 2.5, siteAdjustment: 3, overheads: 12, profit: 10, roundingStep: 100 },
@@ -112,14 +113,7 @@ const parseIsoTimestamp = (value) => {
 };
 
 export const normalizeUnit = (unit = '') => {
-  const value = String(unit).toLowerCase().replace(/\s+/g, '');
-  if (/(mÂ³|m3|cum|cubic)/.test(value)) return 'm3';
-  if (/(mÂ²|m2|sqm|sq\.m|square)/.test(value)) return 'm2';
-  if (/^(m|lm|rm|linm|mtr|meter|metre)$/.test(value)) return 'm';
-  if (/^(kg|kilogram)$/.test(value)) return 'kg';
-  if (/^(ton|t|tonne)$/.test(value)) return 'ton';
-  if (/^(nr|no|nos|pcs|pc|item|sum)$/.test(String(unit).trim().toLowerCase())) return 'nr';
-  return 'm3';
+  return normalizeMeasurementUnit(unit);
 };
 
 export const getBaseUnitForWorkType = (workType = 'general') => {
@@ -138,8 +132,14 @@ export const getBaseUnitForWorkType = (workType = 'general') => {
 };
 
 export const getUnitScaleFactor = (description = '', workType = 'general', fromUnit = 'nr', toUnit = 'nr') => {
-  const normFrom = String(fromUnit).toLowerCase().trim();
-  const normTo = String(toUnit).toLowerCase().trim();
+  // Keep the legacy positional workType argument for existing call sites; only
+  // explicit dimensions now determine whether cross-unit scaling is valid.
+  void workType;
+  const normFrom = normalizeUnit(fromUnit);
+  const normTo = normalizeUnit(toUnit);
+
+  if (!normFrom && !normTo && String(fromUnit).trim() && String(fromUnit).trim().toLowerCase() === String(toUnit).trim().toLowerCase()) return 1;
+  if (!normFrom || !normTo) return null;
 
   if (normFrom === normTo) return 1;
 
@@ -148,54 +148,34 @@ export const getUnitScaleFactor = (description = '', workType = 'general', fromU
   // 1. Concrete and Earthwork (base unit m3)
   if (normFrom === 'm3') {
     if (normTo === 'm2') {
-      let thickness = 0.15; // default 150mm
-      const mmMatch = desc.match(/\b(\d+(?:\.\d+)?)\s*(?:mm|millimetre|millimeter)\b/i);
-      const cmMatch = desc.match(/\b(\d+(?:\.\d+)?)\s*(?:cm|centimetre|centimeter)\b/i);
-      const mMatch = desc.match(/\b(\d+(?:\.\d+)?)\s*(?:m|metre|meter)\b/i);
-      
-      if (mmMatch) {
-        thickness = parseFloat(mmMatch[1]) / 1000;
-      } else if (cmMatch) {
-        thickness = parseFloat(cmMatch[1]) / 100;
-      } else if (mMatch && !desc.includes('per m') && !desc.includes('/m')) {
-        const val = parseFloat(mMatch[1]);
-        if (val < 2) thickness = val;
-      }
-      return thickness;
+      const match = desc.match(/\b(\d+(?:\.\d+)?)\s*(mm|cm|m|millimetres?|millimeters?|centimetres?|centimeters?|metres?|meters?)\b/i);
+      if (!match) return null;
+      const unit = match[2].startsWith('mm') || /millimet/.test(match[2]) ? 0.001
+        : match[2].startsWith('cm') || /centimet/.test(match[2]) ? 0.01 : 1;
+      const thickness = Number(match[1]) * unit;
+      return thickness > 0 ? thickness : null;
     }
     
     if (normTo === 'm') {
-      const dimsMatch = desc.match(/\b(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*(?:mm|millimetre|millimeter)\b/i);
-      if (dimsMatch) {
-        const w = parseFloat(dimsMatch[1]) / 1000;
-        const h = parseFloat(dimsMatch[2]) / 1000;
-        return w * h;
-      }
-      
-      if (workType === 'earthwork') {
-        return 0.36; 
-      }
-      return 0.05;
+      const dimsMatch = desc.match(/\b(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*(mm|cm|m)\b/i);
+      if (!dimsMatch) return null;
+      const unit = dimsMatch[3] === 'mm' ? 0.001 : dimsMatch[3] === 'cm' ? 0.01 : 1;
+      const crossSection = Number(dimsMatch[1]) * unit * Number(dimsMatch[2]) * unit;
+      return crossSection > 0 ? crossSection : null;
     }
   }
 
   // 2. Masonry / Blockwork (base unit m2)
   if (normFrom === 'm2') {
     if (normTo === 'm3') {
-      let thickness = 0.225; // default 225mm block
-      if (desc.includes('150mm') || desc.includes('6-inch') || desc.includes('6 inch')) {
-        thickness = 0.15;
-      } else if (desc.includes('100mm') || desc.includes('4-inch') || desc.includes('4 inch')) {
-        thickness = 0.10;
-      } else if (desc.includes('225mm') || desc.includes('9-inch') || desc.includes('9 inch')) {
-        thickness = 0.225;
-      }
-      return 1 / thickness;
+      const mmMatch = desc.match(/\b(\d+(?:\.\d+)?)\s*mm\b/i);
+      const inchMatch = desc.match(/\b(4|6|9)\s*(?:-?inch|in)\b/i);
+      const thickness = mmMatch ? Number(mmMatch[1]) / 1000
+        : inchMatch ? Number(inchMatch[1]) * 0.0254 : null;
+      return thickness > 0 ? 1 / thickness : null;
     }
     
-    if (normTo === 'm') {
-      return 0.3;
-    }
+    if (normTo === 'm') return null;
   }
 
   // 3. Reinforcement / Steelwork (base unit kg)
@@ -210,18 +190,9 @@ export const getUnitScaleFactor = (description = '', workType = 'general', fromU
     }
   }
 
-  // 4. Monthly Preliminaries / Hire
-  if (normTo === 'month' || normTo === 'monthly') {
-    if (normFrom === 'day' || normFrom === 'd') {
-      return 30;
-    }
-    if (normFrom === 'week' || normFrom === 'wk') {
-      return 4.33; 
-    }
-    return 22; // default working days/month scale
-  }
-
-  return 1;
+  const validConversion = convertMeasurement(1, normTo, normFrom);
+  if (validConversion.valid) return validConversion.value;
+  return null;
 };
 
 export const inferWorkType = (description = '') => {
@@ -934,16 +905,9 @@ export const getItemUnitRate = (item, region = 'Lagos') => {
   }
 
   if (src === 'formula') {
-    // Use pre-computed formulaCalculatedRate when available (avoids re-evaluation)
-    const precomputed = clampNumber(item?.formulaCalculatedRate);
-    if (precomputed > 0) return precomputed;
-    // Fall back to live evaluation
+    // Inputs are authoritative; ignore stale cached formula rates.
     const formulaRate = evaluateBoqFormulaRate(item);
-    if (formulaRate != null && formulaRate > 0) return clampNumber(formulaRate);
-    // Final fallback: benchmark rate so the row isn't empty
-    const fallbackBenchmark = getEffectiveBenchmarkRate(item, region);
-    if (fallbackBenchmark > 0) return fallbackBenchmark;
-    return clampNumber(item?.unitRate ?? item?.rate);
+    return formulaRate == null ? 0 : clampNumber(formulaRate);
   }
 
   // manual — prefer explicit manualRate field, fall back to legacy rate fields

@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { buildCompanyKey, deriveCompanyName } from '../utils/companyAccess';
 import { getSeedMarketIndices, getSeedMaterials } from './seed_materials';
+import { seedMarketData as runSeedMarketData } from './seed_materials';
 import { buildMaterialBenchmarkPayload, normalizeMaterialBenchmarkRecord } from '../utils/materialBenchmarks';
 import { selfUpdateMarketData, driftMarketIndices } from '../utils/materialMarketSync';
 
@@ -504,7 +505,7 @@ export const getMaterials = async () => {
             const indices = driftMarketIndices(getSeedMarketIndices());
             const { materials: updatedMaterials } = selfUpdateMarketData({ materials: getSeedMaterials(), indices });
             return updatedMaterials;
-        } catch (subErr) {
+        } catch {
             return getSeedMaterials();
         }
     }
@@ -631,8 +632,7 @@ export const updateProfile = async (updates) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const seedMarketData = async () => {
     try {
-        const { seedMarketData: seedFn } = await import('./seed_materials');
-        return await seedFn();
+        return await runSeedMarketData();
     } catch (err) {
         console.error('Seeding failed:', err);
         return { error: err.message };

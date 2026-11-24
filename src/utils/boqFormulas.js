@@ -1,180 +1,103 @@
-const clampNumber = (value) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-};
-
-const formatFormulaValue = (value) => (
-  clampNumber(value).toLocaleString(undefined, {
-    maximumFractionDigits: 2,
-  })
-);
-
+const SAFE_IDENTIFIER_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const numberOrNull = (value) => value === null || value === undefined || (typeof value === 'string' && !value.trim()) ? null : Number.isFinite(Number(value)) ? Number(value) : null;
+const formatFormulaValue = (value) => Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
 const cloneInput = (input = {}) => ({
-  id: String(input.id || '').trim(),
-  label: String(input.label || input.id || '').trim(),
-  unit: String(input.unit || '').trim(),
-  type: input.type === 'text' ? 'text' : 'number',
-  value: input.type === 'text' ? String(input.value || '') : clampNumber(input.value),
-  defaultValue: input.type === 'text'
-    ? String(input.defaultValue || '')
-    : clampNumber(input.defaultValue ?? input.value),
-  placeholder: String(input.placeholder || '').trim(),
+  id: String(input.id || '').trim(), label: String(input.label || input.id || '').trim(),
+  unit: String(input.unit || '').trim(), type: input.type === 'text' ? 'text' : 'number',
+  value: input.type === 'text' ? String(input.value || '') : input.value,
+  defaultValue: input.defaultValue ?? input.value, placeholder: String(input.placeholder || '').trim(),
   helpText: String(input.helpText || '').trim(),
 });
+export const normalizeEditableInputs = (inputs = []) => (Array.isArray(inputs) ? inputs : []).map(cloneInput).filter((x) => x.id && x.label);
+export const editableInputsToValueMap = (inputs = []) => normalizeEditableInputs(inputs).reduce((a, x) => (a[x.id] = x.value, a), {});
+export const isFormulaDrivenItem = (item) => !!item && item.defaultFormulaType && item.defaultFormulaType !== 'manual' && Array.isArray(item.editableInputs) && item.editableInputs.length > 0;
 
-export const normalizeEditableInputs = (inputs = []) => (
-  (Array.isArray(inputs) ? inputs : [])
-    .map(cloneInput)
-    .filter((input) => input.id && input.label)
-);
-
-export const editableInputsToValueMap = (inputs = []) => (
-  normalizeEditableInputs(inputs).reduce((acc, input) => {
-    acc[input.id] = input.type === 'text' ? String(input.value || '') : clampNumber(input.value);
-    return acc;
-  }, {})
-);
-
-export const isFormulaDrivenItem = (item) => (
-  !!item
-  && item.defaultFormulaType
-  && item.defaultFormulaType !== 'manual'
-  && Array.isArray(item.editableInputs)
-  && item.editableInputs.length > 0
-);
-
-const SAFE_EXPRESSION_PATTERN = /^[0-9+\-*/().,\sA-Za-z_]+$/;
-const SAFE_IDENTIFIER_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
-// The charset above allows `.` (needed for decimals like `1.5`) and `(`, which
-// together would otherwise let something like `console.log(a)` slip through as
-// "safe" and actually execute — these formulas are meant to be pure arithmetic
-// over the supplied variables, never function calls or property access.
-const FUNCTION_CALL_PATTERN = /[A-Za-z_]\w*\s*\(/;
-const NON_DECIMAL_DOT_PATTERN = /(?<!\d)\.|\.(?!\d)/;
-
-export const evaluateFormulaExpression = (expression, inputMap = {}) => {
-  const normalizedExpression = String(expression || '').trim();
-  if (
-    !normalizedExpression
-    || !SAFE_EXPRESSION_PATTERN.test(normalizedExpression)
-    || FUNCTION_CALL_PATTERN.test(normalizedExpression)
-    || NON_DECIMAL_DOT_PATTERN.test(normalizedExpression)
-  ) {
-    return 0;
+const lex = (source) => {
+  const tokens = []; let i = 0;
+  while (i < source.length) {
+    if (/\s/.test(source[i])) { i++; continue; }
+    const m = source.slice(i).match(/^(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?|^[A-Za-z_][A-Za-z0-9_]*|^[()+\-*/]/i);
+    if (!m) throw Error(`Unsupported character or operation near "${source.slice(i, i + 8)}".`);
+    tokens.push(m[0]); i += m[0].length;
   }
-
-  const variableNames = Object.keys(inputMap).filter((key) => SAFE_IDENTIFIER_PATTERN.test(key));
-  const variableValues = variableNames.map((key) => clampNumber(inputMap[key]));
-
+  return tokens;
+};
+const parseArithmetic = (tokens, values) => {
+  let i = 0;
+  const primary = () => {
+    const t = tokens[i++];
+    if (t === '+' || t === '-') { const n = primary(); return t === '-' ? -n : n; }
+    if (t === '(') { const n = expr(); if (tokens[i++] !== ')') throw Error('Missing closing parenthesis.'); return n; }
+    if (t === undefined) throw Error('Formula ends unexpectedly.');
+    if (/^(?:\d|\.)/.test(t)) return Number(t);
+    if (!Object.hasOwn(values, t)) throw Error(`Missing formula input "${t}".`);
+    const n = numberOrNull(values[t]);
+    if (n === null) throw Error(`Input "${t}" must be a finite number.`);
+    return n;
+  };
+  const term = () => { let n = primary(); while (tokens[i] === '*' || tokens[i] === '/') { const op = tokens[i++], b = primary(); if (op === '/' && b === 0) throw Error('Division by zero.'); n = op === '*' ? n * b : n / b; } return n; };
+  const expr = () => { let n = term(); while (tokens[i] === '+' || tokens[i] === '-') { const op = tokens[i++], b = term(); n = op === '+' ? n + b : n - b; } return n; };
+  const result = expr(); if (i !== tokens.length) throw Error(`Unexpected token "${tokens[i]}".`); return result;
+};
+export const validateFormulaExpression = (expression, inputMap = {}, { allowNegative = true } = {}) => {
+  const source = String(expression || '').trim();
+  if (!source) return { valid: false, value: null, error: 'Formula expression is empty.' };
   try {
-    const evaluator = new Function(...variableNames, `"use strict"; return (${normalizedExpression});`);
-    return clampNumber(evaluator(...variableValues));
-  } catch {
-    return 0;
-  }
+    const tokens = lex(source); const names = tokens.filter((t) => SAFE_IDENTIFIER_PATTERN.test(t));
+    for (const name of names) if (!Object.hasOwn(inputMap, name)) throw Error(`Missing formula input "${name}".`);
+    const value = parseArithmetic(tokens, inputMap);
+    if (!Number.isFinite(value)) throw Error('Formula result is not finite.');
+    if (!allowNegative && value < 0) throw Error('Formula result cannot be negative.');
+    return { valid: true, value, error: '' };
+  } catch (e) { return { valid: false, value: null, error: e.message || 'Invalid formula expression.' }; }
 };
-
-// `evaluateFormulaExpression` treats any identifier missing from `inputMap` as 0
-// rather than throwing, so a typo'd variable name (e.g. `lenght` instead of
-// `length`) silently produces a wrong — often zero — rate with no error
-// anywhere in the UI. This walks the expression's identifier tokens and reports
-// which ones won't resolve to a defined input, so callers can surface a warning
-// instead of quietly trusting a miscalculated number.
+export const evaluateFormulaExpression = (expression, inputMap = {}) => {
+  const result = validateFormulaExpression(expression, inputMap); return result.valid ? result.value : null;
+};
 export const getUnresolvedFormulaVariables = (expression, inputMap = {}) => {
-  const normalizedExpression = String(expression || '').trim();
-  if (
-    !normalizedExpression
-    || !SAFE_EXPRESSION_PATTERN.test(normalizedExpression)
-    || FUNCTION_CALL_PATTERN.test(normalizedExpression)
-    || NON_DECIMAL_DOT_PATTERN.test(normalizedExpression)
-  ) {
-    return [];
-  }
-
-  const knownKeys = new Set(Object.keys(inputMap).filter((key) => SAFE_IDENTIFIER_PATTERN.test(key)));
-  const referencedIdentifiers = normalizedExpression.match(/[A-Za-z_][A-Za-z0-9_]*/g) || [];
-
-  return Array.from(new Set(
-    referencedIdentifiers.filter((identifier) => !knownKeys.has(identifier))
-  ));
+  try { return [...new Set(lex(String(expression || '')).filter((t) => SAFE_IDENTIFIER_PATTERN.test(t) && !Object.hasOwn(inputMap, t)))]; } catch { return []; }
 };
-
+export const validateFormulaInputs = (inputs = [], { allowNegative = false } = {}) => {
+  for (const input of normalizeEditableInputs(inputs)) {
+    if (input.type === 'text') continue;
+    const value = numberOrNull(input.value);
+    if (value === null) return { valid: false, error: `${input.label} must be a number.` };
+    if (!allowNegative && value < 0) return { valid: false, error: `${input.label} cannot be negative.` };
+  }
+  return { valid: true, error: '' };
+};
+export const validateBoqFormulaItem = (item) => {
+  if (!isFormulaDrivenItem(item)) return { valid: true, error: '' };
+  const ids = normalizeEditableInputs(item.editableInputs).map((x) => x.id);
+  if (new Set(ids).size !== ids.length) return { valid: false, error: 'Formula inputs contain duplicate IDs.' };
+  if (item.defaultFormulaType === 'expression') {
+    const inputs = validateFormulaInputs(item.editableInputs);
+    if (!inputs.valid) return inputs;
+    return validateFormulaExpression(item.formulaExpression || item.formulaText, editableInputsToValueMap(item.editableInputs), { allowNegative: false });
+  }
+  if (item.defaultFormulaType === 'input-sum') return validateFormulaInputs(item.editableInputs);
+  return { valid: false, error: `Unsupported formula type "${item.defaultFormulaType}".` };
+};
 export const evaluateBoqFormulaRate = (item) => {
   if (!isFormulaDrivenItem(item)) return null;
-
-  const inputMap = editableInputsToValueMap(item.editableInputs);
-
-  switch (item.defaultFormulaType) {
-    case 'expression':
-      return evaluateFormulaExpression(item.formulaExpression || item.formulaText, inputMap);
-    case 'input-sum':
-      return Object.values(inputMap).reduce((sum, value) => sum + clampNumber(value), 0);
-    default:
-      return null;
-  }
+  const validation = validateFormulaInputs(item.editableInputs);
+  if (!validation.valid) return null;
+  const values = editableInputsToValueMap(item.editableInputs);
+  if (item.defaultFormulaType === 'expression') return evaluateFormulaExpression(item.formulaExpression || item.formulaText, values);
+  if (item.defaultFormulaType === 'input-sum') { const result = Object.values(values).reduce((s, v) => s + (numberOrNull(v) ?? NaN), 0); return Number.isFinite(result) ? result : null; }
+  return null;
 };
-
-export const getFormulaDisplayText = (item) => (
-  String(item?.formulaText || item?.formulaExpression || '').trim()
-);
-
+export const getFormulaDisplayText = (item) => String(item?.formulaText || item?.formulaExpression || '').trim();
 const buildWorkedExampleFromInputs = (item, inputs = []) => {
-  const normalizedInputs = normalizeEditableInputs(inputs);
-  if (normalizedInputs.length === 0) return '';
-
-  const inputMap = normalizedInputs.reduce((acc, input) => {
-    acc[input.id] = clampNumber(input.value);
-    return acc;
-  }, {});
-
-  const result = item?.defaultFormulaType === 'expression'
-    ? evaluateFormulaExpression(item.formulaExpression || item.formulaText, inputMap)
-    : normalizedInputs.reduce((sum, input) => sum + clampNumber(input.value), 0);
-
-  const detail = normalizedInputs
-    .map((input) => `${input.label} ${formatFormulaValue(input.value)}${input.unit ? ` ${input.unit}` : ''}`)
-    .join(' + ');
-
-  return detail ? `Example: ${detail} = N${formatFormulaValue(result)}` : '';
+  const normalized = normalizeEditableInputs(inputs); if (!normalized.length) return '';
+  const values = editableInputsToValueMap(normalized);
+  const result = item?.defaultFormulaType === 'expression' ? evaluateFormulaExpression(item.formulaExpression || item.formulaText, values) : normalized.reduce((s, x) => s + (numberOrNull(x.value) ?? 0), 0);
+  if (result === null) return `Example unavailable: ${validateBoqFormulaItem({ ...item, editableInputs: normalized }).error}`;
+  return `Example: ${normalized.map((x) => `${x.label} ${formatFormulaValue(x.value)}${x.unit ? ` ${x.unit}` : ''}`).join(' + ')} = N${formatFormulaValue(result)}`;
 };
-
-export const buildWorkedExampleText = (item) => {
-  const inputs = Array.isArray(item?.exampleInputs) && item.exampleInputs.length > 0
-    ? normalizeEditableInputs(item.exampleInputs)
-    : normalizeEditableInputs(item?.editableInputs);
-
-  return buildWorkedExampleFromInputs(item, inputs);
-};
-
-export const getWorkedExamplePreview = (item, { preferEditableInputs = false } = {}) => {
-  if (!item) return '';
-
-  const explicitWorkedExample = String(item.workedExample || '').trim();
-  if (explicitWorkedExample) {
-    return explicitWorkedExample;
-  }
-
-  const preferredInputs = preferEditableInputs
-    ? normalizeEditableInputs(item.editableInputs)
-    : normalizeEditableInputs(item.exampleInputs);
-  const fallbackInputs = normalizeEditableInputs(item.editableInputs);
-  const generatedExample = buildWorkedExampleFromInputs(
-    item,
-    preferredInputs.length > 0 ? preferredInputs : fallbackInputs
-  );
-
-  if (generatedExample) {
-    return generatedExample;
-  }
-
-  if (!isFormulaDrivenItem(item)) {
-    return '';
-  }
-
-  const formulaText = getFormulaDisplayText(item);
-  if (!formulaText) {
-    return 'Worked example placeholder: add example inputs to show how this rate is built.';
-  }
-
-  return `Worked example placeholder: add example inputs to demonstrate "${formulaText}".`;
-};
+export const buildWorkedExampleText = (item) => buildWorkedExampleFromInputs(item, item?.exampleInputs?.length ? item.exampleInputs : item?.editableInputs);
+export const getWorkedExamplePreview = (item, { preferEditableInputs = false } = {}) => (
+  !preferEditableInputs && item?.workedExample
+    ? item.workedExample
+    : buildWorkedExampleFromInputs(item, preferEditableInputs ? item?.editableInputs : (item?.exampleInputs?.length ? item.exampleInputs : item?.editableInputs))
+);

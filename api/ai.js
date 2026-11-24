@@ -1,3 +1,4 @@
+/* global process */
 import { handleOptions, readJsonBody, sendJson } from './_lib/http.js';
 import { requireFirebaseAuth } from './_lib/firebase-auth.js';
 import {
@@ -30,7 +31,7 @@ export default async function handler(req, res) {
     const action = String(body.action || '').trim();
     const preferredProvider = String(body.preferredProvider || '').trim();
     const model = String(body.model || '').trim();
-    const uid = String(authClaims?.user_id || authClaims?.sub || body.uid || '').trim();
+    const uid = String(authClaims?.user_id || authClaims?.sub || '').trim();
     const ip = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim();
 
     let result;

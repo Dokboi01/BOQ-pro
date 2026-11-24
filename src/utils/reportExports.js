@@ -1,6 +1,3 @@
-import ExcelJS from 'exceljs';
-import { jsPDF } from 'jspdf';
-import { autoTable } from 'jspdf-autotable';
 import { getItemTotal, getItemUnitRate } from './pricing';
 import {
   formatReportNumber,
@@ -57,6 +54,7 @@ const buildProjectMeta = (projectInfo, boqData) => {
 };
 
 export const exportToExcel = async (projectInfo, boqData, isUnpriced) => {
+  const { default: ExcelJS } = await import('exceljs');
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('BEME Report');
   const meta = buildProjectMeta(projectInfo, boqData);
@@ -163,7 +161,8 @@ export const exportToExcel = async (projectInfo, boqData, isUnpriced) => {
   downloadBlob(blob, `${getSafeReportFileName(meta.title)}_BEME.xlsx`);
 };
 
-export const exportToPDF = (projectInfo, boqData, isUnpriced) => {
+export const exportToPDF = async (projectInfo, boqData, isUnpriced) => {
+  const [{ jsPDF }, { autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')]);
   const doc = new jsPDF();
   const meta = buildProjectMeta(projectInfo, boqData);
   const pageWidth = doc.internal.pageSize.width;
@@ -365,7 +364,8 @@ export const exportToPDF = (projectInfo, boqData, isUnpriced) => {
   doc.save(`${getSafeReportFileName(meta.title)}_BEME.pdf`);
 };
 
-export const exportMaterialsToPDF = (projectInfo, materialData) => {
+export const exportMaterialsToPDF = async (projectInfo, materialData) => {
+  const [{ jsPDF }, { autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')]);
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.width;
   const margin = 14;

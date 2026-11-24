@@ -1,6 +1,5 @@
-/* global process */
 import { requireFirebaseAuth } from './_lib/firebase-auth.js';
-import { getDocumentByPath, patchProfileDocument, deleteDocumentByPath } from './_lib/firestore.js';
+import { getDocumentByPath, patchDocumentByPath, patchProfileDocument, deleteDocumentByPath } from './_lib/firestore.js';
 
 export const config = { api: { bodyParser: true } };
 
@@ -33,16 +32,32 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'No verification request found. Please request a new code.' });
     }
 
+    if (storedDoc.uid && storedDoc.uid !== uid) {
+      return res.status(403).json({ error: 'This verification code belongs to a different account.' });
+    }
+
     const now = new Date();
     const expiresAt = new Date(storedDoc.expiresAt);
 
     if (now > expiresAt) {
       // Cleanup expired code
-      await deleteDocumentByPath(codePath).catch(() => {});
+      await Promise.resolve(deleteDocumentByPath(codePath)).catch(() => {});
       return res.status(400).json({ error: 'Verification code has expired. Please request a new code.' });
     }
 
+    const failedAttempts = Math.max(Number(storedDoc.attempts) || 0, 0);
+    if (failedAttempts >= 5) {
+      await Promise.resolve(deleteDocumentByPath(codePath)).catch(() => {});
+      return res.status(429).json({ error: 'Too many incorrect codes. Request a new verification code.' });
+    }
+
     if (storedDoc.code !== cleanCode) {
+      const attempts = failedAttempts + 1;
+      if (attempts >= 5) {
+        await Promise.resolve(deleteDocumentByPath(codePath)).catch(() => {});
+        return res.status(429).json({ error: 'Too many incorrect codes. Request a new verification code.' });
+      }
+      await patchDocumentByPath(codePath, { attempts });
       return res.status(400).json({ error: 'Invalid verification code. Please check and try again.' });
     }
 
@@ -53,7 +68,7 @@ export default async function handler(req, res) {
     });
 
     // Cleanup the used verification code
-    await deleteDocumentByPath(codePath).catch((err) => {
+    await Promise.resolve(deleteDocumentByPath(codePath)).catch((err) => {
       console.warn(`⚠️ Failed to cleanup verification code doc at ${codePath}:`, err.message);
     });
 

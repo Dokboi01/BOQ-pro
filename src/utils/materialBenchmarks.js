@@ -166,10 +166,7 @@ const normalizeBenchmarkDepth = (material = {}, regionRates = {}, stateRates = {
 };
 
 const normalizeSourceEntry = (source, index, material, context) => {
-  const benchmarkRate = clampNumber(context.benchmark);
-  const marketRead = clampNumber(context.marketRead);
-  const fallbackRegion = Object.keys(context.regionRates || {})[0] || 'Lagos';
-  const fallbackDate = context.updatedAt || new Date().toISOString();
+  const fallbackRegion = Object.keys(context.regionRates || {})[0] || '';
 
   if (typeof source === 'string') {
     return {
@@ -177,8 +174,8 @@ const normalizeSourceEntry = (source, index, material, context) => {
       label: source,
       type: 'market-note',
       region: fallbackRegion,
-      rate: benchmarkRate || marketRead || 0,
-      capturedAt: fallbackDate,
+      rate: null,
+      capturedAt: null,
       note: '',
       url: ''
     };
@@ -192,57 +189,11 @@ const normalizeSourceEntry = (source, index, material, context) => {
     label,
     type: source.type || 'market-note',
     region: source.region || fallbackRegion,
-    rate: clampNumber(source.rate ?? source.price ?? benchmarkRate ?? marketRead),
-    capturedAt: resolveDate(source.capturedAt || source.updatedAt || source.date)?.toISOString() || fallbackDate,
+    rate: source.rate == null && source.price == null ? null : clampNumber(source.rate ?? source.price),
+    capturedAt: resolveDate(source.capturedAt || source.collectedAt || source.updatedAt || source.date)?.toISOString() || null,
     note: source.note || '',
     url: source.url || source.href || ''
   };
-};
-
-const buildDefaultSources = (material, context) => {
-  const benchmarkRate = clampNumber(context.benchmark);
-  const marketRead = clampNumber(context.marketRead);
-  const updatedAt = context.updatedAt || new Date().toISOString();
-  const regionRates = context.regionRates || {};
-  const primaryRegion = Object.keys(regionRates)[0] || 'Lagos';
-
-  const sources = [
-    {
-      label: `${material.name} supplier read`,
-      type: 'supplier-read',
-      region: primaryRegion,
-      rate: marketRead || benchmarkRate,
-      capturedAt: updatedAt,
-      note: material.delta ? `Current movement ${material.delta}` : '',
-      url: ''
-    },
-    {
-      label: `${primaryRegion} benchmark calibration`,
-      type: 'benchmark-calibration',
-      region: primaryRegion,
-      rate: benchmarkRate || marketRead,
-      capturedAt: updatedAt,
-      note: material.range || material.benchmarkBand || '',
-      url: ''
-    }
-  ];
-
-  Object.entries(regionRates)
-    .filter(([region]) => region !== primaryRegion)
-    .slice(0, 2)
-    .forEach(([region, rate]) => {
-      sources.push({
-        label: `${region} market spot check`,
-        type: 'regional-spot-check',
-        region,
-        rate: clampNumber(rate),
-        capturedAt: updatedAt,
-        note: '',
-        url: ''
-      });
-    });
-
-  return sources;
 };
 
 const normalizeSources = (material, context) => {
@@ -251,7 +202,9 @@ const normalizeSources = (material, context) => {
     .map((source, index) => normalizeSourceEntry(source, index, material, context))
     .filter(Boolean);
 
-  return normalized.length ? normalized : buildDefaultSources(material, context);
+  // Never synthesize supplier reads, spot checks, or dates. A missing source is
+  // unknown provenance, not evidence that a supplier was contacted.
+  return normalized;
 };
 
 const normalizeHistoryRegionRates = (regionRates = {}) => (
@@ -826,9 +779,9 @@ export const normalizeMaterialBenchmarkRecord = (material = {}) => {
     marketRead,
     regionRates,
     updatedAt: resolvedUpdatedAt,
-    verifiedBy: material.verifiedBy || 'Quantra Market Review',
+    verifiedBy: material.verifiedBy || null,
     approvalStatus,
-    approvedBy: material.approvedBy || material.verifiedBy || 'Quantra Market Review',
+    approvedBy: material.approvedBy || material.verifiedBy || null,
     sourceCount,
     confidence,
     benchmarkDeskNote: material.benchmarkDeskNote || material.marketDeskNote || ''
@@ -839,9 +792,9 @@ export const normalizeMaterialBenchmarkRecord = (material = {}) => {
     regionRates,
     updatedAt: resolvedUpdatedAt,
     approvedAt,
-    verifiedBy: material.verifiedBy || 'Quantra Market Review',
+    verifiedBy: material.verifiedBy || null,
     approvalStatus,
-    approvedBy: material.approvedBy || material.verifiedBy || 'Quantra Market Review',
+    approvedBy: material.approvedBy || material.verifiedBy || null,
     sourceCount,
     confidence,
     benchmarkBand,
@@ -863,9 +816,9 @@ export const normalizeMaterialBenchmarkRecord = (material = {}) => {
     sources,
     confidence,
     confidenceLabel,
-    verifiedBy: material.verifiedBy || 'Quantra Market Review',
+    verifiedBy: material.verifiedBy || null,
     approvalStatus,
-    approvedBy: material.approvedBy || material.verifiedBy || 'Quantra Market Review',
+    approvedBy: material.approvedBy || material.verifiedBy || null,
     approvedAt,
     reviewCycleDays,
     nextReviewAt,

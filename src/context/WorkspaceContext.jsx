@@ -380,7 +380,7 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
     const resolvedUnitRate = selectedRateSource === 'benchmark'
       ? getEffectiveBenchmarkRate(itemWithInputs, project?.region || 'Lagos')
       : selectedRateSource === 'formula'
-        ? (formulaCalculatedRate || benchmarkRate)
+        ? formulaCalculatedRate
         : manualRate;
     const legacyRateSource = selectedRateSource === 'manual'
       && item.rateSource
@@ -526,7 +526,7 @@ export const WorkspaceProvider = ({ children, project, launchIntent, onLaunchInt
   );
 
   const getFormulaRateValue = (item) => sanitizeNonNegativeNumber(
-    item?.formulaCalculatedRate ?? evaluateBoqFormulaRate({
+    evaluateBoqFormulaRate({
       ...item,
       editableInputs: normalizeEditableInputs(item?.editableInputs),
     })

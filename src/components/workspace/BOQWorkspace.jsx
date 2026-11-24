@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { lazy, Suspense, useState } from 'react';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { useProjects } from '../../context/useProjects';
 import RateAnalysisModal from './RateAnalysisModal';
@@ -7,12 +7,13 @@ import GeometricCalculator from './GeometricCalculator';
 import BidManagerModal from './BidManagerModal';
 import TeamHubPanel from './TeamHubPanel';
 import CollabModal from './CollabModal';
-import StructuralAnalyzer from './StructuralAnalyzer';
 import ProjectNotesAccordion from './ProjectNotesAccordion';
 import BOQFormulaModal from './BOQFormulaModal';
 import BOQItemDetailPanel from './BOQItemDetailPanel';
 import BOQSelectionStage from './BOQSelectionStage';
 import BOQBillPanel from './BOQBillPanel';
+
+const StructuralAnalyzer = lazy(() => import('./StructuralAnalyzer'));
 import { getStructureSectionCatalog, findCatalogItemByCode } from '../../data/boqCatalog';
 import {
   DEFAULT_NIGERIA_LOCATION,
@@ -1537,10 +1538,12 @@ const BOQWorkspace = () => {
       )}
 
       {showStructuralAnalyzer && (
+        <Suspense fallback={null}>
         <StructuralAnalyzer
           onClose={() => setShowStructuralAnalyzer(false)}
           onComplete={handleStructuralImport}
         />
+        </Suspense>
       )}
 
       {showTeamHub && isCustomWorkspace && (

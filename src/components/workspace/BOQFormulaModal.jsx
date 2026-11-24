@@ -5,6 +5,7 @@ import {
   evaluateBoqFormulaRate,
   getFormulaDisplayText,
   getUnresolvedFormulaVariables,
+  validateBoqFormulaItem,
   getWorkedExamplePreview,
   normalizeEditableInputs,
 } from '../../utils/boqFormulas';
@@ -15,7 +16,7 @@ const BOQFormulaModal = ({ item, sectionTitle, onClose, onSave, project = null }
   const [inputs, setInputs] = React.useState(() => normalizeEditableInputs(item?.editableInputs));
 
   const computedRate = React.useMemo(
-    () => evaluateBoqFormulaRate({ ...item, editableInputs: inputs }) || 0,
+    () => evaluateBoqFormulaRate({ ...item, editableInputs: inputs }),
     [inputs, item]
   );
 
@@ -34,11 +35,12 @@ const BOQFormulaModal = ({ item, sectionTitle, onClose, onSave, project = null }
     const expression = item?.formulaExpression || item?.formulaText;
     return getUnresolvedFormulaVariables(expression, editableInputsToValueMap(inputs));
   }, [inputs, item]);
+  const validation = React.useMemo(() => validateBoqFormulaItem({ ...item, editableInputs: inputs }), [inputs, item]);
 
   const updateValue = (inputId, nextValue) => {
     setInputs((prev) => prev.map((input) => (
       input.id === inputId
-        ? { ...input, value: Number(nextValue) || 0 }
+        ? { ...input, value: nextValue }
         : input
     )));
   };
@@ -60,7 +62,7 @@ const BOQFormulaModal = ({ item, sectionTitle, onClose, onSave, project = null }
         <div className="boq-formula-body">
           <div className="boq-formula-panel strong">
             <span className="boq-formula-label">Calculated Unit Rate</span>
-            <strong>{formatMoney(computedRate)}</strong>
+            <strong>{computedRate === null ? '—' : formatMoney(computedRate)}</strong>
             <small>Amount updates automatically as Quantity x Calculated Unit Rate.</small>
           </div>
 
@@ -68,12 +70,11 @@ const BOQFormulaModal = ({ item, sectionTitle, onClose, onSave, project = null }
             <div className="boq-formula-panel warning">
               <span className="boq-formula-label">Formula Warning</span>
               <p>
-                This formula references {unresolvedVariables.length === 1 ? 'a variable' : 'variables'} with no matching
-                editable input — <strong>{unresolvedVariables.join(', ')}</strong>. It is being treated as 0, so the
-                calculated rate above is likely wrong. Check the formula expression against the input IDs below.
+                Missing formula input{unresolvedVariables.length === 1 ? '' : 's'}: <strong>{unresolvedVariables.join(', ')}</strong>.
               </p>
             </div>
           )}
+          {!validation.valid && unresolvedVariables.length === 0 && <div className="boq-formula-panel warning"><span className="boq-formula-label">Formula Validation</span><p>{validation.error}</p></div>}
 
           <div className="boq-formula-panel">
             <span className="boq-formula-label">Formula Logic</span>
@@ -112,6 +113,7 @@ const BOQFormulaModal = ({ item, sectionTitle, onClose, onSave, project = null }
           <button
             type="button"
             className="boq-formula-btn primary"
+            disabled={!validation.valid}
             onClick={() => onSave(inputs)}
           >
             <Calculator size={14} /> Apply Formula Inputs

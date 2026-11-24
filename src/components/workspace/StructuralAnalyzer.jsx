@@ -12,7 +12,6 @@ import {
     Database,
     Zap
 } from 'lucide-react';
-import ExcelJS from 'exceljs';
 import { processStructuralFile } from '../../utils/aiService';
 
 const StructuralAnalyzer = ({ onComplete, onClose }) => {
@@ -52,6 +51,7 @@ const StructuralAnalyzer = ({ onComplete, onClose }) => {
                 reader.readAsArrayBuffer(file);
                 reader.onload = async () => {
                     try {
+                        const { default: ExcelJS } = await import('exceljs');
                         const workbook = new ExcelJS.Workbook();
                         await workbook.xlsx.load(reader.result);
                         let csvContent = '';

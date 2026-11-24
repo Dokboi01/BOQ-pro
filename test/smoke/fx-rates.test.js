@@ -19,7 +19,7 @@ describe('Live FX rates', () => {
 
   describe('refreshLiveFxRates', () => {
     it('fetches from the fx-rates endpoint and caches the result', async () => {
-      global.fetch.mockResolvedValue({
+      globalThis.fetch.mockResolvedValue({
         ok: true,
         json: async () => ({
           base: 'NGN',
@@ -30,7 +30,7 @@ describe('Live FX rates', () => {
 
       const result = await refreshLiveFxRates();
 
-      expect(global.fetch).toHaveBeenCalledWith('/api/fx-rates');
+      expect(globalThis.fetch).toHaveBeenCalledWith('/api/fx-rates');
       expect(result.ratesToNgn).toEqual({ USD: 1650.5, GBP: 2100.25 });
       expect(getLiveFxRateToNgn('USD')).toBe(1650.5);
       expect(getLiveFxRateToNgn('GBP')).toBe(2100.25);
@@ -38,7 +38,7 @@ describe('Live FX rates', () => {
     });
 
     it('returns null and leaves the cache untouched when the endpoint fails', async () => {
-      global.fetch.mockResolvedValue({ ok: false, status: 502 });
+      globalThis.fetch.mockResolvedValue({ ok: false, status: 502 });
 
       const result = await refreshLiveFxRates();
 
@@ -47,7 +47,7 @@ describe('Live FX rates', () => {
     });
 
     it('returns null when fetch itself throws (e.g. offline)', async () => {
-      global.fetch.mockRejectedValue(new Error('network error'));
+      globalThis.fetch.mockRejectedValue(new Error('network error'));
 
       const result = await refreshLiveFxRates();
 
@@ -57,7 +57,7 @@ describe('Live FX rates', () => {
 
     it('shares a single in-flight request across concurrent callers', async () => {
       let resolveResponse;
-      global.fetch.mockReturnValue(new Promise((resolve) => { resolveResponse = resolve; }));
+      globalThis.fetch.mockReturnValue(new Promise((resolve) => { resolveResponse = resolve; }));
 
       const firstCall = refreshLiveFxRates();
       const secondCall = refreshLiveFxRates();
@@ -69,7 +69,7 @@ describe('Live FX rates', () => {
 
       await Promise.all([firstCall, secondCall]);
 
-      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -79,7 +79,7 @@ describe('Live FX rates', () => {
     });
 
     it('is case-insensitive for currency codes', async () => {
-      global.fetch.mockResolvedValue({
+      globalThis.fetch.mockResolvedValue({
         ok: true,
         json: async () => ({ ratesToNgn: { USD: 1600 }, fetchedAt: null }),
       });
@@ -89,7 +89,7 @@ describe('Live FX rates', () => {
     });
 
     it('returns null for a currency with no cached rate', async () => {
-      global.fetch.mockResolvedValue({
+      globalThis.fetch.mockResolvedValue({
         ok: true,
         json: async () => ({ ratesToNgn: { USD: 1600 }, fetchedAt: null }),
       });
@@ -104,7 +104,7 @@ describe('Live FX rates', () => {
       const listener = vi.fn();
       subscribeToFxRateUpdates(listener);
 
-      global.fetch.mockResolvedValue({
+      globalThis.fetch.mockResolvedValue({
         ok: true,
         json: async () => ({ ratesToNgn: { USD: 1600 }, fetchedAt: '2026-07-22T00:00:00.000Z' }),
       });
@@ -117,7 +117,7 @@ describe('Live FX rates', () => {
       const listener = vi.fn();
       subscribeToFxRateUpdates(listener);
 
-      global.fetch.mockResolvedValue({ ok: false, status: 502 });
+      globalThis.fetch.mockResolvedValue({ ok: false, status: 502 });
       await refreshLiveFxRates();
 
       expect(listener).not.toHaveBeenCalled();
@@ -128,7 +128,7 @@ describe('Live FX rates', () => {
       const unsubscribe = subscribeToFxRateUpdates(listener);
       unsubscribe();
 
-      global.fetch.mockResolvedValue({
+      globalThis.fetch.mockResolvedValue({
         ok: true,
         json: async () => ({ ratesToNgn: { USD: 1600 }, fetchedAt: '2026-07-22T00:00:00.000Z' }),
       });

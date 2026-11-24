@@ -69,6 +69,14 @@ describe('API Route: /api/send-report', () => {
     expect(resData.error).toContain('Email service not configured');
   });
 
+  it('does not accept a frontend-prefixed email API key as a server secret', async () => {
+    delete process.env.RESEND_API_KEY;
+    process.env.VITE_RESEND_API_KEY = 'must-not-be-used';
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(resData.error).toContain('RESEND_API_KEY');
+  });
+
   it('rejects unauthorized requests', async () => {
     const error = new Error('Authentication required.');
     error.status = 401;

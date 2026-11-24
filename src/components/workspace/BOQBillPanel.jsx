@@ -47,10 +47,7 @@ const BOQBillPanel = ({
       </div>
 
       <div className="wbp-list">
-        {sections.map((section, index) => {
-          const itemCount = (section.items || []).length;
-          const selectedCount = selectionCountsBySection?.[section.id] || itemCount;
-          const subtotal = sectionTotalsBySection?.[section.id] || 0;
+        {sections.map((section) => {
           const isActive = section.id === activeSectionId;
 
           return (

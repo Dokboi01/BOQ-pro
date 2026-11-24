@@ -8,6 +8,8 @@ import {
   evaluateBoqFormulaRate,
   buildWorkedExampleText,
   getWorkedExamplePreview,
+  validateFormulaExpression,
+  validateBoqFormulaItem,
 } from '../../src/utils/boqFormulas.js';
 
 describe('BOQ formula engine', () => {
@@ -22,11 +24,11 @@ describe('BOQ formula engine', () => {
       expect(inputs.find((input) => input.id === 'no-label').label).toBe('no-label');
     });
 
-    it('coerces numeric inputs and clamps invalid values to 0', () => {
+    it('preserves invalid numeric inputs for validation instead of coercing to zero', () => {
       const [input] = normalizeEditableInputs([
         { id: 'qty', label: 'Qty', value: 'not-a-number' },
       ]);
-      expect(input.value).toBe(0);
+      expect(input.value).toBe('not-a-number');
     });
 
     it('preserves text inputs as strings', () => {
@@ -76,32 +78,32 @@ describe('BOQ formula engine', () => {
     });
 
     it('returns 0 for an empty or blank expression', () => {
-      expect(evaluateFormulaExpression('', { a: 1 })).toBe(0);
-      expect(evaluateFormulaExpression('   ', { a: 1 })).toBe(0);
+      expect(evaluateFormulaExpression('', { a: 1 })).toBeNull();
+      expect(evaluateFormulaExpression('   ', { a: 1 })).toBeNull();
     });
 
-    it('treats unknown variables as 0 rather than throwing', () => {
-      expect(evaluateFormulaExpression('length * width', { length: 5 })).toBe(0);
+    it('rejects unknown variables rather than treating them as zero', () => {
+      expect(evaluateFormulaExpression('length * width', { length: 5 })).toBeNull();
     });
 
     it('rejects expressions containing characters outside the safe arithmetic charset', () => {
       // Anything that isn't digits/operators/identifiers is rejected outright by the
       // regex guard before it ever reaches `new Function`, regardless of whether the
       // JS engine would consider it valid syntax.
-      expect(evaluateFormulaExpression('console.log("pwned")', {})).toBe(0);
-      expect(evaluateFormulaExpression('require("fs")', {})).toBe(0);
-      expect(evaluateFormulaExpression('a; while(true){}', {})).toBe(0);
-      expect(evaluateFormulaExpression('[1,2,3]', {})).toBe(0);
-      expect(evaluateFormulaExpression('${1+1}', {})).toBe(0);
+      expect(evaluateFormulaExpression('console.log("pwned")', {})).toBeNull();
+      expect(evaluateFormulaExpression('require("fs")', {})).toBeNull();
+      expect(evaluateFormulaExpression('a; while(true){}', {})).toBeNull();
+      expect(evaluateFormulaExpression('[1,2,3]', {})).toBeNull();
+      expect(evaluateFormulaExpression('${1+1}', {})).toBeNull();
     });
 
     it('rejects function calls and property access, even without quotes', () => {
       // The charset alone allows `.` (for decimals) and `(` (for grouping), which
       // together would let a bare, quote-free call like `console.log(a)` slip past
       // the charset check and actually execute. This must be blocked explicitly.
-      expect(evaluateFormulaExpression('console.log(a)', { a: 1 })).toBe(0);
-      expect(evaluateFormulaExpression('Math.random()', {})).toBe(0);
-      expect(evaluateFormulaExpression('a.constructor(b)', { a: 1, b: 2 })).toBe(0);
+      expect(evaluateFormulaExpression('console.log(a)', { a: 1 })).toBeNull();
+      expect(evaluateFormulaExpression('Math.random()', {})).toBeNull();
+      expect(evaluateFormulaExpression('a.constructor(b)', { a: 1, b: 2 })).toBeNull();
     });
 
     it('still evaluates decimal literals correctly', () => {
@@ -119,8 +121,12 @@ describe('BOQ formula engine', () => {
       expect(result).toBe(7);
     });
 
-    it('returns 0 instead of throwing on a runtime error (e.g. division producing NaN paths)', () => {
-      expect(evaluateFormulaExpression('a / b / (', { a: 1, b: 2 })).toBe(0);
+    it('rejects invalid syntax and division by zero', () => {
+      expect(evaluateFormulaExpression('a / b / (', { a: 1, b: 2 })).toBeNull();
+      expect(validateFormulaExpression('a / b', { a: 1, b: 0 }).error).toMatch(/zero/i);
+      expect(validateFormulaExpression('1e999', {}).valid).toBe(false);
+      expect(validateFormulaExpression('a ^ 2', { a: 2 }).valid).toBe(false);
+      expect(validateFormulaExpression('a + 2', { a: 'nope' }).valid).toBe(false);
     });
   });
 
@@ -134,7 +140,7 @@ describe('BOQ formula engine', () => {
       // own: `lenght` silently evaluates as 0 instead of erroring.
       expect(getUnresolvedFormulaVariables('lenght * width', { length: 4, width: 3 }))
         .toEqual(['lenght']);
-      expect(evaluateFormulaExpression('lenght * width', { length: 4, width: 3 })).toBe(0);
+      expect(evaluateFormulaExpression('lenght * width', { length: 4, width: 3 })).toBeNull();
     });
 
     it('lists each unresolved identifier once, in order of first appearance', () => {
@@ -178,12 +184,27 @@ describe('BOQ formula engine', () => {
       };
       expect(evaluateBoqFormulaRate(item)).toBe(25);
     });
+
+    it('does not calculate when required inputs are blank or negative', () => {
+      const item = { defaultFormulaType: 'expression', formulaExpression: 'length * width', editableInputs: [
+        { id: 'length', label: 'Length', value: '' }, { id: 'width', label: 'Width', value: 3 },
+      ] };
+      expect(evaluateBoqFormulaRate(item)).toBeNull();
+      expect(validateBoqFormulaItem(item).valid).toBe(false);
+    });
   });
 
   describe('getWorkedExamplePreview', () => {
     it('prefers an explicit worked example over generated text', () => {
       const item = { workedExample: 'Explicit example text' };
       expect(getWorkedExamplePreview(item)).toBe('Explicit example text');
+    });
+
+    it('recalculates the example from currently edited inputs in the formula editor', () => {
+      const item = { workedExample: 'Old example', defaultFormulaType: 'expression', formulaExpression: 'length * width', editableInputs: [
+        { id: 'length', label: 'Length', value: 4 }, { id: 'width', label: 'Width', value: 3 },
+      ] };
+      expect(getWorkedExamplePreview(item, { preferEditableInputs: true })).toContain('= N12');
     });
   });
 
